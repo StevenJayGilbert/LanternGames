@@ -1,18 +1,28 @@
 // Local-first Ollama client. Implements LLMClient.send by translating our
-// Anthropic-shaped types to Ollama's OpenAI-compatible chat endpoint
-// (POST {baseUrl}/v1/chat/completions).
+// Anthropic-shaped types to Ollama's NATIVE chat endpoint (POST {baseUrl}/api/chat).
 //
 // Why this exists: BYOK Anthropic is the day-one tier; this is the genuine $0
 // tier — the player runs `ollama serve` locally, picks a model (default
-// qwen3:14b), and plays without any API key. Per TASKS.md Phase 10.
+// llama3.1:8b), and plays without any API key. Per TASKS.md Phase 10.
 //
-// Two load-bearing translations, plus one footgun:
-//   1. Anthropic batches multiple `tool_result` blocks into ONE user message;
-//      OpenAI requires each one as its own `{role:"tool",...}` message. We split.
-//   2. OpenAI tool-call arguments arrive as a JSON STRING (not an object) —
-//      JSON.parse with try/catch (small models occasionally emit malformed JSON).
-//   3. Ollama defaults `num_ctx` to 4K and silently truncates — we set 32768
-//      explicitly. This is the #1 documented Ollama footgun.
+// Why the native endpoint, not /v1/chat/completions:
+//   The OpenAI-compat path silently caps the prompt at Ollama's default
+//   num_ctx (4096 tokens). It does NOT forward `options.num_ctx` from the
+//   request body — that field is not in the OpenAI-compat parameter allowlist.
+//   With our ~3K-token system prompt + per-turn view JSON + sliding history,
+//   the prompt routinely exceeds 4K and the tools array gets truncated off
+//   the end. Result: the model "sees" the player command but has no tools
+//   defined, so it prose-describes a tool call instead of emitting one.
+//   The native /api/chat endpoint honors options.num_ctx properly.
+//
+// Translations between our Anthropic-shaped types and Ollama's format:
+//   1. Multiple `tool_result` blocks in one Anthropic user message become
+//      multiple {role:"tool",...} messages (one per result), in order.
+//   2. Ollama's tool_call.function.arguments is an OBJECT (not a JSON string,
+//      as in the OpenAI-compat path).
+//   3. Ollama's tool messages don't carry tool_call_id — they're matched by
+//      order. Our compound-tool-call code already emits results in the same
+//      order the assistant called them, so this works.
 //
 // CORS note: Ollama rejects browser fetches by default. Users must run
 //   OLLAMA_ORIGINS="*" ollama serve
@@ -30,27 +40,33 @@ import type {
 import { LLMError } from "./types";
 
 const DEFAULT_BASE_URL = "http://localhost:11434";
-const DEFAULT_MODEL = "qwen3:14b";
+const DEFAULT_MODEL = "llama3.1:8b";
 const DEFAULT_MAX_TOKENS = 1024;
 // Default to 32K context. Ollama's 4K default would silently truncate the
 // narrator's 50-message sliding window + per-turn view JSON within a few turns.
 const DEFAULT_NUM_CTX = 32768;
 
-// ---------- OpenAI-compat shapes (only what we use) ----------
+// ---------- Ollama native shapes (only what we use) ----------
 
-interface OpenAIToolCall {
-  id: string;
-  type: "function";
-  function: { name: string; arguments: string };
+interface OllamaToolCall {
+  // Some Ollama versions/models include id, some don't. We tolerate both.
+  id?: string;
+  function: {
+    name: string;
+    // Native API: arguments is an object. (OpenAI-compat: it's a JSON string.)
+    arguments: Record<string, unknown>;
+  };
 }
 
-type OpenAIMessage =
+type OllamaMessage =
   | { role: "system"; content: string }
   | { role: "user"; content: string }
-  | { role: "assistant"; content: string; tool_calls?: OpenAIToolCall[] }
-  | { role: "tool"; tool_call_id: string; content: string };
+  | { role: "assistant"; content: string; tool_calls?: OllamaToolCall[] }
+  // tool_name helps newer Ollama versions bind result to call when ordering
+  // alone is ambiguous; older versions ignore it harmlessly.
+  | { role: "tool"; content: string; tool_name?: string };
 
-interface OpenAITool {
+interface OllamaTool {
   type: "function";
   function: {
     name: string;
@@ -59,15 +75,15 @@ interface OpenAITool {
   };
 }
 
-interface OpenAIChatResponse {
-  choices: Array<{
-    finish_reason: string | null;
-    message: {
-      role: "assistant";
-      content: string | null;
-      tool_calls?: OpenAIToolCall[];
-    };
-  }>;
+interface OllamaChatResponse {
+  model: string;
+  message: {
+    role: "assistant";
+    content: string;
+    tool_calls?: OllamaToolCall[];
+  };
+  done: boolean;
+  done_reason?: string;
 }
 
 // ---------- client ----------
@@ -84,33 +100,41 @@ export class OllamaClient implements LLMClient {
   }
 
   async send(req: SendRequest): Promise<AssistantMessage> {
-    const messages: OpenAIMessage[] = [];
+    const messages: OllamaMessage[] = [];
     if (req.system !== undefined) {
       messages.push({ role: "system", content: req.system });
     }
+    // Track tool_use_id → tool name so we can populate tool_name on subsequent
+    // tool result messages (helpful for newer Ollama versions).
+    const toolNameById = new Map<string, string>();
     for (const m of req.messages) {
-      messages.push(...toOpenAIMessages(m));
+      if (m.role === "assistant" && Array.isArray(m.content)) {
+        for (const block of m.content) {
+          if (block.type === "tool_use") toolNameById.set(block.id, block.name);
+        }
+      }
+      messages.push(...toOllamaMessages(m, toolNameById));
     }
 
     const body: Record<string, unknown> = {
       model: this.model,
       messages,
       stream: false,
-      max_tokens: req.maxTokens ?? DEFAULT_MAX_TOKENS,
-      // num_ctx must be in the model `options` block per Ollama's API; the
-      // OpenAI-compat path forwards it through.
-      options: { num_ctx: this.numCtx },
-      // Disable Qwen3 reasoning chains. They double-quadruple latency without
-      // adding value for narrator turns; harmless for non-thinking models.
+      options: {
+        num_ctx: this.numCtx,
+        num_predict: req.maxTokens ?? DEFAULT_MAX_TOKENS,
+      },
+      // Disable thinking on models that support it (Qwen3, etc.). On the
+      // native endpoint this flag is honored. Harmless on non-thinking models.
       think: false,
     };
     if (req.tools && req.tools.length > 0) {
-      body.tools = req.tools.map(toOpenAITool);
+      body.tools = req.tools.map(toOllamaTool);
     }
 
     let response: Response;
     try {
-      response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
+      response = await fetch(`${this.baseUrl}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -123,9 +147,9 @@ export class OllamaClient implements LLMClient {
       throw await toHttpError(response, this.model);
     }
 
-    let parsed: OpenAIChatResponse;
+    let parsed: OllamaChatResponse;
     try {
-      parsed = (await response.json()) as OpenAIChatResponse;
+      parsed = (await response.json()) as OllamaChatResponse;
     } catch (err: unknown) {
       throw new LLMError(
         `Ollama returned invalid JSON: ${err instanceof Error ? err.message : String(err)}`,
@@ -133,34 +157,36 @@ export class OllamaClient implements LLMClient {
       );
     }
 
-    const choice = parsed.choices?.[0];
-    if (!choice) {
-      throw new LLMError("Ollama response had no choices.", "unknown");
+    if (!parsed.message) {
+      throw new LLMError("Ollama response had no message.", "unknown");
     }
 
     return {
       role: "assistant",
-      content: fromOpenAIMessage(choice.message),
-      stopReason: mapFinishReason(choice.finish_reason),
+      content: fromOllamaMessage(parsed.message),
+      stopReason: mapDoneReason(parsed.done_reason),
     };
   }
 }
 
 // ---------- mapping: outgoing ----------
 
-// Translate ONE of our Messages into ONE OR MORE OpenAI messages. The split is
+// Translate ONE of our Messages into ONE OR MORE Ollama messages. The split is
 // load-bearing: if the message has tool_result blocks, each becomes its own
-// {role:"tool",...} message in OpenAI's format. Text blocks merge into a single
-// content string. Tool_use blocks (assistant only) become tool_calls.
-function toOpenAIMessages(m: Message): OpenAIMessage[] {
+// {role:"tool",...} message. Text blocks merge into a single content string.
+// Tool_use blocks (assistant only) become tool_calls.
+function toOllamaMessages(
+  m: Message,
+  toolNameById: Map<string, string>,
+): OllamaMessage[] {
   if (typeof m.content === "string") {
     if (m.role === "user") return [{ role: "user", content: m.content }];
     return [{ role: "assistant", content: m.content }];
   }
 
-  const out: OpenAIMessage[] = [];
+  const out: OllamaMessage[] = [];
   const textParts: string[] = [];
-  const toolCalls: OpenAIToolCall[] = [];
+  const toolCalls: OllamaToolCall[] = [];
 
   for (const block of m.content) {
     switch (block.type) {
@@ -168,14 +194,11 @@ function toOpenAIMessages(m: Message): OpenAIMessage[] {
         textParts.push(block.text);
         break;
       case "tool_use":
-        // Only valid on assistant messages. If the engine ever sent these on a
-        // user message it'd be a logic bug, not something to silently swallow.
         toolCalls.push({
           id: block.id,
-          type: "function",
           function: {
             name: block.name,
-            arguments: JSON.stringify(block.input ?? {}),
+            arguments: (block.input ?? {}) as Record<string, unknown>,
           },
         });
         break;
@@ -188,8 +211,10 @@ function toOpenAIMessages(m: Message): OpenAIMessage[] {
         }
         out.push({
           role: "tool",
-          tool_call_id: block.tool_use_id,
           content: block.is_error ? `[error] ${block.content}` : block.content,
+          ...(toolNameById.get(block.tool_use_id) && {
+            tool_name: toolNameById.get(block.tool_use_id),
+          }),
         });
         break;
     }
@@ -197,7 +222,7 @@ function toOpenAIMessages(m: Message): OpenAIMessage[] {
 
   // Flush any remaining text + tool_calls into a final message.
   if (m.role === "assistant" && (textParts.length > 0 || toolCalls.length > 0)) {
-    const msg: OpenAIMessage = {
+    const msg: OllamaMessage = {
       role: "assistant",
       content: textParts.join("\n"),
       ...(toolCalls.length > 0 && { tool_calls: toolCalls }),
@@ -210,7 +235,7 @@ function toOpenAIMessages(m: Message): OpenAIMessage[] {
   return out;
 }
 
-function toOpenAITool(t: Tool): OpenAITool {
+function toOllamaTool(t: Tool): OllamaTool {
   return {
     type: "function",
     function: {
@@ -223,30 +248,20 @@ function toOpenAITool(t: Tool): OpenAITool {
 
 // ---------- mapping: incoming ----------
 
-function fromOpenAIMessage(msg: OpenAIChatResponse["choices"][number]["message"]): ContentBlock[] {
+function fromOllamaMessage(msg: OllamaChatResponse["message"]): ContentBlock[] {
   const blocks: ContentBlock[] = [];
   if (msg.content && msg.content.length > 0) {
-    blocks.push({ type: "text", text: stripThinkTags(msg.content) });
+    const stripped = stripThinkTags(msg.content);
+    if (stripped.length > 0) blocks.push({ type: "text", text: stripped });
   }
-  for (const call of msg.tool_calls ?? []) {
-    let input: Record<string, unknown>;
-    try {
-      input = call.function.arguments
-        ? (JSON.parse(call.function.arguments) as Record<string, unknown>)
-        : {};
-    } catch (err: unknown) {
-      throw new LLMError(
-        `Model returned malformed JSON for tool '${call.function.name}': ${
-          err instanceof Error ? err.message : String(err)
-        }`,
-        "unknown",
-      );
-    }
+  for (const [i, call] of (msg.tool_calls ?? []).entries()) {
     blocks.push({
       type: "tool_use",
-      id: call.id,
+      // Some Ollama versions don't include id; synthesize one so the narrator's
+      // tool_use → tool_result pairing stays consistent.
+      id: call.id ?? `ollama-call-${Date.now()}-${i}`,
       name: call.function.name,
-      input,
+      input: (call.function.arguments ?? {}) as Record<string, unknown>,
     });
   }
   return blocks;
@@ -258,15 +273,12 @@ function stripThinkTags(text: string): string {
   return text.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
 }
 
-function mapFinishReason(reason: string | null): StopReason {
+function mapDoneReason(reason: string | undefined): StopReason {
   switch (reason) {
     case "stop":
       return "end_turn";
-    case "tool_calls":
-      return "tool_use";
     case "length":
       return "max_tokens";
-    case null:
     case undefined:
       return "end_turn";
     default:

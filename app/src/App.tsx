@@ -24,7 +24,7 @@ const OLLAMA_MODEL_STORAGE = "lanterngames_ollama_model";
 const OLLAMA_READY_STORAGE = "lanterngames_ollama_ready";
 
 const DEFAULT_OLLAMA_URL = "http://localhost:11434";
-const DEFAULT_OLLAMA_MODEL = "qwen3:14b";
+const DEFAULT_OLLAMA_MODEL = "llama3.1:8b";
 
 function loadProvider(): Provider {
   const stored = localStorage.getItem(PROVIDER_STORAGE);
@@ -309,7 +309,7 @@ function App() {
                 <p className="hint">
                   Free, runs entirely on your machine. Requires{" "}
                   <code>ollama serve</code> and a pulled model — recommended{" "}
-                  <code>qwen3:14b</code> (or <code>qwen3:8b</code> for low RAM).
+                  <code>llama3.1:8b</code> (or <code>qwen2.5:14b</code> for higher quality).
                 </p>
               </div>
             </label>
@@ -355,7 +355,7 @@ function App() {
                 <code>OLLAMA_ORIGINS="*" ollama serve</code> (the origins flag is required for
                 browser access)
                 <br />
-                <code>ollama pull qwen3:14b</code>
+                <code>ollama pull llama3.1:8b</code>
               </p>
               <form
                 className="key-form ollama-form"
