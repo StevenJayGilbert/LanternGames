@@ -12,6 +12,17 @@ npm run dev        # http://localhost:5173/
 
 Paste an Anthropic API key when prompted, pick a story, play. Get a key at [console.anthropic.com](https://console.anthropic.com) — it's separate from a Claude Pro/Max subscription.
 
+Or run **fully local for free** via Ollama — no API key, no per-turn cost. Quick version:
+
+```bash
+# install Ollama from ollama.com/download, then:
+ollama pull qwen3:14b
+OLLAMA_ORIGINS="*" ollama serve
+# pick "Local (Ollama)" on the gate page
+```
+
+The `OLLAMA_ORIGINS` env var is required so the browser can talk to Ollama. Full setup, model sizing (8B vs 14B), persistent install across reboots, and troubleshooting in [docs/local-llm.md](docs/local-llm.md).
+
 ## Project layout
 
 ```
