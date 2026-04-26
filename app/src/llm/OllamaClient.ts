@@ -250,10 +250,25 @@ function toOllamaTool(t: Tool): OllamaTool {
 
 function fromOllamaMessage(msg: OllamaChatResponse["message"]): ContentBlock[] {
   const blocks: ContentBlock[] = [];
+  let leftoverText = "";
+
+  const ollamaParsedToolCalls = (msg.tool_calls ?? []).length > 0;
   if (msg.content && msg.content.length > 0) {
-    const stripped = stripThinkTags(msg.content);
-    if (stripped.length > 0) blocks.push({ type: "text", text: stripped });
+    const cleaned = stripThinkTags(msg.content);
+    if (ollamaParsedToolCalls) {
+      // Ollama already extracted tool_calls — don't re-extract from content
+      // or we'd execute the same tool twice. Just strip any orphan tags.
+      leftoverText = cleaned.replace(/<\/?tool_call>/gi, "").trim();
+    } else {
+      // Salvage tool calls the model emitted as raw text (Qwen2.5 + some
+      // Llama variants emit `<tool_call>{...}</tool_call>` literally when
+      // Ollama's parser fails to recognize them).
+      const { extracted, remaining } = extractInlineToolCalls(cleaned);
+      for (const call of extracted) blocks.push(call);
+      leftoverText = remaining;
+    }
   }
+
   for (const [i, call] of (msg.tool_calls ?? []).entries()) {
     blocks.push({
       type: "tool_use",
@@ -264,6 +279,16 @@ function fromOllamaMessage(msg: OllamaChatResponse["message"]): ContentBlock[] {
       input: (call.function.arguments ?? {}) as Record<string, unknown>,
     });
   }
+
+  // Only emit a text block if we have meaningful prose left after extraction.
+  // If we parsed a tool call out of the content, the leftover narration is
+  // usually just stray whitespace, fragments, or token noise — drop it to
+  // avoid showing the player garbage like "侴" or a dangling closing tag.
+  if (leftoverText.length > 0) {
+    if (blocks.length === 0 || isMeaningfulText(leftoverText)) {
+      blocks.push({ type: "text", text: leftoverText });
+    }
+  }
   return blocks;
 }
 
@@ -271,6 +296,86 @@ function fromOllamaMessage(msg: OllamaChatResponse["message"]): ContentBlock[] {
 // `think:false` is set. Strip them so the player doesn't see reasoning chains.
 function stripThinkTags(text: string): string {
   return text.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+}
+
+// Salvage tool calls embedded as raw text in the assistant content. Returns
+// any parsed tool_use blocks plus whatever text remains after extraction.
+//
+// Patterns seen in practice:
+//   1. <tool_call>{"name":"go","arguments":{"direction":"east"}}</tool_call>
+//   2. </tool_call> with the opening tag missing (Ollama partially parsed)
+//   3. Bare {"name":"...","arguments":{...}} JSON with no wrapping tags
+//
+// We try (1) first (most reliable), then sweep for stragglers matching (3).
+let synthIdCounter = 0;
+function extractInlineToolCalls(text: string): {
+  extracted: Extract<ContentBlock, { type: "tool_use" }>[];
+  remaining: string;
+} {
+  const extracted: Extract<ContentBlock, { type: "tool_use" }>[] = [];
+  let remaining = text;
+
+  // Pattern 1: <tool_call>...</tool_call> blocks.
+  remaining = remaining.replace(/<tool_call>([\s\S]*?)<\/tool_call>/gi, (_, body: string) => {
+    const call = parseToolCallJson(body);
+    if (call) extracted.push(call);
+    return "";
+  });
+
+  // Pattern 2: orphan </tool_call> with JSON before it (opening tag was eaten).
+  remaining = remaining.replace(/(\{[\s\S]*?\})\s*<\/tool_call>/gi, (_, body: string) => {
+    const call = parseToolCallJson(body);
+    if (call) extracted.push(call);
+    return "";
+  });
+
+  // Pattern 3: bare JSON object with name + arguments fields. Only triggers
+  // if the JSON object spans most of the content (avoid grabbing JSON the
+  // model legitimately quoted in narration).
+  if (extracted.length === 0) {
+    const trimmed = remaining.trim();
+    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+      const call = parseToolCallJson(trimmed);
+      if (call) {
+        extracted.push(call);
+        remaining = "";
+      }
+    }
+  }
+
+  // Drop any orphan opening/closing tags left over.
+  remaining = remaining.replace(/<\/?tool_call>/gi, "").trim();
+  return { extracted, remaining };
+}
+
+function parseToolCallJson(jsonText: string): Extract<ContentBlock, { type: "tool_use" }> | null {
+  try {
+    const parsed = JSON.parse(jsonText.trim()) as { name?: unknown; arguments?: unknown };
+    if (typeof parsed.name !== "string" || parsed.name.length === 0) return null;
+    const args =
+      parsed.arguments && typeof parsed.arguments === "object"
+        ? (parsed.arguments as Record<string, unknown>)
+        : {};
+    synthIdCounter += 1;
+    return {
+      type: "tool_use",
+      id: `inline-call-${Date.now()}-${synthIdCounter}`,
+      name: parsed.name,
+      input: args,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// True if the text looks like real narration, not stray punctuation or
+// single-character token leakage. Used to decide whether to surface leftover
+// content alongside successfully-parsed tool calls.
+function isMeaningfulText(text: string): boolean {
+  const trimmed = text.trim();
+  if (trimmed.length < 4) return false;
+  // Require at least one word of three+ ASCII letters to count as prose.
+  return /[A-Za-z]{3,}/.test(trimmed);
 }
 
 function mapDoneReason(reason: string | undefined): StopReason {

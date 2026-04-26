@@ -32,18 +32,50 @@ export class DirectAnthropicClient implements LLMClient {
   }
 
   async send(req: SendRequest): Promise<AssistantMessage> {
+    // Two cache breakpoints, well under the 4-per-request limit:
+    //   1. End of the system prompt — render order is tools → system → messages,
+    //      so this caches BOTH tools and system together. They're frozen for the
+    //      whole game session (story-scoped), so this entry survives every turn.
+    //   2. Top-level cache_control auto-places on the last cacheable block (the
+    //      latest user message). This caches the growing conversation prefix so
+    //      each turn reads the prior turn's history at ~10% of full input cost.
+    //
+    // Without this, a typical mid-session turn pays full price on ~5K static
+    // tokens (system + tools) plus the entire growing message history. With it,
+    // the first request writes the cache (~1.25× cost on the prefix), and every
+    // subsequent request within ~5min reads it (~10% cost). Per-turn cost drops
+    // from ~$0.05 to ~$0.01 on Haiku 4.5 in extended sessions.
+    const systemBlocks: Anthropic.TextBlockParam[] | undefined =
+      req.system !== undefined
+        ? [{ type: "text", text: req.system, cache_control: { type: "ephemeral" } }]
+        : undefined;
+
     let response;
     try {
       response = await this.client.messages.create({
         model: this.model,
         max_tokens: req.maxTokens ?? DEFAULT_MAX_TOKENS,
-        ...(req.system !== undefined && { system: req.system }),
+        cache_control: { type: "ephemeral" },
+        ...(systemBlocks && { system: systemBlocks }),
         messages: req.messages.map(toAnthropicMessage),
         ...(req.tools && req.tools.length > 0 && { tools: req.tools.map(toAnthropicTool) }),
       });
     } catch (err: unknown) {
       throw toLLMError(err);
     }
+
+    // DEBUG: surface cache hit/miss so the player can verify caching is working.
+    // Remove once verified. cache_read = cheap reads, cache_creation = first-write
+    // (1.25× cost), input_tokens = uncached remainder (full price).
+    console.log(
+      "[Anthropic usage]",
+      JSON.stringify({
+        in: response.usage.input_tokens,
+        cache_read: response.usage.cache_read_input_tokens,
+        cache_create: response.usage.cache_creation_input_tokens,
+        out: response.usage.output_tokens,
+      }),
+    );
 
     return {
       role: "assistant",
