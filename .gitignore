@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+app/dist/
+app/.vite/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude Code per-project state
+.claude/
+
+# Vendored reference repos — these are upstream Infocom/zil-to-json clones
+# used by `npm run extract:zork`. Clone separately; see README.md.
+zil-to-json/
+zork1-source/
+
+# Env / secrets
+.env
+.env.local
+.env.*.local

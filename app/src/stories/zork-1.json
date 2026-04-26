@@ -1,0 +1,3629 @@
+{
+  "schemaVersion": "0.1",
+  "id": "zork-1",
+  "title": "Zork I: The Great Underground Empire",
+  "author": "Marc Blanc, Dave Lebling, et al. (Infocom, 1980)",
+  "description": "The original underground adventure. Source code released under MIT by Microsoft (Nov 2025). This is an LLM-narrated port — the engine is ours, the world is Infocom's.",
+  "intro": "ZORK I: The Great Underground Empire\nInfocom interactive fiction — a fantasy story.\nCopyright (c) 1981 Infocom, Inc. Source code released under MIT license, Microsoft 2025.",
+  "systemPromptOverride": "This is Zork I, the original 1980 Infocom underground adventure. Narrate in the spirit of the canonical Infocom prose:\n\nVoice\n- Terse, dry, slightly archaic. Direct without flourish.\n- Atmospheric for dark caves, ancient ruins, and moments of dread; matter-of-fact for routine actions.\n- Occasionally wry, never breaking the fourth wall.\n\nStyle\n- Short concrete sentences. Two or three is usually enough; a single sentence is often better.\n- Second person, present tense (\"You see…\"). Never \"I\" or \"we\".\n- Plain language. No modern slang, no emoji, no exclamation marks except for genuine peril or surprise.\n- The player is \"you,\" sometimes \"the adventurer.\"\n\nEchoes of the original\n- Don't paraphrase canonical text — when the engine returns the canonical room or item description, prefer it as-is unless the situation demands flourish.\n- Routine action confirmations should be brief and flat: \"Taken.\" / \"Dropped.\" / \"The lamp is now on.\" Don't pad them.\n- The world is the Great Underground Empire. Treasures, trolls, thieves, and grues live here. If the player wanders into total darkness without a light source, channel the famous warning: it is pitch black; you are likely to be eaten by a grue.\n\nDiscipline\n- Never invent items, rooms, exits, or events the engine hasn't surfaced.\n- If the engine rejects an action, refuse in character — don't pretend it succeeded.\n- Treat trademarked references gently: this port runs on the MIT-licensed source; the \"ZORK\" brand isn't ours, so don't lean on the trademark in narration.",
+  "startRoom": "west-of-house",
+  "rooms": [
+    {
+      "id": "west-of-house",
+      "name": "West of House",
+      "description": "You are standing in an open field west of a white house, with a boarded front door.",
+      "exits": {
+        "north": {
+          "to": "north-of-house"
+        },
+        "south": {
+          "to": "south-of-house"
+        },
+        "northeast": {
+          "to": "north-of-house"
+        },
+        "southeast": {
+          "to": "south-of-house"
+        },
+        "west": {
+          "to": "forest-1"
+        },
+        "southwest": {
+          "to": "stone-barrow",
+          "when": {
+            "type": "flag",
+            "key": "won-flag",
+            "equals": true
+          }
+        },
+        "in": {
+          "to": "stone-barrow",
+          "when": {
+            "type": "flag",
+            "key": "won-flag",
+            "equals": true
+          }
+        }
+      }
+    },
+    {
+      "id": "stone-barrow",
+      "name": "Stone Barrow",
+      "description": "You are standing in front of a massive barrow of stone. In the east face is a huge stone door which is open. You cannot see into the dark of the tomb.",
+      "exits": {
+        "northeast": {
+          "to": "west-of-house"
+        }
+      }
+    },
+    {
+      "id": "north-of-house",
+      "name": "North of House",
+      "description": "You are facing the north side of a white house. There is no door here, and all the windows are boarded up. To the north a narrow path winds through the trees.",
+      "exits": {
+        "southwest": {
+          "to": "west-of-house"
+        },
+        "southeast": {
+          "to": "east-of-house"
+        },
+        "west": {
+          "to": "west-of-house"
+        },
+        "east": {
+          "to": "east-of-house"
+        },
+        "north": {
+          "to": "path"
+        }
+      }
+    },
+    {
+      "id": "south-of-house",
+      "name": "South of House",
+      "description": "You are facing the south side of a white house. There is no door here, and all the windows are boarded.",
+      "exits": {
+        "west": {
+          "to": "west-of-house"
+        },
+        "east": {
+          "to": "east-of-house"
+        },
+        "northeast": {
+          "to": "east-of-house"
+        },
+        "northwest": {
+          "to": "west-of-house"
+        },
+        "south": {
+          "to": "forest-3"
+        }
+      }
+    },
+    {
+      "id": "east-of-house",
+      "name": "Behind House",
+      "description": "You are behind the white house. A path leads into the forest to the east. In one corner of the house there is a small window which is",
+      "exits": {
+        "north": {
+          "to": "north-of-house"
+        },
+        "south": {
+          "to": "south-of-house"
+        },
+        "southwest": {
+          "to": "south-of-house"
+        },
+        "northwest": {
+          "to": "north-of-house"
+        },
+        "east": {
+          "to": "clearing"
+        },
+        "west": {
+          "to": "kitchen",
+          "door": "kitchen-window"
+        },
+        "in": {
+          "to": "kitchen",
+          "door": "kitchen-window"
+        }
+      }
+    },
+    {
+      "id": "forest-1",
+      "name": "Forest",
+      "description": "This is a forest, with trees in all directions. To the east, there appears to be sunlight.",
+      "exits": {
+        "north": {
+          "to": "grating-clearing"
+        },
+        "east": {
+          "to": "path"
+        },
+        "south": {
+          "to": "forest-3"
+        }
+      }
+    },
+    {
+      "id": "forest-2",
+      "name": "Forest",
+      "description": "This is a dimly lit forest, with large trees all around.",
+      "exits": {
+        "east": {
+          "to": "mountains"
+        },
+        "south": {
+          "to": "clearing"
+        },
+        "west": {
+          "to": "path"
+        }
+      }
+    },
+    {
+      "id": "mountains",
+      "name": "Forest",
+      "description": "The forest thins out, revealing impassable mountains.",
+      "exits": {
+        "north": {
+          "to": "forest-2"
+        },
+        "south": {
+          "to": "forest-2"
+        },
+        "west": {
+          "to": "forest-2"
+        }
+      }
+    },
+    {
+      "id": "forest-3",
+      "name": "Forest",
+      "description": "This is a dimly lit forest, with large trees all around.",
+      "exits": {
+        "north": {
+          "to": "clearing"
+        },
+        "west": {
+          "to": "forest-1"
+        },
+        "northwest": {
+          "to": "south-of-house"
+        }
+      }
+    },
+    {
+      "id": "path",
+      "name": "Forest Path",
+      "description": "This is a path winding through a dimly lit forest. The path heads north-south here. One particularly large tree with some low branches stands at the edge of the path.",
+      "exits": {
+        "up": {
+          "to": "up-a-tree"
+        },
+        "north": {
+          "to": "grating-clearing"
+        },
+        "east": {
+          "to": "forest-2"
+        },
+        "south": {
+          "to": "north-of-house"
+        },
+        "west": {
+          "to": "forest-1"
+        }
+      }
+    },
+    {
+      "id": "up-a-tree",
+      "name": "Up a Tree",
+      "description": "You are about 10 feet above the ground nestled among some large branches. The nearest branch above you is above your reach.",
+      "exits": {
+        "down": {
+          "to": "path"
+        }
+      }
+    },
+    {
+      "id": "grating-clearing",
+      "name": "Clearing",
+      "description": "You are in a clearing, with a forest surrounding you on all sides. A path leads south.",
+      "exits": {
+        "east": {
+          "to": "forest-2"
+        },
+        "west": {
+          "to": "forest-1"
+        },
+        "south": {
+          "to": "path"
+        }
+      }
+    },
+    {
+      "id": "clearing",
+      "name": "Clearing",
+      "description": "You are in a small clearing in a well marked forest path that extends to the east and west.",
+      "exits": {
+        "east": {
+          "to": "canyon-view"
+        },
+        "north": {
+          "to": "forest-2"
+        },
+        "south": {
+          "to": "forest-3"
+        },
+        "west": {
+          "to": "east-of-house"
+        }
+      }
+    },
+    {
+      "id": "kitchen",
+      "name": "Kitchen",
+      "description": "You are in the kitchen of the white house. A table seems to have been used recently for the preparation of food. A passage leads to the west and a dark staircase can be seen leading upward. A dark chimney leads down and to the east is a small window which is",
+      "exits": {
+        "east": {
+          "to": "east-of-house",
+          "door": "kitchen-window"
+        },
+        "west": {
+          "to": "living-room"
+        },
+        "out": {
+          "to": "east-of-house",
+          "door": "kitchen-window"
+        },
+        "up": {
+          "to": "attic"
+        },
+        "down": {
+          "to": "studio",
+          "when": {
+            "type": "flag",
+            "key": "false-flag",
+            "equals": true
+          }
+        }
+      }
+    },
+    {
+      "id": "attic",
+      "name": "Attic",
+      "description": "This is the attic. The only exit is a stairway leading down.",
+      "exits": {
+        "down": {
+          "to": "kitchen"
+        }
+      }
+    },
+    {
+      "id": "living-room",
+      "name": "Living Room",
+      "description": "You are in the living room. There is a doorway to the easta trophy case,",
+      "exits": {
+        "east": {
+          "to": "kitchen"
+        },
+        "west": {
+          "to": "strange-passage",
+          "when": {
+            "type": "flag",
+            "key": "magic-flag",
+            "equals": true
+          }
+        }
+      }
+    },
+    {
+      "id": "cellar",
+      "name": "Cellar",
+      "description": "You are in a dark and damp cellar with a narrow passageway leading north, and a crawlway to the south. On the west is the bottom of a steep metal ramp which is unclimbable.",
+      "exits": {
+        "north": {
+          "to": "troll-room"
+        },
+        "south": {
+          "to": "east-of-chasm"
+        },
+        "up": {
+          "to": "living-room",
+          "door": "trap-door"
+        }
+      }
+    },
+    {
+      "id": "troll-room",
+      "name": "The Troll Room",
+      "description": "This is a small room with passages to the east and south and a forbidding hole leading west. Bloodstains and deep scratches (perhaps made by an axe) mar the walls.",
+      "exits": {
+        "south": {
+          "to": "cellar"
+        },
+        "east": {
+          "to": "ew-passage",
+          "when": {
+            "type": "flag",
+            "key": "troll-flag",
+            "equals": true
+          }
+        },
+        "west": {
+          "to": "maze-1",
+          "when": {
+            "type": "flag",
+            "key": "troll-flag",
+            "equals": true
+          }
+        }
+      }
+    },
+    {
+      "id": "east-of-chasm",
+      "name": "East of Chasm",
+      "description": "You are on the east edge of a chasm, the bottom of which cannot be seen. A narrow passage goes north, and the path you are on continues to the east.",
+      "exits": {
+        "north": {
+          "to": "cellar"
+        },
+        "east": {
+          "to": "gallery"
+        }
+      }
+    },
+    {
+      "id": "gallery",
+      "name": "Gallery",
+      "description": "This is an art gallery. Most of the paintings have been stolen by vandals with exceptional taste. The vandals left through either the north or west exits.",
+      "exits": {
+        "west": {
+          "to": "east-of-chasm"
+        },
+        "north": {
+          "to": "studio"
+        }
+      }
+    },
+    {
+      "id": "studio",
+      "name": "Studio",
+      "description": "This appears to have been an artist's studio. The walls and floors are splattered with paints of 69 different colors. Strangely enough, nothing of value is hanging here. At the south end of the room is an open door (also covered with paint). A dark and narrow chimney leads up from a fireplace; although you might be able to get up it, it seems unlikely you could get back down.",
+      "exits": {
+        "south": {
+          "to": "gallery"
+        }
+      }
+    },
+    {
+      "id": "maze-1",
+      "name": "Maze",
+      "description": "This is part of a maze of twisty little passages, all alike.",
+      "exits": {
+        "east": {
+          "to": "troll-room"
+        },
+        "north": {
+          "to": "maze-1"
+        },
+        "south": {
+          "to": "maze-2"
+        },
+        "west": {
+          "to": "maze-4"
+        }
+      }
+    },
+    {
+      "id": "maze-2",
+      "name": "Maze",
+      "description": "This is part of a maze of twisty little passages, all alike.",
+      "exits": {
+        "south": {
+          "to": "maze-1"
+        },
+        "east": {
+          "to": "maze-3"
+        }
+      }
+    },
+    {
+      "id": "maze-3",
+      "name": "Maze",
+      "description": "This is part of a maze of twisty little passages, all alike.",
+      "exits": {
+        "west": {
+          "to": "maze-2"
+        },
+        "north": {
+          "to": "maze-4"
+        },
+        "up": {
+          "to": "maze-5"
+        }
+      }
+    },
+    {
+      "id": "maze-4",
+      "name": "Maze",
+      "description": "This is part of a maze of twisty little passages, all alike.",
+      "exits": {
+        "west": {
+          "to": "maze-3"
+        },
+        "north": {
+          "to": "maze-1"
+        },
+        "east": {
+          "to": "dead-end-1"
+        }
+      }
+    },
+    {
+      "id": "dead-end-1",
+      "name": "Dead End",
+      "description": "You have come to a dead end in the maze.",
+      "exits": {
+        "south": {
+          "to": "maze-4"
+        }
+      }
+    },
+    {
+      "id": "maze-5",
+      "name": "Maze",
+      "description": "This is part of a maze of twisty little passages, all alike. A skeleton, probably the remains of a luckless adventurer, lies here.",
+      "exits": {
+        "east": {
+          "to": "dead-end-2"
+        },
+        "north": {
+          "to": "maze-3"
+        },
+        "southwest": {
+          "to": "maze-6"
+        }
+      }
+    },
+    {
+      "id": "dead-end-2",
+      "name": "Dead End",
+      "description": "You have come to a dead end in the maze.",
+      "exits": {
+        "west": {
+          "to": "maze-5"
+        }
+      }
+    },
+    {
+      "id": "maze-6",
+      "name": "Maze",
+      "description": "This is part of a maze of twisty little passages, all alike.",
+      "exits": {
+        "down": {
+          "to": "maze-5"
+        },
+        "east": {
+          "to": "maze-7"
+        },
+        "west": {
+          "to": "maze-6"
+        },
+        "up": {
+          "to": "maze-9"
+        }
+      }
+    },
+    {
+      "id": "maze-7",
+      "name": "Maze",
+      "description": "This is part of a maze of twisty little passages, all alike.",
+      "exits": {
+        "up": {
+          "to": "maze-14"
+        },
+        "west": {
+          "to": "maze-6"
+        },
+        "east": {
+          "to": "maze-8"
+        },
+        "south": {
+          "to": "maze-15"
+        }
+      }
+    },
+    {
+      "id": "maze-8",
+      "name": "Maze",
+      "description": "This is part of a maze of twisty little passages, all alike.",
+      "exits": {
+        "northeast": {
+          "to": "maze-7"
+        },
+        "west": {
+          "to": "maze-8"
+        },
+        "southeast": {
+          "to": "dead-end-3"
+        }
+      }
+    },
+    {
+      "id": "dead-end-3",
+      "name": "Dead End",
+      "description": "You have come to a dead end in the maze.",
+      "exits": {
+        "north": {
+          "to": "maze-8"
+        }
+      }
+    },
+    {
+      "id": "maze-9",
+      "name": "Maze",
+      "description": "This is part of a maze of twisty little passages, all alike.",
+      "exits": {
+        "north": {
+          "to": "maze-6"
+        },
+        "east": {
+          "to": "maze-10"
+        },
+        "south": {
+          "to": "maze-13"
+        },
+        "west": {
+          "to": "maze-12"
+        },
+        "northwest": {
+          "to": "maze-9"
+        }
+      }
+    },
+    {
+      "id": "maze-10",
+      "name": "Maze",
+      "description": "This is part of a maze of twisty little passages, all alike.",
+      "exits": {
+        "east": {
+          "to": "maze-9"
+        },
+        "west": {
+          "to": "maze-13"
+        },
+        "up": {
+          "to": "maze-11"
+        }
+      }
+    },
+    {
+      "id": "maze-11",
+      "name": "Maze",
+      "description": "This is part of a maze of twisty little passages, all alike.",
+      "exits": {
+        "northeast": {
+          "to": "grating-room"
+        },
+        "down": {
+          "to": "maze-10"
+        },
+        "northwest": {
+          "to": "maze-13"
+        },
+        "southwest": {
+          "to": "maze-12"
+        }
+      }
+    },
+    {
+      "id": "grating-room",
+      "name": "Grating Room",
+      "description": "You are in a small room near the maze. There are twisty passages in the immediate vicinity.",
+      "exits": {
+        "southwest": {
+          "to": "maze-11"
+        },
+        "up": {
+          "to": "grating-clearing",
+          "door": "grate"
+        }
+      }
+    },
+    {
+      "id": "maze-12",
+      "name": "Maze",
+      "description": "This is part of a maze of twisty little passages, all alike.",
+      "exits": {
+        "southwest": {
+          "to": "maze-11"
+        },
+        "east": {
+          "to": "maze-13"
+        },
+        "up": {
+          "to": "maze-9"
+        },
+        "north": {
+          "to": "dead-end-4"
+        }
+      }
+    },
+    {
+      "id": "dead-end-4",
+      "name": "Dead End",
+      "description": "You have come to a dead end in the maze.",
+      "exits": {
+        "south": {
+          "to": "maze-12"
+        }
+      }
+    },
+    {
+      "id": "maze-13",
+      "name": "Maze",
+      "description": "This is part of a maze of twisty little passages, all alike.",
+      "exits": {
+        "east": {
+          "to": "maze-9"
+        },
+        "down": {
+          "to": "maze-12"
+        },
+        "south": {
+          "to": "maze-10"
+        },
+        "west": {
+          "to": "maze-11"
+        }
+      }
+    },
+    {
+      "id": "maze-14",
+      "name": "Maze",
+      "description": "This is part of a maze of twisty little passages, all alike.",
+      "exits": {
+        "west": {
+          "to": "maze-15"
+        },
+        "northwest": {
+          "to": "maze-14"
+        },
+        "northeast": {
+          "to": "maze-7"
+        },
+        "south": {
+          "to": "maze-7"
+        }
+      }
+    },
+    {
+      "id": "maze-15",
+      "name": "Maze",
+      "description": "This is part of a maze of twisty little passages, all alike.",
+      "exits": {
+        "west": {
+          "to": "maze-14"
+        },
+        "south": {
+          "to": "maze-7"
+        },
+        "southeast": {
+          "to": "cyclops-room"
+        }
+      }
+    },
+    {
+      "id": "cyclops-room",
+      "name": "Cyclops Room",
+      "description": "This room has an exit on the northwest, and a staircase leading up.",
+      "exits": {
+        "northwest": {
+          "to": "maze-15"
+        },
+        "east": {
+          "to": "strange-passage",
+          "when": {
+            "type": "flag",
+            "key": "magic-flag",
+            "equals": true
+          }
+        },
+        "up": {
+          "to": "treasure-room",
+          "when": {
+            "type": "flag",
+            "key": "cyclops-flag",
+            "equals": true
+          }
+        }
+      }
+    },
+    {
+      "id": "strange-passage",
+      "name": "Strange Passage",
+      "description": "This is a long passage. To the west is one entrance. On the east there is an old wooden door, with a large opening in it (about cyclops sized).",
+      "exits": {
+        "west": {
+          "to": "cyclops-room"
+        },
+        "in": {
+          "to": "cyclops-room"
+        },
+        "east": {
+          "to": "living-room"
+        }
+      }
+    },
+    {
+      "id": "treasure-room",
+      "name": "Treasure Room",
+      "description": "This is a large room, whose east wall is solid granite. A number of discarded bags, which crumble at your touch, are scattered about on the floor. There is an exit down a staircase.",
+      "exits": {
+        "down": {
+          "to": "cyclops-room"
+        }
+      }
+    },
+    {
+      "id": "reservoir-south",
+      "name": "Reservoir South",
+      "description": "There is a path along the stream to the east or west, a steep pathway climbing southwest along the edge of a chasm, and a path leading into a canyon to the southeast.",
+      "exits": {
+        "southeast": {
+          "to": "deep-canyon"
+        },
+        "southwest": {
+          "to": "chasm-room"
+        },
+        "east": {
+          "to": "dam-room"
+        },
+        "west": {
+          "to": "stream-view"
+        },
+        "north": {
+          "to": "reservoir",
+          "when": {
+            "type": "flag",
+            "key": "low-tide",
+            "equals": true
+          }
+        }
+      }
+    },
+    {
+      "id": "reservoir",
+      "name": "Reservoir",
+      "description": "(Reservoir)",
+      "exits": {
+        "north": {
+          "to": "reservoir-north"
+        },
+        "south": {
+          "to": "reservoir-south"
+        },
+        "up": {
+          "to": "in-stream"
+        },
+        "west": {
+          "to": "in-stream"
+        }
+      }
+    },
+    {
+      "id": "reservoir-north",
+      "name": "Reservoir North",
+      "description": "There is a slimy stairway leaving the room to the north.",
+      "exits": {
+        "north": {
+          "to": "atlantis-room"
+        },
+        "south": {
+          "to": "reservoir",
+          "when": {
+            "type": "flag",
+            "key": "low-tide",
+            "equals": true
+          }
+        }
+      }
+    },
+    {
+      "id": "stream-view",
+      "name": "Stream View",
+      "description": "You are standing on a path beside a gently flowing stream. The path follows the stream, which flows from west to east.",
+      "exits": {
+        "east": {
+          "to": "reservoir-south"
+        }
+      }
+    },
+    {
+      "id": "in-stream",
+      "name": "Stream",
+      "description": "You are on the gently flowing stream. The upstream route is too narrow to navigate, and the downstream route is invisible due to twisting walls. There is a narrow beach to land on.",
+      "exits": {
+        "land": {
+          "to": "stream-view"
+        },
+        "down": {
+          "to": "reservoir"
+        },
+        "east": {
+          "to": "reservoir"
+        }
+      }
+    },
+    {
+      "id": "mirror-room-1",
+      "name": "Mirror Room",
+      "description": "You are in a large square room with tall ceilings. On the south wall is an enormous mirror which fills the entire wall. There are exits on the other three sides of the room.",
+      "exits": {
+        "north": {
+          "to": "cold-passage"
+        },
+        "west": {
+          "to": "twisting-passage"
+        },
+        "east": {
+          "to": "small-cave"
+        }
+      }
+    },
+    {
+      "id": "mirror-room-2",
+      "name": "Mirror Room",
+      "description": "You are in a large square room with tall ceilings. On the south wall is an enormous mirror which fills the entire wall. There are exits on the other three sides of the room.",
+      "exits": {
+        "west": {
+          "to": "winding-passage"
+        },
+        "north": {
+          "to": "narrow-passage"
+        },
+        "east": {
+          "to": "tiny-cave"
+        }
+      }
+    },
+    {
+      "id": "small-cave",
+      "name": "Cave",
+      "description": "This is a tiny cave with entrances west and north, and a staircase leading down.",
+      "exits": {
+        "north": {
+          "to": "mirror-room-1"
+        },
+        "down": {
+          "to": "atlantis-room"
+        },
+        "south": {
+          "to": "atlantis-room"
+        },
+        "west": {
+          "to": "twisting-passage"
+        }
+      }
+    },
+    {
+      "id": "tiny-cave",
+      "name": "Cave",
+      "description": "This is a tiny cave with entrances west and north, and a dark, forbidding staircase leading down.",
+      "exits": {
+        "north": {
+          "to": "mirror-room-2"
+        },
+        "west": {
+          "to": "winding-passage"
+        },
+        "down": {
+          "to": "entrance-to-hades"
+        }
+      }
+    },
+    {
+      "id": "cold-passage",
+      "name": "Cold Passage",
+      "description": "This is a cold and damp corridor where a long east-west passageway turns into a southward path.",
+      "exits": {
+        "south": {
+          "to": "mirror-room-1"
+        },
+        "west": {
+          "to": "slide-room"
+        }
+      }
+    },
+    {
+      "id": "narrow-passage",
+      "name": "Narrow Passage",
+      "description": "This is a long and narrow corridor where a long north-south passageway briefly narrows even further.",
+      "exits": {
+        "north": {
+          "to": "round-room"
+        },
+        "south": {
+          "to": "mirror-room-2"
+        }
+      }
+    },
+    {
+      "id": "winding-passage",
+      "name": "Winding Passage",
+      "description": "This is a winding passage. It seems that there are only exits on the east and north.",
+      "exits": {
+        "north": {
+          "to": "mirror-room-2"
+        },
+        "east": {
+          "to": "tiny-cave"
+        }
+      }
+    },
+    {
+      "id": "twisting-passage",
+      "name": "Twisting Passage",
+      "description": "This is a winding passage. It seems that there are only exits on the east and north.",
+      "exits": {
+        "north": {
+          "to": "mirror-room-1"
+        },
+        "east": {
+          "to": "small-cave"
+        }
+      }
+    },
+    {
+      "id": "atlantis-room",
+      "name": "Atlantis Room",
+      "description": "This is an ancient room, long under water. There is an exit to the south and a staircase leading up.",
+      "exits": {
+        "up": {
+          "to": "small-cave"
+        },
+        "south": {
+          "to": "reservoir-north"
+        }
+      }
+    },
+    {
+      "id": "ew-passage",
+      "name": "East-West Passage",
+      "description": "This is a narrow east-west passageway. There is a narrow stairway leading down at the north end of the room.",
+      "exits": {
+        "east": {
+          "to": "round-room"
+        },
+        "west": {
+          "to": "troll-room"
+        },
+        "down": {
+          "to": "chasm-room"
+        },
+        "north": {
+          "to": "chasm-room"
+        }
+      }
+    },
+    {
+      "id": "round-room",
+      "name": "Round Room",
+      "description": "This is a circular stone room with passages in all directions. Several of them have unfortunately been blocked by cave-ins.",
+      "exits": {
+        "east": {
+          "to": "loud-room"
+        },
+        "west": {
+          "to": "ew-passage"
+        },
+        "north": {
+          "to": "ns-passage"
+        },
+        "south": {
+          "to": "narrow-passage"
+        },
+        "southeast": {
+          "to": "engravings-cave"
+        }
+      }
+    },
+    {
+      "id": "deep-canyon",
+      "name": "Deep Canyon",
+      "description": "You are on the south edge of a deep canyon. Passages lead off to the east, northwest and southwest. A stairway leads down.",
+      "exits": {
+        "northwest": {
+          "to": "reservoir-south"
+        },
+        "east": {
+          "to": "dam-room"
+        },
+        "southwest": {
+          "to": "ns-passage"
+        },
+        "down": {
+          "to": "loud-room"
+        }
+      }
+    },
+    {
+      "id": "damp-cave",
+      "name": "Damp Cave",
+      "description": "This cave has exits to the west and east, and narrows to a crack toward the south. The earth is particularly damp here.",
+      "exits": {
+        "west": {
+          "to": "loud-room"
+        },
+        "east": {
+          "to": "white-cliffs-north"
+        }
+      }
+    },
+    {
+      "id": "loud-room",
+      "name": "Loud Room",
+      "description": "This is a large room with a ceiling which cannot be detected from the ground. There is a narrow passage from east to west and a stone stairway leading upward.",
+      "exits": {
+        "east": {
+          "to": "damp-cave"
+        },
+        "west": {
+          "to": "round-room"
+        },
+        "up": {
+          "to": "deep-canyon"
+        }
+      }
+    },
+    {
+      "id": "ns-passage",
+      "name": "North-South Passage",
+      "description": "This is a high north-south passage, which forks to the northeast.",
+      "exits": {
+        "north": {
+          "to": "chasm-room"
+        },
+        "northeast": {
+          "to": "deep-canyon"
+        },
+        "south": {
+          "to": "round-room"
+        }
+      }
+    },
+    {
+      "id": "chasm-room",
+      "name": "Chasm",
+      "description": "A chasm runs southwest to northeast and the path follows it. You are on the south side of the chasm, where a crack opens into a passage.",
+      "exits": {
+        "northeast": {
+          "to": "reservoir-south"
+        },
+        "southwest": {
+          "to": "ew-passage"
+        },
+        "up": {
+          "to": "ew-passage"
+        },
+        "south": {
+          "to": "ns-passage"
+        }
+      }
+    },
+    {
+      "id": "entrance-to-hades",
+      "name": "Entrance to Hades",
+      "description": "You are outside a large gateway, on which is inscribed|| Abandon every hope all ye who enter here!|| The gate is open; through it you can see a desolation, with a pile of mangled bodies in one corner. Thousands of voices, lamenting some hideous fate, can be heard.",
+      "exits": {
+        "up": {
+          "to": "tiny-cave"
+        },
+        "in": {
+          "to": "land-of-living-dead",
+          "when": {
+            "type": "flag",
+            "key": "lld-flag",
+            "equals": true
+          }
+        },
+        "south": {
+          "to": "land-of-living-dead",
+          "when": {
+            "type": "flag",
+            "key": "lld-flag",
+            "equals": true
+          }
+        }
+      }
+    },
+    {
+      "id": "land-of-living-dead",
+      "name": "Land of the Dead",
+      "description": "You have entered the Land of the Living Dead. Thousands of lost souls can be heard weeping and moaning. In the corner are stacked the remains of dozens of previous adventurers less fortunate than yourself. A passage exits to the north.",
+      "exits": {
+        "out": {
+          "to": "entrance-to-hades"
+        },
+        "north": {
+          "to": "entrance-to-hades"
+        }
+      }
+    },
+    {
+      "id": "engravings-cave",
+      "name": "Engravings Cave",
+      "description": "You have entered a low cave with passages leading northwest and east.",
+      "exits": {
+        "northwest": {
+          "to": "round-room"
+        },
+        "east": {
+          "to": "dome-room"
+        }
+      }
+    },
+    {
+      "id": "egypt-room",
+      "name": "Egyptian Room",
+      "description": "This is a room which looks like an Egyptian tomb. There is an ascending staircase to the west.",
+      "exits": {
+        "west": {
+          "to": "north-temple"
+        },
+        "up": {
+          "to": "north-temple"
+        }
+      }
+    },
+    {
+      "id": "dome-room",
+      "name": "Dome Room",
+      "description": "You are at the periphery of a large dome, which forms the ceiling of another room below. Protecting you from a precipitous drop is a wooden railing which circles the dome.",
+      "exits": {
+        "west": {
+          "to": "engravings-cave"
+        },
+        "down": {
+          "to": "torch-room",
+          "when": {
+            "type": "flag",
+            "key": "dome-flag",
+            "equals": true
+          }
+        }
+      }
+    },
+    {
+      "id": "torch-room",
+      "name": "Torch Room",
+      "description": "This is a large room with a prominent doorway leading to a down staircase. Above you is a large dome. Up around the edge of the dome (20 feet up) is a wooden railing. In the center of the room sits a white marble pedestal.",
+      "exits": {
+        "south": {
+          "to": "north-temple"
+        },
+        "down": {
+          "to": "north-temple"
+        }
+      }
+    },
+    {
+      "id": "north-temple",
+      "name": "Temple",
+      "description": "This is the north end of a large temple. On the east wall is an ancient inscription, probably a prayer in a long-forgotten language. Below the prayer is a staircase leading down. The west wall is solid granite. The exit to the north end of the room is through huge marble pillars.",
+      "exits": {
+        "down": {
+          "to": "egypt-room"
+        },
+        "east": {
+          "to": "egypt-room"
+        },
+        "north": {
+          "to": "torch-room"
+        },
+        "out": {
+          "to": "torch-room"
+        },
+        "up": {
+          "to": "torch-room"
+        },
+        "south": {
+          "to": "south-temple"
+        }
+      }
+    },
+    {
+      "id": "south-temple",
+      "name": "Altar",
+      "description": "This is the south end of a large temple. In front of you is what appears to be an altar. In one corner is a small hole in the floor which leads into darkness. You probably could not get back up it.",
+      "exits": {
+        "north": {
+          "to": "north-temple"
+        },
+        "down": {
+          "to": "tiny-cave",
+          "when": {
+            "type": "flag",
+            "key": "coffin-cure",
+            "equals": true
+          }
+        }
+      }
+    },
+    {
+      "id": "dam-room",
+      "name": "Dam",
+      "description": "You are standing on the top of the Flood Control Dam #3, which was quite a tourist attraction in times far distant. There are paths to the north, south, and west, and a scramble down.There is a control panel here, on which a large metal bolt is mounted. Directly above the bolt is a small green plastic bubble.",
+      "exits": {
+        "south": {
+          "to": "deep-canyon"
+        },
+        "down": {
+          "to": "dam-base"
+        },
+        "east": {
+          "to": "dam-base"
+        },
+        "north": {
+          "to": "dam-lobby"
+        },
+        "west": {
+          "to": "reservoir-south"
+        }
+      }
+    },
+    {
+      "id": "dam-lobby",
+      "name": "Dam Lobby",
+      "description": "This room appears to have been the waiting room for groups touring the dam. There are open doorways here to the north and east marked \"Private\", and there is a path leading south over the top of the dam.",
+      "exits": {
+        "south": {
+          "to": "dam-room"
+        },
+        "north": {
+          "to": "maintenance-room"
+        },
+        "east": {
+          "to": "maintenance-room"
+        }
+      }
+    },
+    {
+      "id": "maintenance-room",
+      "name": "Maintenance Room",
+      "description": "This is what appears to have been the maintenance room for Flood Control Dam #3. Apparently, this room has been ransacked recently, for most of the valuable equipment is gone. On the wall in front of you is a group of buttons colored blue, yellow, brown, and red. There are doorways to the west and south.",
+      "exits": {
+        "south": {
+          "to": "dam-lobby"
+        },
+        "west": {
+          "to": "dam-lobby"
+        }
+      }
+    },
+    {
+      "id": "dam-base",
+      "name": "Dam Base",
+      "description": "You are at the base of Flood Control Dam #3, which looms above you and to the north. The river Frigid is flowing by here. Along the river are the White Cliffs which seem to form giant walls stretching from north to south along the shores of the river as it winds its way downstream.",
+      "exits": {
+        "north": {
+          "to": "dam-room"
+        },
+        "up": {
+          "to": "dam-room"
+        }
+      }
+    },
+    {
+      "id": "river-1",
+      "name": "Frigid River",
+      "description": "You are on the Frigid River in the vicinity of the Dam. The river flows quietly here. There is a landing on the west shore.",
+      "exits": {
+        "west": {
+          "to": "dam-base"
+        },
+        "land": {
+          "to": "dam-base"
+        },
+        "down": {
+          "to": "river-2"
+        }
+      }
+    },
+    {
+      "id": "river-2",
+      "name": "Frigid River",
+      "description": "The river turns a corner here making it impossible to see the Dam. The White Cliffs loom on the east bank and large rocks prevent landing on the west.",
+      "exits": {
+        "down": {
+          "to": "river-3"
+        }
+      }
+    },
+    {
+      "id": "river-3",
+      "name": "Frigid River",
+      "description": "The river descends here into a valley. There is a narrow beach on the west shore below the cliffs. In the distance a faint rumbling can be heard.",
+      "exits": {
+        "down": {
+          "to": "river-4"
+        },
+        "land": {
+          "to": "white-cliffs-north"
+        },
+        "west": {
+          "to": "white-cliffs-north"
+        }
+      }
+    },
+    {
+      "id": "white-cliffs-north",
+      "name": "White Cliffs Beach",
+      "description": "You are on a narrow strip of beach which runs along the base of the White Cliffs. There is a narrow path heading south along the Cliffs and a tight passage leading west into the cliffs themselves.",
+      "exits": {
+        "south": {
+          "to": "white-cliffs-south",
+          "when": {
+            "type": "flag",
+            "key": "deflate",
+            "equals": true
+          }
+        },
+        "west": {
+          "to": "damp-cave",
+          "when": {
+            "type": "flag",
+            "key": "deflate",
+            "equals": true
+          }
+        }
+      }
+    },
+    {
+      "id": "white-cliffs-south",
+      "name": "White Cliffs Beach",
+      "description": "You are on a rocky, narrow strip of beach beside the Cliffs. A narrow path leads north along the shore.",
+      "exits": {
+        "north": {
+          "to": "white-cliffs-north",
+          "when": {
+            "type": "flag",
+            "key": "deflate",
+            "equals": true
+          }
+        }
+      }
+    },
+    {
+      "id": "river-4",
+      "name": "Frigid River",
+      "description": "The river is running faster here and the sound ahead appears to be that of rushing water. On the east shore is a sandy beach. A small area of beach can also be seen below the cliffs on the west shore.",
+      "exits": {
+        "down": {
+          "to": "river-5"
+        },
+        "west": {
+          "to": "white-cliffs-south"
+        },
+        "east": {
+          "to": "sandy-beach"
+        }
+      }
+    },
+    {
+      "id": "river-5",
+      "name": "Frigid River",
+      "description": "The sound of rushing water is nearly unbearable here. On the east shore is a large landing area.",
+      "exits": {
+        "east": {
+          "to": "shore"
+        },
+        "land": {
+          "to": "shore"
+        }
+      }
+    },
+    {
+      "id": "shore",
+      "name": "Shore",
+      "description": "You are on the east shore of the river. The water here seems somewhat treacherous. A path travels from north to south here, the south end quickly turning around a sharp corner.",
+      "exits": {
+        "north": {
+          "to": "sandy-beach"
+        },
+        "south": {
+          "to": "aragain-falls"
+        }
+      }
+    },
+    {
+      "id": "sandy-beach",
+      "name": "Sandy Beach",
+      "description": "You are on a large sandy beach on the east shore of the river, which is flowing quickly by. A path runs beside the river to the south here, and a passage is partially buried in sand to the northeast.",
+      "exits": {
+        "northeast": {
+          "to": "sandy-cave"
+        },
+        "south": {
+          "to": "shore"
+        }
+      }
+    },
+    {
+      "id": "sandy-cave",
+      "name": "Sandy Cave",
+      "description": "This is a sand-filled cave whose exit is to the southwest.",
+      "exits": {
+        "southwest": {
+          "to": "sandy-beach"
+        }
+      }
+    },
+    {
+      "id": "aragain-falls",
+      "name": "Aragain Falls",
+      "description": "You are at the top of Aragain Falls, an enormous waterfall with a drop of about 450 feet. The only path here is on the north end.",
+      "exits": {
+        "west": {
+          "to": "on-rainbow",
+          "when": {
+            "type": "flag",
+            "key": "rainbow-flag",
+            "equals": true
+          }
+        },
+        "north": {
+          "to": "shore"
+        },
+        "up": {
+          "to": "on-rainbow",
+          "when": {
+            "type": "flag",
+            "key": "rainbow-flag",
+            "equals": true
+          }
+        }
+      }
+    },
+    {
+      "id": "on-rainbow",
+      "name": "On the Rainbow",
+      "description": "You are on top of a rainbow (I bet you never thought you would walk on a rainbow), with a magnificent view of the Falls. The rainbow travels east-west here.",
+      "exits": {
+        "west": {
+          "to": "end-of-rainbow"
+        },
+        "east": {
+          "to": "aragain-falls"
+        }
+      }
+    },
+    {
+      "id": "end-of-rainbow",
+      "name": "End of Rainbow",
+      "description": "You are on a small, rocky beach on the continuation of the Frigid River past the Falls. The beach is narrow due to the presence of the White Cliffs. The river canyon opens here and sunlight shines in from above. A rainbow crosses over the falls to the east and a narrow path continues to the southwest.",
+      "exits": {
+        "up": {
+          "to": "on-rainbow",
+          "when": {
+            "type": "flag",
+            "key": "rainbow-flag",
+            "equals": true
+          }
+        },
+        "northeast": {
+          "to": "on-rainbow",
+          "when": {
+            "type": "flag",
+            "key": "rainbow-flag",
+            "equals": true
+          }
+        },
+        "east": {
+          "to": "on-rainbow",
+          "when": {
+            "type": "flag",
+            "key": "rainbow-flag",
+            "equals": true
+          }
+        },
+        "southwest": {
+          "to": "canyon-bottom"
+        }
+      }
+    },
+    {
+      "id": "canyon-bottom",
+      "name": "Canyon Bottom",
+      "description": "You are beneath the walls of the river canyon which may be climbable here. The lesser part of the runoff of Aragain Falls flows by below. To the north is a narrow path.",
+      "exits": {
+        "up": {
+          "to": "cliff-middle"
+        },
+        "north": {
+          "to": "end-of-rainbow"
+        }
+      }
+    },
+    {
+      "id": "cliff-middle",
+      "name": "Rocky Ledge",
+      "description": "You are on a ledge about halfway up the wall of the river canyon. You can see from here that the main flow from Aragain Falls twists along a passage which it is impossible for you to enter. Below you is the canyon bottom. Above you is more cliff, which appears climbable.",
+      "exits": {
+        "up": {
+          "to": "canyon-view"
+        },
+        "down": {
+          "to": "canyon-bottom"
+        }
+      }
+    },
+    {
+      "id": "canyon-view",
+      "name": "Canyon View",
+      "description": "You are at the top of the Great Canyon on its west wall. From here there is a marvelous view of the canyon and parts of the Frigid River upstream. Across the canyon, the walls of the White Cliffs join the mighty ramparts of the Flathead Mountains to the east. Following the Canyon upstream to the north, Aragain Falls may be seen, complete with rainbow. The mighty Frigid River flows out from a great dark cavern. To the west and south can be seen an immense forest, stretching for miles around. A path leads northwest. It is possible to climb down into the canyon from here.",
+      "exits": {
+        "east": {
+          "to": "cliff-middle"
+        },
+        "down": {
+          "to": "cliff-middle"
+        },
+        "northwest": {
+          "to": "clearing"
+        },
+        "west": {
+          "to": "forest-3"
+        }
+      }
+    },
+    {
+      "id": "mine-entrance",
+      "name": "Mine Entrance",
+      "description": "You are standing at the entrance of what might have been a coal mine. The shaft enters the west wall, and there is another exit on the south end of the room.",
+      "exits": {
+        "south": {
+          "to": "slide-room"
+        },
+        "in": {
+          "to": "squeeky-room"
+        },
+        "west": {
+          "to": "squeeky-room"
+        }
+      }
+    },
+    {
+      "id": "squeeky-room",
+      "name": "Squeaky Room",
+      "description": "You are in a small room. Strange squeaky sounds may be heard coming from the passage at the north end. You may also escape to the east.",
+      "exits": {
+        "north": {
+          "to": "bat-room"
+        },
+        "east": {
+          "to": "mine-entrance"
+        }
+      }
+    },
+    {
+      "id": "bat-room",
+      "name": "Bat Room",
+      "description": "You are in a small room which has doors only to the east and south.",
+      "exits": {
+        "south": {
+          "to": "squeeky-room"
+        },
+        "east": {
+          "to": "shaft-room"
+        }
+      }
+    },
+    {
+      "id": "shaft-room",
+      "name": "Shaft Room",
+      "description": "This is a large room, in the middle of which is a small shaft descending through the floor into darkness below. To the west and the north are exits from this room. Constructed over the top of the shaft is a metal framework to which a heavy iron chain is attached.",
+      "exits": {
+        "west": {
+          "to": "bat-room"
+        },
+        "north": {
+          "to": "smelly-room"
+        }
+      }
+    },
+    {
+      "id": "smelly-room",
+      "name": "Smelly Room",
+      "description": "This is a small nondescript room. However, from the direction of a small descending staircase a foul odor can be detected. To the south is a narrow tunnel.",
+      "exits": {
+        "down": {
+          "to": "gas-room"
+        },
+        "south": {
+          "to": "shaft-room"
+        }
+      }
+    },
+    {
+      "id": "gas-room",
+      "name": "Gas Room",
+      "description": "This is a small room which smells strongly of coal gas. There is a short climb up some stairs and a narrow tunnel leading east.",
+      "exits": {
+        "up": {
+          "to": "smelly-room"
+        },
+        "east": {
+          "to": "mine-1"
+        }
+      }
+    },
+    {
+      "id": "ladder-top",
+      "name": "Ladder Top",
+      "description": "This is a very small room. In the corner is a rickety wooden ladder, leading downward. It might be safe to descend. There is also a staircase leading upward.",
+      "exits": {
+        "down": {
+          "to": "ladder-bottom"
+        },
+        "up": {
+          "to": "mine-4"
+        }
+      }
+    },
+    {
+      "id": "ladder-bottom",
+      "name": "Ladder Bottom",
+      "description": "This is a rather wide room. On one side is the bottom of a narrow wooden ladder. To the west and the south are passages leaving the room.",
+      "exits": {
+        "south": {
+          "to": "dead-end-5"
+        },
+        "west": {
+          "to": "timber-room"
+        },
+        "up": {
+          "to": "ladder-top"
+        }
+      }
+    },
+    {
+      "id": "dead-end-5",
+      "name": "Dead End",
+      "description": "You have come to a dead end in the mine.",
+      "exits": {
+        "north": {
+          "to": "ladder-bottom"
+        }
+      }
+    },
+    {
+      "id": "timber-room",
+      "name": "Timber Room",
+      "description": "This is a long and narrow passage, which is cluttered with broken timbers. A wide passage comes from the east and turns at the west end of the room into a very narrow passageway. From the west comes a strong draft.",
+      "exits": {
+        "east": {
+          "to": "ladder-bottom"
+        },
+        "west": {
+          "to": "lower-shaft",
+          "when": {
+            "type": "flag",
+            "key": "empty-handed",
+            "equals": true
+          }
+        }
+      }
+    },
+    {
+      "id": "lower-shaft",
+      "name": "Drafty Room",
+      "description": "This is a small drafty room in which is the bottom of a long shaft. To the south is a passageway and to the east a very narrow passage. In the shaft can be seen a heavy iron chain.",
+      "exits": {
+        "south": {
+          "to": "machine-room"
+        },
+        "out": {
+          "to": "timber-room",
+          "when": {
+            "type": "flag",
+            "key": "empty-handed",
+            "equals": true
+          }
+        },
+        "east": {
+          "to": "timber-room",
+          "when": {
+            "type": "flag",
+            "key": "empty-handed",
+            "equals": true
+          }
+        }
+      }
+    },
+    {
+      "id": "machine-room",
+      "name": "Machine Room",
+      "description": "This is a large, cold room whose sole exit is to the north. In one corner there is a machine which is reminiscent of a clothes dryer. On its face is a switch which is labelled \"START\". The switch does not appear to be manipulable by any human hand (unless the fingers are about 1/16 by 1/4 inch). On the front of the machine is a large lid, which is",
+      "exits": {
+        "north": {
+          "to": "lower-shaft"
+        }
+      }
+    },
+    {
+      "id": "mine-1",
+      "name": "Coal Mine",
+      "description": "This is a nondescript part of a coal mine.",
+      "exits": {
+        "north": {
+          "to": "gas-room"
+        },
+        "east": {
+          "to": "mine-1"
+        },
+        "northeast": {
+          "to": "mine-2"
+        }
+      }
+    },
+    {
+      "id": "mine-2",
+      "name": "Coal Mine",
+      "description": "This is a nondescript part of a coal mine.",
+      "exits": {
+        "north": {
+          "to": "mine-2"
+        },
+        "south": {
+          "to": "mine-1"
+        },
+        "southeast": {
+          "to": "mine-3"
+        }
+      }
+    },
+    {
+      "id": "mine-3",
+      "name": "Coal Mine",
+      "description": "This is a nondescript part of a coal mine.",
+      "exits": {
+        "south": {
+          "to": "mine-3"
+        },
+        "southwest": {
+          "to": "mine-4"
+        },
+        "east": {
+          "to": "mine-2"
+        }
+      }
+    },
+    {
+      "id": "mine-4",
+      "name": "Coal Mine",
+      "description": "This is a nondescript part of a coal mine.",
+      "exits": {
+        "north": {
+          "to": "mine-3"
+        },
+        "west": {
+          "to": "mine-4"
+        },
+        "down": {
+          "to": "ladder-top"
+        }
+      }
+    },
+    {
+      "id": "slide-room",
+      "name": "Slide Room",
+      "description": "This is a small chamber, which appears to have been part of a coal mine. On the south wall of the chamber the letters \"Granite Wall\" are etched in the rock. To the east is a long passage, and there is a steep metal slide twisting downward. To the north is a small opening.",
+      "exits": {
+        "east": {
+          "to": "cold-passage"
+        },
+        "north": {
+          "to": "mine-entrance"
+        },
+        "down": {
+          "to": "cellar"
+        }
+      }
+    }
+  ],
+  "items": [
+    {
+      "id": "board",
+      "name": "board",
+      "description": "(board)",
+      "location": "west-of-house",
+      "appearsIn": [
+        "north-of-house",
+        "south-of-house"
+      ],
+      "synonyms": [
+        "boards"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "songbird",
+      "name": "songbird",
+      "description": "(songbird)",
+      "location": "forest-1",
+      "appearsIn": [
+        "forest-2",
+        "forest-3",
+        "path",
+        "up-a-tree",
+        "clearing"
+      ],
+      "synonyms": [
+        "bird"
+      ],
+      "adjectives": [
+        "song"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "white-house",
+      "name": "white house",
+      "description": "(white house)",
+      "location": "west-of-house",
+      "appearsIn": [
+        "north-of-house",
+        "south-of-house",
+        "east-of-house",
+        "forest-1",
+        "forest-2",
+        "mountains",
+        "forest-3",
+        "path",
+        "up-a-tree",
+        "grating-clearing",
+        "clearing"
+      ],
+      "synonyms": [
+        "house"
+      ],
+      "adjectives": [
+        "white",
+        "beauti",
+        "coloni"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "forest",
+      "name": "forest",
+      "description": "(forest)",
+      "location": "west-of-house",
+      "appearsIn": [
+        "north-of-house",
+        "south-of-house",
+        "east-of-house",
+        "forest-1",
+        "forest-2",
+        "forest-3",
+        "path",
+        "up-a-tree",
+        "clearing"
+      ],
+      "synonyms": [
+        "trees",
+        "pines",
+        "hemlocks"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "tree",
+      "name": "tree",
+      "description": "(tree)",
+      "location": "forest-1",
+      "appearsIn": [
+        "forest-2",
+        "mountains",
+        "forest-3",
+        "path",
+        "up-a-tree",
+        "clearing"
+      ],
+      "synonyms": [
+        "branch"
+      ],
+      "adjectives": [
+        "large",
+        "storm"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "mountain-range",
+      "name": "mountain range",
+      "description": "(mountain range)",
+      "location": "mountains",
+      "synonyms": [
+        "mountain",
+        "range"
+      ],
+      "adjectives": [
+        "impassable",
+        "flathead"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "global-water",
+      "name": "water",
+      "description": "(water)",
+      "location": "reservoir-south",
+      "appearsIn": [
+        "reservoir",
+        "reservoir-north",
+        "stream-view",
+        "in-stream",
+        "dam-room",
+        "dam-base",
+        "river-1",
+        "river-2",
+        "river-3",
+        "white-cliffs-north",
+        "white-cliffs-south",
+        "river-4",
+        "river-5",
+        "shore",
+        "sandy-beach",
+        "aragain-falls",
+        "end-of-rainbow",
+        "canyon-bottom"
+      ],
+      "synonyms": [
+        "quantity"
+      ]
+    },
+    {
+      "id": "water",
+      "name": "quantity of water",
+      "description": "(quantity of water)",
+      "location": "bottle",
+      "synonyms": [
+        "water",
+        "quantity",
+        "liquid",
+        "h2o"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "chimney",
+      "name": "chimney",
+      "description": "(chimney)",
+      "location": "kitchen",
+      "appearsIn": [
+        "studio"
+      ],
+      "adjectives": [
+        "dark",
+        "narrow"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "ghosts",
+      "name": "number of ghosts",
+      "description": "(number of ghosts)",
+      "location": "entrance-to-hades",
+      "synonyms": [
+        "ghosts",
+        "spirits",
+        "fiends",
+        "force"
+      ],
+      "adjectives": [
+        "invisible",
+        "evil"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "skull",
+      "name": "crystal skull",
+      "description": "Lying in one corner of the room is a beautifully carved crystal skull. It appears to be grinning at you rather nastily.",
+      "location": "land-of-living-dead",
+      "synonyms": [
+        "skull",
+        "head",
+        "treasure"
+      ],
+      "adjectives": [
+        "crystal"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "lowered-basket",
+      "name": "basket",
+      "description": "From the chain is suspended a basket.",
+      "location": "lower-shaft",
+      "synonyms": [
+        "cage",
+        "dumbwaiter"
+      ],
+      "adjectives": [
+        "lowered"
+      ]
+    },
+    {
+      "id": "raised-basket",
+      "name": "basket",
+      "description": "At the end of the chain is a basket.",
+      "location": "shaft-room",
+      "synonyms": [
+        "cage",
+        "dumbwaiter"
+      ],
+      "container": {
+        "openable": true,
+        "isOpen": true,
+        "capacity": 50
+      }
+    },
+    {
+      "id": "lunch",
+      "name": "lunch",
+      "description": "A hot pepper sandwich is here.",
+      "location": "sandwich-bag",
+      "synonyms": [
+        "food",
+        "sandwich",
+        "dinner"
+      ],
+      "adjectives": [
+        "hot",
+        "pepper"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "bat",
+      "name": "bat",
+      "description": "(bat)",
+      "location": "bat-room",
+      "synonyms": [
+        "vampire"
+      ],
+      "adjectives": [
+        "vampire",
+        "deranged"
+      ]
+    },
+    {
+      "id": "bell",
+      "name": "brass bell",
+      "description": "(brass bell)",
+      "location": "north-temple",
+      "synonyms": [
+        "bell"
+      ],
+      "adjectives": [
+        "small",
+        "brass"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "axe",
+      "name": "bloody axe",
+      "description": "(bloody axe)",
+      "location": "troll",
+      "synonyms": [
+        "axe",
+        "ax"
+      ],
+      "adjectives": [
+        "bloody"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "bolt",
+      "name": "bolt",
+      "description": "(bolt)",
+      "location": "dam-room",
+      "synonyms": [
+        "nut"
+      ],
+      "adjectives": [
+        "metal",
+        "large"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "bubble",
+      "name": "green bubble",
+      "description": "(green bubble)",
+      "location": "dam-room",
+      "synonyms": [
+        "bubble"
+      ],
+      "adjectives": [
+        "small",
+        "green",
+        "plastic"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "altar",
+      "name": "altar",
+      "description": "(altar)",
+      "location": "south-temple",
+      "fixed": true,
+      "container": {
+        "openable": true,
+        "isOpen": true,
+        "capacity": 50
+      }
+    },
+    {
+      "id": "book",
+      "name": "black book",
+      "description": "On the altar is a large black book, open to page 569.",
+      "location": "altar",
+      "synonyms": [
+        "book",
+        "prayer",
+        "page",
+        "books"
+      ],
+      "adjectives": [
+        "large",
+        "black"
+      ],
+      "takeable": true,
+      "container": {
+        "openable": true
+      },
+      "readable": {
+        "text": "Commandment #12592| | Oh ye who go about saying unto each: \"Hello sailor\":| Dost thou know the magnitude of thy sin before the gods?| Yea, verily, thou shalt be ground between two stones.| Shall the angry gods cast thy body into the whirlpool?| Surely, thy eye shall be put out with a sharp stick!| Even unto the ends of the earth shalt thou wander and| Unto the land of the dead shalt thou be sent at last.| Surely thou shalt repent of thy cunning."
+      }
+    },
+    {
+      "id": "sceptre",
+      "name": "sceptre",
+      "description": "A sceptre, possibly that of ancient Egypt itself, is in the coffin. The sceptre is ornamented with colored enamel, and tapers to a sharp point.",
+      "location": "coffin",
+      "synonyms": [
+        "scepter",
+        "treasure"
+      ],
+      "adjectives": [
+        "sharp",
+        "egyptian",
+        "ancient",
+        "enameled"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "timbers",
+      "name": "broken timber",
+      "description": "(broken timber)",
+      "location": "timber-room",
+      "synonyms": [
+        "timbers",
+        "pile"
+      ],
+      "adjectives": [
+        "wooden",
+        "broken"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "slide",
+      "name": "chute",
+      "description": "(chute)",
+      "location": "cellar",
+      "appearsIn": [
+        "slide-room"
+      ],
+      "synonyms": [
+        "ramp",
+        "slide"
+      ],
+      "adjectives": [
+        "steep",
+        "metal",
+        "twisting"
+      ]
+    },
+    {
+      "id": "kitchen-table",
+      "name": "kitchen table",
+      "description": "(kitchen table)",
+      "location": "kitchen",
+      "synonyms": [
+        "table"
+      ],
+      "adjectives": [
+        "kitchen"
+      ],
+      "fixed": true,
+      "container": {
+        "openable": true,
+        "isOpen": true,
+        "capacity": 50
+      }
+    },
+    {
+      "id": "attic-table",
+      "name": "table",
+      "description": "(table)",
+      "location": "attic",
+      "fixed": true,
+      "container": {
+        "openable": true,
+        "isOpen": true,
+        "capacity": 40
+      }
+    },
+    {
+      "id": "sandwich-bag",
+      "name": "brown sack",
+      "description": "On the table is an elongated brown sack, smelling of hot peppers.",
+      "location": "kitchen-table",
+      "synonyms": [
+        "bag",
+        "sack"
+      ],
+      "adjectives": [
+        "brown",
+        "elongated",
+        "smelly"
+      ],
+      "takeable": true,
+      "container": {
+        "openable": true,
+        "capacity": 9
+      }
+    },
+    {
+      "id": "tool-chest",
+      "name": "group of tool chests",
+      "description": "(group of tool chests)",
+      "location": "maintenance-room",
+      "synonyms": [
+        "chest",
+        "chests",
+        "group",
+        "toolchests"
+      ],
+      "adjectives": [
+        "tool"
+      ],
+      "container": {
+        "openable": true,
+        "isOpen": true
+      }
+    },
+    {
+      "id": "yellow-button",
+      "name": "yellow button",
+      "description": "(yellow button)",
+      "location": "maintenance-room",
+      "synonyms": [
+        "button",
+        "switch"
+      ],
+      "adjectives": [
+        "yellow"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "brown-button",
+      "name": "brown button",
+      "description": "(brown button)",
+      "location": "maintenance-room",
+      "synonyms": [
+        "button",
+        "switch"
+      ],
+      "adjectives": [
+        "brown"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "red-button",
+      "name": "red button",
+      "description": "(red button)",
+      "location": "maintenance-room",
+      "synonyms": [
+        "button",
+        "switch"
+      ],
+      "adjectives": [
+        "red"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "blue-button",
+      "name": "blue button",
+      "description": "(blue button)",
+      "location": "maintenance-room",
+      "synonyms": [
+        "button",
+        "switch"
+      ],
+      "adjectives": [
+        "blue"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "trophy-case",
+      "name": "trophy case",
+      "description": "(trophy case)",
+      "location": "living-room",
+      "synonyms": [
+        "case"
+      ],
+      "adjectives": [
+        "trophy"
+      ],
+      "fixed": true,
+      "container": {
+        "openable": true,
+        "capacity": 10000
+      }
+    },
+    {
+      "id": "rug",
+      "name": "carpet",
+      "description": "(carpet)",
+      "location": "living-room",
+      "synonyms": [
+        "rug"
+      ],
+      "adjectives": [
+        "large",
+        "oriental"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "chalice",
+      "name": "chalice",
+      "description": "There is a silver chalice, intricately engraved, here.",
+      "location": "treasure-room",
+      "synonyms": [
+        "cup",
+        "silver",
+        "treasure"
+      ],
+      "adjectives": [
+        "silver",
+        "engravings"
+      ],
+      "takeable": true,
+      "container": {
+        "openable": true,
+        "capacity": 5
+      }
+    },
+    {
+      "id": "garlic",
+      "name": "clove of garlic",
+      "description": "(clove of garlic)",
+      "location": "sandwich-bag",
+      "synonyms": [
+        "garlic",
+        "clove"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "trident",
+      "name": "crystal trident",
+      "description": "On the shore lies Poseidon's own crystal trident.",
+      "location": "atlantis-room",
+      "synonyms": [
+        "trident",
+        "fork",
+        "treasure"
+      ],
+      "adjectives": [
+        "poseidon",
+        "own",
+        "crystal"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "cyclops",
+      "name": "cyclops",
+      "description": "(cyclops)",
+      "location": "cyclops-room",
+      "synonyms": [
+        "monster",
+        "eye"
+      ],
+      "adjectives": [
+        "hungry",
+        "giant"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "dam",
+      "name": "dam",
+      "description": "(dam)",
+      "location": "dam-room",
+      "synonyms": [
+        "gate",
+        "gates",
+        "fcd#3"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "boarded-window",
+      "name": "boarded window",
+      "description": "(boarded window)",
+      "location": "north-of-house",
+      "appearsIn": [
+        "south-of-house"
+      ],
+      "synonyms": [
+        "window"
+      ],
+      "adjectives": [
+        "boarded"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "front-door",
+      "name": "door",
+      "description": "(door)",
+      "location": "west-of-house",
+      "adjectives": [
+        "front",
+        "boarded"
+      ],
+      "fixed": true,
+      "container": {
+        "openable": true
+      }
+    },
+    {
+      "id": "barrow-door",
+      "name": "stone door",
+      "description": "(stone door)",
+      "location": "stone-barrow",
+      "synonyms": [
+        "door"
+      ],
+      "adjectives": [
+        "huge",
+        "stone"
+      ],
+      "fixed": true,
+      "container": {
+        "openable": true,
+        "isOpen": true
+      }
+    },
+    {
+      "id": "barrow",
+      "name": "stone barrow",
+      "description": "(stone barrow)",
+      "location": "stone-barrow",
+      "synonyms": [
+        "barrow",
+        "tomb"
+      ],
+      "adjectives": [
+        "massive",
+        "stone"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "bottle",
+      "name": "glass bottle",
+      "description": "A bottle is sitting on the table.",
+      "location": "kitchen-table",
+      "synonyms": [
+        "bottle",
+        "container"
+      ],
+      "adjectives": [
+        "clear",
+        "glass"
+      ],
+      "takeable": true,
+      "container": {
+        "openable": true,
+        "capacity": 4
+      }
+    },
+    {
+      "id": "crack",
+      "name": "crack",
+      "description": "(crack)",
+      "location": "damp-cave",
+      "appearsIn": [
+        "chasm-room"
+      ],
+      "adjectives": [
+        "narrow"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "coffin",
+      "name": "gold coffin",
+      "description": "The solid-gold coffin used for the burial of Ramses II is here.",
+      "location": "egypt-room",
+      "synonyms": [
+        "coffin",
+        "casket",
+        "treasure"
+      ],
+      "adjectives": [
+        "solid",
+        "gold"
+      ],
+      "takeable": true,
+      "container": {
+        "openable": true,
+        "capacity": 35
+      }
+    },
+    {
+      "id": "pump",
+      "name": "hand-held air pump",
+      "description": "(hand-held air pump)",
+      "location": "reservoir-north",
+      "synonyms": [
+        "pump",
+        "air-pump",
+        "tool",
+        "tools"
+      ],
+      "adjectives": [
+        "small",
+        "hand-held"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "jade",
+      "name": "jade figurine",
+      "description": "There is an exquisite jade figurine here.",
+      "location": "bat-room",
+      "synonyms": [
+        "figurine",
+        "treasure"
+      ],
+      "adjectives": [
+        "exquisite",
+        "jade"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "knife",
+      "name": "nasty knife",
+      "description": "On a table is a nasty-looking knife.",
+      "location": "attic-table",
+      "synonyms": [
+        "knives",
+        "knife",
+        "blade"
+      ],
+      "adjectives": [
+        "nasty",
+        "unrusty"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "bones",
+      "name": "skeleton",
+      "description": "(skeleton)",
+      "location": "maze-5",
+      "synonyms": [
+        "bones",
+        "body"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "burned-out-lantern",
+      "name": "burned-out lantern",
+      "description": "The deceased adventurer's useless lantern is here.",
+      "location": "maze-5",
+      "synonyms": [
+        "lantern",
+        "lamp"
+      ],
+      "adjectives": [
+        "rusty",
+        "burned",
+        "dead",
+        "useless"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "bag-of-coins",
+      "name": "leather bag of coins",
+      "description": "An old leather bag, bulging with coins, is here.",
+      "location": "maze-5",
+      "synonyms": [
+        "bag",
+        "coins",
+        "treasure"
+      ],
+      "adjectives": [
+        "old",
+        "leather"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "lamp",
+      "name": "brass lantern",
+      "description": "A battery-powered brass lantern is on the trophy case.",
+      "location": "living-room",
+      "synonyms": [
+        "lamp",
+        "lantern",
+        "light"
+      ],
+      "adjectives": [
+        "brass"
+      ],
+      "takeable": true,
+      "lightSource": {}
+    },
+    {
+      "id": "emerald",
+      "name": "large emerald",
+      "description": "(large emerald)",
+      "location": "buoy",
+      "synonyms": [
+        "emerald",
+        "treasure"
+      ],
+      "adjectives": [
+        "large"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "advertisement",
+      "name": "leaflet",
+      "description": "A small leaflet is on the ground.",
+      "location": "mailbox",
+      "synonyms": [
+        "advertisement",
+        "booklet",
+        "mail"
+      ],
+      "adjectives": [
+        "small"
+      ],
+      "takeable": true,
+      "readable": {
+        "text": "\"WELCOME TO ZORK!| | ZORK is a game of adventure, danger, and low cunning. In it you will explore some of the most amazing territory ever seen by mortals. No computer should be without one!\""
+      }
+    },
+    {
+      "id": "leak",
+      "name": "leak",
+      "description": "(leak)",
+      "location": "maintenance-room",
+      "synonyms": [
+        "drip",
+        "pipe"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "machine",
+      "name": "machine",
+      "description": "(machine)",
+      "location": "machine-room",
+      "synonyms": [
+        "pdp10",
+        "dryer",
+        "lid"
+      ],
+      "fixed": true,
+      "container": {
+        "openable": true,
+        "capacity": 50
+      }
+    },
+    {
+      "id": "mailbox",
+      "name": "small mailbox",
+      "description": "(small mailbox)",
+      "location": "west-of-house",
+      "synonyms": [
+        "mailbox",
+        "box"
+      ],
+      "adjectives": [
+        "small"
+      ],
+      "container": {
+        "openable": true,
+        "capacity": 10
+      }
+    },
+    {
+      "id": "match",
+      "name": "matchbook",
+      "description": "There is a matchbook whose cover says \"Visit Beautiful FCD#3\" here.",
+      "location": "dam-lobby",
+      "synonyms": [
+        "match",
+        "matches"
+      ],
+      "adjectives": [
+        "match"
+      ],
+      "takeable": true,
+      "readable": {
+        "text": "| (Close cover before striking)| | YOU too can make BIG MONEY in the exciting field of PAPER SHUFFLING!| | Mr. Anderson of Muddle, Mass. says: \"Before I took this course I was a lowly bit twiddler. Now with what I learned at GUE Tech I feel really important and can obfuscate and confuse with the best.\"| | Dr. Blank had this to say: \"Ten short days ago all I could look forward to was a dead-end job as a doctor. Now I have a promising future and make really big Zorkmids.\"| | GUE Tech can't promise these fantastic results to everyone. But when you earn your degree from GUE Tech, your future will be brighter."
+      }
+    },
+    {
+      "id": "mirror-2",
+      "name": "mirror",
+      "description": "(mirror)",
+      "location": "mirror-room-2",
+      "synonyms": [
+        "reflection",
+        "enormous"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "mirror-1",
+      "name": "mirror",
+      "description": "(mirror)",
+      "location": "mirror-room-1",
+      "synonyms": [
+        "reflection",
+        "enormous"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "painting",
+      "name": "painting",
+      "description": "Fortunately, there is still one chance for you to be a vandal, for on the far wall is a painting of unparalleled beauty.",
+      "location": "gallery",
+      "synonyms": [
+        "art",
+        "canvas",
+        "treasure"
+      ],
+      "adjectives": [
+        "beauti"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "candles",
+      "name": "pair of candles",
+      "description": "On the two ends of the altar are burning candles.",
+      "location": "south-temple",
+      "synonyms": [
+        "candles",
+        "pair"
+      ],
+      "adjectives": [
+        "burning"
+      ],
+      "takeable": true,
+      "lightSource": {
+        "isLit": true
+      }
+    },
+    {
+      "id": "bodies",
+      "name": "pile of bodies",
+      "description": "(pile of bodies)",
+      "location": "entrance-to-hades",
+      "appearsIn": [
+        "land-of-living-dead"
+      ],
+      "synonyms": [
+        "bodies",
+        "body",
+        "remains",
+        "pile"
+      ],
+      "adjectives": [
+        "mangled"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "leaves",
+      "name": "pile of leaves",
+      "description": "On the ground is a pile of leaves.",
+      "location": "grating-clearing",
+      "synonyms": [
+        "leaves",
+        "leaf",
+        "pile"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "inflatable-boat",
+      "name": "pile of plastic",
+      "description": "There is a folded pile of plastic here which has a small valve attached.",
+      "location": "dam-base",
+      "synonyms": [
+        "boat",
+        "pile",
+        "plastic",
+        "valve"
+      ],
+      "adjectives": [
+        "plastic",
+        "inflat"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "bar",
+      "name": "platinum bar",
+      "description": "On the ground is a large platinum bar.",
+      "location": "loud-room",
+      "synonyms": [
+        "bar",
+        "platinum",
+        "treasure"
+      ],
+      "adjectives": [
+        "platinum",
+        "large"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "pot-of-gold",
+      "name": "pot of gold",
+      "description": "At the end of the rainbow is a pot of gold.",
+      "location": "end-of-rainbow",
+      "synonyms": [
+        "pot",
+        "gold",
+        "treasure"
+      ],
+      "adjectives": [
+        "gold"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "prayer",
+      "name": "prayer",
+      "description": "(prayer)",
+      "location": "north-temple",
+      "synonyms": [
+        "inscription"
+      ],
+      "adjectives": [
+        "ancient",
+        "old"
+      ],
+      "fixed": true,
+      "readable": {
+        "text": "The prayer is inscribed in an ancient script, rarely used today. It seems to be a philippic against small insects, absent-mindedness, and the picking up and dropping of small objects. The final verse consigns trespassers to the land of the dead. All evidence indicates that the beliefs of the ancient Zorkers were obscure."
+      }
+    },
+    {
+      "id": "railing",
+      "name": "wooden railing",
+      "description": "(wooden railing)",
+      "location": "dome-room",
+      "synonyms": [
+        "railing",
+        "rail"
+      ],
+      "adjectives": [
+        "wooden"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "rainbow",
+      "name": "rainbow",
+      "description": "(rainbow)",
+      "location": "aragain-falls",
+      "appearsIn": [
+        "on-rainbow",
+        "end-of-rainbow",
+        "canyon-view"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "river",
+      "name": "river",
+      "description": "(river)",
+      "location": "dam-base",
+      "appearsIn": [
+        "river-1",
+        "river-2",
+        "river-3",
+        "white-cliffs-north",
+        "white-cliffs-south",
+        "river-4",
+        "river-5",
+        "shore",
+        "sandy-beach",
+        "aragain-falls",
+        "end-of-rainbow",
+        "canyon-bottom",
+        "cliff-middle",
+        "canyon-view"
+      ],
+      "adjectives": [
+        "frigid"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "buoy",
+      "name": "red buoy",
+      "description": "There is a red buoy here (probably a warning).",
+      "location": "river-4",
+      "synonyms": [
+        "buoy"
+      ],
+      "adjectives": [
+        "red"
+      ],
+      "takeable": true,
+      "container": {
+        "openable": true,
+        "capacity": 20
+      }
+    },
+    {
+      "id": "rope",
+      "name": "rope",
+      "description": "A large coil of rope is lying in the corner.",
+      "location": "attic",
+      "synonyms": [
+        "hemp",
+        "coil"
+      ],
+      "adjectives": [
+        "large"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "rusty-knife",
+      "name": "rusty knife",
+      "description": "Beside the skeleton is a rusty knife.",
+      "location": "maze-5",
+      "synonyms": [
+        "knives",
+        "knife"
+      ],
+      "adjectives": [
+        "rusty"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "sand",
+      "name": "sand",
+      "description": "(sand)",
+      "location": "sandy-cave",
+      "fixed": true
+    },
+    {
+      "id": "bracelet",
+      "name": "sapphire-encrusted bracelet",
+      "description": "(sapphire-encrusted bracelet)",
+      "location": "gas-room",
+      "synonyms": [
+        "bracelet",
+        "jewel",
+        "sapphire",
+        "treasure"
+      ],
+      "adjectives": [
+        "sapphire"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "screwdriver",
+      "name": "screwdriver",
+      "description": "(screwdriver)",
+      "location": "maintenance-room",
+      "synonyms": [
+        "tool",
+        "tools",
+        "driver"
+      ],
+      "adjectives": [
+        "screw"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "keys",
+      "name": "skeleton key",
+      "description": "(skeleton key)",
+      "location": "maze-5",
+      "synonyms": [
+        "key"
+      ],
+      "adjectives": [
+        "skeleton"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "shovel",
+      "name": "shovel",
+      "description": "(shovel)",
+      "location": "sandy-beach",
+      "synonyms": [
+        "tool",
+        "tools"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "coal",
+      "name": "small pile of coal",
+      "description": "(small pile of coal)",
+      "location": "dead-end-5",
+      "synonyms": [
+        "coal",
+        "pile",
+        "heap"
+      ],
+      "adjectives": [
+        "small"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "ladder",
+      "name": "wooden ladder",
+      "description": "(wooden ladder)",
+      "location": "ladder-top",
+      "appearsIn": [
+        "ladder-bottom"
+      ],
+      "synonyms": [
+        "ladder"
+      ],
+      "adjectives": [
+        "wooden",
+        "rickety",
+        "narrow"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "scarab",
+      "name": "beautiful jeweled scarab",
+      "description": "(beautiful jeweled scarab)",
+      "location": "sandy-cave",
+      "synonyms": [
+        "scarab",
+        "bug",
+        "beetle",
+        "treasure"
+      ],
+      "adjectives": [
+        "beauti",
+        "carved",
+        "jeweled"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "large-bag",
+      "name": "large bag",
+      "description": "(large bag)",
+      "location": "thief",
+      "synonyms": [
+        "bag"
+      ],
+      "adjectives": [
+        "large",
+        "thiefs"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "stiletto",
+      "name": "stiletto",
+      "description": "(stiletto)",
+      "location": "thief",
+      "adjectives": [
+        "vicious"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "machine-switch",
+      "name": "switch",
+      "description": "(switch)",
+      "location": "machine-room",
+      "fixed": true
+    },
+    {
+      "id": "wooden-door",
+      "name": "wooden door",
+      "description": "(wooden door)",
+      "location": "living-room",
+      "synonyms": [
+        "door",
+        "lettering",
+        "writing"
+      ],
+      "adjectives": [
+        "wooden",
+        "gothic",
+        "strange",
+        "west"
+      ],
+      "fixed": true,
+      "container": {
+        "openable": true
+      },
+      "readable": {
+        "text": "The engravings translate to \"This space intentionally left blank.\""
+      }
+    },
+    {
+      "id": "sword",
+      "name": "sword",
+      "description": "Above the trophy case hangs an elvish sword of great antiquity.",
+      "location": "living-room",
+      "synonyms": [
+        "orcrist",
+        "glamdring",
+        "blade"
+      ],
+      "adjectives": [
+        "elvish",
+        "old",
+        "antique"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "map",
+      "name": "ancient map",
+      "description": "In the trophy case is an ancient parchment which appears to be a map.",
+      "location": "trophy-case",
+      "synonyms": [
+        "parchment",
+        "map"
+      ],
+      "adjectives": [
+        "antique",
+        "old",
+        "ancient"
+      ],
+      "takeable": true,
+      "readable": {
+        "text": "The map shows a forest with three clearings. The largest clearing contains a house. Three paths leave the large clearing. One of these paths, leading southwest, is marked \"To Stone Barrow\"."
+      }
+    },
+    {
+      "id": "thief",
+      "name": "thief",
+      "description": "There is a suspicious-looking individual, holding a large bag, leaning against one wall. He is armed with a deadly stiletto.",
+      "location": "round-room",
+      "synonyms": [
+        "robber",
+        "man",
+        "person"
+      ],
+      "adjectives": [
+        "shady",
+        "suspicious",
+        "seedy"
+      ],
+      "container": {
+        "openable": true,
+        "isOpen": true
+      }
+    },
+    {
+      "id": "pedestal",
+      "name": "pedestal",
+      "description": "(pedestal)",
+      "location": "torch-room",
+      "adjectives": [
+        "white",
+        "marble"
+      ],
+      "fixed": true,
+      "container": {
+        "openable": true,
+        "isOpen": true,
+        "capacity": 30
+      }
+    },
+    {
+      "id": "torch",
+      "name": "torch",
+      "description": "Sitting on the pedestal is a flaming torch, made of ivory.",
+      "location": "pedestal",
+      "synonyms": [
+        "ivory",
+        "treasure"
+      ],
+      "adjectives": [
+        "flaming",
+        "ivory"
+      ],
+      "takeable": true,
+      "lightSource": {
+        "isLit": true
+      }
+    },
+    {
+      "id": "guide",
+      "name": "tour guidebook",
+      "description": "Some guidebooks entitled \"Flood Control Dam #3\" are on the reception desk.",
+      "location": "dam-lobby",
+      "synonyms": [
+        "guide",
+        "book",
+        "books",
+        "guidebooks"
+      ],
+      "adjectives": [
+        "tour",
+        "guide"
+      ],
+      "takeable": true,
+      "readable": {
+        "text": "\"\tFlood Control Dam #3| | FCD#3 was constructed in year 783 of the Great Underground Empire to harness the mighty Frigid River. This work was supported by a grant of 37 million zorkmids from your omnipotent local tyrant Lord Dimwit Flathead the Excessive. This impressive structure is composed of 370,000 cubic feet of concrete, is 256 feet tall at the center, and 193 feet wide at the top. The lake created behind the dam has a volume of 1.7 billion cubic feet, an area of 12 million square feet, and a shore line of 36 thousand feet.| | The construction of FCD#3 took 112 days from ground breaking to the dedication. It required a work force of 384 slaves, 34 slave drivers, 12 engineers, 2 turtle doves, and a partridge in a pear tree. The work was managed by a command team composed of 2345 bureaucrats, 2347 secretaries (at least two of whom could type), 12,256 paper shufflers, 52,469 rubber stampers, 245,193 red tape processors, and nearly one million dead trees.| | We will now point out some of the more interesting features of FCD#3 as we conduct you on a guided tour of the facilities:| | 1) You start your tour here in the Dam Lobby. You will notice on your right that...."
+      }
+    },
+    {
+      "id": "troll",
+      "name": "troll",
+      "description": "A nasty-looking troll, brandishing a bloody axe, blocks all passages out of the room.",
+      "location": "troll-room",
+      "adjectives": [
+        "nasty"
+      ]
+    },
+    {
+      "id": "trunk",
+      "name": "trunk of jewels",
+      "description": "Lying half buried in the mud is an old trunk, bulging with jewels.",
+      "location": "reservoir",
+      "synonyms": [
+        "trunk",
+        "chest",
+        "jewels",
+        "treasure"
+      ],
+      "adjectives": [
+        "old"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "tube",
+      "name": "tube",
+      "description": "There is an object which looks like a tube of toothpaste here.",
+      "location": "maintenance-room",
+      "synonyms": [
+        "tooth",
+        "paste"
+      ],
+      "takeable": true,
+      "container": {
+        "openable": true,
+        "capacity": 7
+      },
+      "readable": {
+        "text": "---> Frobozz Magic Gunk Company <---| All-Purpose Gunk"
+      }
+    },
+    {
+      "id": "putty",
+      "name": "viscous material",
+      "description": "(viscous material)",
+      "location": "tube",
+      "synonyms": [
+        "material",
+        "gunk"
+      ],
+      "adjectives": [
+        "viscous"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "engravings",
+      "name": "wall with engravings",
+      "description": "There are old engravings on the walls here.",
+      "location": "engravings-cave",
+      "synonyms": [
+        "wall",
+        "engravings",
+        "inscription"
+      ],
+      "adjectives": [
+        "old",
+        "ancient"
+      ],
+      "readable": {
+        "text": "The engravings were incised in the living rock of the cave wall by an unknown hand. They depict, in symbolic form, the beliefs of the ancient Zorkers. Skillfully interwoven with the bas reliefs are excerpts illustrating the major religious tenets of that time. Unfortunately, a later age seems to have considered them blasphemous and just as skillfully excised them."
+      }
+    },
+    {
+      "id": "owners-manual",
+      "name": "ZORK owner's manual",
+      "description": "Loosely attached to a wall is a small piece of paper.",
+      "location": "studio",
+      "synonyms": [
+        "manual",
+        "piece",
+        "paper"
+      ],
+      "adjectives": [
+        "zork",
+        "owners",
+        "small"
+      ],
+      "takeable": true,
+      "readable": {
+        "text": "Congratulations!| | You are the privileged owner of ZORK I: The Great Underground Empire, a self-contained and self-maintaining universe. If used and maintained in accordance with normal operating practices for small universes, ZORK will provide many months of trouble-free operation."
+      }
+    },
+    {
+      "id": "climbable-cliff",
+      "name": "cliff",
+      "description": "(cliff)",
+      "location": "canyon-bottom",
+      "appearsIn": [
+        "cliff-middle",
+        "canyon-view"
+      ],
+      "synonyms": [
+        "wall",
+        "walls",
+        "ledge"
+      ],
+      "adjectives": [
+        "rocky",
+        "sheer"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "white-cliff",
+      "name": "white cliffs",
+      "description": "(white cliffs)",
+      "location": "white-cliffs-north",
+      "appearsIn": [
+        "white-cliffs-south"
+      ],
+      "synonyms": [
+        "cliff",
+        "cliffs"
+      ],
+      "adjectives": [
+        "white"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "wrench",
+      "name": "wrench",
+      "description": "(wrench)",
+      "location": "maintenance-room",
+      "synonyms": [
+        "tool",
+        "tools"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "control-panel",
+      "name": "control panel",
+      "description": "(control panel)",
+      "location": "dam-room",
+      "synonyms": [
+        "panel"
+      ],
+      "adjectives": [
+        "control"
+      ],
+      "fixed": true
+    },
+    {
+      "id": "nest",
+      "name": "bird's nest",
+      "description": "Beside you on the branch is a small bird's nest.",
+      "location": "up-a-tree",
+      "synonyms": [
+        "nest"
+      ],
+      "adjectives": [
+        "birds"
+      ],
+      "takeable": true,
+      "container": {
+        "openable": true,
+        "isOpen": true,
+        "capacity": 20
+      }
+    },
+    {
+      "id": "egg",
+      "name": "jewel-encrusted egg",
+      "description": "In the bird's nest is a large egg encrusted with precious jewels, apparently scavenged by a childless songbird. The egg is covered with fine gold inlay, and ornamented in lapis lazuli and mother-of-pearl. Unlike most eggs, this one is hinged and closed with a delicate looking clasp. The egg appears extremely fragile.",
+      "location": "nest",
+      "synonyms": [
+        "egg",
+        "treasure"
+      ],
+      "adjectives": [
+        "birds",
+        "encrusted",
+        "jeweled"
+      ],
+      "takeable": true,
+      "container": {
+        "openable": true,
+        "capacity": 6
+      }
+    },
+    {
+      "id": "canary",
+      "name": "golden clockwork canary",
+      "description": "There is a golden clockwork canary nestled in the egg. It has ruby eyes and a silver beak. Through a crystal window below its left wing you can see intricate machinery inside. It appears to have wound down.",
+      "location": "egg",
+      "synonyms": [
+        "canary",
+        "treasure"
+      ],
+      "adjectives": [
+        "clockwork",
+        "gold",
+        "golden"
+      ],
+      "takeable": true
+    },
+    {
+      "id": "stairs",
+      "name": "stairs",
+      "description": "(stairs)",
+      "location": "kitchen",
+      "appearsIn": [
+        "attic",
+        "living-room",
+        "cellar",
+        "cyclops-room",
+        "treasure-room",
+        "reservoir-north",
+        "small-cave",
+        "tiny-cave",
+        "atlantis-room",
+        "ew-passage",
+        "deep-canyon",
+        "loud-room",
+        "chasm-room",
+        "egypt-room",
+        "torch-room",
+        "north-temple",
+        "smelly-room",
+        "gas-room",
+        "ladder-top"
+      ],
+      "synonyms": [
+        "steps",
+        "staircase",
+        "stairway"
+      ],
+      "adjectives": [
+        "stone",
+        "dark",
+        "marble",
+        "forbidding",
+        "steep"
+      ],
+      "fixed": true
+    }
+  ],
+  "doors": [
+    {
+      "kind": "simple",
+      "id": "kitchen-window",
+      "name": "kitchen window",
+      "description": "A small kitchen window. It appears to be slightly ajar.",
+      "sides": [
+        {
+          "roomId": "east-of-house",
+          "glimpse": {
+            "prompt": "Through the window, describe the kitchen briefly — emphasize warmth and signs of recent cooking. Keep it to a sentence."
+          }
+        },
+        {
+          "roomId": "kitchen",
+          "glimpse": {
+            "prompt": "Through the window, describe the area behind the house briefly — open ground sloping toward forest. Keep it to a sentence."
+          }
+        }
+      ],
+      "variants": [
+        {
+          "when": {
+            "type": "doorOpen",
+            "doorId": "kitchen-window"
+          },
+          "text": "The kitchen window is open wide enough to climb through."
+        }
+      ]
+    },
+    {
+      "kind": "simple",
+      "id": "trap-door",
+      "name": "trap door",
+      "description": "(trap door)",
+      "sides": [
+        {
+          "roomId": "cellar"
+        },
+        {
+          "roomId": "living-room"
+        }
+      ]
+    },
+    {
+      "kind": "simple",
+      "id": "grate",
+      "name": "grating",
+      "description": "(grating)",
+      "sides": [
+        {
+          "roomId": "grating-room"
+        },
+        {
+          "roomId": "grating-clearing"
+        }
+      ]
+    }
+  ]
+}

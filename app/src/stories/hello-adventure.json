@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "0.1",
+  "id": "hello-adventure",
+  "title": "Hello, Adventure",
+  "author": "ZorkAI engine team",
+  "description": "A three-room smoke test for the story format. Solve the puzzle to escape.",
+  "intro": "You wake on cold stone. The chamber is dim and silent. A heavy iron door bars your way east; on the north wall hangs a faded oil painting.",
+  "startRoom": "chamber",
+  "rooms": [
+    {
+      "id": "chamber",
+      "name": "Sealed Chamber",
+      "description": "A small windowless stone room, lit by some unseen source. A heavy iron door is set in the east wall. A faded oil painting hangs on the north wall.",
+      "exits": {
+        "east": {
+          "to": "hallway",
+          "when": { "type": "hasItem", "itemId": "key" },
+          "blockedMessage": "The iron door is locked. There is a small keyhole."
+        }
+      }
+    },
+    {
+      "id": "hallway",
+      "name": "Hallway",
+      "description": "A narrow stone corridor stretches east toward daylight. The chamber lies back to the west.",
+      "exits": {
+        "west": { "to": "chamber" },
+        "east": { "to": "garden" }
+      }
+    },
+    {
+      "id": "garden",
+      "name": "Sunlit Garden",
+      "description": "You step out into a wild, overgrown garden. The sun warms your face. You are free."
+    }
+  ],
+  "items": [
+    {
+      "id": "painting",
+      "name": "oil painting",
+      "synonyms": ["painting", "picture", "portrait"],
+      "adjectives": ["faded", "oil"],
+      "description": "A faded portrait of a stern noble. It hangs slightly askew, as though something behind it has shifted.",
+      "location": "chamber",
+      "fixed": true
+    },
+    {
+      "id": "key",
+      "name": "small brass key",
+      "synonyms": ["key"],
+      "adjectives": ["small", "brass"],
+      "description": "A small, worn brass key. It looks like it might fit a lock.",
+      "location": "nowhere",
+      "takeable": true
+    }
+  ],
+  "triggers": [
+    {
+      "id": "reveal_key",
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "examined", "itemId": "painting" },
+          { "type": "itemAt", "itemId": "key", "location": "nowhere" }
+        ]
+      },
+      "once": true,
+      "effects": [
+        { "type": "moveItem", "itemId": "key", "to": "chamber" }
+      ],
+      "narration": "As you study the painting, you notice it sits just slightly off the wall. Behind it, dangling from a small nail, is a brass key."
+    }
+  ],
+  "winConditions": [
+    {
+      "when": { "type": "playerAt", "roomId": "garden" },
+      "message": "You have escaped into the garden. Adventure complete."
+    }
+  ]
+}
