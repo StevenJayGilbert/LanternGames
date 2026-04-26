@@ -6,11 +6,13 @@
 // trivial later.
 
 import type {
+  Atom,
   Condition,
-  Door,
   Effect,
   GameState,
   Item,
+  NumericExpr,
+  Passage,
   Room,
   Story,
 } from "../story/schema";
@@ -19,22 +21,23 @@ import type {
 
 export function initialState(story: Story): GameState {
   const itemLocations: Record<string, string> = {};
-  const containerOpen: Record<string, boolean> = {};
-  const lightSourcesLit: Record<string, boolean> = {};
-  const doorOpen: Record<string, boolean> = {};
+  const passageStates: Record<string, Record<string, Atom>> = {};
+  const itemStates: Record<string, Record<string, Atom>> = {};
+  const roomStates: Record<string, Record<string, Atom>> = {};
 
   for (const item of story.items) {
     itemLocations[item.id] = item.location;
-    if (item.container?.isOpen !== undefined) {
-      containerOpen[item.id] = item.container.isOpen;
-    }
-    if (item.lightSource?.isLit !== undefined) {
-      lightSourcesLit[item.id] = item.lightSource.isLit;
+    if (item.state) {
+      itemStates[item.id] = { ...item.state };
     }
   }
 
-  for (const door of story.doors ?? []) {
-    doorOpen[door.id] = door.isOpen ?? false;
+  for (const p of story.passages ?? []) {
+    passageStates[p.id] = { ...(p.state ?? {}) };
+  }
+
+  for (const r of story.rooms) {
+    if (r.state) roomStates[r.id] = { ...r.state };
   }
 
   return {
@@ -43,9 +46,9 @@ export function initialState(story: Story): GameState {
     playerLocation: story.startRoom,
     flags: { ...(story.startState ?? {}) },
     itemLocations,
-    containerOpen,
-    lightSourcesLit,
-    doorOpen,
+    passageStates,
+    itemStates,
+    roomStates,
     matchedIntents: [],
     visitedRooms: [story.startRoom],
     examinedItems: [],
@@ -63,46 +66,125 @@ export function itemById(story: Story, id: string): Item | undefined {
   return story.items.find((i) => i.id === id);
 }
 
-export function doorById(story: Story, id: string): Door | undefined {
-  return story.doors?.find((d) => d.id === id);
+export function passageById(story: Story, id: string): Passage | undefined {
+  return story.passages?.find((p) => p.id === id);
 }
 
-// True if the door is currently in the open state (defaults to false if the
-// door's id is unknown, so a missing reference fails closed).
-export function isDoorOpen(state: GameState, doorId: string): boolean {
-  return !!state.doorOpen[doorId];
+// Read one key of a passage's state. Returns undefined if the passage or key
+// doesn't exist; engine treats that as "value is missing" — equality checks
+// fail, numeric extraction returns 0.
+export function getPassageStateValue(
+  state: GameState,
+  passageId: string,
+  key: string,
+): Atom | undefined {
+  return state.passageStates[passageId]?.[key];
 }
 
-// Doors that are perceptible from the player's current room — i.e. the
-// player's location matches one of the door's two sides. Used by the view +
-// by the polymorphic open/close/examine dispatch.
-export function doorsHere(state: GameState, story: Story): Door[] {
-  const doors = story.doors ?? [];
-  return doors.filter((d) =>
-    d.sides.some((s) => s.roomId === state.playerLocation),
-  );
+// Read one key of an item's state. Mirror of getPassageStateValue.
+export function getItemStateValue(
+  state: GameState,
+  itemId: string,
+  key: string,
+): Atom | undefined {
+  return state.itemStates[itemId]?.[key];
+}
+
+// Read one key of a room's state.
+export function getRoomStateValue(
+  state: GameState,
+  roomId: string,
+  key: string,
+): Atom | undefined {
+  return state.roomStates[roomId]?.[key];
+}
+
+// True if any item physically reachable from the player has state[key] === equals.
+// Uses isItemPresent (location-based) NOT isItemAccessible — otherwise we
+// recurse infinitely (visibility filter → defaultVisibility →
+// anyPerceivableItemWith → visibility filter → ...). Semantically right too:
+// a lit lamp's light reaches the player even if sealed inside a closed box.
+export function anyPerceivableItemWith(
+  state: GameState,
+  story: Story,
+  key: string,
+  equals: Atom,
+): boolean {
+  for (const item of story.items) {
+    if (state.itemStates[item.id]?.[key] !== equals) continue;
+    if (isItemPresent(item, state, story)) return true;
+  }
+  return false;
+}
+
+// Story-driven view+accessibility filter. An object is "visible" when both:
+//   - its own visibleWhen (if set) evaluates true, AND
+//   - story.defaultVisibility (if set) evaluates true
+// Default: visible. Used by view rendering AND by isItemAccessible — so any
+// action that goes through the accessibility check naturally refuses
+// invisible items with the existing not-accessible rejection.
+export function isVisible(
+  obj: { visibleWhen?: Condition },
+  state: GameState,
+  story: Story,
+): boolean {
+  if (obj.visibleWhen && !evaluateCondition(obj.visibleWhen, state, story)) return false;
+  if (story.defaultVisibility && !evaluateCondition(story.defaultVisibility, state, story)) return false;
+  return true;
+}
+
+// True if the player can reach a container's contents right now. Containers
+// that don't declare accessibleWhen are unconditionally accessible (e.g. an
+// open basket). For openable containers the extractor wires up
+// accessibleWhen referencing state.isOpen.
+export function isContainerAccessible(
+  item: Item,
+  state: GameState,
+  story: Story,
+): boolean {
+  if (!item.container) return true;
+  if (!item.container.accessibleWhen) return true;
+  return evaluateCondition(item.container.accessibleWhen, state, story);
+}
+
+// Passages that are perceptible from the player's current room — the player's
+// location matches one of the passage's two sides AND the passage (and its
+// player-facing side) pass the visibility filter (visibleWhen +
+// Story.defaultVisibility). Used by the view AND the `examine` action so
+// hidden passages are uniformly filtered out — no leak through examine.
+export function passagesHere(state: GameState, story: Story): Passage[] {
+  const passages = story.passages ?? [];
+  return passages.filter((p) => {
+    const side = p.sides.find((s) => s.roomId === state.playerLocation);
+    if (!side) return false;
+    if (!isVisible(p, state, story)) return false;
+    if (!isVisible(side, state, story)) return false;
+    return true;
+  });
 }
 
 // The side metadata facing the player's current room, or undefined if the
-// player isn't on either side. Use this to resolve per-side name/description.
-export function doorSideHere(door: Door, state: GameState) {
-  return door.sides.find((s) => s.roomId === state.playerLocation);
+// player isn't on either side. Use this to resolve per-side name/description
+// or to find the per-side traversableWhen.
+export function passageSideHere(passage: Passage, state: GameState) {
+  return passage.sides.find((s) => s.roomId === state.playerLocation);
 }
 
-// Resolve a door's name/description from the player's perspective. Order of
-// precedence: matching side's variants > matching side's description > door's
-// variants > door's description.
-export function doorPresentation(
-  door: Door,
+// Resolve a passage's name/description from the player's perspective. Order
+// of precedence: matching side's variants > matching side's description >
+// passage's variants > passage's description.
+export function passagePresentation(
+  passage: Passage,
   state: GameState,
+  story: Story,
 ): { name: string; description: string } {
-  const side = doorSideHere(door, state);
-  const name = side?.name ?? door.name;
+  const side = passageSideHere(passage, state);
+  const name = side?.name ?? passage.name;
   const description =
-    matchVariant(side?.variants, state) ??
+    matchVariant(side?.variants, state, story) ??
     side?.description ??
-    matchVariant(door.variants, state) ??
-    door.description;
+    matchVariant(passage.variants, state, story) ??
+    passage.description;
   return { name, description };
 }
 
@@ -110,10 +192,11 @@ export function doorPresentation(
 function matchVariant(
   variants: { when: Condition; text: string }[] | undefined,
   state: GameState,
+  story: Story,
 ): string | undefined {
   if (!variants) return undefined;
   for (const v of variants) {
-    if (evaluateCondition(v.when, state)) return v.text;
+    if (evaluateCondition(v.when, state, story)) return v.text;
   }
   return undefined;
 }
@@ -135,6 +218,7 @@ export function isItemAccessible(
   state: GameState,
   story: Story,
 ): boolean {
+  if (!isVisible(item, state, story)) return false;
   if (item.appearsIn?.includes(state.playerLocation)) return true;
   return locationReachesPlayer(item, state, story, /*requireOpen=*/ true);
 }
@@ -168,8 +252,8 @@ function locationReachesPlayer(
 
   const parent = itemById(story, loc);
   if (!parent) return false;
-  if (requireOpen && parent.container && !state.containerOpen[parent.id]) {
-    return false; // hidden inside a closed container
+  if (requireOpen && parent.container && !isContainerAccessible(parent, state, story)) {
+    return false; // hidden inside a closed/inaccessible container
   }
   return locationReachesPlayer(parent, state, story, requireOpen, visited);
 }
@@ -205,7 +289,11 @@ export function itemsInContainer(
 
 // ---------- Condition evaluation ----------
 
-export function evaluateCondition(c: Condition, state: GameState): boolean {
+export function evaluateCondition(
+  c: Condition,
+  state: GameState,
+  story: Story,
+): boolean {
   switch (c.type) {
     case "flag":
       return state.flags[c.key] === c.equals;
@@ -221,21 +309,87 @@ export function evaluateCondition(c: Condition, state: GameState): boolean {
       return state.examinedItems.includes(c.itemId);
     case "triggerFired":
       return state.firedTriggers.includes(c.triggerId);
-    case "doorOpen":
-      return !!state.doorOpen[c.doorId];
-    case "containerOpen":
-      return !!state.containerOpen[c.itemId];
+    case "passageState":
+      return state.passageStates[c.passageId]?.[c.key] === c.equals;
+    case "itemState":
+      return state.itemStates[c.itemId]?.[c.key] === c.equals;
+    case "roomState":
+      return state.roomStates[c.roomId]?.[c.key] === c.equals;
+    case "currentRoomState":
+      return state.roomStates[state.playerLocation]?.[c.key] === c.equals;
+    case "anyPerceivableItemWith":
+      return anyPerceivableItemWith(state, story, c.key, c.equals);
     case "intentMatched":
       return state.matchedIntents.includes(c.signalId);
+    case "compare": {
+      const left = evaluateNumericExpr(c.left, state);
+      const right = evaluateNumericExpr(c.right, state);
+      switch (c.op) {
+        case "==": return left === right;
+        case "!=": return left !== right;
+        case "<": return left < right;
+        case "<=": return left <= right;
+        case ">": return left > right;
+        case ">=": return left >= right;
+      }
+      return false;
+    }
     case "always":
       return true;
     case "and":
-      return c.all.every((sub) => evaluateCondition(sub, state));
+      return c.all.every((sub) => evaluateCondition(sub, state, story));
     case "or":
-      return c.any.some((sub) => evaluateCondition(sub, state));
+      return c.any.some((sub) => evaluateCondition(sub, state, story));
     case "not":
-      return !evaluateCondition(c.condition, state);
+      return !evaluateCondition(c.condition, state, story);
   }
+}
+
+// ---------- Numeric expression evaluation ----------
+//
+// NumericExpr is the value-producing counterpart to Condition. Used by the
+// `compare` condition to compare any two numeric values: literals, flag
+// values, derived counts, or (eventually) weight/size totals.
+//
+// Adding a new "source of integers" — e.g. `inventoryWeight` once items have
+// `weight` — is a one-case extension here; the comparison logic doesn't change.
+export function evaluateNumericExpr(expr: NumericExpr, state: GameState): number {
+  switch (expr.kind) {
+    case "literal":
+      return expr.value;
+    case "flag": {
+      const v = state.flags[expr.key];
+      return typeof v === "number" ? v : 0;
+    }
+    case "passageState": {
+      const v = state.passageStates[expr.passageId]?.[expr.key];
+      return typeof v === "number" ? v : 0;
+    }
+    case "itemState": {
+      const v = state.itemStates[expr.itemId]?.[expr.key];
+      return typeof v === "number" ? v : 0;
+    }
+    case "roomState": {
+      const v = state.roomStates[expr.roomId]?.[expr.key];
+      return typeof v === "number" ? v : 0;
+    }
+    case "inventoryCount":
+      return countItemsAt(state, "inventory");
+    case "itemCountAt":
+      return countItemsAt(state, expr.location);
+    case "matchedIntentsCount":
+      return state.matchedIntents.length;
+    case "visitedCount":
+      return state.visitedRooms.length;
+  }
+}
+
+function countItemsAt(state: GameState, location: string): number {
+  let n = 0;
+  for (const loc of Object.values(state.itemLocations)) {
+    if (loc === location) n++;
+  }
+  return n;
 }
 
 // ---------- Effect application ----------
@@ -255,6 +409,53 @@ export function applyEffect(state: GameState, e: Effect): GameState {
         : [...state.visitedRooms, e.to];
       return { ...state, playerLocation: e.to, visitedRooms: visited };
     }
+    case "setPassageState": {
+      const current = state.passageStates[e.passageId] ?? {};
+      return {
+        ...state,
+        passageStates: {
+          ...state.passageStates,
+          [e.passageId]: { ...current, [e.key]: e.value },
+        },
+      };
+    }
+    case "setItemState": {
+      const current = state.itemStates[e.itemId] ?? {};
+      return {
+        ...state,
+        itemStates: {
+          ...state.itemStates,
+          [e.itemId]: { ...current, [e.key]: e.value },
+        },
+      };
+    }
+    case "setRoomState": {
+      const current = state.roomStates[e.roomId] ?? {};
+      return {
+        ...state,
+        roomStates: {
+          ...state.roomStates,
+          [e.roomId]: { ...current, [e.key]: e.value },
+        },
+      };
+    }
+    case "adjustFlag": {
+      const cur = state.flags[e.key];
+      const n = (typeof cur === "number" ? cur : 0) + e.by;
+      return { ...state, flags: { ...state.flags, [e.key]: n } };
+    }
+    case "adjustItemState": {
+      const current = state.itemStates[e.itemId] ?? {};
+      const cur = current[e.key];
+      const n = (typeof cur === "number" ? cur : 0) + e.by;
+      return {
+        ...state,
+        itemStates: {
+          ...state.itemStates,
+          [e.itemId]: { ...current, [e.key]: n },
+        },
+      };
+    }
     case "endGame":
       return { ...state, finished: { won: e.won, message: e.message } };
   }
@@ -267,10 +468,19 @@ export function applyEffects(state: GameState, effects: Effect[]): GameState {
 // ---------- Variant resolution ----------
 
 // Pick the first matching variant for a room, or fall back to the canonical
-// description.
-export function resolveRoomDescription(room: Room, state: GameState): string {
+// description. Story.sharedVariants are checked AFTER the room's own variants
+// so a story-wide "pitch black" can apply to all dark rooms without per-room
+// authoring.
+export function resolveRoomDescription(
+  room: Room,
+  state: GameState,
+  story: Story,
+): string {
   for (const variant of room.variants ?? []) {
-    if (evaluateCondition(variant.when, state)) return variant.text;
+    if (evaluateCondition(variant.when, state, story)) return variant.text;
+  }
+  for (const variant of story.sharedVariants ?? []) {
+    if (evaluateCondition(variant.when, state, story)) return variant.text;
   }
   return room.description;
 }
@@ -278,33 +488,62 @@ export function resolveRoomDescription(room: Room, state: GameState): string {
 // Filter exits to those currently visible to the player. `hidden: true` exits
 // are suppressed unless their gate is satisfied. An exit is gated by:
 //   - exit.when condition (if present)
-//   - exit.door (if present, the door must be open)
-// Both must pass for the exit to be usable.
+//   - exit.passage (if present, the passage's traversableWhen must hold for
+//     the player's current side)
+// Both must pass for the exit to be usable. The "blocking" reason for the
+// passage check uses the passage's per-side traverseBlockedMessage if set.
 export function visibleExits(
   room: Room,
   state: GameState,
-  story?: Story,
-): Array<[string, { to: string; blocked: boolean; blockedMessage?: string; doorId?: string }]> {
-  const out: Array<[string, { to: string; blocked: boolean; blockedMessage?: string; doorId?: string }]> = [];
+  story: Story,
+): Array<[
+  string,
+  { to: string; blocked: boolean; blockedMessage?: string; passageId?: string }
+]> {
+  const out: Array<[
+    string,
+    { to: string; blocked: boolean; blockedMessage?: string; passageId?: string }
+  ]> = [];
   for (const [dir, exit] of Object.entries(room.exits ?? {})) {
-    const conditionOk = !exit.when || evaluateCondition(exit.when, state);
-    const doorOk = !exit.door || isDoorOpen(state, exit.door);
-    const open = conditionOk && doorOk;
-    if (exit.hidden && !open) continue;
-    // Choose blockedMessage: prefer story-authored exit message; fall back to
-    // a door-specific note when a closed door is the blocker.
-    let blockedMessage = exit.blockedMessage;
-    if (!blockedMessage && conditionOk && !doorOk && exit.door && story) {
-      const door = doorById(story, exit.door);
-      if (door) blockedMessage = `The ${door.name} is closed.`;
+    // Story-driven visibility filter (per-exit visibleWhen + Story.defaultVisibility).
+    // Hides the exit entirely from the view (and from `go` resolution).
+    if (!isVisible(exit, state, story)) continue;
+
+    const conditionOk = !exit.when || evaluateCondition(exit.when, state, story);
+
+    let passageOk = true;
+    let passageBlockedMessage: string | undefined;
+    if (exit.passage) {
+      const passage = passageById(story, exit.passage);
+      if (passage) {
+        const fromSide = passage.sides.find((s) => s.roomId === room.id);
+        const sideWhen = fromSide?.traversableWhen;
+        const passageWhen = passage.traversableWhen;
+        const effectiveWhen = sideWhen ?? passageWhen;
+        if (effectiveWhen && !evaluateCondition(effectiveWhen, state, story)) {
+          passageOk = false;
+          passageBlockedMessage =
+            fromSide?.traverseBlockedMessage ?? passage.traverseBlockedMessage;
+        }
+      }
     }
+
+    const open = conditionOk && passageOk;
+    if (exit.hidden && !open) continue;
+
+    // Choose blockedMessage: story-authored exit message > passage-supplied
+    // blocked message > undefined (renderer/LLM fall back to a generic line).
+    const blockedMessage =
+      exit.blockedMessage ??
+      (!passageOk ? passageBlockedMessage : undefined);
+
     out.push([
       dir,
       {
         to: exit.to,
         blocked: !open,
         blockedMessage,
-        doorId: exit.door,
+        passageId: exit.passage,
       },
     ]);
   }

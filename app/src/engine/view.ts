@@ -6,16 +6,17 @@
 // receives event + view + cues each turn — so it always has fresh context
 // regardless of which action was taken.
 
-import type { Door, GameState, Item, Story } from "../story/schema";
+import type { Atom, GameState, Item, Passage, Story } from "../story/schema";
 import {
   currentRoom,
-  doorPresentation,
-  doorSideHere,
-  doorsHere,
   evaluateCondition,
+  isContainerAccessible,
   itemById,
   itemsAccessibleHere,
   itemsInInventory,
+  passagePresentation,
+  passageSideHere,
+  passagesHere,
   resolveRoomDescription,
   roomById,
   visibleExits,
@@ -25,13 +26,20 @@ export interface ItemView {
   id: string;
   name: string;
   fixed?: boolean;          // true = scenery; not enumerated as "you see:"
-  synonyms?: string[];      // helpful if the LLM needs to disambiguate
-  adjectives?: string[];
+  // Current item state (e.g. { isOpen: true, broken: false }). Empty if the
+  // item declares no state. The LLM uses this to narrate accurately and to
+  // decide which intent signals to consider.
+  state?: Record<string, Atom>;
   // Containment relation: if this item is inside another item, the parent's
   // id + name. Currently only "in" relation; "on" (surfaces) deferred to v0.2.
   containedIn?: { id: string; name: string; relation: "in" };
-  // For container items, expose openable + current open state.
-  container?: { openable: boolean; isOpen: boolean };
+  // For container items: whether the inside is reachable right now (via
+  // accessibleWhen). The LLM checks this before calling `put`.
+  container?: {
+    capacity?: number;
+    accessible: boolean;
+    accessBlockedMessage?: string;
+  };
 }
 
 export interface ExitView {
@@ -40,20 +48,23 @@ export interface ExitView {
   targetRoomName: string;
   blocked?: boolean;
   blockedMessage?: string;
-  doorId?: string;          // if set, the exit traverses a door
+  passageId?: string;       // if set, the exit traverses a passage
 }
 
-export interface DoorView {
+export interface PassageView {
   id: string;
   name: string;             // resolved from current side + variants
   description: string;      // resolved from current side + variants
-  isOpen: boolean;
-  // The other room the door connects to, by id and name. Useful for narration
-  // ("the door to the kitchen").
+  // Current passage state (e.g. { isOpen: true }). Empty if the passage
+  // declares no state. The LLM uses this to narrate accurately ("the door is
+  // already open").
+  state: Record<string, Atom>;
+  // The other room the passage connects to, by id and name. Useful for
+  // narration ("the door to the kitchen").
   connectsTo: { id: string; name: string };
   // Populated only when the effective glimpse's `when` condition holds (the
-  // door is "see-through right now"). The LLM uses `otherRoom` (engine-
-  // provided facts) plus optional `description` (canonical authored text) and
+  // passage is "see-through right now"). The LLM uses `otherRoom` (engine
+  // facts) plus optional `description` (canonical authored text) and
   // `prompt` (author-provided LLM guidance) to narrate the view through.
   glimpse?: {
     otherRoom: { id: string; name: string; description: string };
@@ -73,9 +84,9 @@ export interface WorldView {
   // Each ItemView includes `containedIn` if it's nested inside another item,
   // so the LLM can narrate "the leaflet (inside the open mailbox)".
   itemsHere: ItemView[];
-  // Doors visible from the current room (one of their two sides faces here).
-  // Names/descriptions are pre-resolved to the player's side.
-  doorsHere: DoorView[];
+  // Passages visible from the current room (one of their two sides faces
+  // here). Names/descriptions are pre-resolved to the player's side.
+  passagesHere: PassageView[];
   exits: ExitView[];
   inventory: ItemView[];
   finished?: { won: boolean; message: string };
@@ -91,14 +102,14 @@ export function buildView(state: GameState, story: Story): WorldView {
         description: "(no such room)",
       },
       itemsHere: [],
-      doorsHere: [],
+      passagesHere: [],
       exits: [],
       inventory: [],
       finished: state.finished,
     };
   }
 
-  const description = resolveRoomDescription(room, state);
+  const description = resolveRoomDescription(room, state, story);
   const itemsHere = itemsAccessibleHere(state, story).map((i) =>
     toItemView(i, state, story),
   );
@@ -111,10 +122,13 @@ export function buildView(state: GameState, story: Story): WorldView {
     };
     if (info.blocked) view.blocked = true;
     if (info.blockedMessage !== undefined) view.blockedMessage = info.blockedMessage;
-    if (info.doorId !== undefined) view.doorId = info.doorId;
+    if (info.passageId !== undefined) view.passageId = info.passageId;
     return view;
   });
-  const doors = doorsHere(state, story).map((d) => toDoorView(d, state, story));
+  // passagesHere already applies the visibility filter (visibleWhen +
+  // Story.defaultVisibility, both passage-level and per-side), so the same
+  // hidden-passage rule applies to view AND examine.
+  const passages = passagesHere(state, story).map((p) => toPassageView(p, state, story));
   const inventory = itemsInInventory(state, story).map((i) =>
     toItemView(i, state, story),
   );
@@ -122,47 +136,48 @@ export function buildView(state: GameState, story: Story): WorldView {
   return {
     room: { id: room.id, name: room.name, description },
     itemsHere,
-    doorsHere: doors,
+    passagesHere: passages,
     exits,
     inventory,
     finished: state.finished,
   };
 }
 
-function toDoorView(door: Door, state: GameState, story: Story): DoorView {
-  const presentation = doorPresentation(door, state);
-  // The other side of the door — the room you'd reach by going through.
-  const otherSide = door.sides.find((s) => s.roomId !== state.playerLocation);
+function toPassageView(passage: Passage, state: GameState, story: Story): PassageView {
+  const presentation = passagePresentation(passage, state, story);
+  // The other side of the passage — the room you'd reach by going through.
+  const otherSide = passage.sides.find((s) => s.roomId !== state.playerLocation);
   const otherRoom = otherSide ? roomById(story, otherSide.roomId) : undefined;
-  const view: DoorView = {
-    id: door.id,
+  const view: PassageView = {
+    id: passage.id,
     name: presentation.name,
     description: presentation.description,
-    isOpen: state.doorOpen[door.id] ?? door.isOpen ?? false,
+    state: { ...(state.passageStates[passage.id] ?? {}) },
     connectsTo: {
       id: otherSide?.roomId ?? "(unknown)",
       name: otherRoom?.name ?? "(unknown)",
     },
   };
 
-  // Glimpse: presence of an effective glimpse (side override > door default)
-  // declares that the door is see-through. Its `when` condition gates whether
-  // looking through is possible RIGHT NOW; if absent, see-through is always
-  // available (windows, archways). For doors that need open-state gating,
-  // authors set `when` explicitly. When satisfied, the engine attaches the
-  // other room's name + description alongside any author-provided text/prompt.
-  const here = doorSideHere(door, state);
-  const effectiveGlimpse = here?.glimpse ?? door.glimpse;
+  // Glimpse: presence of an effective glimpse (side override > passage
+  // default) declares that the passage is see-through. Its `when` condition
+  // gates whether looking through is possible RIGHT NOW; if absent,
+  // see-through is always available (windows, archways). For passages that
+  // need state-based gating, authors set `when` explicitly. When satisfied,
+  // the engine attaches the other room's name + description alongside any
+  // author-provided text/prompt.
+  const here = passageSideHere(passage, state);
+  const effectiveGlimpse = here?.glimpse ?? passage.glimpse;
   if (effectiveGlimpse && otherRoom) {
     const available = effectiveGlimpse.when
-      ? evaluateCondition(effectiveGlimpse.when, state)
+      ? evaluateCondition(effectiveGlimpse.when, state, story)
       : true;
     if (available) {
       view.glimpse = {
         otherRoom: {
           id: otherRoom.id,
           name: otherRoom.name,
-          description: resolveRoomDescription(otherRoom, state),
+          description: resolveRoomDescription(otherRoom, state, story),
         },
         ...(effectiveGlimpse.description && { description: effectiveGlimpse.description }),
         ...(effectiveGlimpse.prompt && { prompt: effectiveGlimpse.prompt }),
@@ -176,15 +191,19 @@ function toDoorView(door: Door, state: GameState, story: Story): DoorView {
 function toItemView(item: Item, state: GameState, story: Story): ItemView {
   const view: ItemView = { id: item.id, name: item.name };
   if (item.fixed) view.fixed = true;
-  if (item.synonyms && item.synonyms.length > 0) view.synonyms = item.synonyms;
-  if (item.adjectives && item.adjectives.length > 0) view.adjectives = item.adjectives;
 
-  // Container state (if this item is itself a container)
+  const itemState = state.itemStates[item.id];
+  if (itemState && Object.keys(itemState).length > 0) {
+    view.state = { ...itemState };
+  }
+
   if (item.container) {
-    const initialOpen = item.container.isOpen ?? false;
     view.container = {
-      openable: item.container.openable ?? false,
-      isOpen: state.containerOpen[item.id] ?? initialOpen,
+      ...(item.container.capacity !== undefined && { capacity: item.container.capacity }),
+      accessible: isContainerAccessible(item, state, story),
+      ...(item.container.accessBlockedMessage && {
+        accessBlockedMessage: item.container.accessBlockedMessage,
+      }),
     };
   }
 

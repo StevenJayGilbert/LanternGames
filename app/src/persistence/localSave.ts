@@ -14,7 +14,7 @@
 import type { GameState } from "../story/schema";
 import type { Message } from "../llm/types";
 
-const SAVE_VERSION = 2;
+const SAVE_VERSION = 5;
 const PREFIX = "zorkai_save_v" + SAVE_VERSION + "_";
 
 // Transcript entry types — shared between App.tsx (display) and localSave

@@ -17,17 +17,23 @@
 //     skipped entirely. Only items with a concrete room location are included.
 //   - No puzzles, NPCs, score, or treasure tracking.
 
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type {
   Atom,
   Condition,
-  Door,
+  EndCondition,
   Exit,
+  IntentSignal,
   Item,
+  Passage,
+  PassageSide,
   Room,
+  SimplePassage,
   Story,
+  TextVariant,
+  Trigger,
 } from "../src/story/schema";
 import { SCHEMA_VERSION } from "../src/story/schema";
 import { validateStory } from "../src/story/validate";
@@ -37,6 +43,7 @@ import { validateStory } from "../src/story/validate";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ZORK_DATA = resolve(__dirname, "../../zil-to-json/data/zork1");
 const OUT_PATH = resolve(__dirname, "../src/stories/zork-1.json");
+const OVERRIDES_PATH = resolve(__dirname, "../src/stories/zork-1.overrides.json");
 
 // ---------- narrator voice ----------
 //
@@ -125,10 +132,6 @@ function cleanWhitespace(s: string): string {
   return s.replace(/\r?\n/g, " ").replace(/\s{2,}/g, " ").trim();
 }
 
-function arrayOfStringsLower(value: unknown): string[] {
-  return arrayOfStrings(value).map((s) => s.toLowerCase());
-}
-
 // Direction-key normalization. ZIL uses NE/SW/etc.; map to common spellings.
 const DIRECTION_MAP: Record<string, string> = {
   NORTH: "north",
@@ -155,7 +158,7 @@ function direction(zilDir: string): string {
 function extractRooms(
   rawRooms: ZilRoom[],
   roomIds: Set<string>,
-  doorIds: Set<string>,
+  passageIds: Set<string>,
   routinesByName: Map<string, ZilRoutine>,
 ): Room[] {
   const rooms: Room[] = [];
@@ -178,7 +181,7 @@ function extractRooms(
     const exits: Record<string, Exit> = {};
     for (const [zilDir, exit] of Object.entries(raw.Exits ?? {})) {
       const dir = direction(zilDir);
-      const built = buildExit(exit, roomIds, doorIds);
+      const built = buildExit(exit, roomIds, passageIds);
       if (built) exits[dir] = built;
     }
 
@@ -268,7 +271,7 @@ function topLevelTellString(node: ZilNode): string | undefined {
 function buildExit(
   zilExit: ZilExit,
   roomIds: Set<string>,
-  doorIds: Set<string>,
+  passageIds: Set<string>,
 ): Exit | null {
   switch (zilExit.TYPE) {
     case "UEXIT": {
@@ -288,16 +291,17 @@ function buildExit(
       return exit;
     }
     case "DEXIT": {
-      // Door exit: traversal requires the named door to be open.
+      // Door (passage) exit: traversal gating is handled by the passage's
+      // traversableWhen. Engine evaluates it when the player tries this exit.
       if (!zilExit.TO) return null;
       const target = id(zilExit.TO);
       if (!roomIds.has(target)) return null;
-      const doorName = (zilExit as ZilExit).DOOR;
-      if (typeof doorName === "string" && doorIds.has(id(doorName))) {
-        return { to: target, door: id(doorName) };
+      const passageName = (zilExit as ZilExit).DOOR;
+      if (typeof passageName === "string" && passageIds.has(id(passageName))) {
+        return { to: target, passage: id(passageName) };
       }
-      // Door wasn't promoted to a Door entity (didn't resolve to 2 rooms).
-      // Degrade to an unconditional exit so the player isn't stuck.
+      // Passage wasn't promoted (didn't resolve to 2 rooms). Degrade to an
+      // unconditional exit so the player isn't stuck.
       return { to: target };
     }
     case "NEXIT":
@@ -314,11 +318,12 @@ function buildExit(
   }
 }
 
-// ---------- door extraction ----------
+// ---------- passage extraction ----------
 //
-// In ZIL, a door is an object with the DOORBIT flag. The same physical door
-// may be referenced from two rooms (kitchen-window connects east-of-house and
-// kitchen). We derive the two connecting rooms by combining three signals:
+// In ZIL, a door is an object with the DOORBIT flag. The same physical
+// door/window/passage may be referenced from two rooms (kitchen-window
+// connects east-of-house and kitchen). We derive the two connecting rooms
+// by combining three signals:
 //   1. DEXIT exits — `{TO: "X", DOOR: "DOOR-NAME", TYPE: "DEXIT"}` — both the
 //      from-room and to-room are connected by the named door.
 //   2. LOCAL-GLOBALS membership — for shared-scenery doors, room.GLOBAL lists
@@ -327,24 +332,24 @@ function buildExit(
 //      Living Room) that link to a target via DEXIT from the other side.
 //
 // If the union of these signals yields exactly two distinct rooms, we emit
-// the object as a Door. Otherwise we leave it for the item extractor (which
-// will treat DOORBIT as openable container — the interim path).
+// the object as a Passage. Otherwise we leave it for the item extractor
+// (which will treat DOORBIT as openable container — the interim path).
 
-interface DoorExtractionResult {
-  doors: Door[];
-  doorIds: Set<string>;            // lowercase door ids that became Doors
-  skippedDoorObjects: Set<string>; // ZIL names of objects emitted as doors
-                                   // (item extractor must skip these)
-  doorRoomsByZilName: Map<string, string[]>; // for diagnostics
+interface PassageExtractionResult {
+  passages: Passage[];
+  passageIds: Set<string>;            // lowercase passage ids that became Passages
+  skippedPassageObjects: Set<string>; // ZIL names of objects emitted as passages
+                                      // (item extractor must skip these)
+  passageRoomsByZilName: Map<string, string[]>; // for diagnostics
 }
 
-function extractDoors(
+function extractPassages(
   rawObjects: ZilObject[],
   rawRooms: ZilRoom[],
   routinesByName: Map<string, ZilRoutine>,
   roomIds: Set<string>,
   sharedSceneryRooms: Map<string, string[]>,
-): DoorExtractionResult {
+): PassageExtractionResult {
   // Index DEXITs by door name -> set of rooms.
   const dexitRoomsByDoorName = new Map<string, Set<string>>();
   for (const room of rawRooms) {
@@ -362,10 +367,10 @@ function extractDoors(
     }
   }
 
-  const doors: Door[] = [];
-  const doorIds = new Set<string>();
-  const skippedDoorObjects = new Set<string>();
-  const doorRoomsByZilName = new Map<string, string[]>();
+  const passages: Passage[] = [];
+  const passageIds = new Set<string>();
+  const skippedPassageObjects = new Set<string>();
+  const passageRoomsByZilName = new Map<string, string[]>();
 
   for (const raw of rawObjects) {
     if (raw.IsRoom) continue;
@@ -373,7 +378,7 @@ function extractDoors(
     const flags = arrayOfStrings(props.FLAGS).map((f) => f.toUpperCase());
     if (!flags.includes("DOORBIT")) continue;
 
-    // Union all known room references for this door.
+    // Union all known room references for this passage.
     const rooms = new Set<string>();
     const dexitRooms = dexitRoomsByDoorName.get(raw.Name);
     if (dexitRooms) for (const r of dexitRooms) rooms.add(r);
@@ -382,33 +387,36 @@ function extractDoors(
     const inLocation = typeof props["#IN"] === "string" ? (props["#IN"] as string) : "";
     if (inLocation && roomIds.has(inLocation.toLowerCase())) rooms.add(inLocation.toLowerCase());
 
-    doorRoomsByZilName.set(raw.Name, [...rooms]);
+    passageRoomsByZilName.set(raw.Name, [...rooms]);
 
-    // Need exactly two rooms to make a Door. Otherwise fall through to items.
+    // Need exactly two rooms to make a Passage. Otherwise fall through to items.
     if (rooms.size !== 2) continue;
 
     const [a, b] = [...rooms];
-    const itemId = id(raw.Name);
+    const passageId = id(raw.Name);
     const name = firstString(props.DESC) ?? raw.Name.toLowerCase();
-    const description = resolveDoorDescription(props, name, routinesByName);
+    const description = resolvePassageDescription(props, name, routinesByName);
 
-    const door: Door = {
+    // Emit a passage with state.isOpen seeded from OPENBIT. The post-extract
+    // enrichment pass (PASSAGE_ENRICHMENTS) wires up traversableWhen +
+    // open/close intents/triggers as appropriate per passage.
+    const passage: Passage = {
       kind: "simple",
-      id: itemId,
+      id: passageId,
       name,
       description,
+      state: { isOpen: flags.includes("OPENBIT") },
       sides: [{ roomId: a }, { roomId: b }],
-      ...(flags.includes("OPENBIT") && { isOpen: true }),
     };
-    doors.push(door);
-    doorIds.add(itemId);
-    skippedDoorObjects.add(raw.Name);
+    passages.push(passage);
+    passageIds.add(passageId);
+    skippedPassageObjects.add(raw.Name);
   }
 
-  return { doors, doorIds, skippedDoorObjects, doorRoomsByZilName };
+  return { passages, passageIds, skippedPassageObjects, passageRoomsByZilName };
 }
 
-function resolveDoorDescription(
+function resolvePassageDescription(
   props: Record<string, unknown>,
   fallbackName: string,
   routinesByName: Map<string, ZilRoutine>,
@@ -493,7 +501,7 @@ function buildSharedSceneryMap(rawRooms: ZilRoom[]): Map<string, string[]> {
 function extractItems(
   rawObjects: ZilObject[],
   roomIds: Set<string>,
-  skippedDoorObjects: Set<string>,
+  skippedPassageObjects: Set<string>,
   sharedSceneryRooms: Map<string, string[]>,
 ): Item[] {
   // ---- Step 1: iteratively determine which non-room objects to include.
@@ -501,7 +509,7 @@ function extractItems(
   // is a room, an already-included object, or it's a referenced LOCAL-GLOBAL.
   const candidates = rawObjects.filter((o) => {
     if (o.IsRoom) return false;
-    if (skippedDoorObjects.has(o.Name)) return false; // emitted as a Door instead
+    if (skippedPassageObjects.has(o.Name)) return false; // emitted as a Door instead
     const inLoc = typeof o.Properties?.["#IN"] === "string" ? (o.Properties!["#IN"] as string) : "";
     if (!inLoc) return false;
     if (SKIP_LOCATIONS.has(inLoc)) return false;
@@ -538,7 +546,7 @@ function extractItems(
 
   for (const raw of rawObjects) {
     if (raw.IsRoom) continue;
-    if (skippedDoorObjects.has(raw.Name)) continue; // emitted as a Door
+    if (skippedPassageObjects.has(raw.Name)) continue; // emitted as a Door
     const props = raw.Properties ?? {};
     const inLocation = typeof props["#IN"] === "string" ? (props["#IN"] as string) : "";
     if (!inLocation || SKIP_LOCATIONS.has(inLocation)) continue;
@@ -572,8 +580,6 @@ function extractItems(
       : `(${name})`;
 
     const flags = arrayOfStrings(props.FLAGS).map((f) => f.toUpperCase());
-    const synonyms = uniqueLower(arrayOfStrings(props.SYNONYM), name);
-    const adjectives = arrayOfStringsLower(props.ADJECTIVE);
 
     const item: Item = {
       id: itemId,
@@ -581,34 +587,39 @@ function extractItems(
       description,
       location: primaryLocation,
       ...(appearsIn && { appearsIn }),
-      ...(synonyms.length > 0 && { synonyms }),
-      ...(adjectives.length > 0 && { adjectives }),
       ...(flags.includes("TAKEBIT") && { takeable: true }),
       ...(!flags.includes("TAKEBIT") && flags.includes("NDESCBIT") && { fixed: true }),
     };
 
-    // Openable items — Zork convention:
-    //   CONTBIT  = container (holds things, openable, has capacity)
-    //   DOORBIT  = door / window / hatch (openable, but doesn't hold things)
+    // Containers — Zork convention:
+    //   CONTBIT  = container (holds things, has capacity)
     //   OPENBIT  = currently in the open state
-    // We model both as `container: { openable: true }`. Doors get no capacity;
-    // containers do. (Naming stretch noted in TASKS.md — long-term we may
-    // separate `openable` from `container`.)
-    const isOpenable = flags.includes("CONTBIT") || flags.includes("DOORBIT");
-    if (isOpenable) {
-      const capacity = flags.includes("CONTBIT") ? firstNumber(props.CAPACITY) : undefined;
+    // The new model: openness lives in item.state.isOpen and access is gated
+    // by container.accessibleWhen referencing it. The auto-gen pass below
+    // adds the open/close intents + triggers (parallel to passages).
+    // DOORBIT items are extracted as Passages (separate path); skipped here.
+    if (flags.includes("CONTBIT")) {
+      const capacity = firstNumber(props.CAPACITY);
+      item.state = { ...(item.state ?? {}), isOpen: flags.includes("OPENBIT") };
       item.container = {
-        openable: true,
-        ...(flags.includes("OPENBIT") && { isOpen: true }),
         ...(capacity !== undefined && { capacity }),
+        accessibleWhen: {
+          type: "itemState",
+          itemId: itemId,
+          key: "isOpen",
+          equals: true,
+        },
+        accessBlockedMessage: `The ${name} is closed.`,
       };
     }
 
-    // Light sources
+    // Light sources: lightSource is now a marker capability ({}), and the lit
+    // state lives in item.state.isLit (parallel to isOpen, broken patterns).
+    // The new anyPerceivableItemWith({key: "isLit", equals: true}) Condition
+    // finds lit lamps without any light-specific engine code.
     if (flags.includes("LIGHTBIT") || flags.includes("FLAMEBIT")) {
-      item.lightSource = {
-        ...(flags.includes("ONBIT") && { isLit: true }),
-      };
+      item.lightSource = {};
+      item.state = { ...(item.state ?? {}), isLit: flags.includes("ONBIT") };
     }
 
     // Readable content
@@ -633,64 +644,265 @@ function firstNumber(value: unknown): number | undefined {
   return undefined;
 }
 
-function uniqueLower(arr: string[], excludeName: string): string[] {
-  const exclude = excludeName.toLowerCase();
-  const out = new Set<string>();
-  for (const s of arr) {
-    const lower = s.toLowerCase();
-    if (lower !== exclude) out.add(lower);
-  }
-  return [...out];
-}
 
 // ---------- post-extraction enrichments ----------
 //
-// The mechanical extraction pulls structure (rooms/exits/items/doors) from
+// The mechanical extraction pulls structure (rooms/exits/items/passages) from
 // the ZIL data, but some objects need hand-tuned content the source doesn't
 // expose cleanly — per-side glimpses, state-conditional descriptions,
-// see-through gating. We patch those in here.
+// see-through gating, traversal rules. We patch those in here.
 //
-// Each entry overrides or extends the extracted Door by id. Keep entries
+// Each entry overrides or extends the extracted Passage by id. Keep entries
 // surgical; this isn't a place to rewrite Zork's prose, only to fill in
 // what mechanical extraction can't.
 
-type DoorEnrichment = (door: Door) => Door;
+// Authored content (descriptions, glimpse prompts, manual passages, room exit
+// patches, intent signals, triggers) lives in `zork-1.overrides.json`. The
+// mechanical pass produces structure from ZIL; this load+merge layer applies
+// the author's content on top. To add a new puzzle (rope, lamp battery, troll
+// combat, ...), edit the overrides JSON — no code change needed.
+//
+// Merge rules:
+//   - skipItemObjects: union into the item-extractor skip set
+//   - passages: by id. Existing → deep merge (sides matched by roomId).
+//                       New → appended as a complete passage.
+//   - rooms:    by id. Existing → field override; exits shallow-merged.
+//   - items:    by id. Existing → field override.
+//   - intentSignals / triggers: appended.
+//
+// Stripped `$comment` fields (any nesting depth) are tolerated — JSON has no
+// native comment syntax and authors lean on the convention.
 
-const DOOR_ENRICHMENTS: Record<string, DoorEnrichment> = {
-  "kitchen-window": (door) => ({
-    ...door,
-    description: "A small kitchen window. It appears to be slightly ajar.",
-    variants: [
-      {
-        when: { type: "doorOpen", doorId: "kitchen-window" },
-        text: "The kitchen window is open wide enough to climb through.",
-      },
-    ],
-    sides: [
-      {
-        ...door.sides[0],
-        glimpse: {
-          // when omitted -> defaults to "door is open"
-          prompt:
-            "Through the window, describe the kitchen briefly — emphasize warmth and signs of recent cooking. Keep it to a sentence.",
-        },
-      },
-      {
-        ...door.sides[1],
-        glimpse: {
-          prompt:
-            "Through the window, describe the area behind the house briefly — open ground sloping toward forest. Keep it to a sentence.",
-        },
-      },
-    ],
-  }),
-};
+interface OverrideStory {
+  skipItemObjects?: string[];
+  passages?: Array<Partial<SimplePassage> & { id: string }>;
+  rooms?: Array<Partial<Room> & { id: string }>;
+  items?: Array<Partial<Item> & { id: string }>;
+  intentSignals?: IntentSignal[];
+  triggers?: Trigger[];
+  // Pass-through Story-level fields. Authors declare these in JSON without
+  // touching the extractor.
+  winConditions?: EndCondition[];
+  loseConditions?: EndCondition[];
+  defaultVisibility?: Condition;
+  sharedVariants?: TextVariant[];
+}
 
-function applyDoorEnrichments(doors: Door[]): Door[] {
-  return doors.map((d) => {
-    const fn = DOOR_ENRICHMENTS[d.id];
-    return fn ? fn(d) : d;
+function loadOverrides(path: string): OverrideStory {
+  if (!existsSync(path)) {
+    console.warn(`(no overrides file at ${path}; mechanical extraction only)`);
+    return {};
+  }
+  const raw = JSON.parse(readFileSync(path, "utf8"));
+  return stripComments(raw) as OverrideStory;
+}
+
+// Recursively strip any `$comment` keys (and other `$`-prefixed metadata) from
+// the parsed overrides. JSON has no native comment syntax; authors lean on a
+// `$comment` convention. Stripping prevents the metadata from leaking into the
+// final story JSON.
+function stripComments(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stripComments);
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) {
+      if (k.startsWith("$")) continue;
+      out[k] = stripComments(v);
+    }
+    return out;
+  }
+  return value;
+}
+
+function mergePassages(
+  base: Passage[],
+  overrides: OverrideStory["passages"],
+): Passage[] {
+  if (!overrides || overrides.length === 0) return base;
+  const out = base.map((p) => p);
+  for (const ov of overrides) {
+    const idx = out.findIndex((p) => p.id === ov.id);
+    if (idx >= 0) {
+      out[idx] = mergePassage(out[idx], ov);
+    } else {
+      // New passage — must be complete (id, name, description, sides). The
+      // schema validator will catch any missing required fields.
+      out.push(ov as SimplePassage);
+    }
+  }
+  return out;
+}
+
+function mergePassage(
+  base: SimplePassage,
+  ov: Partial<SimplePassage> & { id: string },
+): SimplePassage {
+  const merged: SimplePassage = { ...base };
+  for (const [k, v] of Object.entries(ov)) {
+    if (k === "id" || k === "sides" || v === undefined) continue;
+    (merged as Record<string, unknown>)[k] = v;
+  }
+  if (ov.sides) {
+    merged.sides = mergeSides(base.sides, ov.sides) as [PassageSide, PassageSide];
+  }
+  return merged;
+}
+
+function mergeSides(
+  base: PassageSide[],
+  overrides: Partial<PassageSide>[],
+): PassageSide[] {
+  const out = base.map((s) => ({ ...s }));
+  for (const ov of overrides) {
+    if (typeof ov.roomId !== "string") continue;
+    const idx = out.findIndex((s) => s.roomId === ov.roomId);
+    if (idx >= 0) out[idx] = { ...out[idx], ...ov };
+  }
+  return out;
+}
+
+function mergeRooms(
+  base: Room[],
+  overrides: OverrideStory["rooms"],
+): Room[] {
+  if (!overrides || overrides.length === 0) return base;
+  return base.map((r) => {
+    const ov = overrides.find((o) => o.id === r.id);
+    if (!ov) return r;
+    const exits =
+      ov.exits !== undefined ? { ...(r.exits ?? {}), ...ov.exits } : r.exits;
+    return { ...r, ...ov, exits };
   });
+}
+
+function mergeItems(
+  base: Item[],
+  overrides: OverrideStory["items"],
+): Item[] {
+  if (!overrides || overrides.length === 0) return base;
+  return base.map((i) => {
+    const ov = overrides.find((o) => o.id === i.id);
+    return ov ? { ...i, ...ov } : i;
+  });
+}
+
+// For every passage OR item that declares a boolean `isOpen` in its state,
+// generate a pair of intent signals (open / close) and a pair of triggers
+// that flip the state when the LLM matches the player's intent. This is how
+// players "open the window" / "open the mailbox" without engine open/close
+// verbs — one uniform mutation path for both kinds.
+function generateOpenCloseScaffolding(
+  passages: Passage[],
+  items: Item[],
+): {
+  intentSignals: IntentSignal[];
+  triggers: Trigger[];
+} {
+  const intentSignals: IntentSignal[] = [];
+  const triggers: Trigger[] = [];
+
+  for (const p of passages) {
+    if (typeof p.state?.isOpen !== "boolean") continue;
+    const openId = `${p.id}-open-intent`;
+    const closeId = `${p.id}-close-intent`;
+    const baseOpen: Condition = { type: "passageState", passageId: p.id, key: "isOpen", equals: false };
+    const baseClose: Condition = { type: "passageState", passageId: p.id, key: "isOpen", equals: true };
+    intentSignals.push({
+      id: openId,
+      prompt: `Player opens, pushes open, swings open, lifts, climbs in through, or otherwise opens the ${p.name}.`,
+      active: andWith(baseOpen, p.openWhen),
+    });
+    intentSignals.push({
+      id: closeId,
+      prompt: `Player closes, shuts, slams, lowers, or otherwise closes the ${p.name}.`,
+      active: andWith(baseClose, p.closeWhen),
+    });
+    triggers.push({
+      id: `${p.id}-opens`,
+      when: { type: "intentMatched", signalId: openId },
+      effects: [{ type: "setPassageState", passageId: p.id, key: "isOpen", value: true }],
+      narration: `You open the ${p.name}.`,
+      once: false,
+    });
+    triggers.push({
+      id: `${p.id}-closes`,
+      when: { type: "intentMatched", signalId: closeId },
+      effects: [{ type: "setPassageState", passageId: p.id, key: "isOpen", value: false }],
+      narration: `You close the ${p.name}.`,
+      once: false,
+    });
+  }
+
+  for (const it of items) {
+    if (typeof it.state?.isOpen !== "boolean") continue;
+    const openId = `${it.id}-open-intent`;
+    const closeId = `${it.id}-close-intent`;
+    const baseOpen: Condition = { type: "itemState", itemId: it.id, key: "isOpen", equals: false };
+    const baseClose: Condition = { type: "itemState", itemId: it.id, key: "isOpen", equals: true };
+    intentSignals.push({
+      id: openId,
+      prompt: `Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the ${it.name}.`,
+      active: andWith(baseOpen, it.openWhen),
+    });
+    intentSignals.push({
+      id: closeId,
+      prompt: `Player closes, shuts, latches, lids, or otherwise closes the ${it.name}.`,
+      active: andWith(baseClose, it.closeWhen),
+    });
+    triggers.push({
+      id: `${it.id}-opens`,
+      when: { type: "intentMatched", signalId: openId },
+      effects: [{ type: "setItemState", itemId: it.id, key: "isOpen", value: true }],
+      narration: `You open the ${it.name}.`,
+      once: false,
+    });
+    triggers.push({
+      id: `${it.id}-closes`,
+      when: { type: "intentMatched", signalId: closeId },
+      effects: [{ type: "setItemState", itemId: it.id, key: "isOpen", value: false }],
+      narration: `You close the ${it.name}.`,
+      once: false,
+    });
+  }
+
+  return { intentSignals, triggers };
+}
+
+// Compose `base AND extra` when extra is set, else return base alone. Keeps
+// auto-gen output flat for the common case (no override) while supporting
+// per-item/per-passage `openWhen` / `closeWhen` extra gates.
+function andWith(base: Condition, extra: Condition | undefined): Condition {
+  if (!extra) return base;
+  return { type: "and", all: [base, extra] };
+}
+
+// For every item with a boolean `state.broken: false`, generate a break
+// intent + trigger. Once broken stays broken (no "unbreak" symmetry by
+// default). Authors can layer additional triggers (e.g. "broken egg spills
+// contents") on top of this one.
+function generateBreakScaffolding(items: Item[]): {
+  intentSignals: IntentSignal[];
+  triggers: Trigger[];
+} {
+  const intentSignals: IntentSignal[] = [];
+  const triggers: Trigger[] = [];
+  for (const it of items) {
+    if (it.state?.broken !== false) continue;
+    const signalId = `${it.id}-break-intent`;
+    intentSignals.push({
+      id: signalId,
+      prompt: `Player breaks, smashes, shatters, hurls, or otherwise destroys the ${it.name}.`,
+      active: { type: "itemState", itemId: it.id, key: "broken", equals: false },
+    });
+    triggers.push({
+      id: `${it.id}-breaks`,
+      when: { type: "intentMatched", signalId },
+      effects: [{ type: "setItemState", itemId: it.id, key: "broken", value: true }],
+      narration: `The ${it.name} breaks.`,
+      once: false,
+    });
+  }
+  return { intentSignals, triggers };
 }
 
 // ---------- main ----------
@@ -711,10 +923,11 @@ function main() {
 
   const roomIds = new Set(rawRooms.map((r) => id(r.Name)));
   const sharedSceneryRooms = buildSharedSceneryMap(rawRooms);
+  const overrides = loadOverrides(OVERRIDES_PATH);
 
-  // Doors first — produces the set of object names that the item extractor
-  // must skip (so DOORBIT items aren't double-extracted).
-  const doorResult = extractDoors(
+  // Passages first — produces the set of object names that the item
+  // extractor must skip (so DOORBIT items aren't double-extracted).
+  const passageResult = extractPassages(
     rawObjects,
     rawRooms,
     routinesByName,
@@ -722,9 +935,38 @@ function main() {
     sharedSceneryRooms,
   );
 
-  const rooms = extractRooms(rawRooms, roomIds, doorResult.doorIds, routinesByName);
-  const items = extractItems(rawObjects, roomIds, doorResult.skippedDoorObjects, sharedSceneryRooms);
-  const doors = applyDoorEnrichments(doorResult.doors);
+  // Override-declared passage ids feed into the room extractor so DEXIT
+  // exits referencing manual passages (like the chimney) resolve correctly.
+  // skipItemObjects unions into the item-extractor skip set so manual passages'
+  // backing ZIL objects (CHIMNEY) aren't double-included as scenery.
+  const allPassageIds = new Set(passageResult.passageIds);
+  for (const p of overrides.passages ?? []) allPassageIds.add(p.id);
+  const itemSkipSet = new Set(passageResult.skippedPassageObjects);
+  for (const name of overrides.skipItemObjects ?? []) itemSkipSet.add(name);
+
+  const extractedRooms = extractRooms(rawRooms, roomIds, allPassageIds, routinesByName);
+  const rooms = mergeRooms(extractedRooms, overrides.rooms);
+  const extractedItems = extractItems(rawObjects, roomIds, itemSkipSet, sharedSceneryRooms);
+  const items = mergeItems(extractedItems, overrides.items);
+  const passages = mergePassages(passageResult.passages, overrides.passages);
+
+  // For every passage OR item with boolean state.isOpen, auto-generate
+  // open/close intent signals + triggers so players can "open the window"
+  // and "open the mailbox" via the same uniform mutation path.
+  const openClose = generateOpenCloseScaffolding(passages, items);
+  // For every item with boolean state.broken (initial false), auto-generate
+  // a break intent + trigger.
+  const breakable = generateBreakScaffolding(items);
+  const intentSignals = [
+    ...openClose.intentSignals,
+    ...breakable.intentSignals,
+    ...(overrides.intentSignals ?? []),
+  ];
+  const triggers = [
+    ...openClose.triggers,
+    ...breakable.triggers,
+    ...(overrides.triggers ?? []),
+  ];
 
   const story: Story = {
     schemaVersion: SCHEMA_VERSION,
@@ -739,7 +981,21 @@ function main() {
     startRoom: "west-of-house",
     rooms,
     items,
-    ...(doors.length > 0 && { doors }),
+    ...(passages.length > 0 && { passages }),
+    ...(intentSignals.length > 0 && { intentSignals }),
+    ...(triggers.length > 0 && { triggers }),
+    ...(overrides.defaultVisibility && {
+      defaultVisibility: overrides.defaultVisibility,
+    }),
+    ...(overrides.sharedVariants && overrides.sharedVariants.length > 0 && {
+      sharedVariants: overrides.sharedVariants,
+    }),
+    ...(overrides.winConditions && overrides.winConditions.length > 0 && {
+      winConditions: overrides.winConditions,
+    }),
+    ...(overrides.loseConditions && overrides.loseConditions.length > 0 && {
+      loseConditions: overrides.loseConditions,
+    }),
   };
 
   // Validate before writing.
@@ -760,16 +1016,17 @@ function main() {
 
   // Report.
   const exitCount = rooms.reduce((n, r) => n + Object.keys(r.exits ?? {}).length, 0);
-  const doorGatedExits = rooms.reduce(
-    (n, r) => n + Object.values(r.exits ?? {}).filter((e) => e.door).length,
+  const passageGatedExits = rooms.reduce(
+    (n, r) => n + Object.values(r.exits ?? {}).filter((e) => e.passage).length,
     0,
   );
   const ldescRooms = rooms.filter((r) => !r.description.startsWith("(")).length;
   console.log(`✓ wrote ${OUT_PATH}`);
   console.log(`  rooms: ${rooms.length} (${ldescRooms} with real descriptions, ${rooms.length - ldescRooms} placeholders)`);
   console.log(`  items: ${items.length}`);
-  console.log(`  doors: ${doorResult.doors.length}`);
-  console.log(`  exits: ${exitCount} (${doorGatedExits} gated by doors)`);
+  console.log(`  passages: ${passages.length}`);
+  console.log(`  exits: ${exitCount} (${passageGatedExits} gated by passages)`);
+  console.log(`  intent signals + triggers (auto-generated + overrides): ${intentSignals.length} + ${triggers.length}`);
   console.log(`  takeable items: ${items.filter((i) => i.takeable).length}`);
   console.log(`  containers:     ${items.filter((i) => i.container).length}`);
   console.log(`  light sources:  ${items.filter((i) => i.lightSource).length}`);

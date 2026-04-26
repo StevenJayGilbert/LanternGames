@@ -57,18 +57,20 @@ export function validateStory(input: unknown): ValidationResult {
   items.forEach((item, i) => validateItem(item, `items[${i}]`, roomIds, itemIds, err));
   detectContainerCycles(items, err);
 
-  // Doors share an id namespace with items so action tools (open/close/examine)
-  // can dispatch on a single id without ambiguity.
-  const doors = optionalArray(input, "doors", err) ?? [];
-  const doorIds = collectIds(doors, "doors", err);
-  for (const id of doorIds) {
+  // Passages share an id namespace with items so the `examine` action can
+  // dispatch on a single id without ambiguity.
+  const passages = optionalArray(input, "passages", err) ?? [];
+  const passageIds = collectIds(passages, "passages", err);
+  for (const id of passageIds) {
     if (itemIds.has(id)) {
-      err(`doors`, `door id "${id}" collides with an item id`);
+      err(`passages`, `passage id "${id}" collides with an item id`);
     }
   }
-  doors.forEach((d, i) => validateDoor(d, `doors[${i}]`, roomIds, err));
+  passages.forEach((p, i) =>
+    validatePassage(p, `passages[${i}]`, roomIds, itemIds, new Set(), err),
+  );
 
-  // Validate exit door references after doors are collected.
+  // Validate exit passage references after passages are collected.
   if (Array.isArray(input.rooms)) {
     input.rooms.forEach((rawRoom, ri) => {
       if (!isObject(rawRoom)) return;
@@ -76,11 +78,11 @@ export function validateStory(input: unknown): ValidationResult {
       if (!isObject(exits)) return;
       for (const [dir, exit] of Object.entries(exits)) {
         if (!isObject(exit)) continue;
-        if (exit.door !== undefined) {
-          if (typeof exit.door !== "string") {
-            err(`rooms[${ri}].exits.${dir}.door`, "must be a string");
-          } else if (!doorIds.has(exit.door)) {
-            err(`rooms[${ri}].exits.${dir}.door`, `unknown door "${exit.door}"`);
+        if (exit.passage !== undefined) {
+          if (typeof exit.passage !== "string") {
+            err(`rooms[${ri}].exits.${dir}.passage`, "must be a string");
+          } else if (!passageIds.has(exit.passage)) {
+            err(`rooms[${ri}].exits.${dir}.passage`, `unknown passage "${exit.passage}"`);
           }
         }
       }
@@ -127,6 +129,33 @@ export function validateStory(input: unknown): ValidationResult {
     }
   }
 
+  if ("defaultVisibility" in input && input.defaultVisibility !== undefined) {
+    validateCondition(
+      input.defaultVisibility,
+      "defaultVisibility",
+      roomIds,
+      itemIds,
+      triggerIds,
+      err,
+    );
+  }
+
+  if ("sharedVariants" in input && input.sharedVariants !== undefined) {
+    if (!Array.isArray(input.sharedVariants)) {
+      err("sharedVariants", "must be an array of TextVariant objects");
+    } else {
+      input.sharedVariants.forEach((v, i) => {
+        if (!isObject(v)) {
+          err(`sharedVariants[${i}]`, "must be an object");
+          return;
+        }
+        if (typeof v.text !== "string") err(`sharedVariants[${i}].text`, "must be a string");
+        if (v.when === undefined) err(`sharedVariants[${i}].when`, "missing condition");
+        else validateCondition(v.when, `sharedVariants[${i}].when`, roomIds, itemIds, triggerIds, err);
+      });
+    }
+  }
+
   if (errors.length > 0) return { ok: false, errors };
   return { ok: true, story: input as unknown as Story };
 }
@@ -156,6 +185,9 @@ function validateRoom(
         if (exit.blockedMessage !== undefined && typeof exit.blockedMessage !== "string") {
           err(`${ep}.blockedMessage`, "must be a string");
         }
+        if (exit.visibleWhen !== undefined) {
+          validateCondition(exit.visibleWhen, `${ep}.visibleWhen`, roomIds, new Set(), new Set(), err);
+        }
       }
     }
   }
@@ -169,6 +201,19 @@ function validateRoom(
       if (v.when === undefined) err(`${path}.variants[${i}].when`, "missing condition");
       else validateCondition(v.when, `${path}.variants[${i}].when`, roomIds, new Set(), new Set(), err);
     });
+  }
+
+  // state: per-room typed state map. Each value must be Atom.
+  if ("state" in raw && raw.state !== undefined) {
+    if (!isObject(raw.state)) {
+      err(`${path}.state`, "must be an object mapping keys to atoms");
+    } else {
+      for (const [k, v] of Object.entries(raw.state)) {
+        if (!isAtom(v)) {
+          err(`${path}.state.${k}`, "must be string, number, or boolean");
+        }
+      }
+    }
   }
 }
 
@@ -200,10 +245,84 @@ function validateItem(
     }
   }
 
-  optionalStringArray(raw, "synonyms", err, path);
-  optionalStringArray(raw, "adjectives", err, path);
   optionalBoolean(raw, "takeable", err, path);
   optionalBoolean(raw, "fixed", err, path);
+
+  // visibleWhen: per-item visibility gate. Composes with Story.defaultVisibility.
+  if ("visibleWhen" in raw && raw.visibleWhen !== undefined) {
+    validateCondition(raw.visibleWhen, `${path}.visibleWhen`, roomIds, itemIds, new Set(), err);
+  }
+
+  // lightSource: marker capability. Reject the deprecated `isLit` field with
+  // a migration hint — lit state lives in item.state.isLit now.
+  if ("lightSource" in raw && raw.lightSource !== undefined) {
+    if (!isObject(raw.lightSource)) {
+      err(`${path}.lightSource`, "must be an object (or omit it)");
+    } else if ("isLit" in raw.lightSource) {
+      err(
+        `${path}.lightSource.isLit`,
+        "deprecated — model lit state via item.state.isLit (boolean) instead",
+      );
+    }
+  }
+
+  // state: per-item typed state map. Each value must be Atom.
+  if ("state" in raw && raw.state !== undefined) {
+    if (!isObject(raw.state)) {
+      err(`${path}.state`, "must be an object mapping keys to atoms");
+    } else {
+      for (const [k, v] of Object.entries(raw.state)) {
+        if (!isAtom(v)) {
+          err(`${path}.state.${k}`, "must be string, number, or boolean");
+        }
+      }
+    }
+  }
+
+  // openWhen / closeWhen: extra Conditions AND'd into the auto-gen open/close
+  // intents' active clause by the extractor. Engine ignores at runtime.
+  if ("openWhen" in raw && raw.openWhen !== undefined) {
+    validateCondition(raw.openWhen, `${path}.openWhen`, roomIds, itemIds, new Set(), err);
+  }
+  if ("closeWhen" in raw && raw.closeWhen !== undefined) {
+    validateCondition(raw.closeWhen, `${path}.closeWhen`, roomIds, itemIds, new Set(), err);
+  }
+
+  // container: validate new shape; reject deprecated openable/isOpen with a
+  // migration hint so stale stories surface clearly.
+  if ("container" in raw && raw.container !== undefined) {
+    if (!isObject(raw.container)) {
+      err(`${path}.container`, "must be an object");
+    } else {
+      const c = raw.container;
+      if ("openable" in c || "isOpen" in c) {
+        err(
+          `${path}.container`,
+          "container.openable / container.isOpen are deprecated — model open state via item.state.isOpen and gate access with container.accessibleWhen referencing it",
+        );
+      }
+      if ("capacity" in c && c.capacity !== undefined) {
+        if (typeof c.capacity !== "number" || !Number.isFinite(c.capacity) || c.capacity < 0) {
+          err(`${path}.container.capacity`, "must be a non-negative number");
+        }
+      }
+      if ("accessibleWhen" in c && c.accessibleWhen !== undefined) {
+        validateCondition(
+          c.accessibleWhen,
+          `${path}.container.accessibleWhen`,
+          roomIds,
+          itemIds,
+          new Set(),
+          err,
+        );
+      }
+      if ("accessBlockedMessage" in c && c.accessBlockedMessage !== undefined) {
+        if (typeof c.accessBlockedMessage !== "string") {
+          err(`${path}.container.accessBlockedMessage`, "must be a string");
+        }
+      }
+    }
+  }
 
   // appearsIn: optional array of room ids where this item is also perceptible
   if ("appearsIn" in raw && raw.appearsIn !== undefined) {
@@ -270,14 +389,17 @@ function validateTrigger(
     err(`${path}.narration`, "must be a string");
   }
   optionalBoolean(raw, "once", err, path);
+  optionalBoolean(raw, "afterAction", err, path);
 }
 
-const SUPPORTED_DOOR_KINDS = new Set(["simple"]);
+const SUPPORTED_PASSAGE_KINDS = new Set(["simple"]);
 
-function validateDoor(
+function validatePassage(
   raw: unknown,
   path: string,
   roomIds: Set<string>,
+  itemIds: Set<string>,
+  triggerIds: Set<string>,
   err: (p: string, m: string) => void,
 ) {
   if (!isObject(raw)) return err(path, "must be an object");
@@ -289,10 +411,10 @@ function validateDoor(
   if (raw.kind !== undefined) {
     if (typeof raw.kind !== "string") {
       err(`${path}.kind`, "must be a string");
-    } else if (!SUPPORTED_DOOR_KINDS.has(raw.kind)) {
+    } else if (!SUPPORTED_PASSAGE_KINDS.has(raw.kind)) {
       err(
         `${path}.kind`,
-        `unsupported door kind "${raw.kind}" (this engine speaks: ${[...SUPPORTED_DOOR_KINDS].join(", ")})`,
+        `unsupported passage kind "${raw.kind}" (this engine speaks: ${[...SUPPORTED_PASSAGE_KINDS].join(", ")})`,
       );
     }
   }
@@ -303,7 +425,9 @@ function validateDoor(
   } else if (sides.length !== 2) {
     err(`${path}.sides`, `must contain exactly two sides (got ${sides.length})`);
   } else {
-    sides.forEach((side, i) => validateDoorSide(side, `${path}.sides[${i}]`, roomIds, err));
+    sides.forEach((side, i) =>
+      validatePassageSide(side, `${path}.sides[${i}]`, roomIds, itemIds, triggerIds, err),
+    );
     if (
       isObject(sides[0]) &&
       isObject(sides[1]) &&
@@ -313,7 +437,10 @@ function validateDoor(
     }
   }
 
-  optionalBoolean(raw, "isOpen", err, path);
+  // state: optional Record<string, Atom>
+  if (raw.state !== undefined) {
+    validatePassageStateShape(raw.state, `${path}.state`, err);
+  }
 
   // variants: optional, same shape as Room.variants.
   if (raw.variants !== undefined) {
@@ -322,38 +449,63 @@ function validateDoor(
       if (!isObject(v)) return err(`${path}.variants[${i}]`, "must be an object");
       if (typeof v.text !== "string") err(`${path}.variants[${i}].text`, "must be a string");
       if (v.when === undefined) err(`${path}.variants[${i}].when`, "missing condition");
-      else validateCondition(v.when, `${path}.variants[${i}].when`, roomIds, new Set(), new Set(), err);
+      else validateCondition(v.when, `${path}.variants[${i}].when`, roomIds, itemIds, triggerIds, err);
     });
   }
 
   if (raw.glimpse !== undefined) {
-    validateGlimpse(raw.glimpse, `${path}.glimpse`, roomIds, err);
+    validateGlimpse(raw.glimpse, `${path}.glimpse`, roomIds, itemIds, triggerIds, err);
   }
 
-  if (raw.openableWhen !== undefined) {
-    validateCondition(raw.openableWhen, `${path}.openableWhen`, roomIds, new Set(), new Set(), err);
+  if (raw.traversableWhen !== undefined) {
+    validateCondition(raw.traversableWhen, `${path}.traversableWhen`, roomIds, itemIds, triggerIds, err);
   }
-  optionalString(raw, "openBlockedMessage", err, path);
+  optionalString(raw, "traverseBlockedMessage", err, path);
+
+  if (raw.openWhen !== undefined) {
+    validateCondition(raw.openWhen, `${path}.openWhen`, roomIds, itemIds, triggerIds, err);
+  }
+  if (raw.closeWhen !== undefined) {
+    validateCondition(raw.closeWhen, `${path}.closeWhen`, roomIds, itemIds, triggerIds, err);
+  }
+  if (raw.visibleWhen !== undefined) {
+    validateCondition(raw.visibleWhen, `${path}.visibleWhen`, roomIds, itemIds, triggerIds, err);
+  }
+}
+
+function validatePassageStateShape(
+  raw: unknown,
+  path: string,
+  err: (p: string, m: string) => void,
+) {
+  if (!isObject(raw)) return err(path, "must be an object of string -> atom");
+  for (const [k, v] of Object.entries(raw)) {
+    if (!isAtom(v)) err(`${path}.${k}`, "must be string, number, or boolean");
+  }
 }
 
 function validateGlimpse(
   raw: unknown,
   path: string,
   roomIds: Set<string>,
+  itemIds: Set<string>,
+  triggerIds: Set<string>,
   err: (p: string, m: string) => void,
 ) {
   if (!isObject(raw)) return err(path, "must be an object");
   if (raw.when !== undefined) {
-    validateCondition(raw.when, `${path}.when`, roomIds, new Set(), new Set(), err);
+    validateCondition(raw.when, `${path}.when`, roomIds, itemIds, triggerIds, err);
   }
   optionalString(raw, "description", err, path);
   optionalString(raw, "prompt", err, path);
 }
 
-function validateDoorSide(
+function validatePassageSide(
   raw: unknown,
   path: string,
   roomIds: Set<string>,
+  itemIds: Set<string>,
+  triggerIds: Set<string>,
   err: (p: string, m: string) => void,
 ) {
   if (!isObject(raw)) return err(path, "must be an object");
@@ -365,13 +517,13 @@ function validateDoorSide(
   optionalString(raw, "description", err, path);
 
   if (raw.glimpse !== undefined) {
-    validateGlimpse(raw.glimpse, `${path}.glimpse`, roomIds, err);
+    validateGlimpse(raw.glimpse, `${path}.glimpse`, roomIds, itemIds, triggerIds, err);
   }
 
-  if (raw.openableWhen !== undefined) {
-    validateCondition(raw.openableWhen, `${path}.openableWhen`, roomIds, new Set(), new Set(), err);
+  if (raw.traversableWhen !== undefined) {
+    validateCondition(raw.traversableWhen, `${path}.traversableWhen`, roomIds, itemIds, triggerIds, err);
   }
-  optionalString(raw, "openBlockedMessage", err, path);
+  optionalString(raw, "traverseBlockedMessage", err, path);
 
   if (raw.variants !== undefined) {
     if (!Array.isArray(raw.variants)) err(`${path}.variants`, "must be an array");
@@ -379,8 +531,12 @@ function validateDoorSide(
       if (!isObject(v)) return err(`${path}.variants[${i}]`, "must be an object");
       if (typeof v.text !== "string") err(`${path}.variants[${i}].text`, "must be a string");
       if (v.when === undefined) err(`${path}.variants[${i}].when`, "missing condition");
-      else validateCondition(v.when, `${path}.variants[${i}].when`, roomIds, new Set(), new Set(), err);
+      else validateCondition(v.when, `${path}.variants[${i}].when`, roomIds, itemIds, triggerIds, err);
     });
+  }
+
+  if (raw.visibleWhen !== undefined) {
+    validateCondition(raw.visibleWhen, `${path}.visibleWhen`, roomIds, itemIds, triggerIds, err);
   }
 }
 
@@ -454,8 +610,15 @@ function validateCondition(
       if (typeof raw.itemId !== "string") err(`${path}.itemId`, "must be a string");
       else if (itemIds.size && !itemIds.has(raw.itemId)) err(`${path}.itemId`, `unknown item "${raw.itemId}"`);
       if (typeof raw.location !== "string") err(`${path}.location`, "must be a string");
-      else if (!SPECIAL_LOCATIONS.has(raw.location) && roomIds.size && !roomIds.has(raw.location)) {
-        err(`${path}.location`, `unknown location "${raw.location}"`);
+      else if (
+        !SPECIAL_LOCATIONS.has(raw.location) &&
+        (roomIds.size === 0 || !roomIds.has(raw.location)) &&
+        (itemIds.size === 0 || !itemIds.has(raw.location))
+      ) {
+        err(
+          `${path}.location`,
+          `unknown location "${raw.location}" (must be a roomId, an itemId, "inventory", or "nowhere")`,
+        );
       }
       return;
     case "playerAt":
@@ -467,15 +630,42 @@ function validateCondition(
       if (typeof raw.triggerId !== "string") err(`${path}.triggerId`, "must be a string");
       else if (triggerIds.size && !triggerIds.has(raw.triggerId)) err(`${path}.triggerId`, `unknown trigger "${raw.triggerId}"`);
       return;
-    case "doorOpen":
-      if (typeof raw.doorId !== "string") err(`${path}.doorId`, "must be a string");
-      // Note: door id resolution happens later if needed; we don't pass doorIds
-      // through every condition site yet. Validator catches obvious typos via
-      // missing field, not unresolved references.
+    case "passageState":
+      // Soft validation: passageId and key must be strings; equals must be an
+      // atom. Cross-reference (passage exists, key declared) is skipped — the
+      // validator doesn't thread passage state schemas through every site.
+      // Typos become "never true" at runtime.
+      if (typeof raw.passageId !== "string") err(`${path}.passageId`, "must be a string");
+      if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
+      if (!isAtom(raw.equals)) err(`${path}.equals`, "must be string, number, or boolean");
       return;
-    case "containerOpen":
+    case "itemState":
+      // Same soft validation as passageState. Cross-ref skipped; typos become
+      // "never true" at runtime.
       if (typeof raw.itemId !== "string") err(`${path}.itemId`, "must be a string");
       else if (itemIds.size && !itemIds.has(raw.itemId)) err(`${path}.itemId`, `unknown item "${raw.itemId}"`);
+      if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
+      if (!isAtom(raw.equals)) err(`${path}.equals`, "must be string, number, or boolean");
+      return;
+    case "roomState":
+      if (typeof raw.roomId !== "string") err(`${path}.roomId`, "must be a string");
+      else if (roomIds.size && !roomIds.has(raw.roomId)) err(`${path}.roomId`, `unknown room "${raw.roomId}"`);
+      if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
+      if (!isAtom(raw.equals)) err(`${path}.equals`, "must be string, number, or boolean");
+      return;
+    case "currentRoomState":
+      if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
+      if (!isAtom(raw.equals)) err(`${path}.equals`, "must be string, number, or boolean");
+      return;
+    case "anyPerceivableItemWith":
+      if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
+      if (!isAtom(raw.equals)) err(`${path}.equals`, "must be string, number, or boolean");
+      return;
+    case "containerOpen":
+      err(
+        `${path}.type`,
+        "containerOpen is deprecated — use { type: 'itemState', itemId, key: 'isOpen', equals: true }",
+      );
       return;
     case "intentMatched":
       // Soft validation: signalId must be a string. Reference resolution is
@@ -483,6 +673,15 @@ function validateCondition(
       // ordering), so unknown signalIds become "never matched" at runtime.
       if (typeof raw.signalId !== "string") err(`${path}.signalId`, "must be a string");
       return;
+    case "compare": {
+      const validOps = new Set(["==", "!=", "<", "<=", ">", ">="]);
+      if (typeof raw.op !== "string" || !validOps.has(raw.op)) {
+        err(`${path}.op`, `must be one of ${[...validOps].join(", ")}`);
+      }
+      validateNumericExpr(raw.left, `${path}.left`, err);
+      validateNumericExpr(raw.right, `${path}.right`, err);
+      return;
+    }
     case "always":
       // No fields; always true.
       return;
@@ -500,6 +699,48 @@ function validateCondition(
       return;
     default:
       err(`${path}.type`, `unknown condition type "${String(t)}"`);
+  }
+}
+
+// NumericExpr discriminator is `kind`. Each variant has its own field requirements.
+function validateNumericExpr(
+  raw: unknown,
+  path: string,
+  err: (p: string, m: string) => void,
+) {
+  if (!isObject(raw)) return err(path, "must be an object");
+  const kind = raw.kind;
+  switch (kind) {
+    case "literal":
+      if (typeof raw.value !== "number" || !Number.isFinite(raw.value)) {
+        err(`${path}.value`, "must be a finite number");
+      }
+      return;
+    case "flag":
+      if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
+      return;
+    case "itemCountAt":
+      if (typeof raw.location !== "string") err(`${path}.location`, "must be a string");
+      return;
+    case "passageState":
+      if (typeof raw.passageId !== "string") err(`${path}.passageId`, "must be a string");
+      if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
+      return;
+    case "itemState":
+      if (typeof raw.itemId !== "string") err(`${path}.itemId`, "must be a string");
+      if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
+      return;
+    case "roomState":
+      if (typeof raw.roomId !== "string") err(`${path}.roomId`, "must be a string");
+      if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
+      return;
+    case "inventoryCount":
+    case "matchedIntentsCount":
+    case "visitedCount":
+      // No additional fields.
+      return;
+    default:
+      err(`${path}.kind`, `unknown numeric expression kind "${String(kind)}"`);
   }
 }
 
@@ -527,6 +768,40 @@ function validateEffect(
     case "movePlayer":
       if (typeof raw.to !== "string") err(`${path}.to`, "must be a string");
       else if (!roomIds.has(raw.to)) err(`${path}.to`, `unknown room "${raw.to}"`);
+      return;
+    case "setPassageState":
+      // Soft validation: passageId/key are strings, value is an Atom. Cross-
+      // reference (passage exists, key declared) is skipped here for the same
+      // reason as Condition.passageState — typos become silent at runtime.
+      if (typeof raw.passageId !== "string") err(`${path}.passageId`, "must be a string");
+      if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
+      if (!isAtom(raw.value)) err(`${path}.value`, "must be string, number, or boolean");
+      return;
+    case "setItemState":
+      if (typeof raw.itemId !== "string") err(`${path}.itemId`, "must be a string");
+      else if (itemIds.size && !itemIds.has(raw.itemId)) err(`${path}.itemId`, `unknown item "${raw.itemId}"`);
+      if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
+      if (!isAtom(raw.value)) err(`${path}.value`, "must be string, number, or boolean");
+      return;
+    case "setRoomState":
+      if (typeof raw.roomId !== "string") err(`${path}.roomId`, "must be a string");
+      else if (roomIds.size && !roomIds.has(raw.roomId)) err(`${path}.roomId`, `unknown room "${raw.roomId}"`);
+      if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
+      if (!isAtom(raw.value)) err(`${path}.value`, "must be string, number, or boolean");
+      return;
+    case "adjustFlag":
+      if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
+      if (typeof raw.by !== "number" || !Number.isFinite(raw.by)) {
+        err(`${path}.by`, "must be a finite number");
+      }
+      return;
+    case "adjustItemState":
+      if (typeof raw.itemId !== "string") err(`${path}.itemId`, "must be a string");
+      else if (itemIds.size && !itemIds.has(raw.itemId)) err(`${path}.itemId`, `unknown item "${raw.itemId}"`);
+      if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
+      if (typeof raw.by !== "number" || !Number.isFinite(raw.by)) {
+        err(`${path}.by`, "must be a finite number");
+      }
       return;
     case "endGame":
       if (typeof raw.won !== "boolean") err(`${path}.won`, "must be boolean");
@@ -576,19 +851,6 @@ function optionalBoolean(
 ) {
   if (key in obj && obj[key] !== undefined && typeof obj[key] !== "boolean") {
     err(`${parentPath}.${key}`, "must be a boolean if present");
-  }
-}
-
-function optionalStringArray(
-  obj: Record<string, unknown>,
-  key: string,
-  err: (p: string, m: string) => void,
-  parentPath = "$",
-) {
-  if (!(key in obj) || obj[key] === undefined) return;
-  const v = obj[key];
-  if (!Array.isArray(v) || v.some((s) => typeof s !== "string")) {
-    err(`${parentPath}.${key}`, "must be an array of strings");
   }
 }
 

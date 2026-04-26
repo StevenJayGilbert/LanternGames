@@ -38,8 +38,6 @@
     {
       "id": "painting",
       "name": "oil painting",
-      "synonyms": ["painting", "picture", "portrait"],
-      "adjectives": ["faded", "oil"],
       "description": "A faded portrait of a stern noble. It hangs slightly askew, as though something behind it has shifted.",
       "location": "chamber",
       "fixed": true
@@ -47,8 +45,6 @@
     {
       "id": "key",
       "name": "small brass key",
-      "synonyms": ["key"],
-      "adjectives": ["small", "brass"],
       "description": "A small, worn brass key. It looks like it might fit a lock.",
       "location": "nowhere",
       "takeable": true

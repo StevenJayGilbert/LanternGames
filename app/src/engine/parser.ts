@@ -73,13 +73,6 @@ export function parseCommand(input: string, story: Story): ParseResult {
       return { type: "go", direction: dir };
     }
 
-    case "open":
-      return needItem("open", rest, story);
-
-    case "close":
-    case "shut":
-      return needItem("close", rest, story);
-
     case "read":
       return needItem("read", rest, story);
   }
@@ -98,7 +91,7 @@ function parseLook(rest: string[], story: Story): ParseResult {
 }
 
 function needItem(
-  verb: "examine" | "take" | "drop" | "open" | "close" | "read",
+  verb: "examine" | "take" | "drop" | "read",
   query: string,
   story: Story,
 ): ParseResult {
@@ -111,16 +104,14 @@ function needItem(
 function findItemId(query: string, story: Story): string | null {
   const q = query.trim().toLowerCase();
   if (!q) return null;
-  // Exact id, name, or synonym match first.
+  // Exact id or name match first.
   for (const item of story.items) {
     if (item.id.toLowerCase() === q) return item.id;
     if (item.name.toLowerCase() === q) return item.id;
-    if (item.synonyms?.some((s) => s.toLowerCase() === q)) return item.id;
   }
-  // Fall back to last-token match (e.g. "small brass key" matches synonym "key").
+  // Fall back to last-token match (e.g. "small brass key" matches name "key").
   const lastWord = q.split(/\s+/).pop()!;
   for (const item of story.items) {
-    if (item.synonyms?.some((s) => s.toLowerCase() === lastWord)) return item.id;
     if (item.name.toLowerCase().split(/\s+/).pop() === lastWord) return item.id;
   }
   return null;

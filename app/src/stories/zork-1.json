@@ -122,11 +122,11 @@
         },
         "west": {
           "to": "kitchen",
-          "door": "kitchen-window"
+          "passage": "kitchen-window"
         },
         "in": {
           "to": "kitchen",
-          "door": "kitchen-window"
+          "passage": "kitchen-window"
         }
       }
     },
@@ -268,25 +268,21 @@
       "exits": {
         "east": {
           "to": "east-of-house",
-          "door": "kitchen-window"
+          "passage": "kitchen-window"
         },
         "west": {
           "to": "living-room"
         },
         "out": {
           "to": "east-of-house",
-          "door": "kitchen-window"
+          "passage": "kitchen-window"
         },
         "up": {
           "to": "attic"
         },
         "down": {
           "to": "studio",
-          "when": {
-            "type": "flag",
-            "key": "false-flag",
-            "equals": true
-          }
+          "passage": "chimney"
         }
       }
     },
@@ -315,6 +311,15 @@
             "key": "magic-flag",
             "equals": true
           }
+        },
+        "down": {
+          "to": "cellar",
+          "passage": "trap-door",
+          "visibleWhen": {
+            "type": "flag",
+            "key": "rug-moved-flag",
+            "equals": true
+          }
         }
       }
     },
@@ -331,8 +336,11 @@
         },
         "up": {
           "to": "living-room",
-          "door": "trap-door"
+          "passage": "trap-door"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -359,6 +367,9 @@
             "equals": true
           }
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -372,6 +383,9 @@
         "east": {
           "to": "gallery"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -385,6 +399,9 @@
         "north": {
           "to": "studio"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -394,6 +411,10 @@
       "exits": {
         "south": {
           "to": "gallery"
+        },
+        "up": {
+          "to": "kitchen",
+          "passage": "chimney"
         }
       }
     },
@@ -414,6 +435,9 @@
         "west": {
           "to": "maze-4"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -427,6 +451,9 @@
         "east": {
           "to": "maze-3"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -443,6 +470,9 @@
         "up": {
           "to": "maze-5"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -459,6 +489,9 @@
         "east": {
           "to": "dead-end-1"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -469,6 +502,9 @@
         "south": {
           "to": "maze-4"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -485,6 +521,9 @@
         "southwest": {
           "to": "maze-6"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -495,6 +534,9 @@
         "west": {
           "to": "maze-5"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -514,6 +556,9 @@
         "up": {
           "to": "maze-9"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -533,6 +578,9 @@
         "south": {
           "to": "maze-15"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -549,6 +597,9 @@
         "southeast": {
           "to": "dead-end-3"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -559,6 +610,9 @@
         "north": {
           "to": "maze-8"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -581,6 +635,9 @@
         "northwest": {
           "to": "maze-9"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -597,6 +654,9 @@
         "up": {
           "to": "maze-11"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -616,6 +676,9 @@
         "southwest": {
           "to": "maze-12"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -628,8 +691,11 @@
         },
         "up": {
           "to": "grating-clearing",
-          "door": "grate"
+          "passage": "grate"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -649,6 +715,9 @@
         "north": {
           "to": "dead-end-4"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -659,6 +728,9 @@
         "south": {
           "to": "maze-12"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -678,6 +750,9 @@
         "west": {
           "to": "maze-11"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -697,6 +772,9 @@
         "south": {
           "to": "maze-7"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -713,6 +791,9 @@
         "southeast": {
           "to": "cyclops-room"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -871,6 +952,9 @@
         "east": {
           "to": "small-cave"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -887,6 +971,9 @@
         "east": {
           "to": "tiny-cave"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -906,6 +993,9 @@
         "west": {
           "to": "twisting-passage"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -922,6 +1012,9 @@
         "down": {
           "to": "entrance-to-hades"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -935,6 +1028,9 @@
         "west": {
           "to": "slide-room"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -948,6 +1044,9 @@
         "south": {
           "to": "mirror-room-2"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -961,6 +1060,9 @@
         "east": {
           "to": "tiny-cave"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -974,6 +1076,9 @@
         "east": {
           "to": "small-cave"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -987,6 +1092,9 @@
         "south": {
           "to": "reservoir-north"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1006,6 +1114,9 @@
         "north": {
           "to": "chasm-room"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1028,6 +1139,9 @@
         "southeast": {
           "to": "engravings-cave"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1047,6 +1161,9 @@
         "down": {
           "to": "loud-room"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1060,6 +1177,9 @@
         "east": {
           "to": "white-cliffs-north"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1076,6 +1196,9 @@
         "up": {
           "to": "deep-canyon"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1092,6 +1215,9 @@
         "south": {
           "to": "round-room"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1111,6 +1237,9 @@
         "south": {
           "to": "ns-passage"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1137,6 +1266,9 @@
             "equals": true
           }
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1150,6 +1282,9 @@
         "north": {
           "to": "entrance-to-hades"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1163,6 +1298,9 @@
         "east": {
           "to": "dome-room"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1176,6 +1314,9 @@
         "up": {
           "to": "north-temple"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1194,6 +1335,9 @@
             "equals": true
           }
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1459,6 +1603,9 @@
         "southwest": {
           "to": "sandy-beach"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1545,6 +1692,9 @@
         "north": {
           "to": "end-of-rainbow"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1558,6 +1708,9 @@
         "down": {
           "to": "canyon-bottom"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1593,6 +1746,9 @@
         "west": {
           "to": "squeeky-room"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1606,6 +1762,9 @@
         "east": {
           "to": "mine-entrance"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1619,6 +1778,9 @@
         "east": {
           "to": "shaft-room"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1632,6 +1794,9 @@
         "north": {
           "to": "smelly-room"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1645,6 +1810,9 @@
         "south": {
           "to": "shaft-room"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1658,6 +1826,9 @@
         "east": {
           "to": "mine-1"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1671,6 +1842,9 @@
         "up": {
           "to": "mine-4"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1687,6 +1861,9 @@
         "up": {
           "to": "ladder-top"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1697,6 +1874,9 @@
         "north": {
           "to": "ladder-bottom"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1715,6 +1895,9 @@
             "equals": true
           }
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1741,6 +1924,9 @@
             "equals": true
           }
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1767,6 +1953,9 @@
         "northeast": {
           "to": "mine-2"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1783,6 +1972,9 @@
         "southeast": {
           "to": "mine-3"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1799,6 +1991,9 @@
         "east": {
           "to": "mine-2"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1815,6 +2010,9 @@
         "down": {
           "to": "ladder-top"
         }
+      },
+      "state": {
+        "dark": true
       }
     },
     {
@@ -1831,6 +2029,9 @@
         "down": {
           "to": "cellar"
         }
+      },
+      "state": {
+        "dark": true
       }
     }
   ],
@@ -1843,9 +2044,6 @@
       "appearsIn": [
         "north-of-house",
         "south-of-house"
-      ],
-      "synonyms": [
-        "boards"
       ],
       "fixed": true
     },
@@ -1860,12 +2058,6 @@
         "path",
         "up-a-tree",
         "clearing"
-      ],
-      "synonyms": [
-        "bird"
-      ],
-      "adjectives": [
-        "song"
       ],
       "fixed": true
     },
@@ -1887,14 +2079,6 @@
         "grating-clearing",
         "clearing"
       ],
-      "synonyms": [
-        "house"
-      ],
-      "adjectives": [
-        "white",
-        "beauti",
-        "coloni"
-      ],
       "fixed": true
     },
     {
@@ -1913,11 +2097,6 @@
         "up-a-tree",
         "clearing"
       ],
-      "synonyms": [
-        "trees",
-        "pines",
-        "hemlocks"
-      ],
       "fixed": true
     },
     {
@@ -1933,13 +2112,6 @@
         "up-a-tree",
         "clearing"
       ],
-      "synonyms": [
-        "branch"
-      ],
-      "adjectives": [
-        "large",
-        "storm"
-      ],
       "fixed": true
     },
     {
@@ -1947,14 +2119,6 @@
       "name": "mountain range",
       "description": "(mountain range)",
       "location": "mountains",
-      "synonyms": [
-        "mountain",
-        "range"
-      ],
-      "adjectives": [
-        "impassable",
-        "flathead"
-      ],
       "fixed": true
     },
     {
@@ -1981,9 +2145,6 @@
         "aragain-falls",
         "end-of-rainbow",
         "canyon-bottom"
-      ],
-      "synonyms": [
-        "quantity"
       ]
     },
     {
@@ -1991,43 +2152,13 @@
       "name": "quantity of water",
       "description": "(quantity of water)",
       "location": "bottle",
-      "synonyms": [
-        "water",
-        "quantity",
-        "liquid",
-        "h2o"
-      ],
       "takeable": true
-    },
-    {
-      "id": "chimney",
-      "name": "chimney",
-      "description": "(chimney)",
-      "location": "kitchen",
-      "appearsIn": [
-        "studio"
-      ],
-      "adjectives": [
-        "dark",
-        "narrow"
-      ],
-      "fixed": true
     },
     {
       "id": "ghosts",
       "name": "number of ghosts",
       "description": "(number of ghosts)",
       "location": "entrance-to-hades",
-      "synonyms": [
-        "ghosts",
-        "spirits",
-        "fiends",
-        "force"
-      ],
-      "adjectives": [
-        "invisible",
-        "evil"
-      ],
       "fixed": true
     },
     {
@@ -2035,42 +2166,31 @@
       "name": "crystal skull",
       "description": "Lying in one corner of the room is a beautifully carved crystal skull. It appears to be grinning at you rather nastily.",
       "location": "land-of-living-dead",
-      "synonyms": [
-        "skull",
-        "head",
-        "treasure"
-      ],
-      "adjectives": [
-        "crystal"
-      ],
       "takeable": true
     },
     {
       "id": "lowered-basket",
       "name": "basket",
       "description": "From the chain is suspended a basket.",
-      "location": "lower-shaft",
-      "synonyms": [
-        "cage",
-        "dumbwaiter"
-      ],
-      "adjectives": [
-        "lowered"
-      ]
+      "location": "lower-shaft"
     },
     {
       "id": "raised-basket",
       "name": "basket",
       "description": "At the end of the chain is a basket.",
       "location": "shaft-room",
-      "synonyms": [
-        "cage",
-        "dumbwaiter"
-      ],
+      "state": {
+        "isOpen": true
+      },
       "container": {
-        "openable": true,
-        "isOpen": true,
-        "capacity": 50
+        "capacity": 50,
+        "accessibleWhen": {
+          "type": "itemState",
+          "itemId": "raised-basket",
+          "key": "isOpen",
+          "equals": true
+        },
+        "accessBlockedMessage": "The basket is closed."
       }
     },
     {
@@ -2078,42 +2198,19 @@
       "name": "lunch",
       "description": "A hot pepper sandwich is here.",
       "location": "sandwich-bag",
-      "synonyms": [
-        "food",
-        "sandwich",
-        "dinner"
-      ],
-      "adjectives": [
-        "hot",
-        "pepper"
-      ],
       "takeable": true
     },
     {
       "id": "bat",
       "name": "bat",
       "description": "(bat)",
-      "location": "bat-room",
-      "synonyms": [
-        "vampire"
-      ],
-      "adjectives": [
-        "vampire",
-        "deranged"
-      ]
+      "location": "bat-room"
     },
     {
       "id": "bell",
       "name": "brass bell",
       "description": "(brass bell)",
       "location": "north-temple",
-      "synonyms": [
-        "bell"
-      ],
-      "adjectives": [
-        "small",
-        "brass"
-      ],
       "takeable": true
     },
     {
@@ -2121,13 +2218,6 @@
       "name": "bloody axe",
       "description": "(bloody axe)",
       "location": "troll",
-      "synonyms": [
-        "axe",
-        "ax"
-      ],
-      "adjectives": [
-        "bloody"
-      ],
       "takeable": true
     },
     {
@@ -2135,13 +2225,6 @@
       "name": "bolt",
       "description": "(bolt)",
       "location": "dam-room",
-      "synonyms": [
-        "nut"
-      ],
-      "adjectives": [
-        "metal",
-        "large"
-      ],
       "fixed": true
     },
     {
@@ -2149,14 +2232,6 @@
       "name": "green bubble",
       "description": "(green bubble)",
       "location": "dam-room",
-      "synonyms": [
-        "bubble"
-      ],
-      "adjectives": [
-        "small",
-        "green",
-        "plastic"
-      ],
       "fixed": true
     },
     {
@@ -2165,10 +2240,18 @@
       "description": "(altar)",
       "location": "south-temple",
       "fixed": true,
+      "state": {
+        "isOpen": true
+      },
       "container": {
-        "openable": true,
-        "isOpen": true,
-        "capacity": 50
+        "capacity": 50,
+        "accessibleWhen": {
+          "type": "itemState",
+          "itemId": "altar",
+          "key": "isOpen",
+          "equals": true
+        },
+        "accessBlockedMessage": "The altar is closed."
       }
     },
     {
@@ -2176,19 +2259,18 @@
       "name": "black book",
       "description": "On the altar is a large black book, open to page 569.",
       "location": "altar",
-      "synonyms": [
-        "book",
-        "prayer",
-        "page",
-        "books"
-      ],
-      "adjectives": [
-        "large",
-        "black"
-      ],
       "takeable": true,
+      "state": {
+        "isOpen": false
+      },
       "container": {
-        "openable": true
+        "accessibleWhen": {
+          "type": "itemState",
+          "itemId": "book",
+          "key": "isOpen",
+          "equals": true
+        },
+        "accessBlockedMessage": "The black book is closed."
       },
       "readable": {
         "text": "Commandment #12592| | Oh ye who go about saying unto each: \"Hello sailor\":| Dost thou know the magnitude of thy sin before the gods?| Yea, verily, thou shalt be ground between two stones.| Shall the angry gods cast thy body into the whirlpool?| Surely, thy eye shall be put out with a sharp stick!| Even unto the ends of the earth shalt thou wander and| Unto the land of the dead shalt thou be sent at last.| Surely thou shalt repent of thy cunning."
@@ -2199,16 +2281,6 @@
       "name": "sceptre",
       "description": "A sceptre, possibly that of ancient Egypt itself, is in the coffin. The sceptre is ornamented with colored enamel, and tapers to a sharp point.",
       "location": "coffin",
-      "synonyms": [
-        "scepter",
-        "treasure"
-      ],
-      "adjectives": [
-        "sharp",
-        "egyptian",
-        "ancient",
-        "enameled"
-      ],
       "takeable": true
     },
     {
@@ -2216,14 +2288,6 @@
       "name": "broken timber",
       "description": "(broken timber)",
       "location": "timber-room",
-      "synonyms": [
-        "timbers",
-        "pile"
-      ],
-      "adjectives": [
-        "wooden",
-        "broken"
-      ],
       "takeable": true
     },
     {
@@ -2233,15 +2297,6 @@
       "location": "cellar",
       "appearsIn": [
         "slide-room"
-      ],
-      "synonyms": [
-        "ramp",
-        "slide"
-      ],
-      "adjectives": [
-        "steep",
-        "metal",
-        "twisting"
       ]
     },
     {
@@ -2249,17 +2304,19 @@
       "name": "kitchen table",
       "description": "(kitchen table)",
       "location": "kitchen",
-      "synonyms": [
-        "table"
-      ],
-      "adjectives": [
-        "kitchen"
-      ],
       "fixed": true,
+      "state": {
+        "isOpen": true
+      },
       "container": {
-        "openable": true,
-        "isOpen": true,
-        "capacity": 50
+        "capacity": 50,
+        "accessibleWhen": {
+          "type": "itemState",
+          "itemId": "kitchen-table",
+          "key": "isOpen",
+          "equals": true
+        },
+        "accessBlockedMessage": "The kitchen table is closed."
       }
     },
     {
@@ -2268,10 +2325,18 @@
       "description": "(table)",
       "location": "attic",
       "fixed": true,
+      "state": {
+        "isOpen": true
+      },
       "container": {
-        "openable": true,
-        "isOpen": true,
-        "capacity": 40
+        "capacity": 40,
+        "accessibleWhen": {
+          "type": "itemState",
+          "itemId": "attic-table",
+          "key": "isOpen",
+          "equals": true
+        },
+        "accessBlockedMessage": "The table is closed."
       }
     },
     {
@@ -2279,19 +2344,19 @@
       "name": "brown sack",
       "description": "On the table is an elongated brown sack, smelling of hot peppers.",
       "location": "kitchen-table",
-      "synonyms": [
-        "bag",
-        "sack"
-      ],
-      "adjectives": [
-        "brown",
-        "elongated",
-        "smelly"
-      ],
       "takeable": true,
+      "state": {
+        "isOpen": false
+      },
       "container": {
-        "openable": true,
-        "capacity": 9
+        "capacity": 9,
+        "accessibleWhen": {
+          "type": "itemState",
+          "itemId": "sandwich-bag",
+          "key": "isOpen",
+          "equals": true
+        },
+        "accessBlockedMessage": "The brown sack is closed."
       }
     },
     {
@@ -2299,18 +2364,17 @@
       "name": "group of tool chests",
       "description": "(group of tool chests)",
       "location": "maintenance-room",
-      "synonyms": [
-        "chest",
-        "chests",
-        "group",
-        "toolchests"
-      ],
-      "adjectives": [
-        "tool"
-      ],
-      "container": {
-        "openable": true,
+      "state": {
         "isOpen": true
+      },
+      "container": {
+        "accessibleWhen": {
+          "type": "itemState",
+          "itemId": "tool-chest",
+          "key": "isOpen",
+          "equals": true
+        },
+        "accessBlockedMessage": "The group of tool chests is closed."
       }
     },
     {
@@ -2318,13 +2382,6 @@
       "name": "yellow button",
       "description": "(yellow button)",
       "location": "maintenance-room",
-      "synonyms": [
-        "button",
-        "switch"
-      ],
-      "adjectives": [
-        "yellow"
-      ],
       "fixed": true
     },
     {
@@ -2332,13 +2389,6 @@
       "name": "brown button",
       "description": "(brown button)",
       "location": "maintenance-room",
-      "synonyms": [
-        "button",
-        "switch"
-      ],
-      "adjectives": [
-        "brown"
-      ],
       "fixed": true
     },
     {
@@ -2346,13 +2396,6 @@
       "name": "red button",
       "description": "(red button)",
       "location": "maintenance-room",
-      "synonyms": [
-        "button",
-        "switch"
-      ],
-      "adjectives": [
-        "red"
-      ],
       "fixed": true
     },
     {
@@ -2360,13 +2403,6 @@
       "name": "blue button",
       "description": "(blue button)",
       "location": "maintenance-room",
-      "synonyms": [
-        "button",
-        "switch"
-      ],
-      "adjectives": [
-        "blue"
-      ],
       "fixed": true
     },
     {
@@ -2374,16 +2410,19 @@
       "name": "trophy case",
       "description": "(trophy case)",
       "location": "living-room",
-      "synonyms": [
-        "case"
-      ],
-      "adjectives": [
-        "trophy"
-      ],
       "fixed": true,
+      "state": {
+        "isOpen": false
+      },
       "container": {
-        "openable": true,
-        "capacity": 10000
+        "capacity": 10000,
+        "accessibleWhen": {
+          "type": "itemState",
+          "itemId": "trophy-case",
+          "key": "isOpen",
+          "equals": true
+        },
+        "accessBlockedMessage": "The trophy case is closed."
       }
     },
     {
@@ -2391,13 +2430,6 @@
       "name": "carpet",
       "description": "(carpet)",
       "location": "living-room",
-      "synonyms": [
-        "rug"
-      ],
-      "adjectives": [
-        "large",
-        "oriental"
-      ],
       "fixed": true
     },
     {
@@ -2405,19 +2437,19 @@
       "name": "chalice",
       "description": "There is a silver chalice, intricately engraved, here.",
       "location": "treasure-room",
-      "synonyms": [
-        "cup",
-        "silver",
-        "treasure"
-      ],
-      "adjectives": [
-        "silver",
-        "engravings"
-      ],
       "takeable": true,
+      "state": {
+        "isOpen": false
+      },
       "container": {
-        "openable": true,
-        "capacity": 5
+        "capacity": 5,
+        "accessibleWhen": {
+          "type": "itemState",
+          "itemId": "chalice",
+          "key": "isOpen",
+          "equals": true
+        },
+        "accessBlockedMessage": "The chalice is closed."
       }
     },
     {
@@ -2425,10 +2457,6 @@
       "name": "clove of garlic",
       "description": "(clove of garlic)",
       "location": "sandwich-bag",
-      "synonyms": [
-        "garlic",
-        "clove"
-      ],
       "takeable": true
     },
     {
@@ -2436,16 +2464,6 @@
       "name": "crystal trident",
       "description": "On the shore lies Poseidon's own crystal trident.",
       "location": "atlantis-room",
-      "synonyms": [
-        "trident",
-        "fork",
-        "treasure"
-      ],
-      "adjectives": [
-        "poseidon",
-        "own",
-        "crystal"
-      ],
       "takeable": true
     },
     {
@@ -2453,14 +2471,6 @@
       "name": "cyclops",
       "description": "(cyclops)",
       "location": "cyclops-room",
-      "synonyms": [
-        "monster",
-        "eye"
-      ],
-      "adjectives": [
-        "hungry",
-        "giant"
-      ],
       "fixed": true
     },
     {
@@ -2468,11 +2478,6 @@
       "name": "dam",
       "description": "(dam)",
       "location": "dam-room",
-      "synonyms": [
-        "gate",
-        "gates",
-        "fcd#3"
-      ],
       "fixed": true
     },
     {
@@ -2483,12 +2488,6 @@
       "appearsIn": [
         "south-of-house"
       ],
-      "synonyms": [
-        "window"
-      ],
-      "adjectives": [
-        "boarded"
-      ],
       "fixed": true
     },
     {
@@ -2496,46 +2495,20 @@
       "name": "door",
       "description": "(door)",
       "location": "west-of-house",
-      "adjectives": [
-        "front",
-        "boarded"
-      ],
-      "fixed": true,
-      "container": {
-        "openable": true
-      }
+      "fixed": true
     },
     {
       "id": "barrow-door",
       "name": "stone door",
       "description": "(stone door)",
       "location": "stone-barrow",
-      "synonyms": [
-        "door"
-      ],
-      "adjectives": [
-        "huge",
-        "stone"
-      ],
-      "fixed": true,
-      "container": {
-        "openable": true,
-        "isOpen": true
-      }
+      "fixed": true
     },
     {
       "id": "barrow",
       "name": "stone barrow",
       "description": "(stone barrow)",
       "location": "stone-barrow",
-      "synonyms": [
-        "barrow",
-        "tomb"
-      ],
-      "adjectives": [
-        "massive",
-        "stone"
-      ],
       "fixed": true
     },
     {
@@ -2543,18 +2516,19 @@
       "name": "glass bottle",
       "description": "A bottle is sitting on the table.",
       "location": "kitchen-table",
-      "synonyms": [
-        "bottle",
-        "container"
-      ],
-      "adjectives": [
-        "clear",
-        "glass"
-      ],
       "takeable": true,
+      "state": {
+        "isOpen": false
+      },
       "container": {
-        "openable": true,
-        "capacity": 4
+        "capacity": 4,
+        "accessibleWhen": {
+          "type": "itemState",
+          "itemId": "bottle",
+          "key": "isOpen",
+          "equals": true
+        },
+        "accessBlockedMessage": "The glass bottle is closed."
       }
     },
     {
@@ -2565,9 +2539,6 @@
       "appearsIn": [
         "chasm-room"
       ],
-      "adjectives": [
-        "narrow"
-      ],
       "fixed": true
     },
     {
@@ -2575,19 +2546,19 @@
       "name": "gold coffin",
       "description": "The solid-gold coffin used for the burial of Ramses II is here.",
       "location": "egypt-room",
-      "synonyms": [
-        "coffin",
-        "casket",
-        "treasure"
-      ],
-      "adjectives": [
-        "solid",
-        "gold"
-      ],
       "takeable": true,
+      "state": {
+        "isOpen": false
+      },
       "container": {
-        "openable": true,
-        "capacity": 35
+        "capacity": 35,
+        "accessibleWhen": {
+          "type": "itemState",
+          "itemId": "coffin",
+          "key": "isOpen",
+          "equals": true
+        },
+        "accessBlockedMessage": "The gold coffin is closed."
       }
     },
     {
@@ -2595,16 +2566,6 @@
       "name": "hand-held air pump",
       "description": "(hand-held air pump)",
       "location": "reservoir-north",
-      "synonyms": [
-        "pump",
-        "air-pump",
-        "tool",
-        "tools"
-      ],
-      "adjectives": [
-        "small",
-        "hand-held"
-      ],
       "takeable": true
     },
     {
@@ -2612,14 +2573,6 @@
       "name": "jade figurine",
       "description": "There is an exquisite jade figurine here.",
       "location": "bat-room",
-      "synonyms": [
-        "figurine",
-        "treasure"
-      ],
-      "adjectives": [
-        "exquisite",
-        "jade"
-      ],
       "takeable": true
     },
     {
@@ -2627,15 +2580,6 @@
       "name": "nasty knife",
       "description": "On a table is a nasty-looking knife.",
       "location": "attic-table",
-      "synonyms": [
-        "knives",
-        "knife",
-        "blade"
-      ],
-      "adjectives": [
-        "nasty",
-        "unrusty"
-      ],
       "takeable": true
     },
     {
@@ -2643,10 +2587,6 @@
       "name": "skeleton",
       "description": "(skeleton)",
       "location": "maze-5",
-      "synonyms": [
-        "bones",
-        "body"
-      ],
       "fixed": true
     },
     {
@@ -2654,16 +2594,6 @@
       "name": "burned-out lantern",
       "description": "The deceased adventurer's useless lantern is here.",
       "location": "maze-5",
-      "synonyms": [
-        "lantern",
-        "lamp"
-      ],
-      "adjectives": [
-        "rusty",
-        "burned",
-        "dead",
-        "useless"
-      ],
       "takeable": true
     },
     {
@@ -2671,15 +2601,6 @@
       "name": "leather bag of coins",
       "description": "An old leather bag, bulging with coins, is here.",
       "location": "maze-5",
-      "synonyms": [
-        "bag",
-        "coins",
-        "treasure"
-      ],
-      "adjectives": [
-        "old",
-        "leather"
-      ],
       "takeable": true
     },
     {
@@ -2687,29 +2608,18 @@
       "name": "brass lantern",
       "description": "A battery-powered brass lantern is on the trophy case.",
       "location": "living-room",
-      "synonyms": [
-        "lamp",
-        "lantern",
-        "light"
-      ],
-      "adjectives": [
-        "brass"
-      ],
       "takeable": true,
-      "lightSource": {}
+      "lightSource": {},
+      "state": {
+        "isLit": false,
+        "batteryTurns": 330
+      }
     },
     {
       "id": "emerald",
       "name": "large emerald",
       "description": "(large emerald)",
       "location": "buoy",
-      "synonyms": [
-        "emerald",
-        "treasure"
-      ],
-      "adjectives": [
-        "large"
-      ],
       "takeable": true
     },
     {
@@ -2717,14 +2627,6 @@
       "name": "leaflet",
       "description": "A small leaflet is on the ground.",
       "location": "mailbox",
-      "synonyms": [
-        "advertisement",
-        "booklet",
-        "mail"
-      ],
-      "adjectives": [
-        "small"
-      ],
       "takeable": true,
       "readable": {
         "text": "\"WELCOME TO ZORK!| | ZORK is a game of adventure, danger, and low cunning. In it you will explore some of the most amazing territory ever seen by mortals. No computer should be without one!\""
@@ -2735,10 +2637,6 @@
       "name": "leak",
       "description": "(leak)",
       "location": "maintenance-room",
-      "synonyms": [
-        "drip",
-        "pipe"
-      ],
       "fixed": true
     },
     {
@@ -2746,15 +2644,19 @@
       "name": "machine",
       "description": "(machine)",
       "location": "machine-room",
-      "synonyms": [
-        "pdp10",
-        "dryer",
-        "lid"
-      ],
       "fixed": true,
+      "state": {
+        "isOpen": false
+      },
       "container": {
-        "openable": true,
-        "capacity": 50
+        "capacity": 50,
+        "accessibleWhen": {
+          "type": "itemState",
+          "itemId": "machine",
+          "key": "isOpen",
+          "equals": true
+        },
+        "accessBlockedMessage": "The machine is closed."
       }
     },
     {
@@ -2762,16 +2664,18 @@
       "name": "small mailbox",
       "description": "(small mailbox)",
       "location": "west-of-house",
-      "synonyms": [
-        "mailbox",
-        "box"
-      ],
-      "adjectives": [
-        "small"
-      ],
+      "state": {
+        "isOpen": false
+      },
       "container": {
-        "openable": true,
-        "capacity": 10
+        "capacity": 10,
+        "accessibleWhen": {
+          "type": "itemState",
+          "itemId": "mailbox",
+          "key": "isOpen",
+          "equals": true
+        },
+        "accessBlockedMessage": "The small mailbox is closed."
       }
     },
     {
@@ -2779,13 +2683,6 @@
       "name": "matchbook",
       "description": "There is a matchbook whose cover says \"Visit Beautiful FCD#3\" here.",
       "location": "dam-lobby",
-      "synonyms": [
-        "match",
-        "matches"
-      ],
-      "adjectives": [
-        "match"
-      ],
       "takeable": true,
       "readable": {
         "text": "| (Close cover before striking)| | YOU too can make BIG MONEY in the exciting field of PAPER SHUFFLING!| | Mr. Anderson of Muddle, Mass. says: \"Before I took this course I was a lowly bit twiddler. Now with what I learned at GUE Tech I feel really important and can obfuscate and confuse with the best.\"| | Dr. Blank had this to say: \"Ten short days ago all I could look forward to was a dead-end job as a doctor. Now I have a promising future and make really big Zorkmids.\"| | GUE Tech can't promise these fantastic results to everyone. But when you earn your degree from GUE Tech, your future will be brighter."
@@ -2796,10 +2693,6 @@
       "name": "mirror",
       "description": "(mirror)",
       "location": "mirror-room-2",
-      "synonyms": [
-        "reflection",
-        "enormous"
-      ],
       "fixed": true
     },
     {
@@ -2807,10 +2700,6 @@
       "name": "mirror",
       "description": "(mirror)",
       "location": "mirror-room-1",
-      "synonyms": [
-        "reflection",
-        "enormous"
-      ],
       "fixed": true
     },
     {
@@ -2818,14 +2707,6 @@
       "name": "painting",
       "description": "Fortunately, there is still one chance for you to be a vandal, for on the far wall is a painting of unparalleled beauty.",
       "location": "gallery",
-      "synonyms": [
-        "art",
-        "canvas",
-        "treasure"
-      ],
-      "adjectives": [
-        "beauti"
-      ],
       "takeable": true
     },
     {
@@ -2833,15 +2714,9 @@
       "name": "pair of candles",
       "description": "On the two ends of the altar are burning candles.",
       "location": "south-temple",
-      "synonyms": [
-        "candles",
-        "pair"
-      ],
-      "adjectives": [
-        "burning"
-      ],
       "takeable": true,
-      "lightSource": {
+      "lightSource": {},
+      "state": {
         "isLit": true
       }
     },
@@ -2853,15 +2728,6 @@
       "appearsIn": [
         "land-of-living-dead"
       ],
-      "synonyms": [
-        "bodies",
-        "body",
-        "remains",
-        "pile"
-      ],
-      "adjectives": [
-        "mangled"
-      ],
       "fixed": true
     },
     {
@@ -2869,11 +2735,6 @@
       "name": "pile of leaves",
       "description": "On the ground is a pile of leaves.",
       "location": "grating-clearing",
-      "synonyms": [
-        "leaves",
-        "leaf",
-        "pile"
-      ],
       "takeable": true
     },
     {
@@ -2881,16 +2742,6 @@
       "name": "pile of plastic",
       "description": "There is a folded pile of plastic here which has a small valve attached.",
       "location": "dam-base",
-      "synonyms": [
-        "boat",
-        "pile",
-        "plastic",
-        "valve"
-      ],
-      "adjectives": [
-        "plastic",
-        "inflat"
-      ],
       "takeable": true
     },
     {
@@ -2898,15 +2749,6 @@
       "name": "platinum bar",
       "description": "On the ground is a large platinum bar.",
       "location": "loud-room",
-      "synonyms": [
-        "bar",
-        "platinum",
-        "treasure"
-      ],
-      "adjectives": [
-        "platinum",
-        "large"
-      ],
       "takeable": true
     },
     {
@@ -2914,14 +2756,6 @@
       "name": "pot of gold",
       "description": "At the end of the rainbow is a pot of gold.",
       "location": "end-of-rainbow",
-      "synonyms": [
-        "pot",
-        "gold",
-        "treasure"
-      ],
-      "adjectives": [
-        "gold"
-      ],
       "takeable": true
     },
     {
@@ -2929,13 +2763,6 @@
       "name": "prayer",
       "description": "(prayer)",
       "location": "north-temple",
-      "synonyms": [
-        "inscription"
-      ],
-      "adjectives": [
-        "ancient",
-        "old"
-      ],
       "fixed": true,
       "readable": {
         "text": "The prayer is inscribed in an ancient script, rarely used today. It seems to be a philippic against small insects, absent-mindedness, and the picking up and dropping of small objects. The final verse consigns trespassers to the land of the dead. All evidence indicates that the beliefs of the ancient Zorkers were obscure."
@@ -2946,13 +2773,6 @@
       "name": "wooden railing",
       "description": "(wooden railing)",
       "location": "dome-room",
-      "synonyms": [
-        "railing",
-        "rail"
-      ],
-      "adjectives": [
-        "wooden"
-      ],
       "fixed": true
     },
     {
@@ -2988,9 +2808,6 @@
         "cliff-middle",
         "canyon-view"
       ],
-      "adjectives": [
-        "frigid"
-      ],
       "fixed": true
     },
     {
@@ -2998,16 +2815,19 @@
       "name": "red buoy",
       "description": "There is a red buoy here (probably a warning).",
       "location": "river-4",
-      "synonyms": [
-        "buoy"
-      ],
-      "adjectives": [
-        "red"
-      ],
       "takeable": true,
+      "state": {
+        "isOpen": false
+      },
       "container": {
-        "openable": true,
-        "capacity": 20
+        "capacity": 20,
+        "accessibleWhen": {
+          "type": "itemState",
+          "itemId": "buoy",
+          "key": "isOpen",
+          "equals": true
+        },
+        "accessBlockedMessage": "The red buoy is closed."
       }
     },
     {
@@ -3015,13 +2835,6 @@
       "name": "rope",
       "description": "A large coil of rope is lying in the corner.",
       "location": "attic",
-      "synonyms": [
-        "hemp",
-        "coil"
-      ],
-      "adjectives": [
-        "large"
-      ],
       "takeable": true
     },
     {
@@ -3029,13 +2842,6 @@
       "name": "rusty knife",
       "description": "Beside the skeleton is a rusty knife.",
       "location": "maze-5",
-      "synonyms": [
-        "knives",
-        "knife"
-      ],
-      "adjectives": [
-        "rusty"
-      ],
       "takeable": true
     },
     {
@@ -3050,15 +2856,6 @@
       "name": "sapphire-encrusted bracelet",
       "description": "(sapphire-encrusted bracelet)",
       "location": "gas-room",
-      "synonyms": [
-        "bracelet",
-        "jewel",
-        "sapphire",
-        "treasure"
-      ],
-      "adjectives": [
-        "sapphire"
-      ],
       "takeable": true
     },
     {
@@ -3066,14 +2863,6 @@
       "name": "screwdriver",
       "description": "(screwdriver)",
       "location": "maintenance-room",
-      "synonyms": [
-        "tool",
-        "tools",
-        "driver"
-      ],
-      "adjectives": [
-        "screw"
-      ],
       "takeable": true
     },
     {
@@ -3081,12 +2870,6 @@
       "name": "skeleton key",
       "description": "(skeleton key)",
       "location": "maze-5",
-      "synonyms": [
-        "key"
-      ],
-      "adjectives": [
-        "skeleton"
-      ],
       "takeable": true
     },
     {
@@ -3094,10 +2877,6 @@
       "name": "shovel",
       "description": "(shovel)",
       "location": "sandy-beach",
-      "synonyms": [
-        "tool",
-        "tools"
-      ],
       "takeable": true
     },
     {
@@ -3105,14 +2884,6 @@
       "name": "small pile of coal",
       "description": "(small pile of coal)",
       "location": "dead-end-5",
-      "synonyms": [
-        "coal",
-        "pile",
-        "heap"
-      ],
-      "adjectives": [
-        "small"
-      ],
       "takeable": true
     },
     {
@@ -3123,14 +2894,6 @@
       "appearsIn": [
         "ladder-bottom"
       ],
-      "synonyms": [
-        "ladder"
-      ],
-      "adjectives": [
-        "wooden",
-        "rickety",
-        "narrow"
-      ],
       "fixed": true
     },
     {
@@ -3138,17 +2901,6 @@
       "name": "beautiful jeweled scarab",
       "description": "(beautiful jeweled scarab)",
       "location": "sandy-cave",
-      "synonyms": [
-        "scarab",
-        "bug",
-        "beetle",
-        "treasure"
-      ],
-      "adjectives": [
-        "beauti",
-        "carved",
-        "jeweled"
-      ],
       "takeable": true
     },
     {
@@ -3156,13 +2908,6 @@
       "name": "large bag",
       "description": "(large bag)",
       "location": "thief",
-      "synonyms": [
-        "bag"
-      ],
-      "adjectives": [
-        "large",
-        "thiefs"
-      ],
       "fixed": true
     },
     {
@@ -3170,9 +2915,6 @@
       "name": "stiletto",
       "description": "(stiletto)",
       "location": "thief",
-      "adjectives": [
-        "vicious"
-      ],
       "takeable": true
     },
     {
@@ -3187,21 +2929,7 @@
       "name": "wooden door",
       "description": "(wooden door)",
       "location": "living-room",
-      "synonyms": [
-        "door",
-        "lettering",
-        "writing"
-      ],
-      "adjectives": [
-        "wooden",
-        "gothic",
-        "strange",
-        "west"
-      ],
       "fixed": true,
-      "container": {
-        "openable": true
-      },
       "readable": {
         "text": "The engravings translate to \"This space intentionally left blank.\""
       }
@@ -3211,16 +2939,6 @@
       "name": "sword",
       "description": "Above the trophy case hangs an elvish sword of great antiquity.",
       "location": "living-room",
-      "synonyms": [
-        "orcrist",
-        "glamdring",
-        "blade"
-      ],
-      "adjectives": [
-        "elvish",
-        "old",
-        "antique"
-      ],
       "takeable": true
     },
     {
@@ -3228,15 +2946,6 @@
       "name": "ancient map",
       "description": "In the trophy case is an ancient parchment which appears to be a map.",
       "location": "trophy-case",
-      "synonyms": [
-        "parchment",
-        "map"
-      ],
-      "adjectives": [
-        "antique",
-        "old",
-        "ancient"
-      ],
       "takeable": true,
       "readable": {
         "text": "The map shows a forest with three clearings. The largest clearing contains a house. Three paths leave the large clearing. One of these paths, leading southwest, is marked \"To Stone Barrow\"."
@@ -3247,19 +2956,17 @@
       "name": "thief",
       "description": "There is a suspicious-looking individual, holding a large bag, leaning against one wall. He is armed with a deadly stiletto.",
       "location": "round-room",
-      "synonyms": [
-        "robber",
-        "man",
-        "person"
-      ],
-      "adjectives": [
-        "shady",
-        "suspicious",
-        "seedy"
-      ],
-      "container": {
-        "openable": true,
+      "state": {
         "isOpen": true
+      },
+      "container": {
+        "accessibleWhen": {
+          "type": "itemState",
+          "itemId": "thief",
+          "key": "isOpen",
+          "equals": true
+        },
+        "accessBlockedMessage": "The thief is closed."
       }
     },
     {
@@ -3267,15 +2974,19 @@
       "name": "pedestal",
       "description": "(pedestal)",
       "location": "torch-room",
-      "adjectives": [
-        "white",
-        "marble"
-      ],
       "fixed": true,
+      "state": {
+        "isOpen": true
+      },
       "container": {
-        "openable": true,
-        "isOpen": true,
-        "capacity": 30
+        "capacity": 30,
+        "accessibleWhen": {
+          "type": "itemState",
+          "itemId": "pedestal",
+          "key": "isOpen",
+          "equals": true
+        },
+        "accessBlockedMessage": "The pedestal is closed."
       }
     },
     {
@@ -3283,16 +2994,9 @@
       "name": "torch",
       "description": "Sitting on the pedestal is a flaming torch, made of ivory.",
       "location": "pedestal",
-      "synonyms": [
-        "ivory",
-        "treasure"
-      ],
-      "adjectives": [
-        "flaming",
-        "ivory"
-      ],
       "takeable": true,
-      "lightSource": {
+      "lightSource": {},
+      "state": {
         "isLit": true
       }
     },
@@ -3301,16 +3005,6 @@
       "name": "tour guidebook",
       "description": "Some guidebooks entitled \"Flood Control Dam #3\" are on the reception desk.",
       "location": "dam-lobby",
-      "synonyms": [
-        "guide",
-        "book",
-        "books",
-        "guidebooks"
-      ],
-      "adjectives": [
-        "tour",
-        "guide"
-      ],
       "takeable": true,
       "readable": {
         "text": "\"\tFlood Control Dam #3| | FCD#3 was constructed in year 783 of the Great Underground Empire to harness the mighty Frigid River. This work was supported by a grant of 37 million zorkmids from your omnipotent local tyrant Lord Dimwit Flathead the Excessive. This impressive structure is composed of 370,000 cubic feet of concrete, is 256 feet tall at the center, and 193 feet wide at the top. The lake created behind the dam has a volume of 1.7 billion cubic feet, an area of 12 million square feet, and a shore line of 36 thousand feet.| | The construction of FCD#3 took 112 days from ground breaking to the dedication. It required a work force of 384 slaves, 34 slave drivers, 12 engineers, 2 turtle doves, and a partridge in a pear tree. The work was managed by a command team composed of 2345 bureaucrats, 2347 secretaries (at least two of whom could type), 12,256 paper shufflers, 52,469 rubber stampers, 245,193 red tape processors, and nearly one million dead trees.| | We will now point out some of the more interesting features of FCD#3 as we conduct you on a guided tour of the facilities:| | 1) You start your tour here in the Dam Lobby. You will notice on your right that...."
@@ -3320,25 +3014,13 @@
       "id": "troll",
       "name": "troll",
       "description": "A nasty-looking troll, brandishing a bloody axe, blocks all passages out of the room.",
-      "location": "troll-room",
-      "adjectives": [
-        "nasty"
-      ]
+      "location": "troll-room"
     },
     {
       "id": "trunk",
       "name": "trunk of jewels",
       "description": "Lying half buried in the mud is an old trunk, bulging with jewels.",
       "location": "reservoir",
-      "synonyms": [
-        "trunk",
-        "chest",
-        "jewels",
-        "treasure"
-      ],
-      "adjectives": [
-        "old"
-      ],
       "takeable": true
     },
     {
@@ -3346,14 +3028,19 @@
       "name": "tube",
       "description": "There is an object which looks like a tube of toothpaste here.",
       "location": "maintenance-room",
-      "synonyms": [
-        "tooth",
-        "paste"
-      ],
       "takeable": true,
+      "state": {
+        "isOpen": false
+      },
       "container": {
-        "openable": true,
-        "capacity": 7
+        "capacity": 7,
+        "accessibleWhen": {
+          "type": "itemState",
+          "itemId": "tube",
+          "key": "isOpen",
+          "equals": true
+        },
+        "accessBlockedMessage": "The tube is closed."
       },
       "readable": {
         "text": "---> Frobozz Magic Gunk Company <---| All-Purpose Gunk"
@@ -3364,13 +3051,6 @@
       "name": "viscous material",
       "description": "(viscous material)",
       "location": "tube",
-      "synonyms": [
-        "material",
-        "gunk"
-      ],
-      "adjectives": [
-        "viscous"
-      ],
       "takeable": true
     },
     {
@@ -3378,15 +3058,6 @@
       "name": "wall with engravings",
       "description": "There are old engravings on the walls here.",
       "location": "engravings-cave",
-      "synonyms": [
-        "wall",
-        "engravings",
-        "inscription"
-      ],
-      "adjectives": [
-        "old",
-        "ancient"
-      ],
       "readable": {
         "text": "The engravings were incised in the living rock of the cave wall by an unknown hand. They depict, in symbolic form, the beliefs of the ancient Zorkers. Skillfully interwoven with the bas reliefs are excerpts illustrating the major religious tenets of that time. Unfortunately, a later age seems to have considered them blasphemous and just as skillfully excised them."
       }
@@ -3396,16 +3067,6 @@
       "name": "ZORK owner's manual",
       "description": "Loosely attached to a wall is a small piece of paper.",
       "location": "studio",
-      "synonyms": [
-        "manual",
-        "piece",
-        "paper"
-      ],
-      "adjectives": [
-        "zork",
-        "owners",
-        "small"
-      ],
       "takeable": true,
       "readable": {
         "text": "Congratulations!| | You are the privileged owner of ZORK I: The Great Underground Empire, a self-contained and self-maintaining universe. If used and maintained in accordance with normal operating practices for small universes, ZORK will provide many months of trouble-free operation."
@@ -3420,15 +3081,6 @@
         "cliff-middle",
         "canyon-view"
       ],
-      "synonyms": [
-        "wall",
-        "walls",
-        "ledge"
-      ],
-      "adjectives": [
-        "rocky",
-        "sheer"
-      ],
       "fixed": true
     },
     {
@@ -3439,13 +3091,6 @@
       "appearsIn": [
         "white-cliffs-south"
       ],
-      "synonyms": [
-        "cliff",
-        "cliffs"
-      ],
-      "adjectives": [
-        "white"
-      ],
       "fixed": true
     },
     {
@@ -3453,10 +3098,6 @@
       "name": "wrench",
       "description": "(wrench)",
       "location": "maintenance-room",
-      "synonyms": [
-        "tool",
-        "tools"
-      ],
       "takeable": true
     },
     {
@@ -3464,12 +3105,6 @@
       "name": "control panel",
       "description": "(control panel)",
       "location": "dam-room",
-      "synonyms": [
-        "panel"
-      ],
-      "adjectives": [
-        "control"
-      ],
       "fixed": true
     },
     {
@@ -3477,17 +3112,19 @@
       "name": "bird's nest",
       "description": "Beside you on the branch is a small bird's nest.",
       "location": "up-a-tree",
-      "synonyms": [
-        "nest"
-      ],
-      "adjectives": [
-        "birds"
-      ],
       "takeable": true,
+      "state": {
+        "isOpen": true
+      },
       "container": {
-        "openable": true,
-        "isOpen": true,
-        "capacity": 20
+        "capacity": 20,
+        "accessibleWhen": {
+          "type": "itemState",
+          "itemId": "nest",
+          "key": "isOpen",
+          "equals": true
+        },
+        "accessBlockedMessage": "The bird's nest is closed."
       }
     },
     {
@@ -3495,19 +3132,25 @@
       "name": "jewel-encrusted egg",
       "description": "In the bird's nest is a large egg encrusted with precious jewels, apparently scavenged by a childless songbird. The egg is covered with fine gold inlay, and ornamented in lapis lazuli and mother-of-pearl. Unlike most eggs, this one is hinged and closed with a delicate looking clasp. The egg appears extremely fragile.",
       "location": "nest",
-      "synonyms": [
-        "egg",
-        "treasure"
-      ],
-      "adjectives": [
-        "birds",
-        "encrusted",
-        "jeweled"
-      ],
       "takeable": true,
+      "state": {
+        "isOpen": false
+      },
       "container": {
-        "openable": true,
-        "capacity": 6
+        "capacity": 6,
+        "accessibleWhen": {
+          "type": "itemState",
+          "itemId": "egg",
+          "key": "isOpen",
+          "equals": true
+        },
+        "accessBlockedMessage": "The jewel-encrusted egg is closed."
+      },
+      "openWhen": {
+        "type": "not",
+        "condition": {
+          "type": "always"
+        }
       }
     },
     {
@@ -3515,15 +3158,6 @@
       "name": "golden clockwork canary",
       "description": "There is a golden clockwork canary nestled in the egg. It has ruby eyes and a silver beak. Through a crystal window below its left wing you can see intricate machinery inside. It appears to have wound down.",
       "location": "egg",
-      "synonyms": [
-        "canary",
-        "treasure"
-      ],
-      "adjectives": [
-        "clockwork",
-        "gold",
-        "golden"
-      ],
       "takeable": true
     },
     {
@@ -3552,27 +3186,18 @@
         "gas-room",
         "ladder-top"
       ],
-      "synonyms": [
-        "steps",
-        "staircase",
-        "stairway"
-      ],
-      "adjectives": [
-        "stone",
-        "dark",
-        "marble",
-        "forbidding",
-        "steep"
-      ],
       "fixed": true
     }
   ],
-  "doors": [
+  "passages": [
     {
       "kind": "simple",
       "id": "kitchen-window",
       "name": "kitchen window",
       "description": "A small kitchen window. It appears to be slightly ajar.",
+      "state": {
+        "isOpen": false
+      },
       "sides": [
         {
           "roomId": "east-of-house",
@@ -3590,18 +3215,30 @@
       "variants": [
         {
           "when": {
-            "type": "doorOpen",
-            "doorId": "kitchen-window"
+            "type": "passageState",
+            "passageId": "kitchen-window",
+            "key": "isOpen",
+            "equals": true
           },
           "text": "The kitchen window is open wide enough to climb through."
         }
-      ]
+      ],
+      "traversableWhen": {
+        "type": "passageState",
+        "passageId": "kitchen-window",
+        "key": "isOpen",
+        "equals": true
+      },
+      "traverseBlockedMessage": "The kitchen window is closed."
     },
     {
       "kind": "simple",
       "id": "trap-door",
       "name": "trap door",
-      "description": "(trap door)",
+      "description": "A wooden trap door is set into the floor.",
+      "state": {
+        "isOpen": false
+      },
       "sides": [
         {
           "roomId": "cellar"
@@ -3609,13 +3246,45 @@
         {
           "roomId": "living-room"
         }
-      ]
+      ],
+      "visibleWhen": {
+        "type": "flag",
+        "key": "rug-moved-flag",
+        "equals": true
+      },
+      "openWhen": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "rug-moved-flag",
+            "equals": true
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "playerAt",
+              "roomId": "cellar"
+            }
+          }
+        ]
+      },
+      "traversableWhen": {
+        "type": "passageState",
+        "passageId": "trap-door",
+        "key": "isOpen",
+        "equals": true
+      },
+      "traverseBlockedMessage": "The trap door is closed."
     },
     {
       "kind": "simple",
       "id": "grate",
       "name": "grating",
       "description": "(grating)",
+      "state": {
+        "isOpen": false
+      },
       "sides": [
         {
           "roomId": "grating-room"
@@ -3623,7 +3292,1928 @@
         {
           "roomId": "grating-clearing"
         }
+      ],
+      "openWhen": {
+        "type": "hasItem",
+        "itemId": "keys"
+      },
+      "traversableWhen": {
+        "type": "passageState",
+        "passageId": "grate",
+        "key": "isOpen",
+        "equals": true
+      },
+      "traverseBlockedMessage": "The grating is closed."
+    },
+    {
+      "kind": "simple",
+      "id": "chimney",
+      "name": "chimney",
+      "description": "A dark, narrow chimney rising from the studio fireplace up to the kitchen above.",
+      "sides": [
+        {
+          "roomId": "kitchen",
+          "traversableWhen": {
+            "type": "not",
+            "condition": {
+              "type": "always"
+            }
+          },
+          "traverseBlockedMessage": "Only Santa Claus climbs down chimneys."
+        },
+        {
+          "roomId": "studio",
+          "traversableWhen": {
+            "type": "and",
+            "all": [
+              {
+                "type": "hasItem",
+                "itemId": "lamp"
+              },
+              {
+                "type": "compare",
+                "left": {
+                  "kind": "inventoryCount"
+                },
+                "op": "<=",
+                "right": {
+                  "kind": "literal",
+                  "value": 2
+                }
+              }
+            ]
+          },
+          "traverseBlockedMessage": "You can't get up there with what you're carrying."
+        }
       ]
+    }
+  ],
+  "intentSignals": [
+    {
+      "id": "kitchen-window-open-intent",
+      "prompt": "Player opens, pushes open, swings open, lifts, climbs in through, or otherwise opens the kitchen window.",
+      "active": {
+        "type": "passageState",
+        "passageId": "kitchen-window",
+        "key": "isOpen",
+        "equals": false
+      }
+    },
+    {
+      "id": "kitchen-window-close-intent",
+      "prompt": "Player closes, shuts, slams, lowers, or otherwise closes the kitchen window.",
+      "active": {
+        "type": "passageState",
+        "passageId": "kitchen-window",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "trap-door-open-intent",
+      "prompt": "Player opens, pushes open, swings open, lifts, climbs in through, or otherwise opens the trap door.",
+      "active": {
+        "type": "and",
+        "all": [
+          {
+            "type": "passageState",
+            "passageId": "trap-door",
+            "key": "isOpen",
+            "equals": false
+          },
+          {
+            "type": "and",
+            "all": [
+              {
+                "type": "flag",
+                "key": "rug-moved-flag",
+                "equals": true
+              },
+              {
+                "type": "not",
+                "condition": {
+                  "type": "playerAt",
+                  "roomId": "cellar"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "trap-door-close-intent",
+      "prompt": "Player closes, shuts, slams, lowers, or otherwise closes the trap door.",
+      "active": {
+        "type": "passageState",
+        "passageId": "trap-door",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "grate-open-intent",
+      "prompt": "Player opens, pushes open, swings open, lifts, climbs in through, or otherwise opens the grating.",
+      "active": {
+        "type": "and",
+        "all": [
+          {
+            "type": "passageState",
+            "passageId": "grate",
+            "key": "isOpen",
+            "equals": false
+          },
+          {
+            "type": "hasItem",
+            "itemId": "keys"
+          }
+        ]
+      }
+    },
+    {
+      "id": "grate-close-intent",
+      "prompt": "Player closes, shuts, slams, lowers, or otherwise closes the grating.",
+      "active": {
+        "type": "passageState",
+        "passageId": "grate",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "raised-basket-open-intent",
+      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the basket.",
+      "active": {
+        "type": "itemState",
+        "itemId": "raised-basket",
+        "key": "isOpen",
+        "equals": false
+      }
+    },
+    {
+      "id": "raised-basket-close-intent",
+      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the basket.",
+      "active": {
+        "type": "itemState",
+        "itemId": "raised-basket",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "altar-open-intent",
+      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the altar.",
+      "active": {
+        "type": "itemState",
+        "itemId": "altar",
+        "key": "isOpen",
+        "equals": false
+      }
+    },
+    {
+      "id": "altar-close-intent",
+      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the altar.",
+      "active": {
+        "type": "itemState",
+        "itemId": "altar",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "book-open-intent",
+      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the black book.",
+      "active": {
+        "type": "itemState",
+        "itemId": "book",
+        "key": "isOpen",
+        "equals": false
+      }
+    },
+    {
+      "id": "book-close-intent",
+      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the black book.",
+      "active": {
+        "type": "itemState",
+        "itemId": "book",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "kitchen-table-open-intent",
+      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the kitchen table.",
+      "active": {
+        "type": "itemState",
+        "itemId": "kitchen-table",
+        "key": "isOpen",
+        "equals": false
+      }
+    },
+    {
+      "id": "kitchen-table-close-intent",
+      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the kitchen table.",
+      "active": {
+        "type": "itemState",
+        "itemId": "kitchen-table",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "attic-table-open-intent",
+      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the table.",
+      "active": {
+        "type": "itemState",
+        "itemId": "attic-table",
+        "key": "isOpen",
+        "equals": false
+      }
+    },
+    {
+      "id": "attic-table-close-intent",
+      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the table.",
+      "active": {
+        "type": "itemState",
+        "itemId": "attic-table",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "sandwich-bag-open-intent",
+      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the brown sack.",
+      "active": {
+        "type": "itemState",
+        "itemId": "sandwich-bag",
+        "key": "isOpen",
+        "equals": false
+      }
+    },
+    {
+      "id": "sandwich-bag-close-intent",
+      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the brown sack.",
+      "active": {
+        "type": "itemState",
+        "itemId": "sandwich-bag",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "tool-chest-open-intent",
+      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the group of tool chests.",
+      "active": {
+        "type": "itemState",
+        "itemId": "tool-chest",
+        "key": "isOpen",
+        "equals": false
+      }
+    },
+    {
+      "id": "tool-chest-close-intent",
+      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the group of tool chests.",
+      "active": {
+        "type": "itemState",
+        "itemId": "tool-chest",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "trophy-case-open-intent",
+      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the trophy case.",
+      "active": {
+        "type": "itemState",
+        "itemId": "trophy-case",
+        "key": "isOpen",
+        "equals": false
+      }
+    },
+    {
+      "id": "trophy-case-close-intent",
+      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the trophy case.",
+      "active": {
+        "type": "itemState",
+        "itemId": "trophy-case",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "chalice-open-intent",
+      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the chalice.",
+      "active": {
+        "type": "itemState",
+        "itemId": "chalice",
+        "key": "isOpen",
+        "equals": false
+      }
+    },
+    {
+      "id": "chalice-close-intent",
+      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the chalice.",
+      "active": {
+        "type": "itemState",
+        "itemId": "chalice",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "bottle-open-intent",
+      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the glass bottle.",
+      "active": {
+        "type": "itemState",
+        "itemId": "bottle",
+        "key": "isOpen",
+        "equals": false
+      }
+    },
+    {
+      "id": "bottle-close-intent",
+      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the glass bottle.",
+      "active": {
+        "type": "itemState",
+        "itemId": "bottle",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "coffin-open-intent",
+      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the gold coffin.",
+      "active": {
+        "type": "itemState",
+        "itemId": "coffin",
+        "key": "isOpen",
+        "equals": false
+      }
+    },
+    {
+      "id": "coffin-close-intent",
+      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the gold coffin.",
+      "active": {
+        "type": "itemState",
+        "itemId": "coffin",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "machine-open-intent",
+      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the machine.",
+      "active": {
+        "type": "itemState",
+        "itemId": "machine",
+        "key": "isOpen",
+        "equals": false
+      }
+    },
+    {
+      "id": "machine-close-intent",
+      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the machine.",
+      "active": {
+        "type": "itemState",
+        "itemId": "machine",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "mailbox-open-intent",
+      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the small mailbox.",
+      "active": {
+        "type": "itemState",
+        "itemId": "mailbox",
+        "key": "isOpen",
+        "equals": false
+      }
+    },
+    {
+      "id": "mailbox-close-intent",
+      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the small mailbox.",
+      "active": {
+        "type": "itemState",
+        "itemId": "mailbox",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "buoy-open-intent",
+      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the red buoy.",
+      "active": {
+        "type": "itemState",
+        "itemId": "buoy",
+        "key": "isOpen",
+        "equals": false
+      }
+    },
+    {
+      "id": "buoy-close-intent",
+      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the red buoy.",
+      "active": {
+        "type": "itemState",
+        "itemId": "buoy",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "thief-open-intent",
+      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the thief.",
+      "active": {
+        "type": "itemState",
+        "itemId": "thief",
+        "key": "isOpen",
+        "equals": false
+      }
+    },
+    {
+      "id": "thief-close-intent",
+      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the thief.",
+      "active": {
+        "type": "itemState",
+        "itemId": "thief",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "pedestal-open-intent",
+      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the pedestal.",
+      "active": {
+        "type": "itemState",
+        "itemId": "pedestal",
+        "key": "isOpen",
+        "equals": false
+      }
+    },
+    {
+      "id": "pedestal-close-intent",
+      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the pedestal.",
+      "active": {
+        "type": "itemState",
+        "itemId": "pedestal",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "tube-open-intent",
+      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the tube.",
+      "active": {
+        "type": "itemState",
+        "itemId": "tube",
+        "key": "isOpen",
+        "equals": false
+      }
+    },
+    {
+      "id": "tube-close-intent",
+      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the tube.",
+      "active": {
+        "type": "itemState",
+        "itemId": "tube",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "nest-open-intent",
+      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the bird's nest.",
+      "active": {
+        "type": "itemState",
+        "itemId": "nest",
+        "key": "isOpen",
+        "equals": false
+      }
+    },
+    {
+      "id": "nest-close-intent",
+      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the bird's nest.",
+      "active": {
+        "type": "itemState",
+        "itemId": "nest",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "egg-open-intent",
+      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the jewel-encrusted egg.",
+      "active": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemState",
+            "itemId": "egg",
+            "key": "isOpen",
+            "equals": false
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "always"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "egg-close-intent",
+      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the jewel-encrusted egg.",
+      "active": {
+        "type": "itemState",
+        "itemId": "egg",
+        "key": "isOpen",
+        "equals": true
+      }
+    },
+    {
+      "id": "rope-tied-to-railing",
+      "prompt": "Player ties, fastens, attaches, lashes, secures, or otherwise affixes the rope to the railing (or to the dome).",
+      "active": {
+        "type": "and",
+        "all": [
+          {
+            "type": "playerAt",
+            "roomId": "dome-room"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "rope"
+          }
+        ]
+      }
+    },
+    {
+      "id": "give-egg-to-songbird",
+      "prompt": "Player gives the jewel-encrusted egg to the songbird, offers it to the bird, hands it to her, presents it to the singer.",
+      "active": {
+        "type": "and",
+        "all": [
+          {
+            "type": "hasItem",
+            "itemId": "egg"
+          },
+          {
+            "type": "itemState",
+            "itemId": "egg",
+            "key": "isOpen",
+            "equals": false
+          },
+          {
+            "type": "or",
+            "any": [
+              {
+                "type": "playerAt",
+                "roomId": "forest-1"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "forest-2"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "forest-3"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "path"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "up-a-tree"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "clearing"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "move-the-rug",
+      "prompt": "Player moves, slides, lifts, pulls aside, kicks aside, rolls up, or otherwise displaces the rug (carpet) in the living room.",
+      "active": {
+        "type": "playerAt",
+        "roomId": "living-room"
+      }
+    },
+    {
+      "id": "cyclops-magic-word",
+      "prompt": "Player says, shouts, whispers, or invokes 'Ulysses', 'Odysseus', or otherwise utters the magic word that terrifies the cyclops.",
+      "active": {
+        "type": "and",
+        "all": [
+          {
+            "type": "playerAt",
+            "roomId": "cyclops-room"
+          },
+          {
+            "type": "flag",
+            "key": "cyclops-flag",
+            "equals": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "feed-cyclops",
+      "prompt": "Player gives, offers, or hands the cyclops the lunch (hot pepper sandwich) and the bottle of water — feeding and watering him.",
+      "active": {
+        "type": "and",
+        "all": [
+          {
+            "type": "playerAt",
+            "roomId": "cyclops-room"
+          },
+          {
+            "type": "flag",
+            "key": "cyclops-flag",
+            "equals": false
+          },
+          {
+            "type": "hasItem",
+            "itemId": "lunch"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "bottle"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pray-at-altar",
+      "prompt": "Player prays, kneels, makes an offering, or performs a ritual at the altar.",
+      "active": {
+        "type": "playerAt",
+        "roomId": "south-temple"
+      }
+    },
+    {
+      "id": "light-lamp",
+      "prompt": "Player turns on, lights, switches on, fires up, or activates the brass lantern.",
+      "active": {
+        "type": "and",
+        "all": [
+          {
+            "type": "hasItem",
+            "itemId": "lamp"
+          },
+          {
+            "type": "itemState",
+            "itemId": "lamp",
+            "key": "isLit",
+            "equals": false
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "lamp",
+              "key": "batteryTurns"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "extinguish-lamp",
+      "prompt": "Player turns off, douses, switches off, or extinguishes the brass lantern.",
+      "active": {
+        "type": "itemState",
+        "itemId": "lamp",
+        "key": "isLit",
+        "equals": true
+      }
+    }
+  ],
+  "triggers": [
+    {
+      "id": "kitchen-window-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "kitchen-window-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setPassageState",
+          "passageId": "kitchen-window",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the kitchen window.",
+      "once": false
+    },
+    {
+      "id": "kitchen-window-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "kitchen-window-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setPassageState",
+          "passageId": "kitchen-window",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the kitchen window.",
+      "once": false
+    },
+    {
+      "id": "trap-door-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "trap-door-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setPassageState",
+          "passageId": "trap-door",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the trap door.",
+      "once": false
+    },
+    {
+      "id": "trap-door-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "trap-door-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setPassageState",
+          "passageId": "trap-door",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the trap door.",
+      "once": false
+    },
+    {
+      "id": "grate-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "grate-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setPassageState",
+          "passageId": "grate",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the grating.",
+      "once": false
+    },
+    {
+      "id": "grate-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "grate-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setPassageState",
+          "passageId": "grate",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the grating.",
+      "once": false
+    },
+    {
+      "id": "raised-basket-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "raised-basket-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "raised-basket",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the basket.",
+      "once": false
+    },
+    {
+      "id": "raised-basket-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "raised-basket-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "raised-basket",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the basket.",
+      "once": false
+    },
+    {
+      "id": "altar-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "altar-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "altar",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the altar.",
+      "once": false
+    },
+    {
+      "id": "altar-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "altar-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "altar",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the altar.",
+      "once": false
+    },
+    {
+      "id": "book-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "book-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "book",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the black book.",
+      "once": false
+    },
+    {
+      "id": "book-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "book-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "book",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the black book.",
+      "once": false
+    },
+    {
+      "id": "kitchen-table-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "kitchen-table-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "kitchen-table",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the kitchen table.",
+      "once": false
+    },
+    {
+      "id": "kitchen-table-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "kitchen-table-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "kitchen-table",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the kitchen table.",
+      "once": false
+    },
+    {
+      "id": "attic-table-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "attic-table-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "attic-table",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the table.",
+      "once": false
+    },
+    {
+      "id": "attic-table-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "attic-table-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "attic-table",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the table.",
+      "once": false
+    },
+    {
+      "id": "sandwich-bag-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "sandwich-bag-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "sandwich-bag",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the brown sack.",
+      "once": false
+    },
+    {
+      "id": "sandwich-bag-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "sandwich-bag-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "sandwich-bag",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the brown sack.",
+      "once": false
+    },
+    {
+      "id": "tool-chest-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "tool-chest-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "tool-chest",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the group of tool chests.",
+      "once": false
+    },
+    {
+      "id": "tool-chest-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "tool-chest-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "tool-chest",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the group of tool chests.",
+      "once": false
+    },
+    {
+      "id": "trophy-case-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "trophy-case-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "trophy-case",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the trophy case.",
+      "once": false
+    },
+    {
+      "id": "trophy-case-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "trophy-case-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "trophy-case",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the trophy case.",
+      "once": false
+    },
+    {
+      "id": "chalice-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "chalice-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "chalice",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the chalice.",
+      "once": false
+    },
+    {
+      "id": "chalice-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "chalice-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "chalice",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the chalice.",
+      "once": false
+    },
+    {
+      "id": "bottle-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "bottle-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "bottle",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the glass bottle.",
+      "once": false
+    },
+    {
+      "id": "bottle-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "bottle-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "bottle",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the glass bottle.",
+      "once": false
+    },
+    {
+      "id": "coffin-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "coffin-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "coffin",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the gold coffin.",
+      "once": false
+    },
+    {
+      "id": "coffin-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "coffin-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "coffin",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the gold coffin.",
+      "once": false
+    },
+    {
+      "id": "machine-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "machine-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "machine",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the machine.",
+      "once": false
+    },
+    {
+      "id": "machine-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "machine-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "machine",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the machine.",
+      "once": false
+    },
+    {
+      "id": "mailbox-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "mailbox-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "mailbox",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the small mailbox.",
+      "once": false
+    },
+    {
+      "id": "mailbox-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "mailbox-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "mailbox",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the small mailbox.",
+      "once": false
+    },
+    {
+      "id": "buoy-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "buoy-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "buoy",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the red buoy.",
+      "once": false
+    },
+    {
+      "id": "buoy-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "buoy-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "buoy",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the red buoy.",
+      "once": false
+    },
+    {
+      "id": "thief-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "thief-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "thief",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the thief.",
+      "once": false
+    },
+    {
+      "id": "thief-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "thief-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "thief",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the thief.",
+      "once": false
+    },
+    {
+      "id": "pedestal-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "pedestal-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "pedestal",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the pedestal.",
+      "once": false
+    },
+    {
+      "id": "pedestal-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "pedestal-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "pedestal",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the pedestal.",
+      "once": false
+    },
+    {
+      "id": "tube-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "tube-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "tube",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the tube.",
+      "once": false
+    },
+    {
+      "id": "tube-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "tube-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "tube",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the tube.",
+      "once": false
+    },
+    {
+      "id": "nest-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "nest-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "nest",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the bird's nest.",
+      "once": false
+    },
+    {
+      "id": "nest-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "nest-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "nest",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the bird's nest.",
+      "once": false
+    },
+    {
+      "id": "egg-opens",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "egg-open-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "egg",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You open the jewel-encrusted egg.",
+      "once": false
+    },
+    {
+      "id": "egg-closes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "egg-close-intent"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "egg",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "You close the jewel-encrusted egg.",
+      "once": false
+    },
+    {
+      "id": "tie-rope",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "rope-tied-to-railing"
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "dome-flag",
+          "value": true
+        }
+      ],
+      "narration": "You tie the rope securely to the railing. It hangs down into the room below.",
+      "once": true
+    },
+    {
+      "id": "songbird-opens-egg",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "give-egg-to-songbird"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "egg",
+          "key": "isOpen",
+          "value": true
+        }
+      ],
+      "narration": "You hold out the egg. The songbird hops to it and sings a single perfect trill — and the delicate clasp springs open, revealing a golden clockwork canary nestled inside.",
+      "once": true
+    },
+    {
+      "id": "rug-moved",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "move-the-rug"
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "rug-moved-flag",
+          "value": true
+        }
+      ],
+      "narration": "You drag the rug aside. Beneath it, set flush into the floor, is a closed wooden trap door.",
+      "once": true
+    },
+    {
+      "id": "cyclops-flees",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "cyclops-magic-word"
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "cyclops-flag",
+          "value": true
+        },
+        {
+          "type": "setFlag",
+          "key": "magic-flag",
+          "value": true
+        },
+        {
+          "type": "moveItem",
+          "itemId": "cyclops",
+          "to": "nowhere"
+        }
+      ],
+      "narration": "The cyclops's eye widens in stark terror. He bellows, scrambles backward, and crashes east through the wall — leaving a cyclops-shaped hole that opens straight into the living room. The way up the staircase is now unguarded.",
+      "once": true
+    },
+    {
+      "id": "cyclops-fed",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "feed-cyclops"
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "cyclops-flag",
+          "value": true
+        },
+        {
+          "type": "moveItem",
+          "itemId": "lunch",
+          "to": "nowhere"
+        },
+        {
+          "type": "moveItem",
+          "itemId": "bottle",
+          "to": "nowhere"
+        }
+      ],
+      "narration": "The cyclops devours the sandwich in two bites and drains the bottle. Within moments his single eye droops, and he slumps against the wall, snoring thunderously. The staircase is no longer guarded.",
+      "once": true
+    },
+    {
+      "id": "altar-prayer",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "pray-at-altar"
+      },
+      "effects": [
+        {
+          "type": "movePlayer",
+          "to": "forest-1"
+        }
+      ],
+      "narration": "You kneel before the altar. A gentle warmth gathers around you, and the temple fades. When your senses clear, you are standing in a sunlit forest.",
+      "once": false
+    },
+    {
+      "id": "trap-door-slams",
+      "afterAction": true,
+      "once": true,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "playerAt",
+            "roomId": "cellar"
+          },
+          {
+            "type": "passageState",
+            "passageId": "trap-door",
+            "key": "isOpen",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setPassageState",
+          "passageId": "trap-door",
+          "key": "isOpen",
+          "value": false
+        }
+      ],
+      "narration": "From above, an unseen hand slams the trap door shut. You hear the click of a latch."
+    },
+    {
+      "id": "lamp-lights",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "light-lamp"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "lamp",
+          "key": "isLit",
+          "value": true
+        }
+      ],
+      "narration": "The brass lantern flickers on, casting a warm glow.",
+      "once": false
+    },
+    {
+      "id": "lamp-extinguishes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "extinguish-lamp"
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "lamp",
+          "key": "isLit",
+          "value": false
+        }
+      ],
+      "narration": "The lantern goes dark.",
+      "once": false
+    },
+    {
+      "id": "lamp-burns-fuel",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "itemState",
+        "itemId": "lamp",
+        "key": "isLit",
+        "equals": true
+      },
+      "effects": [
+        {
+          "type": "adjustItemState",
+          "itemId": "lamp",
+          "key": "batteryTurns",
+          "by": -1
+        }
+      ]
+    },
+    {
+      "id": "lamp-runs-out",
+      "afterAction": true,
+      "once": true,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemState",
+            "itemId": "lamp",
+            "key": "isLit",
+            "equals": true
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "lamp",
+              "key": "batteryTurns"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "lamp",
+          "key": "isLit",
+          "value": false
+        }
+      ],
+      "narration": "Your lamp dims, flickers, and goes dark."
+    },
+    {
+      "id": "darkness-tick-incr",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "currentRoomState",
+            "key": "dark",
+            "equals": true
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "anyPerceivableItemWith",
+              "key": "isLit",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "darkness-turns",
+          "by": 1
+        }
+      ]
+    },
+    {
+      "id": "darkness-tick-reset",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "not",
+        "condition": {
+          "type": "and",
+          "all": [
+            {
+              "type": "currentRoomState",
+              "key": "dark",
+              "equals": true
+            },
+            {
+              "type": "not",
+              "condition": {
+                "type": "anyPerceivableItemWith",
+                "key": "isLit",
+                "equals": true
+              }
+            }
+          ]
+        }
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "darkness-turns",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "id": "grue-eats",
+      "afterAction": true,
+      "once": true,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "currentRoomState",
+            "key": "dark",
+            "equals": true
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "anyPerceivableItemWith",
+              "key": "isLit",
+              "equals": true
+            }
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "darkness-turns"
+            },
+            "op": ">=",
+            "right": {
+              "kind": "literal",
+              "value": 2
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "endGame",
+          "won": false,
+          "message": "Oh, no! You have walked into the slavering fangs of a lurking grue!"
+        }
+      ]
+    }
+  ],
+  "defaultVisibility": {
+    "type": "or",
+    "any": [
+      {
+        "type": "not",
+        "condition": {
+          "type": "currentRoomState",
+          "key": "dark",
+          "equals": true
+        }
+      },
+      {
+        "type": "anyPerceivableItemWith",
+        "key": "isLit",
+        "equals": true
+      }
+    ]
+  },
+  "sharedVariants": [
+    {
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "currentRoomState",
+            "key": "dark",
+            "equals": true
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "anyPerceivableItemWith",
+              "key": "isLit",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "text": "It is pitch black. You are likely to be eaten by a grue."
+    }
+  ],
+  "winConditions": [
+    {
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "egg",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "canary",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "bag-of-coins",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "painting",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "chalice",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "torch",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "trident",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "coffin",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "sceptre",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "jade",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "scarab",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "skull",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "emerald",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "bracelet",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "trunk",
+            "location": "trophy-case"
+          }
+        ]
+      },
+      "message": "An almost inaudible voice whispers in your ear, 'Look to your treasures for the final secret.' The trophy case glitters; the Great Underground Empire is conquered."
     }
   ]
 }

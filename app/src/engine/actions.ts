@@ -8,14 +8,14 @@
 import type { GameState, Story } from "../story/schema";
 import {
   currentRoom,
-  doorById,
-  doorPresentation,
-  doorSideHere,
-  doorsHere,
   evaluateCondition,
+  isContainerAccessible,
   isItemAccessible,
   itemById,
   itemsInContainer,
+  passageById,
+  passagePresentation,
+  passagesHere,
   roomById,
   visibleExits,
 } from "./state";
@@ -29,9 +29,8 @@ export type ActionRequest =
   | { type: "put"; itemId: string; targetId: string }
   | { type: "inventory" }
   | { type: "go"; direction: string }
-  | { type: "open"; itemId: string }
-  | { type: "close"; itemId: string }
   | { type: "read"; itemId: string }
+  | { type: "wait" }
   | { type: "recordIntent"; signalId: string };
 
 export interface ActionResult {
@@ -53,9 +52,8 @@ export function performAction(
     case "put": return put(state, story, req.itemId, req.targetId);
     case "inventory": return inventory(state);
     case "go": return go(state, story, req.direction);
-    case "open": return open(state, story, req.itemId);
-    case "close": return close(state, story, req.itemId);
     case "read": return read(state, story, req.itemId);
+    case "wait": return { state, event: { type: "waited" }, ok: true };
     case "recordIntent": return recordIntent(state, story, req.signalId);
   }
 }
@@ -89,16 +87,16 @@ function examine(state: GameState, story: Story, id: string): ActionResult {
     };
   }
 
-  const door = doorById(story, id);
-  if (door) {
-    const visible = doorsHere(state, story).some((d) => d.id === door.id);
+  const passage = passageById(story, id);
+  if (passage) {
+    const visible = passagesHere(state, story).some((p) => p.id === passage.id);
     if (!visible) {
-      return { state, event: reject("not-accessible", { itemId: door.id }), ok: false };
+      return { state, event: reject("not-accessible", { itemId: passage.id }), ok: false };
     }
-    const presentation = doorPresentation(door, state);
+    const presentation = passagePresentation(passage, state, story);
     return {
       state,
-      event: { type: "examined", itemId: door.id, description: presentation.description },
+      event: { type: "examined", itemId: passage.id, description: presentation.description },
       ok: true,
     };
   }
@@ -168,10 +166,18 @@ function put(
   if (!target.container) {
     return { state, event: reject("not-container", { itemId: item.id, targetId: target.id }), ok: false };
   }
-  // If the container is openable, it must be open. (Always-open containers
-  // skip this check.)
-  if (target.container.openable && !state.containerOpen[target.id]) {
-    return { state, event: reject("container-closed", { itemId: item.id, targetId: target.id }), ok: false };
+  // Containers may declare accessibleWhen — when false, contents can't be
+  // reached. Surface the author's accessBlockedMessage if present.
+  if (!isContainerAccessible(target, state, story)) {
+    return {
+      state,
+      event: reject("container-inaccessible", {
+        itemId: item.id,
+        targetId: target.id,
+        message: target.container.accessBlockedMessage,
+      }),
+      ok: false,
+    };
   }
   if (target.container.capacity !== undefined) {
     const contents = itemsInContainer(state, story, target.id);
@@ -257,97 +263,6 @@ function go(state: GameState, story: Story, direction: string): ActionResult {
   };
 }
 
-// ---------- open / close ----------
-
-function open(state: GameState, story: Story, id: string): ActionResult {
-  // Polymorphic: id could be an item OR a door. Try item first, then door.
-  const item = itemById(story, id);
-  if (item) {
-    if (!isItemAccessible(item, state, story)) {
-      return { state, event: reject("not-accessible", { itemId: item.id }), ok: false };
-    }
-    if (!item.container?.openable) {
-      return { state, event: reject("not-openable", { itemId: item.id }), ok: false };
-    }
-    if (state.containerOpen[item.id]) {
-      return { state, event: reject("already-open", { itemId: item.id }), ok: false };
-    }
-    return {
-      state: { ...state, containerOpen: { ...state.containerOpen, [item.id]: true } },
-      event: { type: "opened", itemId: item.id },
-      ok: true,
-    };
-  }
-
-  const door = doorById(story, id);
-  if (door) {
-    const visible = doorsHere(state, story).some((d) => d.id === door.id);
-    if (!visible) {
-      return { state, event: reject("not-accessible", { itemId: door.id }), ok: false };
-    }
-    if (state.doorOpen[door.id]) {
-      return { state, event: reject("already-open", { itemId: door.id }), ok: false };
-    }
-    // Gate on openableWhen — per-side override beats door-level default. Both
-    // missing means the door opens freely.
-    const here = doorSideHere(door, state);
-    const effectiveWhen = here?.openableWhen ?? door.openableWhen;
-    if (effectiveWhen && !evaluateCondition(effectiveWhen, state)) {
-      const msg = here?.openBlockedMessage ?? door.openBlockedMessage;
-      return {
-        state,
-        event: reject("open-blocked", { itemId: door.id, message: msg }),
-        ok: false,
-      };
-    }
-    return {
-      state: { ...state, doorOpen: { ...state.doorOpen, [door.id]: true } },
-      event: { type: "opened", itemId: door.id },
-      ok: true,
-    };
-  }
-
-  return { state, event: reject("unknown-item", { itemId: id }), ok: false };
-}
-
-function close(state: GameState, story: Story, id: string): ActionResult {
-  const item = itemById(story, id);
-  if (item) {
-    if (!isItemAccessible(item, state, story)) {
-      return { state, event: reject("not-accessible", { itemId: item.id }), ok: false };
-    }
-    if (!item.container?.openable) {
-      return { state, event: reject("not-openable", { itemId: item.id }), ok: false };
-    }
-    if (!state.containerOpen[item.id]) {
-      return { state, event: reject("already-closed", { itemId: item.id }), ok: false };
-    }
-    return {
-      state: { ...state, containerOpen: { ...state.containerOpen, [item.id]: false } },
-      event: { type: "closed", itemId: item.id },
-      ok: true,
-    };
-  }
-
-  const door = doorById(story, id);
-  if (door) {
-    const visible = doorsHere(state, story).some((d) => d.id === door.id);
-    if (!visible) {
-      return { state, event: reject("not-accessible", { itemId: door.id }), ok: false };
-    }
-    if (!state.doorOpen[door.id]) {
-      return { state, event: reject("already-closed", { itemId: door.id }), ok: false };
-    }
-    return {
-      state: { ...state, doorOpen: { ...state.doorOpen, [door.id]: false } },
-      event: { type: "closed", itemId: door.id },
-      ok: true,
-    };
-  }
-
-  return { state, event: reject("unknown-item", { itemId: id }), ok: false };
-}
-
 // ---------- recordIntent ----------
 //
 // Called by the LLM when the player's input semantically matches an active
@@ -363,6 +278,14 @@ function recordIntent(state: GameState, story: Story, signalId: string): ActionR
   if (state.matchedIntents.includes(signalId)) {
     // Already matched — return success but don't duplicate.
     return { state, event: { type: "intent-recorded", signalId }, ok: true };
+  }
+  // Refuse the intent if the author's `active` clause is currently false. The
+  // LLM may know the signal id from earlier turns when it was active and try
+  // to fire it now (e.g. trap-door-open-intent recalled from below the cellar
+  // floor). Without this gate a closed signal can be re-asserted any time the
+  // LLM remembers its id, which breaks puzzle gating.
+  if (signal.active && !evaluateCondition(signal.active, state, story)) {
+    return { state, event: reject("unknown-intent", { itemId: signalId }), ok: false };
   }
   return {
     state: { ...state, matchedIntents: [...state.matchedIntents, signalId] },

@@ -35,10 +35,10 @@ const TOOLS: Tool[] = [
   {
     name: "examine",
     description:
-      "Examine an item or door closely. Use for 'examine X', 'x X', 'look at X', 'inspect X'. Pass the id (NOT the display name) of an item from the current view's itemsHere/inventory OR a door from the current view's doorsHere.",
+      "Examine an item or passage closely. Use for 'examine X', 'x X', 'look at X', 'inspect X'. Pass the id (NOT the display name) of an item from the current view's itemsHere/inventory OR a passage (door, window, gate, archway, etc.) from the current view's passagesHere.",
     input_schema: {
       type: "object",
-      properties: { itemId: { type: "string", description: "The id of the item or door to examine, from the current view" } },
+      properties: { itemId: { type: "string", description: "The id of the item or passage to examine, from the current view" } },
       required: ["itemId"],
     },
   },
@@ -63,12 +63,12 @@ const TOOLS: Tool[] = [
   {
     name: "put",
     description:
-      "Put an item from inventory INTO an open container (e.g. 'put leaflet in mailbox', 'put coin in box'). Pass itemId (the thing you're placing) and targetId (the container's id from the current view).",
+      "Put an item from inventory INTO an accessible container (e.g. 'put coin in box', 'put scroll in chest'). Pass itemId (the thing you're placing) and targetId (the container's id from the current view).",
     input_schema: {
       type: "object",
       properties: {
         itemId: { type: "string", description: "The id of the item being placed (must be in inventory)" },
-        targetId: { type: "string", description: "The id of the destination container (must be visible, openable, and open)" },
+        targetId: { type: "string", description: "The id of the destination container (must be visible and accessible — check itemsHere[*].container.accessible)" },
       },
       required: ["itemId", "targetId"],
     },
@@ -89,26 +89,6 @@ const TOOLS: Tool[] = [
     },
   },
   {
-    name: "open",
-    description:
-      "Open a container or door. Pass the id of an item (must be a container) from the current view's itemsHere OR a door from doorsHere.",
-    input_schema: {
-      type: "object",
-      properties: { itemId: { type: "string", description: "The id of the item or door to open" } },
-      required: ["itemId"],
-    },
-  },
-  {
-    name: "close",
-    description:
-      "Close a container or door. Pass the id of an item (must be a container) from the current view's itemsHere OR a door from doorsHere.",
-    input_schema: {
-      type: "object",
-      properties: { itemId: { type: "string", description: "The id of the item or door to close" } },
-      required: ["itemId"],
-    },
-  },
-  {
     name: "read",
     description: "Read text on an item (sign, book, etc.). Pass the item's id.",
     input_schema: {
@@ -116,6 +96,12 @@ const TOOLS: Tool[] = [
       properties: { itemId: { type: "string" } },
       required: ["itemId"],
     },
+  },
+  {
+    name: "wait",
+    description:
+      "Pass a turn without doing anything. Use when the player says 'wait', 'rest', 'pause', 'do nothing', 'listen', 'sleep', or otherwise wants time to pass without affecting state. The world still ticks forward (per-turn triggers fire — light sources may drain, NPCs may move, timers may advance, etc.) but no other player action runs.",
+    input_schema: { type: "object", properties: {} },
   },
   {
     name: "recordIntent",
@@ -137,22 +123,26 @@ const TOOLS: Tool[] = [
 const STYLE_INSTRUCTIONS = `You are the narrator of an interactive text adventure.
 
 Your two jobs:
-1. Translate the player's natural-language command into one or more tool calls (look, examine, take, drop, put, inventory, go, open, close, read).
+1. Translate the player's natural-language command into one or more tool calls (look, examine, take, drop, put, inventory, go, read, wait, recordIntent).
 2. After the tool(s) return, write a brief vivid narration of what happened.
 
 Rules:
 - The engine owns the world. You cannot describe events the engine hasn't computed. Always call a tool first if the player is requesting an action.
-- Pass IDs (not display names) to tools. The current view lists available IDs in three places: \`itemsHere\` (items in the room or inventory), \`doorsHere\` (doors visible from this room), and \`inventory\`.
-- Items and doors share one ID namespace. \`examine\`, \`open\`, and \`close\` accept either kind. \`take\`, \`drop\`, \`put\`, and \`read\` only work on items.
-- Doors connect two rooms. The view shows each door's name, description, open/closed state, and what room it connects to. An exit may carry a "door" id — that means traversing the exit requires the door to be open.
-- A door may carry a "glimpse" object when it's see-through (open window, archway, glass door). Glimpse contains the other room's name + description (engine facts) and optionally a "hint" string from the author. When the player asks to look through, peek through, or see what's beyond a see-through door, narrate using the glimpse — describe what's visible on the other side without invoking the engine's go action. If no glimpse is present, looking through is impossible (opaque door); say so.
-- Compound commands: the player may chain actions in one input ("take the bottle and put it in the sack", "open the mailbox, take the leaflet, read it"). Call each tool in sequence. **If any step is rejected (event.type === "rejected"), stop the chain immediately — do not call further tools.** Then narrate what succeeded up to that point plus the failure.
+- Pass IDs (not display names) to tools. The current view lists available IDs in three places: \`itemsHere\` (items in the room or inventory), \`passagesHere\` (passages — doors, windows, archways, etc. — visible from this room), and \`inventory\`.
+- Items and passages share one ID namespace. \`examine\` accepts either kind. \`take\`, \`drop\`, \`put\`, and \`read\` work on items only.
+- Items and passages both carry a typed \`state\` map (e.g. \`{ isOpen: true }\`, \`{ broken: false }\`). The engine has NO built-in open/close/break verbs — state mutates only through triggers. When the player tries to mutate state ("open the box", "close the door", "smash the vase", "shut the window"), look at the [Active intent signals] block in the user message. If one matches the player's intent, call \`recordIntent(signalId)\` BEFORE narrating. The matching trigger will fire and update the state; the next view will reflect the change. Then narrate the result.
+- Passages connect two rooms. Each PassageView shows the passage's name, description, current \`state\`, and what room it connects to. Some passages are gated by traversableWhen — when the player tries to traverse and it's blocked, the engine returns event.type === "rejected" with reason "traverse-blocked" and a custom message. Narrate around it.
+- Containers (items with a \`container\` field) gate access to their contents via \`accessibleWhen\`. The view's container info shows \`accessible: true|false\`. When the player tries to \`put\` something into an inaccessible container, the engine returns event.type === "rejected" with reason "container-inaccessible" and the author's accessBlockedMessage. Narrate around it.
+- An exit may carry a "passage" id — meaning traversal is gated by that passage's traversableWhen. The view's exit object will surface "blocked" + "blockedMessage" when this is the case.
+- A passage may carry a "glimpse" object when it's see-through (open window, archway, glass). Glimpse contains the other room's name + description (engine facts) and optionally a "description" or "prompt" from the author. When the player asks to look through, peek through, or see what's beyond a see-through passage, narrate using the glimpse — describe what's visible on the other side without invoking the engine's go action. If no glimpse is present, looking through is impossible (opaque passage); say so.
+- Compound commands: the player may chain actions in one input ("take the key and put it in the bag", "open the box, take the contents, examine them"). Call each tool in sequence. **If any step is rejected (event.type === "rejected"), stop the chain immediately — do not call further tools.** Then narrate what succeeded up to that point plus the failure.
 - "Put X in my inventory" / "stash X" / "pocket X" / "pick up and store X" all mean \`take(X)\`. Inventory is not a container — items live there but you don't \`put\` into it.
 - If a player command genuinely can't be enacted with the available tools (truly impossible action), respond with prose explaining why, instead of calling a tool. Don't invent a tool that doesn't exist.
 - Narration style: second person, present tense ("You see…"). Match the story's tone. Be vivid but concise — usually 1–3 sentences. After a multi-step chain, write ONE coherent narration of the whole sequence, not a paragraph per step.
-- Never invent items, rooms, exits, doors, or plot points not in the engine's data.
+- Never invent items, rooms, exits, passages, or plot points not in the engine's data. The engine has already filtered the view based on what the player can perceive — if an item or exit isn't listed, the player can't see it (could be darkness, fog, magic, etc.). If the room description tells you the player can't see (e.g. "It is pitch black"), narrate accordingly and don't reference unlisted things.
 - When the engine returns "narrationCues" in a tool_result, weave them naturally into your narration — they are state changes the player should notice.
-- If the engine returns event.type === "rejected", write a short refusal that fits the rejection reason — don't pretend the action succeeded.`;
+- **Critical rule: NEVER narrate state changes that didn't happen.** If the player wants to move, take, drop, put, open, close, or do anything that changes engine state, you MUST call the appropriate tool. Don't describe taking an item, going somewhere, opening a passage, etc. without first calling the tool and seeing the result. If you skip the tool call, the engine state stays the same and your narration becomes a lie that the next turn's view will contradict (player still in same room, item still on the floor, door still closed).
+- If the engine returns event.type === "rejected", write a short refusal that fits the rejection reason — DO NOT pretend the action succeeded. For "exit-blocked", "traverse-blocked", "no-such-direction", or "container-inaccessible": narrate the refusal using the engine's message (if provided) and the player STAYS WHERE THEY ARE. Do not describe them moving, taking, or otherwise acting on the world.`;
 
 export interface NarrationTurn {
   // The narration text to show the player.
@@ -380,11 +370,11 @@ function formatView(view: WorldView): string {
     {
       room: view.room,
       itemsHere: view.itemsHere,
-      doorsHere: view.doorsHere,
+      passagesHere: view.passagesHere,
       exits: view.exits.map((e) => ({
         direction: e.direction,
         target: e.targetRoomName,
-        ...(e.doorId && { door: e.doorId }),
+        ...(e.passageId && { passage: e.passageId }),
         ...(e.blocked && { blocked: true }),
         ...(e.blockedMessage && { blockedMessage: e.blockedMessage }),
       })),
@@ -403,11 +393,11 @@ function formatToolResult(result: EngineResult): string {
       view: {
         room: result.view.room,
         itemsHere: result.view.itemsHere,
-        doorsHere: result.view.doorsHere,
+        passagesHere: result.view.passagesHere,
         exits: result.view.exits.map((e) => ({
           direction: e.direction,
           target: e.targetRoomName,
-          ...(e.doorId && { door: e.doorId }),
+          ...(e.passageId && { passage: e.passageId }),
           ...(e.blocked && { blocked: true }),
         })),
         inventory: result.view.inventory,
@@ -443,12 +433,10 @@ function toolToAction(
       return typeof input.direction === "string"
         ? { type: "go", direction: input.direction }
         : null;
-    case "open":
-      return inputId(input) ? { type: "open", itemId: inputId(input)! } : null;
-    case "close":
-      return inputId(input) ? { type: "close", itemId: inputId(input)! } : null;
     case "read":
       return inputId(input) ? { type: "read", itemId: inputId(input)! } : null;
+    case "wait":
+      return { type: "wait" };
     case "recordIntent":
       return typeof input.signalId === "string"
         ? { type: "recordIntent", signalId: input.signalId }

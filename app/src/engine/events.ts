@@ -14,9 +14,8 @@ export type ActionEvent =
   | { type: "put"; itemId: string; targetId: string }
   | { type: "inventoried" }
   | { type: "moved"; from: string; to: string; direction: string }
-  | { type: "opened"; itemId: string }
-  | { type: "closed"; itemId: string }
   | { type: "read"; itemId: string; text: string }
+  | { type: "waited" }
   | { type: "intent-recorded"; signalId: string }
   | {
       type: "rejected";
@@ -38,14 +37,11 @@ export type RejectionReason =
   | "no-such-direction"   // current room has no exit in this direction
   | "exit-blocked"        // exit exists but its `when` condition is false
   | "broken-exit-target"  // exit points to a nonexistent room (validator should catch)
-  | "not-openable"
-  | "already-open"
-  | "already-closed"
-  | "open-blocked"        // for doors: openableWhen condition failed
+  | "traverse-blocked"    // for passages: traversableWhen condition failed
   | "unknown-intent"      // recordIntent called with a signalId that doesn't exist
   | "not-readable"
   | "not-container"       // for put: target item isn't a container
-  | "container-closed"    // for put: target container is closed
+  | "container-inaccessible" // for put: target container's accessibleWhen is false
   | "container-full"      // for put: target container at capacity
   | "self-containment"    // for put: can't put X into X
   | "no-current-room"     // engine bug: player is in a nonexistent room

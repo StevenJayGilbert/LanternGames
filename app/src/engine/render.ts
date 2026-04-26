@@ -11,7 +11,7 @@ import type { Story } from "../story/schema";
 import type { ActionEvent, RejectionReason } from "./events";
 import type { EngineResult } from "./engine";
 import type { WorldView } from "./view";
-import { doorById, itemById } from "./state";
+import { itemById, passageById } from "./state";
 
 export function renderResult(result: EngineResult, story: Story): string {
   const lines: string[] = [];
@@ -75,12 +75,19 @@ export function renderRoomView(view: WorldView): string {
     }
   }
 
-  // Doors visible from the current room — list with open/closed state.
-  if (view.doorsHere.length > 0) {
-    const doorLabels = view.doorsHere.map(
-      (d) => `${d.name} (${d.isOpen ? "open" : "closed"})`,
-    );
-    lines.push(`Doors: ${doorLabels.join(", ")}.`);
+  // Passages visible from the current room — show name plus a brief state
+  // summary if the passage declares state. The summary is a no-op for
+  // stateless passages (chimney, archway, etc.).
+  if (view.passagesHere.length > 0) {
+    const labels = view.passagesHere.map((p) => {
+      const stateEntries = Object.entries(p.state);
+      if (stateEntries.length === 0) return p.name;
+      const summary = stateEntries
+        .map(([k, v]) => `${k}=${v}`)
+        .join(", ");
+      return `${p.name} (${summary})`;
+    });
+    lines.push(`Passages: ${labels.join(", ")}.`);
   }
 
   if (view.exits.length > 0) {
@@ -102,9 +109,12 @@ interface ItemViewLite {
   containedIn?: { id: string; name: string };
 }
 
-function renderItemLabel(item: ItemViewLite & { container?: { isOpen: boolean; openable: boolean } }): string {
-  if (item.container && item.container.openable) {
-    return `${item.name} (${item.container.isOpen ? "open" : "closed"})`;
+function renderItemLabel(item: ItemViewLite & { state?: Record<string, unknown> }): string {
+  // Generic open/closed annotation: only when the author declared a boolean
+  // `state.isOpen`. No assumption beyond that convention.
+  const isOpen = item.state?.isOpen;
+  if (typeof isOpen === "boolean") {
+    return `${item.name} (${isOpen ? "open" : "closed"})`;
   }
   return item.name;
 }
@@ -126,12 +136,10 @@ function renderEvent(event: ActionEvent, story: Story): string {
       return `Dropped: ${nameOf(story, event.itemId)}.`;
     case "put":
       return `You put the ${nameOf(story, event.itemId)} into the ${nameOf(story, event.targetId)}.`;
-    case "opened":
-      return `You open the ${nameOf(story, event.itemId)}.`;
-    case "closed":
-      return `You close the ${nameOf(story, event.itemId)}.`;
     case "read":
       return event.text;
+    case "waited":
+      return "Time passes.";
     case "rejected":
       return renderRejection(event, story);
   }
@@ -168,14 +176,11 @@ function rejectionMessage(
     case "no-such-direction": return `You can't go ${ctx.direction ?? "that way"} from here.`;
     case "exit-blocked": return ctx.message ?? `You can't go that way right now.`;
     case "broken-exit-target": return `(error: exit target "${ctx.message ?? "?"}" doesn't exist)`;
-    case "not-openable": return `You can't open the ${item}.`;
-    case "already-open": return `The ${item} is already open.`;
-    case "already-closed": return `The ${item} is already closed.`;
-    case "open-blocked": return ctx.message ?? `You can't open the ${item} right now.`;
+    case "traverse-blocked": return ctx.message ?? `You can't go that way right now.`;
     case "unknown-intent": return `(unknown intent signal: ${ctx.itemName ?? "?"})`;
     case "not-readable": return `There's nothing to read on the ${item}.`;
     case "not-container": return `The ${target} can't hold things.`;
-    case "container-closed": return `The ${target} is closed.`;
+    case "container-inaccessible": return ctx.message ?? `You can't get to the inside of the ${target} right now.`;
     case "container-full": return `The ${target} is full.`;
     case "self-containment": return `You can't put the ${item} inside itself.`;
     case "no-current-room": return `(error: you are nowhere)`;
@@ -186,5 +191,5 @@ function rejectionMessage(
 // Polymorphic name lookup — id may refer to an item OR a door, since action
 // tools dispatch over both kinds.
 function nameOf(story: Story, id: string): string {
-  return itemById(story, id)?.name ?? doorById(story, id)?.name ?? id;
+  return itemById(story, id)?.name ?? passageById(story, id)?.name ?? id;
 }

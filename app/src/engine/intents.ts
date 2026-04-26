@@ -31,15 +31,19 @@ function collectConditionSites(story: Story): Condition[] {
     }
   }
 
-  for (const door of story.doors ?? []) {
-    for (const v of door.variants ?? []) out.push(v.when);
-    if (door.glimpse?.when) out.push(door.glimpse.when);
-    if (door.openableWhen) out.push(door.openableWhen);
-    for (const side of door.sides) {
+  for (const passage of story.passages ?? []) {
+    for (const v of passage.variants ?? []) out.push(v.when);
+    if (passage.glimpse?.when) out.push(passage.glimpse.when);
+    if (passage.traversableWhen) out.push(passage.traversableWhen);
+    for (const side of passage.sides) {
       for (const v of side.variants ?? []) out.push(v.when);
       if (side.glimpse?.when) out.push(side.glimpse.when);
-      if (side.openableWhen) out.push(side.openableWhen);
+      if (side.traversableWhen) out.push(side.traversableWhen);
     }
+  }
+
+  for (const item of story.items) {
+    if (item.container?.accessibleWhen) out.push(item.container.accessibleWhen);
   }
 
   for (const trigger of story.triggers ?? []) out.push(trigger.when);
@@ -69,6 +73,7 @@ function conditionReferencesSignal(c: Condition, signalId: string): boolean {
 function evaluateAssumingIntent(
   c: Condition,
   state: GameState,
+  story: Story,
   signalId: string,
 ): boolean {
   switch (c.type) {
@@ -77,13 +82,13 @@ function evaluateAssumingIntent(
         ? true
         : state.matchedIntents.includes(c.signalId);
     case "and":
-      return c.all.every((s) => evaluateAssumingIntent(s, state, signalId));
+      return c.all.every((s) => evaluateAssumingIntent(s, state, story, signalId));
     case "or":
-      return c.any.some((s) => evaluateAssumingIntent(s, state, signalId));
+      return c.any.some((s) => evaluateAssumingIntent(s, state, story, signalId));
     case "not":
-      return !evaluateAssumingIntent(c.condition, state, signalId);
+      return !evaluateAssumingIntent(c.condition, state, story, signalId);
     default:
-      return evaluateCondition(c, state);
+      return evaluateCondition(c, state, story);
   }
 }
 
@@ -101,11 +106,11 @@ export function gatherActiveIntentSignals(
 
   return signals.filter((signal) => {
     if (state.matchedIntents.includes(signal.id)) return false;
-    if (signal.active && !evaluateCondition(signal.active, state)) return false;
+    if (signal.active && !evaluateCondition(signal.active, state, story)) return false;
     return sites.some(
       (site) =>
         conditionReferencesSignal(site, signal.id) &&
-        evaluateAssumingIntent(site, state, signal.id),
+        evaluateAssumingIntent(site, state, story, signal.id),
     );
   });
 }

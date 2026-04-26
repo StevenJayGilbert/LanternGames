@@ -19,7 +19,7 @@ User brings their own Anthropic API key (BYOK). Static site, no backend at first
 - **License of Zork content:** Code is MIT (Microsoft, Nov 2025). "Zork" trademark NOT licensed — the runtime ships under its own product name; Zork is included as one of several test stories with appropriate attribution.
 - **Object model — three architectural commitments** (made after surveying Inform 7, TADS 3, Adventuron, Quest, ZIL):
     - **NPCs are a top-level kind**, not items with a personality field. Their state (mood, dialogue topics, schedule, reactions) is rich enough that overloading items would scatter NPC concerns across optional fields on every object.
-    - **Doors are a top-level kind**, not items-with-a-flag. Two-sided state, lock state, examineable from both sides — clean as their own type with `between: [roomId, roomId]`. Rooms reference doors in their `exits`.
+    - **Passages are a top-level kind**, not items-with-a-flag. (Originally "Doors"; renamed because the same concept covers windows, chimneys, archways, gates, portals, narrow gaps, etc.) Two-sided, with per-passage typed state (`state: Record<string, Atom>`), per-side `traversableWhen`, per-side glimpses, examineable from either side. Rooms reference passages from their `exits` via `passage: <id>`. State mutation flows through triggers + `setPassageState` effect; the engine has no built-in open/close on passages — the player's intent is matched via `IntentSignal` and a trigger flips state.
     - **Container vs supporter are separate capability fields** (not unified `holds.mode`). An item can have both for chest-of-drawers cases. Easier to validate; clearer signal to the LLM ("in" vs. "on").
 
 ## Phase 1 — Foundation (de-risk the unknowns) — ✅ DONE
@@ -54,17 +54,67 @@ JSON Schema (separate from TypeScript types) deferred until needed for an author
 - [x] End-to-end smoke test (the toy story is fully playable in the browser with LLM narration)
 - [x] Pre-LLM deterministic command parser kept as [app/src/engine/parser.ts](app/src/engine/parser.ts) for reference / future fallback (currently unused by the UI)
 
-## Phase 4 — Zork I as validation content
+## Phase 4 — Zork I as validation content (ongoing)
 
 This is where we discover what the schema missed. Treat schema gaps as a feature — fix the schema, re-extract.
 
-- [ ] Write `scripts/extract-zork.ts`: convert `zil-to-json/data/zork1/*.json` into a story file matching our schema
-    - Walk room routines to capture description text + conditional variants (raw ZIL predicates as tags, normalize the ~10–15 stateful rooms)
-    - Map objects with synonyms, adjectives, initial locations, flags
-    - Hand-author triggers for the famous puzzles (mailbox open, lantern lit, troll sword, thief, dam, cyclops, Hades, etc.)
-- [ ] Get above-ground area playable end-to-end (West of House → kitchen → forest)
-- [ ] Identify and document schema gaps; loop back to Phase 2 to extend the schema if needed
-- [ ] Stretch within phase: complete underground (cellar, troll room, maze, dam, coal mine)
+- [x] **`scripts/extract-zork.ts`**: converts `zil-to-json/data/zork1/*.json` into a story file. Mechanical pass: rooms (LDESC + routine-walked M-LOOK branches), items (CONTBIT/LIGHTBIT/READBIT/etc), exits (UEXIT/CEXIT/DEXIT), passages (DOORBIT promotion). Authored content lives in [`app/src/stories/zork-1.overrides.json`](app/src/stories/zork-1.overrides.json) and is merged in by the extractor — adding a new puzzle is a JSON edit, no code change.
+- [x] **Above-ground playable end-to-end**: west-of-house → all four sides → forest paths → kitchen → attic. Working including the kitchen-window puzzle.
+- [x] **Schema gaps loop**: discovered + fixed: appearsIn for shared scenery; per-side passage glimpse; typed passage state; typed item state; intent signals (LLM-judged fuzzy match); triggers; `compare` + NumericExpr (generic counters); `openWhen`/`closeWhen` (conditional auto-gen); merge-by-id overrides JSON layer.
+- [ ] **Underground stretch**: cellar/troll combat, maze navigation, dam controls, coal mine, Hades — most still need engine features (see Phase 7 puzzle list).
+
+### Zork puzzles wired (no engine changes needed)
+
+Authored in [`zork-1.overrides.json`](app/src/stories/zork-1.overrides.json):
+
+- **Kitchen window** — open/close intent gates traversal east-of-house ↔ kitchen.
+- **Chimney** — kitchen→studio always refused; studio→kitchen requires lamp + ≤2 carried items.
+- **Rope + dome** — tie rope to railing in Dome Room → flips dome-flag → unlocks dome-room.down → torch-room (and the entire Hades / Egyptian / Altar branch beyond).
+- **Egg + songbird** — `openWhen: never` suppresses naive open; give-egg-to-songbird intent + trigger flips state.isOpen and reveals canary.
+- **Move the rug** — gates trap-door open via rug-moved-flag.
+- **Cyclops magic word** — "ulysses"/"odysseus" sets cyclops-flag + magic-flag (he flees, smashes wall to living-room shortcut).
+- **Cyclops feed alternative** — give lunch + bottle; cyclops sleeps (cyclops-flag only, no wall smash).
+- **Pray at altar** — teleport from south-temple to forest-1.
+- **Locked grate** — `openWhen: hasItem(keys)` (the maze's skeleton key).
+- **Trophy case win condition** — all 15 currently-extracted treasures in trophy-case → win. Aspirational: 4 more treasures (diamond, platinum bar, pot of gold, crystal sphere) need their puzzles wired before the game is winnable.
+
+### Zork puzzles needing schema-only authoring (low-hanging follow-ups)
+
+Doable now in JSON; just haven't been wired:
+
+- **Bell + candles + book sequence** in temple/Hades — would set flags. No effect today because the spirits in Land-of-Dead aren't modeled as blockers (they're scenery in extraction).
+- **Sword glows red/blue near danger** — would need `variants` on `Item` (currently only `Room` and `Passage` have it). Schema extension; trivial when added.
+- **Maze navigation by dropping items** — the LLM can narrate this from itemAt visibility; no engine help needed beyond what exists.
+
+### Zork puzzles wired in this batch — landed
+
+- [x] **Lantern battery** — `lamp.state.batteryTurns: 330` decremented by an `afterAction once:false` tick trigger while `state.isLit: true`; auto-extinguishes at 0 with the canonical narration.
+- [x] **Light / extinguish lamp** — `light-lamp` and `extinguish-lamp` intents + triggers (hand-authored; auto-gen could be added later for `lightSource` items).
+- [x] **Grue / darkness death** — composed entirely from generic primitives. Story-level `defaultVisibility` Condition hides items/passages/exits when `currentRoomState(dark, true) AND not(anyPerceivableItemWith(isLit, true))`. `sharedVariants` swaps room description to "It is pitch black. You are likely to be eaten by a grue." Three afterAction tick triggers maintain a `darkness-turns` counter and end the game on the second consecutive dark turn. ~65 dark rooms marked via `state: { dark: true }` overrides.
+- [x] **Room.state symmetry** — `Room.state` parallel to `Item.state`/`Passage.state`; `roomState` / `currentRoomState` Conditions; `roomState` NumericExpr; `setRoomState` Effect; `GameState.roomStates`.
+- [x] **Per-turn ticks** — `Trigger.afterAction: true`. Engine.execute now has Phase 1 (regular fixed-point) → Phase 2 (afterAction once each) → Phase 3 (regular cascade).
+- [x] **Counter mutation primitives** — `Effect.adjustFlag { key, by }` and `Effect.adjustItemState { itemId, key, by }` (signed deltas; treat unset as 0). Skipping adjustRoomState / adjustPassageState until first needed.
+- [x] **Generic visibility primitives** — `Item.visibleWhen`, `Passage.visibleWhen`, `PassageSide.visibleWhen`, `Exit.visibleWhen`, `Story.defaultVisibility`, `Story.sharedVariants`. Engine has no darkness-aware code; authors compose perception filters from generic Conditions. Visibility participates in both view-rendering AND `isItemAccessible`, so `take` in the dark fails the same way `take leaflet` in the kitchen would: `not-accessible` rejection.
+- [x] **`anyPerceivableItemWith` Condition** — generic "any perceivable item satisfies state[key] === equals." Used by darkness for "any lit lamp"; reusable for "any broken thing", "any magical thing", etc.
+- [x] **lightSource → state.isLit migration** — `Item.lightSource: {}` is now a marker; lit state lives in `state.isLit`. `GameState.lightSourcesLit` removed. Validator rejects legacy `lightSource.isLit` with a migration hint.
+
+### Zork puzzles needing engine code (future work)
+
+These still don't fit the current schema:
+
+- **Echo room → silver bar** — needs an item-add path in the overrides merge (currently merge only modifies existing items by id; new items would need to be appended, parallel to passages).
+- **Inflate raft with pump** — raft item not extracted; same item-add gap as above. After mergeItems supports appending, this becomes content.
+- **Coal → diamond machine** — multi-step puzzle (coal in machine, screwdriver to lid, switch). Doable as content, but needs the diamond and machine outputs handled by triggers.
+- **Dam control panel** — multi-button state. Could be done with passage state + 4 intents; needs content.
+- **Boat / river travel** — directional travel along a river with current; landing decisions; cliff death. Needs travel mechanic.
+- **Troll combat** — turn-based fight, randomness, sword hits. Needs combat loop + NPC HP.
+- **Thief NPC** — wandering, steals, fights. Needs NPC tick mechanism (now possible via afterAction triggers + an NPC kind).
+- **Bat carry** — randomly transports player to one of several rooms. Needs randomness primitive in effects.
+- **Score system** — point-per-treasure, max 350; rank thresholds. Now possible with counter primitives; just needs the per-treasure trigger plumbing + display.
+- **Death + reincarnation** — needs death state + altar-respawn integration.
+- **Rainbow + scepter → pot of gold** — wave scepter at rainbow → solidifies → cross to pot. Specific intent + state + new exit.
+- **Bank of Zork** — walk through specific wall combinations. Specific.
+- **Mirror room** — break mirror, walk through. Specific.
 
 ## Phase 4.5 — Schema additions backlog (rolling)
 
@@ -72,18 +122,22 @@ Discoveries from Phase 4 play and from surveying established IF systems. All add
 
 ### Already in flight
 
-- [x] `appearsIn?: string[]` for shared scenery (kitchen window, grate, river, stairs, etc.) — DONE
-- [x] `put` action + `put` tool for placing items into containers — DONE
-- [x] `Item.location` accepts item ids; engine accessibility walks the chain through open containers — DONE
+- [x] `appearsIn?: string[]` for shared scenery (kitchen window, grate, river, stairs, etc.)
+- [x] `put` action + `put` tool for placing items into containers
+- [x] `Item.location` accepts item ids; engine accessibility walks the chain through open containers
+- [x] **Intent signals + triggers** — LLM-judged fuzzy player intent → engine flag flip. Used for every open/close + every story-specific puzzle.
+- [x] **Compare + NumericExpr** — generic numeric comparisons (replaced narrow `inventoryCount` Condition). Sources: literal, flag, passageState, itemState, inventoryCount, itemCountAt, matchedIntentsCount, visitedCount.
+- [x] **`openWhen?: Condition` / `closeWhen?: Condition`** on Item and Passage — extra Condition AND'd into the auto-gen open/close intent's active clause. Enables locked-chest, ritual-only-open, suppress-auto-gen patterns. Egg + grate + trap-door use it.
+- [x] **Overrides JSON layer** — [`zork-1.overrides.json`](app/src/stories/zork-1.overrides.json) holds hand-authored content (descriptions, glimpse prompts, manual passages, room exit patches, intents, triggers, win/lose conditions) merged into the mechanical extraction by id. Adding a new puzzle is a JSON edit, not a code change.
 
 ### Tier 1 — Must-have (puzzles break without these)
 
-- [ ] **DOORBIT extractor fix** — treat ZIL DOORBIT items as openable (`container: { openable: true }` with no capacity). Without this, the kitchen window, grate, trap door, etc. exist but can't be opened.
+- [x] **DOORBIT → Passage** — DOORBIT objects are promoted to top-level `Passage` (kitchen-window, trap-door, grate). Open/close handled via auto-generated intent signals + triggers; traversal gated by `traversableWhen`.
 - [ ] **Item routine description extraction** — apply the room routine walker to items too. Many items (kitchen window, grate, mirror, dam controls) have placeholder descriptions because their text lives in routines, not LDESC.
 - [ ] **`lockable: { isLocked: boolean; keyId?: string }`** — universal puzzle. Locked doors, trophy cases, safes. With `unlock(itemId, withItemId?)` action.
-- [ ] **`openableWhen?: Condition` + `openBlockedMessage?: string`** on `container` — gates open/close on arbitrary conditions (room, items held, flags). Reuses the existing `Condition` language.
+- [x] **Unify container open/close with the passage model** — DONE. Items have generic typed `state` (parallel to Passage); `container.accessibleWhen` (Condition) gates access to contents; mutation flows through trigger-fired `setItemState` effects. Engine `open`/`close` actions deleted. Extractor auto-generates open/close intent+trigger pairs for any item or passage with `state.isOpen` (and break intent+trigger for `state.broken`). Same machinery now powers container open/close, passage open/close, and item breakable.
 - [ ] **`scenery: boolean`** — distinct from `fixed`. Scenery suppresses auto-listing; fixed prevents movement. A pedestal can be fixed but listed.
-- [ ] **`Door` as a top-level kind** — `id, name, description, between: [roomId, roomId], lockable?`. Rooms reference doors in their `exits` instead of inlining.
+- [x] **Passage as a top-level kind** — DONE. `Passage = { id, name, description, sides: [PassageSide, PassageSide], state?, traversableWhen?, traverseBlockedMessage? }`; rooms reference passages via `exit.passage`. Per-side overrides (name/description/glimpse/traversableWhen) supported.
 - [ ] **Reservoir room placeholder** — one-off; routine walker missed this room's M-LOOK branch.
 
 ### Tier 2 — Should-have (common, workaroundable for now)
@@ -137,35 +191,48 @@ Current engine verbs: `look`, `examine`, `take`, `drop`, `inventory`, `go`, `ope
 - [ ] **`light(itemId)` / `extinguish(itemId)`** — toggle a `lightSource`. Engine already tracks lit state; missing the verb.
 - [ ] **`wear(itemId)` / `remove(itemId)`** — toggle `worn` on a wearable item.
 
-**Custom state + extensibility (future):**
+**Physical properties — weight, size, fit (future):**
 
-The schema is intentionally narrow today: state is `flags` (string/number/boolean atoms), conditions are a fixed expression language, effects are a fixed action set. This will hit a ceiling. Stories will eventually need things we can't pre-bake:
+Many puzzles in established adventures depend on physical constraints the
+current schema doesn't model. Two related additions:
 
-- **Counters that can be modified** — score, turn count, weight carried, mana, hit points, currency. Currently flags hold values but there's no `incrementFlag` / `decrementFlag` effect or arithmetic in conditions.
-- **Comparison/math conditions** — `score >= 100`, `weight + itemWeight <= capacity`. Currently `flag` only checks equality.
-- **Custom state shapes** — collections (visited NPCs set, encountered items list), structured data (each NPC's mood map). Authors fake this with many flags.
-- **Named handlers / hooks** — a story-supplied function called by the engine for a specific event ("when player drops X in room Y, compute random outcome"). For mechanics that can't be expressed declaratively (random encounters, physics simulations, complex NPC AI).
+- **`Item.weight?: number`** + **`Item.size?: number`** — abstract units; authors choose their meaning. Engine then supports:
+    - `Condition.inventoryWeight { op, value }` — total weight carried
+    - `Condition.inventorySize { op, value }` — total volume/size carried
+    - Container `weightCapacity?`, `sizeCapacity?` — refuse `put` when exceeded
+- **`Door.openingSize?: number`** + per-side variants — refuses `go` if the player (counted as size N) plus carried items exceed the opening. Useful for "you're too encumbered to climb through that gap" cases (the chimney puzzle is a degenerate count-based version of this).
 
-Likely design path (in rough order):
+These compose with `inventoryCount` (already implemented) to express:
 
-1. **Counter primitives** — easiest. Add `incrementFlag` / `decrementFlag` / `addToFlag` effects. Add `flagAtLeast` / `flagLessThan` / `flagBetween` conditions. Authors can build score/timer/weight systems from these.
-2. **Computed conditions** — small expression language for arithmetic in `Condition` (e.g. `{ type: "compare", left: { flag: "score" }, op: ">=", right: { value: 100 } }`). Generalizes counter conditions.
-3. **Named handlers** — story's JSON references named handlers; story bundle includes a JS/TS module mapping names to functions. Sandboxed execution. Engine calls handler at relevant lifecycle hooks (action attempt, after action, on enter room, etc.). Significant security and engineering surface — defer until a real story can't be expressed without it.
+- "Carry only as much as you can lift." (weight)
+- "Carry only what fits in your pack." (size; or container capacity)
+- "Don't try to climb the chimney with both arms full." (count or size)
+- "The mailbox is too small for that letter." (item size vs. container sizeCapacity)
+- "You can't squeeze the harpsichord through the door." (door openingSize)
 
-**What to do today:** keep the schema additive-friendly. Don't bake assumptions that flags are always atomic-equality. Don't make effect/condition unions hard to extend (they already aren't — adding new variants is a one-line union member).
+**Implementation order** when ready: weight first (broadest impact), then size, then door openingSize. Adding them is purely additive — items without `weight` are treated as 0 (or unlimited capacity); existing stories keep working.
 
-**Door state — future multi-state path (not now, but design notes to preserve forward-compat):**
+**How these slot into existing primitives:** weight/size totals and per-item values all just become new variants in the `NumericExpr` discriminated union (already in the schema). The `compare` condition automatically supports comparing any of them to literals or to each other. No new condition types needed — only new value kinds. Same pattern as `inventoryCount` already uses.
 
-Today doors are binary (`isOpen: boolean`, condition `doorOpen`). Some real doors have intermediate states ("ajar," "half-open") that allow slipping items through but not the player. We deliberately don't model this yet, but the migration path is purely additive:
+**Custom state + extensibility:**
 
-- Add `Door.openStates?: string[]` (ordered, e.g. `["closed","ajar","open"]`) and `Door.initialState?: string`. Default behavior unchanged when omitted.
-- Add `GameState.doorState: Record<string, string>` for multi-state doors (existing `doorOpen` boolean stays for binary).
-- Add `Condition.doorAtState(doorId, state)` and `Condition.doorAtLeast(doorId, state)`. Existing `doorOpen` semantically becomes "any non-closed state" — still correct.
-- New actions for partial open (`openWider`, `pushOpen`) when needed; existing `open`/`close` continue to work.
+Schema state today: per-flag atoms + per-passage typed `state: Record<string, Atom>` + per-item typed `state: Record<string, Atom>`. Conditions: fixed expression language including `compare` over a `NumericExpr` union (literals, flags, passageState, itemState, inventoryCount, itemCountAt, matchedIntentsCount, visitedCount). Effects: setFlag, moveItem, movePlayer, setPassageState, setItemState, endGame.
 
-**What we must not do** in the meantime to avoid cornering ourselves:
-- Don't bake "open vs closed" into engine internals beyond the existing fields. Keep `Exit.door` semantics as "the door's gate condition passes," not "the door's boolean is true."
-- Don't hardcode string comparisons like `"open"` outside the schema/extractor. Engine logic uses booleans / typed conditions.
+- [x] **Comparison/math conditions** — `compare` + `NumericExpr` lands the "score >= 100" / "weight <= capacity" pattern generically. New numeric sources are one-case extensions of `NumericExpr`.
+- [x] **Counter mutation primitives** — `Effect.adjustFlag { key, by }` and `Effect.adjustItemState { itemId, key, by }`. Signed deltas; treat unset as 0. Used by lantern battery + grue darkness counter.
+- [x] **Per-turn ticks** — `Trigger.afterAction: true` fires after every action exactly once (not in a fixed-point loop, to avoid counter-incrementing infinite loops). Engine.execute runs Phase 1 (regular fixed-point) → Phase 2 (afterAction) → Phase 3 (regular cascade). Used by lantern battery drain and grue darkness check; ready for thief wandering, dam timer, etc.
+- [ ] **Randomness primitive** — `Effect.movePlayer` to one of N options; `NumericExpr.random(min, max)`; `Condition.chance(probability)`. Needed for bat carry, troll attacks, thief encounters.
+- [ ] **Combat / NPC HP model** — separate concern from above; probably needs an NPC top-level kind with `hp`, `damage`, attack/defense triggers.
+- [ ] **Custom state shapes** (collections, structured data) — authors fake with many flags today. Defer until a story actually needs sets/maps.
+- [ ] **Named handlers / hooks** — JS escape hatch for story-supplied functions. Significant security surface; defer until a real story can't be expressed declaratively.
+
+**Passage state — already general, no migration needed:**
+
+Originally a "future multi-state doors" concern. Resolved by the **Passage refactor** (Door → Passage with typed `state: Record<string, Atom>`). A passage now carries any number of typed state variables of any Atom type, so multi-state ("ajar"/"half-open"/"open") is just a string key authors declare and manipulate via `setPassageState`. `Condition.passageState` is equality; `compare` + `NumericExpr.passageState` handles ordered comparison for numeric counters. No new condition or effect types needed.
+
+What's still future:
+- A convenience for ordered state ("string enum where 'open' >= 'ajar' >= 'closed'"). For now authors can model with a numeric state (0..2) + `compare` instead.
+- Per-side `state` overlay (rare; YAGNI).
 
 **Defer / LLM-handles-with-prose:**
 - Smell, listen, taste (without eating), touch, kiss, dance, sleep, wait, sing, yell. These don't change engine state for most stories. The LLM can respond in prose with `examined`-style sensory descriptions or just narrate "you sing; nothing happens."

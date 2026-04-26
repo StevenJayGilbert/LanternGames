@@ -1,0 +1,541 @@
+{
+  "$comment": "Hand-authored content layered over the mechanical ZIL extraction. Merged by app/scripts/extract-zork.ts after the ZIL pass. Per-id deep merge for passages/rooms/items (sides matched by roomId, exits shallow-merged); intentSignals and triggers are appended.",
+
+  "skipItemObjects": ["CHIMNEY"],
+
+  "$darknessComment": "Darkness model: a room is dark when it declares state.dark === true and no perceivable item has state.isLit === true. Composed from generic primitives (currentRoomState + anyPerceivableItemWith) — engine has no hardcoded darkness concept.",
+  "defaultVisibility": {
+    "type": "or",
+    "any": [
+      { "type": "not", "condition": { "type": "currentRoomState", "key": "dark", "equals": true }},
+      { "type": "anyPerceivableItemWith", "key": "isLit", "equals": true }
+    ]
+  },
+  "sharedVariants": [
+    {
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "currentRoomState", "key": "dark", "equals": true },
+          { "type": "not", "condition": { "type": "anyPerceivableItemWith", "key": "isLit", "equals": true }}
+        ]
+      },
+      "text": "It is pitch black. You are likely to be eaten by a grue."
+    }
+  ],
+
+  "passages": [
+    {
+      "id": "kitchen-window",
+      "description": "A small kitchen window. It appears to be slightly ajar.",
+      "state": { "isOpen": false },
+      "variants": [
+        {
+          "when": { "type": "passageState", "passageId": "kitchen-window", "key": "isOpen", "equals": true },
+          "text": "The kitchen window is open wide enough to climb through."
+        }
+      ],
+      "traversableWhen": { "type": "passageState", "passageId": "kitchen-window", "key": "isOpen", "equals": true },
+      "traverseBlockedMessage": "The kitchen window is closed.",
+      "sides": [
+        {
+          "roomId": "kitchen",
+          "glimpse": {
+            "prompt": "Through the window, describe the area behind the house briefly — open ground sloping toward forest. Keep it to a sentence."
+          }
+        },
+        {
+          "roomId": "east-of-house",
+          "glimpse": {
+            "prompt": "Through the window, describe the kitchen briefly — emphasize warmth and signs of recent cooking. Keep it to a sentence."
+          }
+        }
+      ]
+    },
+
+    {
+      "$comment": "Chimney is a CLIMBBIT/LOCAL-GLOBAL scenery in ZIL, not a DOORBIT, so mechanical extraction won't catch it. Hand-authored. Canonical Zork rules: kitchen→studio (down) is never traversable; studio→kitchen (up) requires the lamp and ≤2 carried items.",
+      "kind": "simple",
+      "id": "chimney",
+      "name": "chimney",
+      "description": "A dark, narrow chimney rising from the studio fireplace up to the kitchen above.",
+      "sides": [
+        {
+          "roomId": "kitchen",
+          "traversableWhen": { "type": "not", "condition": { "type": "always" } },
+          "traverseBlockedMessage": "Only Santa Claus climbs down chimneys."
+        },
+        {
+          "roomId": "studio",
+          "traversableWhen": {
+            "type": "and",
+            "all": [
+              { "type": "hasItem", "itemId": "lamp" },
+              {
+                "type": "compare",
+                "left": { "kind": "inventoryCount" },
+                "op": "<=",
+                "right": { "kind": "literal", "value": 2 }
+              }
+            ]
+          },
+          "traverseBlockedMessage": "You can't get up there with what you're carrying."
+        }
+      ]
+    },
+
+    {
+      "$comment": "Trap door is HIDDEN under the rug in the living room. visibleWhen filters it out of passagesHere (so view + examine both refuse to surface it) until rug-moved-flag flips. openWhen gates the open intent: rug must be moved AND player must NOT be in the cellar (no handle on the underside — once it slams shut you can't reopen it from below; you have to loop back through the underground to the kitchen). traversableWhen gates traversal so a closed door can't be walked through.",
+      "id": "trap-door",
+      "description": "A wooden trap door is set into the floor.",
+      "visibleWhen": { "type": "flag", "key": "rug-moved-flag", "equals": true },
+      "openWhen": {
+        "type": "and",
+        "all": [
+          { "type": "flag", "key": "rug-moved-flag", "equals": true },
+          { "type": "not", "condition": { "type": "playerAt", "roomId": "cellar" } }
+        ]
+      },
+      "traversableWhen": { "type": "passageState", "passageId": "trap-door", "key": "isOpen", "equals": true },
+      "traverseBlockedMessage": "The trap door is closed."
+    },
+
+    {
+      "$comment": "Grate is locked from above; opens only with the skeleton key (item id: keys, found in the maze near the skeleton). Symmetric — once unlocked, can open from either side. traversableWhen gates traversal on its open state.",
+      "id": "grate",
+      "openWhen": { "type": "hasItem", "itemId": "keys" },
+      "traversableWhen": { "type": "passageState", "passageId": "grate", "key": "isOpen", "equals": true },
+      "traverseBlockedMessage": "The grating is closed."
+    }
+  ],
+
+  "rooms": [
+    {
+      "$comment": "kitchen.down: ZIL has CEXIT against FALSE-FLAG (a never-true sentinel) — mechanical extraction produces an unreachable flag-gated exit. Replace with a passage exit so the chimney passage's traversableWhen drives it.",
+      "id": "kitchen",
+      "exits": {
+        "down": { "to": "studio", "passage": "chimney" }
+      }
+    },
+    {
+      "$comment": "studio.up: ZIL has FEXIT (PER UP-CHIMNEY-FUNCTION) — skipped by mechanical extraction. Add it as a passage exit.",
+      "id": "studio",
+      "exits": {
+        "up": { "to": "kitchen", "passage": "chimney" }
+      }
+    },
+    {
+      "$comment": "living-room.down: ZIL declares the trap-door from cellar's side (cellar.up → living-room), but the descent direction from the living room itself is buried in routine logic the mechanical extractor skips. Add it explicitly so the player can actually descend through the open trap door. visibleWhen hides the exit until the rug is moved (so 'down' isn't even listed as a direction).",
+      "id": "living-room",
+      "exits": {
+        "down": {
+          "to": "cellar",
+          "passage": "trap-door",
+          "visibleWhen": { "type": "flag", "key": "rug-moved-flag", "equals": true }
+        }
+      }
+    },
+
+    { "$comment": "DARK ROOMS: canonical Zork I dark rooms get state.dark=true. Combined with the player having no perceivable lit light source, this satisfies the story-level darkness condition (defaultVisibility) and triggers the pitch-black sharedVariant + the grue tick triggers below.", "id": "cellar", "state": { "dark": true } },
+    { "id": "troll-room", "state": { "dark": true } },
+    { "id": "east-of-chasm", "state": { "dark": true } },
+    { "id": "gallery", "state": { "dark": true } },
+    { "id": "studio", "state": { "dark": true } },
+    { "id": "maze-1", "state": { "dark": true } },
+    { "id": "maze-2", "state": { "dark": true } },
+    { "id": "maze-3", "state": { "dark": true } },
+    { "id": "maze-4", "state": { "dark": true } },
+    { "id": "maze-5", "state": { "dark": true } },
+    { "id": "maze-6", "state": { "dark": true } },
+    { "id": "maze-7", "state": { "dark": true } },
+    { "id": "maze-8", "state": { "dark": true } },
+    { "id": "maze-9", "state": { "dark": true } },
+    { "id": "maze-10", "state": { "dark": true } },
+    { "id": "maze-11", "state": { "dark": true } },
+    { "id": "maze-12", "state": { "dark": true } },
+    { "id": "maze-13", "state": { "dark": true } },
+    { "id": "maze-14", "state": { "dark": true } },
+    { "id": "maze-15", "state": { "dark": true } },
+    { "id": "dead-end-1", "state": { "dark": true } },
+    { "id": "dead-end-2", "state": { "dark": true } },
+    { "id": "dead-end-3", "state": { "dark": true } },
+    { "id": "dead-end-4", "state": { "dark": true } },
+    { "id": "dead-end-5", "state": { "dark": true } },
+    { "id": "grating-room", "state": { "dark": true } },
+    { "id": "atlantis-room", "state": { "dark": true } },
+    { "id": "ew-passage", "state": { "dark": true } },
+    { "id": "ns-passage", "state": { "dark": true } },
+    { "id": "round-room", "state": { "dark": true } },
+    { "id": "deep-canyon", "state": { "dark": true } },
+    { "id": "damp-cave", "state": { "dark": true } },
+    { "id": "loud-room", "state": { "dark": true } },
+    { "id": "chasm-room", "state": { "dark": true } },
+    { "id": "small-cave", "state": { "dark": true } },
+    { "id": "tiny-cave", "state": { "dark": true } },
+    { "id": "sandy-cave", "state": { "dark": true } },
+    { "id": "cold-passage", "state": { "dark": true } },
+    { "id": "narrow-passage", "state": { "dark": true } },
+    { "id": "winding-passage", "state": { "dark": true } },
+    { "id": "twisting-passage", "state": { "dark": true } },
+    { "id": "mirror-room-1", "state": { "dark": true } },
+    { "id": "mirror-room-2", "state": { "dark": true } },
+    { "id": "engravings-cave", "state": { "dark": true } },
+    { "id": "egypt-room", "state": { "dark": true } },
+    { "id": "entrance-to-hades", "state": { "dark": true } },
+    { "id": "land-of-living-dead", "state": { "dark": true } },
+    { "id": "dome-room", "state": { "dark": true } },
+    { "id": "gas-room", "state": { "dark": true } },
+    { "id": "mine-entrance", "state": { "dark": true } },
+    { "id": "squeeky-room", "state": { "dark": true } },
+    { "id": "bat-room", "state": { "dark": true } },
+    { "id": "shaft-room", "state": { "dark": true } },
+    { "id": "smelly-room", "state": { "dark": true } },
+    { "id": "ladder-top", "state": { "dark": true } },
+    { "id": "ladder-bottom", "state": { "dark": true } },
+    { "id": "timber-room", "state": { "dark": true } },
+    { "id": "lower-shaft", "state": { "dark": true } },
+    { "id": "mine-1", "state": { "dark": true } },
+    { "id": "mine-2", "state": { "dark": true } },
+    { "id": "mine-3", "state": { "dark": true } },
+    { "id": "mine-4", "state": { "dark": true } },
+    { "id": "slide-room", "state": { "dark": true } },
+    { "id": "canyon-bottom", "state": { "dark": true } },
+    { "id": "cliff-middle", "state": { "dark": true } }
+  ],
+
+  "items": [
+    {
+      "$comment": "Egg puzzle: the clasp is too delicate for direct opening. Suppress the auto-gen 'open egg' intent (openWhen: never) and let the give-egg-to-songbird intent + trigger handle opening. Force-opening (smashing) destroys the canary inside — that's a future trigger.",
+      "id": "egg",
+      "openWhen": { "type": "not", "condition": { "type": "always" } }
+    },
+    {
+      "$comment": "Brass lantern with battery. state.isLit governs whether it emits light (per the perceivable-light convention used by defaultVisibility). state.batteryTurns counts down each turn while lit; at 0 the lamp auto-extinguishes (lamp-runs-out tick trigger). Canonical Zork battery is ~330 turns.",
+      "id": "lamp",
+      "state": { "isLit": false, "batteryTurns": 330 }
+    }
+  ],
+
+  "intentSignals": [
+    {
+      "$comment": "Rope-and-dome puzzle. Player ties the rope to the railing in the Dome Room; that flips dome-flag, unlocking the existing dome-room.down → torch-room exit. Active only when you're standing in the dome with the rope (and haven't already done it — once-matched intents auto-deactivate).",
+      "id": "rope-tied-to-railing",
+      "prompt": "Player ties, fastens, attaches, lashes, secures, or otherwise affixes the rope to the railing (or to the dome).",
+      "active": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "dome-room" },
+          { "type": "hasItem", "itemId": "rope" }
+        ]
+      }
+    },
+    {
+      "$comment": "Egg puzzle: give the jewel-encrusted egg to the songbird; her song springs the clasp open and reveals the canary. Songbird is in forest-1 with appearsIn covering forest-2/3, path, up-a-tree, clearing — gate on player being in any of those. Inactive after egg is open.",
+      "id": "give-egg-to-songbird",
+      "prompt": "Player gives the jewel-encrusted egg to the songbird, offers it to the bird, hands it to her, presents it to the singer.",
+      "active": {
+        "type": "and",
+        "all": [
+          { "type": "hasItem", "itemId": "egg" },
+          { "type": "itemState", "itemId": "egg", "key": "isOpen", "equals": false },
+          {
+            "type": "or",
+            "any": [
+              { "type": "playerAt", "roomId": "forest-1" },
+              { "type": "playerAt", "roomId": "forest-2" },
+              { "type": "playerAt", "roomId": "forest-3" },
+              { "type": "playerAt", "roomId": "path" },
+              { "type": "playerAt", "roomId": "up-a-tree" },
+              { "type": "playerAt", "roomId": "clearing" }
+            ]
+          }
+        ]
+      }
+    },
+
+    {
+      "$comment": "Move-the-rug puzzle. Living-room rug hides the trap door. Once moved, rug-moved-flag flips and the trap-door's openWhen passes. Active only when in living-room and not yet matched.",
+      "id": "move-the-rug",
+      "prompt": "Player moves, slides, lifts, pulls aside, kicks aside, rolls up, or otherwise displaces the rug (carpet) in the living room.",
+      "active": { "type": "playerAt", "roomId": "living-room" }
+    },
+
+    {
+      "$comment": "Cyclops magic word. Saying 'ulysses' or 'odysseus' (referencing the Greek hero who blinded the cyclops Polyphemus) terrifies him. He flees east, smashing through the wall to make a new passage to the living room. Sets both cyclops-flag (he's gone, can climb up to treasure room) and magic-flag (the wall is broken, opens cyclops-room↔living-room shortcut).",
+      "id": "cyclops-magic-word",
+      "prompt": "Player says, shouts, whispers, or invokes 'Ulysses', 'Odysseus', or otherwise utters the magic word that terrifies the cyclops.",
+      "active": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "cyclops-room" },
+          { "type": "flag", "key": "cyclops-flag", "equals": false }
+        ]
+      }
+    },
+
+    {
+      "$comment": "Cyclops feed alternative. Give him the hot pepper sandwich (lunch) and water bottle. He eats, drinks, and falls asleep. Sets cyclops-flag (no longer blocking) but NOT magic-flag (no wall smash — slept, didn't flee). Different aftermath than the magic word.",
+      "id": "feed-cyclops",
+      "prompt": "Player gives, offers, or hands the cyclops the lunch (hot pepper sandwich) and the bottle of water — feeding and watering him.",
+      "active": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "cyclops-room" },
+          { "type": "flag", "key": "cyclops-flag", "equals": false },
+          { "type": "hasItem", "itemId": "lunch" },
+          { "type": "hasItem", "itemId": "bottle" }
+        ]
+      }
+    },
+
+    {
+      "$comment": "Pray at the altar in south-temple. Teleports the player to forest-1 (canonical Zork: prayer at the altar transports the adventurer back to the surface).",
+      "id": "pray-at-altar",
+      "prompt": "Player prays, kneels, makes an offering, or performs a ritual at the altar.",
+      "active": { "type": "playerAt", "roomId": "south-temple" }
+    },
+
+    {
+      "$comment": "Light the brass lantern. Active when carrying it, currently unlit, and battery has charge remaining.",
+      "id": "light-lamp",
+      "prompt": "Player turns on, lights, switches on, fires up, or activates the brass lantern.",
+      "active": {
+        "type": "and",
+        "all": [
+          { "type": "hasItem", "itemId": "lamp" },
+          { "type": "itemState", "itemId": "lamp", "key": "isLit", "equals": false },
+          {
+            "type": "compare",
+            "left": { "kind": "itemState", "itemId": "lamp", "key": "batteryTurns" },
+            "op": ">",
+            "right": { "kind": "literal", "value": 0 }
+          }
+        ]
+      }
+    },
+    {
+      "$comment": "Extinguish the brass lantern. Active whenever it's lit (regardless of who's holding it).",
+      "id": "extinguish-lamp",
+      "prompt": "Player turns off, douses, switches off, or extinguishes the brass lantern.",
+      "active": { "type": "itemState", "itemId": "lamp", "key": "isLit", "equals": true }
+    }
+  ],
+
+  "triggers": [
+    {
+      "id": "tie-rope",
+      "when": { "type": "intentMatched", "signalId": "rope-tied-to-railing" },
+      "effects": [
+        { "type": "setFlag", "key": "dome-flag", "value": true }
+      ],
+      "narration": "You tie the rope securely to the railing. It hangs down into the room below.",
+      "once": true
+    },
+    {
+      "id": "songbird-opens-egg",
+      "when": { "type": "intentMatched", "signalId": "give-egg-to-songbird" },
+      "effects": [
+        { "type": "setItemState", "itemId": "egg", "key": "isOpen", "value": true }
+      ],
+      "narration": "You hold out the egg. The songbird hops to it and sings a single perfect trill — and the delicate clasp springs open, revealing a golden clockwork canary nestled inside.",
+      "once": true
+    },
+
+    {
+      "id": "rug-moved",
+      "when": { "type": "intentMatched", "signalId": "move-the-rug" },
+      "effects": [
+        { "type": "setFlag", "key": "rug-moved-flag", "value": true }
+      ],
+      "narration": "You drag the rug aside. Beneath it, set flush into the floor, is a closed wooden trap door.",
+      "once": true
+    },
+
+    {
+      "id": "cyclops-flees",
+      "when": { "type": "intentMatched", "signalId": "cyclops-magic-word" },
+      "effects": [
+        { "type": "setFlag", "key": "cyclops-flag", "value": true },
+        { "type": "setFlag", "key": "magic-flag", "value": true },
+        { "type": "moveItem", "itemId": "cyclops", "to": "nowhere" }
+      ],
+      "narration": "The cyclops's eye widens in stark terror. He bellows, scrambles backward, and crashes east through the wall — leaving a cyclops-shaped hole that opens straight into the living room. The way up the staircase is now unguarded.",
+      "once": true
+    },
+
+    {
+      "id": "cyclops-fed",
+      "when": { "type": "intentMatched", "signalId": "feed-cyclops" },
+      "effects": [
+        { "type": "setFlag", "key": "cyclops-flag", "value": true },
+        { "type": "moveItem", "itemId": "lunch", "to": "nowhere" },
+        { "type": "moveItem", "itemId": "bottle", "to": "nowhere" }
+      ],
+      "narration": "The cyclops devours the sandwich in two bites and drains the bottle. Within moments his single eye droops, and he slumps against the wall, snoring thunderously. The staircase is no longer guarded.",
+      "once": true
+    },
+
+    {
+      "id": "altar-prayer",
+      "when": { "type": "intentMatched", "signalId": "pray-at-altar" },
+      "effects": [
+        { "type": "movePlayer", "to": "forest-1" }
+      ],
+      "narration": "You kneel before the altar. A gentle warmth gathers around you, and the temple fades. When your senses clear, you are standing in a sunlit forest.",
+      "once": false
+    },
+
+    {
+      "$comment": "Canonical Zork: the first time the player descends into the cellar with the trap door open, an unseen hand (the thief, or some unknown agency) slams it shut from above. once:true so it's a unique one-time event. The player can't reopen it from below (trap-door.openWhen blocks playerAt(cellar)), so they have to loop through the underground (cellar → south → east-of-chasm → gallery → studio → up the chimney → kitchen → west → living-room) to reach the trap door from above again.",
+      "id": "trap-door-slams",
+      "afterAction": true,
+      "once": true,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "cellar" },
+          { "type": "passageState", "passageId": "trap-door", "key": "isOpen", "equals": true }
+        ]
+      },
+      "effects": [
+        { "type": "setPassageState", "passageId": "trap-door", "key": "isOpen", "value": false }
+      ],
+      "narration": "From above, an unseen hand slams the trap door shut. You hear the click of a latch."
+    },
+
+    {
+      "id": "lamp-lights",
+      "when": { "type": "intentMatched", "signalId": "light-lamp" },
+      "effects": [
+        { "type": "setItemState", "itemId": "lamp", "key": "isLit", "value": true }
+      ],
+      "narration": "The brass lantern flickers on, casting a warm glow.",
+      "once": false
+    },
+    {
+      "id": "lamp-extinguishes",
+      "when": { "type": "intentMatched", "signalId": "extinguish-lamp" },
+      "effects": [
+        { "type": "setItemState", "itemId": "lamp", "key": "isLit", "value": false }
+      ],
+      "narration": "The lantern goes dark.",
+      "once": false
+    },
+
+    {
+      "$comment": "Tick: while the lamp is lit, drain one battery turn per action. afterAction + once:false fires each turn.",
+      "id": "lamp-burns-fuel",
+      "afterAction": true,
+      "once": false,
+      "when": { "type": "itemState", "itemId": "lamp", "key": "isLit", "equals": true },
+      "effects": [
+        { "type": "adjustItemState", "itemId": "lamp", "key": "batteryTurns", "by": -1 }
+      ]
+    },
+    {
+      "$comment": "Tick: at zero battery, force-extinguish the lamp. Cascade trigger handled by phase-3 fixed-point. once:true so the canonical narration only fires once.",
+      "id": "lamp-runs-out",
+      "afterAction": true,
+      "once": true,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "itemState", "itemId": "lamp", "key": "isLit", "equals": true },
+          {
+            "type": "compare",
+            "left": { "kind": "itemState", "itemId": "lamp", "key": "batteryTurns" },
+            "op": "<=",
+            "right": { "kind": "literal", "value": 0 }
+          }
+        ]
+      },
+      "effects": [
+        { "type": "setItemState", "itemId": "lamp", "key": "isLit", "value": false }
+      ],
+      "narration": "Your lamp dims, flickers, and goes dark."
+    },
+
+    {
+      "$comment": "GRUE: ticks the darkness-turns counter while the player is in pitch black. Player dies on the SECOND consecutive dark turn — first turn shows pitch-black warning, second turn the grue gets them. Counter resets when light is restored.",
+      "id": "darkness-tick-incr",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "currentRoomState", "key": "dark", "equals": true },
+          { "type": "not", "condition": { "type": "anyPerceivableItemWith", "key": "isLit", "equals": true }}
+        ]
+      },
+      "effects": [
+        { "type": "adjustFlag", "key": "darkness-turns", "by": 1 }
+      ]
+    },
+    {
+      "id": "darkness-tick-reset",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "not",
+        "condition": {
+          "type": "and",
+          "all": [
+            { "type": "currentRoomState", "key": "dark", "equals": true },
+            { "type": "not", "condition": { "type": "anyPerceivableItemWith", "key": "isLit", "equals": true }}
+          ]
+        }
+      },
+      "effects": [
+        { "type": "setFlag", "key": "darkness-turns", "value": 0 }
+      ]
+    },
+    {
+      "id": "grue-eats",
+      "afterAction": true,
+      "once": true,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "currentRoomState", "key": "dark", "equals": true },
+          { "type": "not", "condition": { "type": "anyPerceivableItemWith", "key": "isLit", "equals": true }},
+          {
+            "type": "compare",
+            "left": { "kind": "flag", "key": "darkness-turns" },
+            "op": ">=",
+            "right": { "kind": "literal", "value": 2 }
+          }
+        ]
+      },
+      "effects": [
+        { "type": "endGame", "won": false, "message": "Oh, no! You have walked into the slavering fangs of a lurking grue!" }
+      ]
+    }
+  ],
+
+  "$winConditionsComment": "Win when all 15 currently-extracted treasures are deposited in the trophy case. Canonical Zork has up to 19 treasures; the missing four (diamond, platinum bar, pot of gold, crystal sphere) require puzzles that aren't yet wired (coal-machine, echo-room, rainbow-scepter, gallery). The win condition will activate naturally when the remaining puzzles + their items land.",
+  "winConditions": [
+    {
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "itemAt", "itemId": "egg", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "canary", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "bag-of-coins", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "painting", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "chalice", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "torch", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "trident", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "coffin", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "sceptre", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "jade", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "scarab", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "skull", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "emerald", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "bracelet", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "trunk", "location": "trophy-case" }
+        ]
+      },
+      "message": "An almost inaudible voice whispers in your ear, 'Look to your treasures for the final secret.' The trophy case glitters; the Great Underground Empire is conquered."
+    }
+  ]
+}

@@ -52,23 +52,25 @@ export class Engine {
 
     const actionResult = performAction(this.state, this.story, req);
 
-    // Triggers and end-conditions only run after a successful action. A rejected
-    // action (e.g. trying to take something that isn't there) shouldn't tick the
-    // world forward.
-    if (!actionResult.ok) {
-      this.state = actionResult.state;
-      return {
-        event: actionResult.event,
-        view: buildView(this.state, this.story),
-        narrationCues: [],
-        triggersFired: [],
-        ok: false,
-        ended: this.state.finished,
-      };
-    }
+    // Phase 1: regular trigger fixed-point loop. Skipped on rejection because
+    // no engine state changed — there's nothing to cascade off of.
+    const phase1 = actionResult.ok
+      ? runTriggers(actionResult.state, this.story)
+      : { state: actionResult.state, cues: [], fired: [] };
 
-    const triggerOutcome = runTriggers(actionResult.state, this.story);
-    let nextState = triggerOutcome.state;
+    // Phase 2: afterAction (tick) triggers fire exactly once each. ALWAYS runs
+    // — including on rejected actions — because a turn passing is a turn
+    // passing regardless of whether the player's specific verb succeeded. This
+    // is canonical: in Zork even invalid commands tick the world (lantern
+    // drains, grue closes in, thief moves, dam timer counts down).
+    const phase2 = runAfterActionTriggers(phase1.state, this.story);
+
+    // Phase 3: regular fixed-point loop, picking up cascades from phase-2
+    // effects (e.g. battery hit zero → lamp extinguishes → dependent triggers
+    // fire). Runs whether the action succeeded or not.
+    const phase3 = runTriggers(phase2.state, this.story);
+
+    let nextState = phase3.state;
     const ended = checkEndConditions(nextState, this.story);
     if (ended) nextState = { ...nextState, finished: ended };
 
@@ -76,9 +78,9 @@ export class Engine {
     return {
       event: actionResult.event,
       view: buildView(this.state, this.story),
-      narrationCues: triggerOutcome.cues,
-      triggersFired: triggerOutcome.fired,
-      ok: true,
+      narrationCues: [...phase1.cues, ...phase2.cues, ...phase3.cues],
+      triggersFired: [...phase1.fired, ...phase2.fired, ...phase3.fired],
+      ok: actionResult.ok,
       ended: nextState.finished,
     };
   }
@@ -102,10 +104,13 @@ interface TriggerRunOutcome {
   fired: string[];
 }
 
+// Regular triggers run in a fixed-point loop (state changes → re-evaluate).
+// Filtered to triggers WITHOUT `afterAction: true` — those are tick triggers
+// handled by `runAfterActionTriggers` instead.
 export function runTriggers(state: GameState, story: Story): TriggerRunOutcome {
   const cues: string[] = [];
   const fired: string[] = [];
-  const triggers = story.triggers ?? [];
+  const triggers = (story.triggers ?? []).filter((t) => !t.afterAction);
   if (triggers.length === 0) return { state, cues, fired };
 
   let current = state;
@@ -115,7 +120,7 @@ export function runTriggers(state: GameState, story: Story): TriggerRunOutcome {
     changed = false;
     iterations++;
     for (const trigger of triggers) {
-      if (shouldFire(trigger, current)) {
+      if (shouldFire(trigger, current, story)) {
         current = fireTrigger(trigger, current);
         if (trigger.narration) cues.push(trigger.narration);
         fired.push(trigger.id);
@@ -131,10 +136,34 @@ export function runTriggers(state: GameState, story: Story): TriggerRunOutcome {
   return { state: current, cues, fired };
 }
 
-function shouldFire(trigger: Trigger, state: GameState): boolean {
+// Tick triggers fire AT MOST ONCE per action — not in a fixed-point loop. This
+// avoids infinite loops on counter-incrementing ticks (e.g. `darkness-turns`)
+// whose `when` stays true after the effect runs. Cascades from tick effects
+// are picked up by a follow-up regular `runTriggers` call in `Engine.execute`.
+export function runAfterActionTriggers(
+  state: GameState,
+  story: Story,
+): TriggerRunOutcome {
+  const cues: string[] = [];
+  const fired: string[] = [];
+  const triggers = (story.triggers ?? []).filter((t) => t.afterAction);
+  if (triggers.length === 0) return { state, cues, fired };
+
+  let current = state;
+  for (const trigger of triggers) {
+    if (shouldFire(trigger, current, story)) {
+      current = fireTrigger(trigger, current);
+      if (trigger.narration) cues.push(trigger.narration);
+      fired.push(trigger.id);
+    }
+  }
+  return { state: current, cues, fired };
+}
+
+function shouldFire(trigger: Trigger, state: GameState, story: Story): boolean {
   const once = trigger.once !== false; // default true
   if (once && state.firedTriggers.includes(trigger.id)) return false;
-  return evaluateCondition(trigger.when, state);
+  return evaluateCondition(trigger.when, state, story);
 }
 
 function fireTrigger(trigger: Trigger, state: GameState): GameState {
@@ -154,12 +183,12 @@ export function checkEndConditions(
   story: Story,
 ): { won: boolean; message: string } | undefined {
   for (const cond of story.winConditions ?? []) {
-    if (evaluateCondition(cond.when, state)) {
+    if (evaluateCondition(cond.when, state, story)) {
       return { won: true, message: cond.message };
     }
   }
   for (const cond of story.loseConditions ?? []) {
-    if (evaluateCondition(cond.when, state)) {
+    if (evaluateCondition(cond.when, state, story)) {
       return { won: false, message: cond.message };
     }
   }
