@@ -2,26 +2,67 @@
 
 A generic LLM-narrated text adventure engine. Players bring their own Anthropic API key (BYOK), or run locally via Ollama for free; stories are JSON files; the engine owns state and the LLM owns prose. Zork I is the first test story — proof that the engine and schema can host a real, complex adventure.
 
-## Quickstart
+## Running locally
+
+The game runs entirely in your browser. There's no separate backend — the dev server (Vite) just serves the static page; LLM calls go from your browser straight to either Anthropic's API (BYOK mode) or your local Ollama process (free local mode).
+
+### Prerequisites
+
+- **Node.js 22+** ([nodejs.org/download](https://nodejs.org/en/download))
+- **git**
+- *(Optional)* **Ollama** if you want the free local-LLM tier — see [docs/local-llm.md](docs/local-llm.md)
+
+### First-time setup
+
+```bash
+git clone git@github.com:StevenJayGilbert/LanternGames.git
+cd LanternGames/app
+npm install
+```
+
+If `npm install` finishes too fast and the project doesn't run afterwards, you've hit the `NODE_ENV=production` gotcha — see [docs/dev.md](docs/dev.md#nodeenvproduction-gotcha-windows) for the fix.
+
+### Start the game
 
 ```bash
 cd app
-npm install        # if NODE_ENV=production is set globally, prefix with: NODE_ENV=development
-npm run dev        # http://localhost:5173/
+npm run dev
 ```
 
-Paste an Anthropic API key when prompted, pick a story, play. Get a key at [console.anthropic.com](https://console.anthropic.com) — it's separate from a Claude Pro/Max subscription.
+Opens at `http://localhost:5173/` (HMR enabled — source edits reload automatically).
 
-Or run **fully local for free** via Ollama — no API key, no per-turn cost. Quick version:
+On the gate page, pick a provider:
+
+- **Anthropic** — paste an API key from [console.anthropic.com](https://console.anthropic.com). ~$5 of credits covers many hours of play. Separate from Claude Pro / Max subscriptions.
+- **Local (Ollama)** — make sure `OLLAMA_ORIGINS="*" ollama serve` is running first. Full install/troubleshooting in [docs/local-llm.md](docs/local-llm.md).
+
+### Full local mode (no internet, $0/turn)
+
+Two terminals:
 
 ```bash
-# install Ollama from ollama.com/download, then:
-ollama pull qwen3:14b
+# terminal 1: the LLM
 OLLAMA_ORIGINS="*" ollama serve
-# pick "Local (Ollama)" on the gate page
+
+# terminal 2: the game
+cd LanternGames/app && npm run dev
 ```
 
-The `OLLAMA_ORIGINS` env var is required so the browser can talk to Ollama. Full setup, model sizing (8B vs 14B), persistent install across reboots, and troubleshooting in [docs/local-llm.md](docs/local-llm.md).
+Open `http://localhost:5173/`, pick **Local (Ollama)** on the gate page. Your traffic never leaves your machine.
+
+### Stopping
+
+In the dev-server terminal, press **Ctrl+C**. For orphaned dev servers (terminal closed without stopping it first), see the cleanup commands in [docs/dev.md](docs/dev.md#stopping-the-dev-server).
+
+### Production build
+
+```bash
+cd app
+npm run build       # → app/dist/
+npm run preview     # serves the built bundle to verify
+```
+
+The build output in `app/dist/` is a static site — drop it on any static host (Cloudflare Pages, Netlify, GitHub Pages, etc.). No backend needed; players supply their own API key or run Ollama themselves.
 
 ## Project layout
 
