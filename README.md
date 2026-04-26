@@ -8,11 +8,29 @@ The game runs entirely in your browser. There's no separate backend — the dev 
 
 ### Prerequisites
 
-- **Node.js 22+** ([nodejs.org/download](https://nodejs.org/en/download)) — the installer also bundles **npm**, the package manager used for `npm install` / `npm run dev` below. There's nothing to install separately.
-- **git** ([git-scm.com/downloads](https://git-scm.com/downloads)) — for cloning the repo. macOS users may already have it via Xcode Command Line Tools; Windows users typically install Git for Windows.
-- *(Optional)* **Ollama** if you want the free local-LLM tier — see [docs/local-llm.md](docs/local-llm.md).
+You need three things on your machine before the first-time setup will work. If you've never set up a Node project before, install them in this order:
 
-Verify Node and npm are both on your PATH before continuing:
+#### 1. Node.js 22+ (includes npm)
+
+The Node.js installer bundles **npm**, the package manager used for `npm install` / `npm run dev` below. There's nothing to install separately for npm.
+
+- **macOS** — installer from [nodejs.org/download](https://nodejs.org/en/download), or `brew install node` if you use [Homebrew](https://brew.sh/).
+- **Windows** — installer from [nodejs.org/download](https://nodejs.org/en/download), or `winget install OpenJS.NodeJS.LTS` from PowerShell.
+- **Linux** — installer from [nodejs.org/download](https://nodejs.org/en/download), or your distro's package (e.g. `sudo apt install nodejs npm`), or [nvm](https://github.com/nvm-sh/nvm) if you want to manage multiple Node versions.
+
+#### 2. git
+
+- **macOS** — `xcode-select --install` (also gets you Apple's basic dev tools), or `brew install git`.
+- **Windows** — [Git for Windows](https://git-scm.com/downloads) installer (it bundles Git Bash, which is handy).
+- **Linux** — `sudo apt install git` (Debian/Ubuntu) or your distro equivalent.
+
+#### 3. *(Optional)* Ollama
+
+Only needed if you want the free local-LLM tier. Full install + setup in [docs/local-llm.md](docs/local-llm.md). Short version: download the installer from [ollama.com/download](https://ollama.com/download) for any platform, or `brew install ollama` on Mac.
+
+### Verify everything's on PATH
+
+Open a fresh terminal and run:
 
 ```bash
 node --version    # should print v22.x.x or higher
@@ -20,7 +38,9 @@ npm --version     # should print 10.x.x or higher (bundled with Node)
 git --version     # should print any recent version
 ```
 
-If `npm --version` errors with "command not found" but `node --version` works, your Node install is broken — reinstall from [nodejs.org](https://nodejs.org/en/download) using the official installer (don't use a homebrew/scoop tap that strips npm).
+If any of those errors with "command not found", fix that install first before continuing.
+
+If `npm --version` errors with "command not found" but `node --version` works, your Node install is broken (sometimes happens with stripped-down homebrew/scoop taps) — reinstall using the official installer from [nodejs.org](https://nodejs.org/en/download) instead.
 
 ### First-time setup
 
