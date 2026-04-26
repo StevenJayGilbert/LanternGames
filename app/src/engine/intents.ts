@@ -44,6 +44,7 @@ function collectConditionSites(story: Story): Condition[] {
 
   for (const item of story.items) {
     if (item.container?.accessibleWhen) out.push(item.container.accessibleWhen);
+    for (const v of item.variants ?? []) out.push(v.when);
   }
 
   for (const trigger of story.triggers ?? []) out.push(trigger.when);

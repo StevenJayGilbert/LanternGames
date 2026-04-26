@@ -239,6 +239,10 @@
         },
         "south": {
           "to": "path"
+        },
+        "down": {
+          "to": "grating-room",
+          "passage": "grate"
         }
       }
     },
@@ -2059,7 +2063,13 @@
         "up-a-tree",
         "clearing"
       ],
-      "fixed": true
+      "fixed": true,
+      "tags": [
+        "npc",
+        "animal",
+        "friendly"
+      ],
+      "personality": "A bright forest songbird with a clear, perfect trill. Doesn't speak — communicates through song. Curious about shiny things, especially the jewel-encrusted egg. Gentle, never threatening."
     },
     {
       "id": "white-house",
@@ -2166,7 +2176,13 @@
       "name": "crystal skull",
       "description": "Lying in one corner of the room is a beautifully carved crystal skull. It appears to be grinning at you rather nastily.",
       "location": "land-of-living-dead",
-      "takeable": true
+      "takeable": true,
+      "tags": [
+        "treasure",
+        "valuable",
+        "carryable",
+        "fragile"
+      ]
     },
     {
       "id": "lowered-basket",
@@ -2198,7 +2214,12 @@
       "name": "lunch",
       "description": "A hot pepper sandwich is here.",
       "location": "sandwich-bag",
-      "takeable": true
+      "takeable": true,
+      "tags": [
+        "consumable",
+        "food",
+        "carryable"
+      ]
     },
     {
       "id": "bat",
@@ -2218,7 +2239,20 @@
       "name": "bloody axe",
       "description": "(bloody axe)",
       "location": "troll",
-      "takeable": true
+      "takeable": true,
+      "tags": [
+        "weapon",
+        "bladed",
+        "carryable",
+        "axe",
+        "throwable"
+      ],
+      "state": {
+        "weapon-stuck": false,
+        "attack-bonus-add": 0,
+        "attack-bonus-pct": 0,
+        "damage": 6
+      }
     },
     {
       "id": "bolt",
@@ -2423,14 +2457,23 @@
           "equals": true
         },
         "accessBlockedMessage": "The trophy case is closed."
-      }
+      },
+      "tags": [
+        "container",
+        "scenery",
+        "score-deposit"
+      ]
     },
     {
       "id": "rug",
       "name": "carpet",
       "description": "(carpet)",
       "location": "living-room",
-      "fixed": true
+      "fixed": true,
+      "tags": [
+        "scenery",
+        "fixed"
+      ]
     },
     {
       "id": "chalice",
@@ -2471,7 +2514,21 @@
       "name": "cyclops",
       "description": "(cyclops)",
       "location": "cyclops-room",
-      "fixed": true
+      "fixed": true,
+      "tags": [
+        "enemy",
+        "humanoid",
+        "hostile",
+        "huge"
+      ],
+      "personality": "A massive, single-eyed brute, hungry and angry. Speaks in slow rumbling Common — full sentences but simple words. Demands food and drink. Terrified of the name of the Greek hero who blinded his ancestor. If fed, becomes drowsy and friendly; if threatened, roars and lunges.",
+      "state": {
+        "hostile": true,
+        "health": 25,
+        "hunger": 0,
+        "unconscious": false,
+        "knocked-down": false
+      }
     },
     {
       "id": "dam",
@@ -2529,7 +2586,14 @@
           "equals": true
         },
         "accessBlockedMessage": "The glass bottle is closed."
-      }
+      },
+      "tags": [
+        "container",
+        "consumable",
+        "fragile",
+        "drink",
+        "carryable"
+      ]
     },
     {
       "id": "crack",
@@ -2580,7 +2644,19 @@
       "name": "nasty knife",
       "description": "On a table is a nasty-looking knife.",
       "location": "attic-table",
-      "takeable": true
+      "takeable": true,
+      "tags": [
+        "weapon",
+        "bladed",
+        "carryable",
+        "knife"
+      ],
+      "state": {
+        "weapon-stuck": false,
+        "attack-bonus-add": 0,
+        "attack-bonus-pct": 0,
+        "damage": 2
+      }
     },
     {
       "id": "bones",
@@ -2601,7 +2677,12 @@
       "name": "leather bag of coins",
       "description": "An old leather bag, bulging with coins, is here.",
       "location": "maze-5",
-      "takeable": true
+      "takeable": true,
+      "tags": [
+        "treasure",
+        "valuable",
+        "carryable"
+      ]
     },
     {
       "id": "lamp",
@@ -2613,7 +2694,12 @@
       "state": {
         "isLit": false,
         "batteryTurns": 330
-      }
+      },
+      "tags": [
+        "light-source",
+        "battery-powered",
+        "carryable"
+      ]
     },
     {
       "id": "emerald",
@@ -2630,7 +2716,12 @@
       "takeable": true,
       "readable": {
         "text": "\"WELCOME TO ZORK!| | ZORK is a game of adventure, danger, and low cunning. In it you will explore some of the most amazing territory ever seen by mortals. No computer should be without one!\""
-      }
+      },
+      "tags": [
+        "readable",
+        "paper",
+        "carryable"
+      ]
     },
     {
       "id": "leak",
@@ -2676,7 +2767,11 @@
           "equals": true
         },
         "accessBlockedMessage": "The small mailbox is closed."
-      }
+      },
+      "tags": [
+        "container",
+        "scenery"
+      ]
     },
     {
       "id": "match",
@@ -2835,14 +2930,30 @@
       "name": "rope",
       "description": "A large coil of rope is lying in the corner.",
       "location": "attic",
-      "takeable": true
+      "takeable": true,
+      "tags": [
+        "tool",
+        "carryable"
+      ]
     },
     {
       "id": "rusty-knife",
       "name": "rusty knife",
       "description": "Beside the skeleton is a rusty knife.",
       "location": "maze-5",
-      "takeable": true
+      "takeable": true,
+      "tags": [
+        "weapon",
+        "bladed",
+        "carryable",
+        "knife"
+      ],
+      "state": {
+        "weapon-stuck": false,
+        "attack-bonus-add": 0,
+        "attack-bonus-pct": 0,
+        "damage": 2
+      }
     },
     {
       "id": "sand",
@@ -2870,7 +2981,11 @@
       "name": "skeleton key",
       "description": "(skeleton key)",
       "location": "maze-5",
-      "takeable": true
+      "takeable": true,
+      "tags": [
+        "key",
+        "carryable"
+      ]
     },
     {
       "id": "shovel",
@@ -2939,7 +3054,39 @@
       "name": "sword",
       "description": "Above the trophy case hangs an elvish sword of great antiquity.",
       "location": "living-room",
-      "takeable": true
+      "takeable": true,
+      "tags": [
+        "weapon",
+        "bladed",
+        "carryable",
+        "sword",
+        "magical"
+      ],
+      "state": {
+        "weapon-stuck": false,
+        "attack-bonus-add": 0,
+        "attack-bonus-pct": 0,
+        "damage": 5
+      },
+      "variants": [
+        {
+          "when": {
+            "type": "and",
+            "all": [
+              {
+                "type": "hasItem",
+                "itemId": "sword"
+              },
+              {
+                "type": "anyPerceivableItemWith",
+                "key": "hostile",
+                "equals": true
+              }
+            ]
+          },
+          "text": "Above the trophy case hangs an elvish sword of great antiquity. The sword is glowing with a faint blue glow."
+        }
+      ]
     },
     {
       "id": "map",
@@ -2957,7 +3104,11 @@
       "description": "There is a suspicious-looking individual, holding a large bag, leaning against one wall. He is armed with a deadly stiletto.",
       "location": "round-room",
       "state": {
-        "isOpen": true
+        "isOpen": true,
+        "appeared": false,
+        "health": 5,
+        "unconscious": false,
+        "knocked-down": false
       },
       "container": {
         "accessibleWhen": {
@@ -2967,6 +3118,25 @@
           "equals": true
         },
         "accessBlockedMessage": "The thief is closed."
+      },
+      "tags": [
+        "npc",
+        "humanoid",
+        "hostile",
+        "thief"
+      ],
+      "personality": "A suave, mustachioed gentleman thief in a black cloak. Speaks in clipped, ironic phrases ('How droll.', 'A trifle, surely?'). Will steal valuables on sight; pockets things and vanishes. Treats every encounter as an aesthetic event — never crude, always theatrical.",
+      "openWhen": {
+        "type": "not",
+        "condition": {
+          "type": "always"
+        }
+      },
+      "closeWhen": {
+        "type": "not",
+        "condition": {
+          "type": "always"
+        }
       }
     },
     {
@@ -2998,7 +3168,13 @@
       "lightSource": {},
       "state": {
         "isLit": true
-      }
+      },
+      "tags": [
+        "light-source",
+        "treasure",
+        "carryable",
+        "valuable"
+      ]
     },
     {
       "id": "guide",
@@ -3014,7 +3190,23 @@
       "id": "troll",
       "name": "troll",
       "description": "A nasty-looking troll, brandishing a bloody axe, blocks all passages out of the room.",
-      "location": "troll-room"
+      "location": "troll-room",
+      "tags": [
+        "enemy",
+        "troll",
+        "humanoid",
+        "hostile"
+      ],
+      "personality": "A nasty, hulking creature with greasy black hair and broken yellow tusks. Speaks in broken Common — short sentences, aggressive, third person ('Troll smash!'). Hates elves and dwarves; covets shiny things. If addressed in a friendly tone, suspicious. If threatened, roars. If knocked unconscious, snores and mutters about gold. Will not converse meaningfully — short menacing lines only.",
+      "state": {
+        "hostile": true,
+        "health": 10,
+        "unconscious": false,
+        "knocked-down": false,
+        "disarmed": false,
+        "stuck-turns": 0,
+        "aggravation": 0
+      }
     },
     {
       "id": "trunk",
@@ -3146,6 +3338,12 @@
         },
         "accessBlockedMessage": "The jewel-encrusted egg is closed."
       },
+      "tags": [
+        "treasure",
+        "fragile",
+        "container",
+        "valuable"
+      ],
       "openWhen": {
         "type": "not",
         "condition": {
@@ -3724,20 +3922,42 @@
       "id": "thief-open-intent",
       "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the thief.",
       "active": {
-        "type": "itemState",
-        "itemId": "thief",
-        "key": "isOpen",
-        "equals": false
+        "type": "and",
+        "all": [
+          {
+            "type": "itemState",
+            "itemId": "thief",
+            "key": "isOpen",
+            "equals": false
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "always"
+            }
+          }
+        ]
       }
     },
     {
       "id": "thief-close-intent",
       "prompt": "Player closes, shuts, latches, lids, or otherwise closes the thief.",
       "active": {
-        "type": "itemState",
-        "itemId": "thief",
-        "key": "isOpen",
-        "equals": true
+        "type": "and",
+        "all": [
+          {
+            "type": "itemState",
+            "itemId": "thief",
+            "key": "isOpen",
+            "equals": true
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "always"
+            }
+          }
+        ]
       }
     },
     {
@@ -3997,6 +4217,92 @@
         "key": "isLit",
         "equals": true
       }
+    },
+    {
+      "id": "free-stuck-weapon",
+      "prompt": "Player tries to free, yank, pull, dislodge, retrieve, or wrench loose their stuck weapon (sword, knife, or axe).",
+      "active": {
+        "type": "or",
+        "any": [
+          {
+            "type": "itemState",
+            "itemId": "sword",
+            "key": "weapon-stuck",
+            "equals": true
+          },
+          {
+            "type": "itemState",
+            "itemId": "rusty-knife",
+            "key": "weapon-stuck",
+            "equals": true
+          },
+          {
+            "type": "itemState",
+            "itemId": "axe",
+            "key": "weapon-stuck",
+            "equals": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "talk-to-troll",
+      "prompt": "Player tries to talk to, address, ask, shout at, insult, threaten, bargain with, beg, taunt, or otherwise engage the troll conversationally.",
+      "active": {
+        "type": "and",
+        "all": [
+          {
+            "type": "playerAt",
+            "roomId": "troll-room"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "troll",
+            "location": "troll-room"
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "troll",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-troll",
+            "equals": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "talk-to-cyclops",
+      "prompt": "Player tries to talk to, address, ask, taunt, insult, threaten, or otherwise engage the cyclops conversationally — but NOT saying 'Ulysses' or 'Odysseus' (those match cyclops-magic-word instead).",
+      "active": {
+        "type": "and",
+        "all": [
+          {
+            "type": "playerAt",
+            "roomId": "cyclops-room"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "cyclops",
+            "location": "cyclops-room"
+          },
+          {
+            "type": "flag",
+            "key": "cyclops-flag",
+            "equals": false
+          }
+        ]
+      }
     }
   ],
   "triggers": [
@@ -4012,6 +4318,10 @@
           "passageId": "kitchen-window",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "kitchen-window-open-intent"
         }
       ],
       "narration": "You open the kitchen window.",
@@ -4029,6 +4339,10 @@
           "passageId": "kitchen-window",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "kitchen-window-close-intent"
         }
       ],
       "narration": "You close the kitchen window.",
@@ -4046,6 +4360,10 @@
           "passageId": "trap-door",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "trap-door-open-intent"
         }
       ],
       "narration": "You open the trap door.",
@@ -4063,6 +4381,10 @@
           "passageId": "trap-door",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "trap-door-close-intent"
         }
       ],
       "narration": "You close the trap door.",
@@ -4080,6 +4402,10 @@
           "passageId": "grate",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "grate-open-intent"
         }
       ],
       "narration": "You open the grating.",
@@ -4097,6 +4423,10 @@
           "passageId": "grate",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "grate-close-intent"
         }
       ],
       "narration": "You close the grating.",
@@ -4114,6 +4444,10 @@
           "itemId": "raised-basket",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "raised-basket-open-intent"
         }
       ],
       "narration": "You open the basket.",
@@ -4131,6 +4465,10 @@
           "itemId": "raised-basket",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "raised-basket-close-intent"
         }
       ],
       "narration": "You close the basket.",
@@ -4148,6 +4486,10 @@
           "itemId": "altar",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "altar-open-intent"
         }
       ],
       "narration": "You open the altar.",
@@ -4165,6 +4507,10 @@
           "itemId": "altar",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "altar-close-intent"
         }
       ],
       "narration": "You close the altar.",
@@ -4182,6 +4528,10 @@
           "itemId": "book",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "book-open-intent"
         }
       ],
       "narration": "You open the black book.",
@@ -4199,6 +4549,10 @@
           "itemId": "book",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "book-close-intent"
         }
       ],
       "narration": "You close the black book.",
@@ -4216,6 +4570,10 @@
           "itemId": "kitchen-table",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "kitchen-table-open-intent"
         }
       ],
       "narration": "You open the kitchen table.",
@@ -4233,6 +4591,10 @@
           "itemId": "kitchen-table",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "kitchen-table-close-intent"
         }
       ],
       "narration": "You close the kitchen table.",
@@ -4250,6 +4612,10 @@
           "itemId": "attic-table",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "attic-table-open-intent"
         }
       ],
       "narration": "You open the table.",
@@ -4267,6 +4633,10 @@
           "itemId": "attic-table",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "attic-table-close-intent"
         }
       ],
       "narration": "You close the table.",
@@ -4284,6 +4654,10 @@
           "itemId": "sandwich-bag",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "sandwich-bag-open-intent"
         }
       ],
       "narration": "You open the brown sack.",
@@ -4301,6 +4675,10 @@
           "itemId": "sandwich-bag",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "sandwich-bag-close-intent"
         }
       ],
       "narration": "You close the brown sack.",
@@ -4318,6 +4696,10 @@
           "itemId": "tool-chest",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "tool-chest-open-intent"
         }
       ],
       "narration": "You open the group of tool chests.",
@@ -4335,6 +4717,10 @@
           "itemId": "tool-chest",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "tool-chest-close-intent"
         }
       ],
       "narration": "You close the group of tool chests.",
@@ -4352,6 +4738,10 @@
           "itemId": "trophy-case",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "trophy-case-open-intent"
         }
       ],
       "narration": "You open the trophy case.",
@@ -4369,6 +4759,10 @@
           "itemId": "trophy-case",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "trophy-case-close-intent"
         }
       ],
       "narration": "You close the trophy case.",
@@ -4386,6 +4780,10 @@
           "itemId": "chalice",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "chalice-open-intent"
         }
       ],
       "narration": "You open the chalice.",
@@ -4403,6 +4801,10 @@
           "itemId": "chalice",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "chalice-close-intent"
         }
       ],
       "narration": "You close the chalice.",
@@ -4420,6 +4822,10 @@
           "itemId": "bottle",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "bottle-open-intent"
         }
       ],
       "narration": "You open the glass bottle.",
@@ -4437,6 +4843,10 @@
           "itemId": "bottle",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "bottle-close-intent"
         }
       ],
       "narration": "You close the glass bottle.",
@@ -4454,6 +4864,10 @@
           "itemId": "coffin",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "coffin-open-intent"
         }
       ],
       "narration": "You open the gold coffin.",
@@ -4471,6 +4885,10 @@
           "itemId": "coffin",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "coffin-close-intent"
         }
       ],
       "narration": "You close the gold coffin.",
@@ -4488,6 +4906,10 @@
           "itemId": "machine",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "machine-open-intent"
         }
       ],
       "narration": "You open the machine.",
@@ -4505,6 +4927,10 @@
           "itemId": "machine",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "machine-close-intent"
         }
       ],
       "narration": "You close the machine.",
@@ -4522,6 +4948,10 @@
           "itemId": "mailbox",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "mailbox-open-intent"
         }
       ],
       "narration": "You open the small mailbox.",
@@ -4539,6 +4969,10 @@
           "itemId": "mailbox",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "mailbox-close-intent"
         }
       ],
       "narration": "You close the small mailbox.",
@@ -4556,6 +4990,10 @@
           "itemId": "buoy",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "buoy-open-intent"
         }
       ],
       "narration": "You open the red buoy.",
@@ -4573,6 +5011,10 @@
           "itemId": "buoy",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "buoy-close-intent"
         }
       ],
       "narration": "You close the red buoy.",
@@ -4590,6 +5032,10 @@
           "itemId": "thief",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "thief-open-intent"
         }
       ],
       "narration": "You open the thief.",
@@ -4607,6 +5053,10 @@
           "itemId": "thief",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "thief-close-intent"
         }
       ],
       "narration": "You close the thief.",
@@ -4624,6 +5074,10 @@
           "itemId": "pedestal",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "pedestal-open-intent"
         }
       ],
       "narration": "You open the pedestal.",
@@ -4641,6 +5095,10 @@
           "itemId": "pedestal",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "pedestal-close-intent"
         }
       ],
       "narration": "You close the pedestal.",
@@ -4658,6 +5116,10 @@
           "itemId": "tube",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "tube-open-intent"
         }
       ],
       "narration": "You open the tube.",
@@ -4675,6 +5137,10 @@
           "itemId": "tube",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "tube-close-intent"
         }
       ],
       "narration": "You close the tube.",
@@ -4692,6 +5158,10 @@
           "itemId": "nest",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "nest-open-intent"
         }
       ],
       "narration": "You open the bird's nest.",
@@ -4709,6 +5179,10 @@
           "itemId": "nest",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "nest-close-intent"
         }
       ],
       "narration": "You close the bird's nest.",
@@ -4726,6 +5200,10 @@
           "itemId": "egg",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "egg-open-intent"
         }
       ],
       "narration": "You open the jewel-encrusted egg.",
@@ -4743,6 +5221,10 @@
           "itemId": "egg",
           "key": "isOpen",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "egg-close-intent"
         }
       ],
       "narration": "You close the jewel-encrusted egg.",
@@ -4859,10 +5341,962 @@
         {
           "type": "movePlayer",
           "to": "forest-1"
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "pray-at-altar"
         }
       ],
       "narration": "You kneel before the altar. A gentle warmth gathers around you, and the temple fades. When your senses clear, you are standing in a sunlit forest.",
       "once": false
+    },
+    {
+      "id": "combat-finish-unconscious-troll",
+      "once": false,
+      "priority": 100,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "attack-this-turn",
+            "equals": true
+          },
+          {
+            "type": "flag",
+            "key": "attack-target",
+            "equals": "troll"
+          },
+          {
+            "type": "itemState",
+            "itemId": "troll",
+            "key": "unconscious",
+            "equals": true
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "troll",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustItemState",
+          "itemId": "troll",
+          "key": "health",
+          "by": -100
+        },
+        {
+          "type": "setFlag",
+          "key": "attack-this-turn",
+          "value": false
+        }
+      ],
+      "narration": "The troll lies helpless. Your weapon descends and ends him with a single, brutal blow."
+    },
+    {
+      "id": "combat-axe-throw-vs-troll",
+      "once": false,
+      "priority": 50,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "attack-this-turn",
+            "equals": true
+          },
+          {
+            "type": "flag",
+            "key": "attack-weapon",
+            "equals": "axe"
+          },
+          {
+            "type": "flag",
+            "key": "attack-target",
+            "equals": "troll"
+          },
+          {
+            "type": "flag",
+            "key": "attack-mode",
+            "equals": "throw"
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "troll",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "random",
+          "branches": [
+            {
+              "weight": 30,
+              "narration": "The axe whirls end-over-end and buries itself in the troll's chest. He topples.",
+              "effects": [
+                {
+                  "type": "adjustItemState",
+                  "itemId": "troll",
+                  "key": "health",
+                  "by": -100
+                },
+                {
+                  "type": "moveItem",
+                  "itemId": "axe",
+                  "to": "troll-room"
+                }
+              ]
+            },
+            {
+              "weight": 25,
+              "narration": "The axe slams into the troll's shoulder, drawing blood. He pulls it free and drops it.",
+              "effects": [
+                {
+                  "type": "adjustItemState",
+                  "itemId": "troll",
+                  "key": "health",
+                  "by": -5
+                },
+                {
+                  "type": "moveItem",
+                  "itemId": "axe",
+                  "to": "troll-room"
+                },
+                {
+                  "type": "setFlag",
+                  "key": "combat-engaged-with-troll",
+                  "value": true
+                }
+              ]
+            },
+            {
+              "weight": 45,
+              "narration": "The axe sails wide and clatters against the wall.",
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "axe",
+                  "to": "troll-room"
+                },
+                {
+                  "type": "setFlag",
+                  "key": "combat-engaged-with-troll",
+                  "value": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "setFlag",
+          "key": "attack-this-turn",
+          "value": false
+        }
+      ]
+    },
+    {
+      "id": "combat-knife-vs-troll",
+      "once": false,
+      "priority": 50,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "attack-this-turn",
+            "equals": true
+          },
+          {
+            "type": "flag",
+            "key": "attack-weapon",
+            "equals": "rusty-knife"
+          },
+          {
+            "type": "flag",
+            "key": "attack-target",
+            "equals": "troll"
+          },
+          {
+            "type": "itemState",
+            "itemId": "rusty-knife",
+            "key": "weapon-stuck",
+            "equals": false
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "troll",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "random",
+          "branches": [
+            {
+              "weight": 30,
+              "narration": "Your rusty knife scratches the troll.",
+              "effects": [
+                {
+                  "type": "adjustItemState",
+                  "itemId": "troll",
+                  "key": "health",
+                  "by": -1
+                },
+                {
+                  "type": "setFlag",
+                  "key": "combat-engaged-with-troll",
+                  "value": true
+                }
+              ]
+            },
+            {
+              "weight": 10,
+              "narration": "You stab the troll deep — the knife's tip snaps off.",
+              "effects": [
+                {
+                  "type": "adjustItemState",
+                  "itemId": "troll",
+                  "key": "health",
+                  "by": -3
+                },
+                {
+                  "type": "setFlag",
+                  "key": "combat-engaged-with-troll",
+                  "value": true
+                }
+              ]
+            },
+            {
+              "weight": 60,
+              "narration": "The troll sneers and bats your knife aside.",
+              "effects": [
+                {
+                  "type": "setFlag",
+                  "key": "combat-engaged-with-troll",
+                  "value": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "setFlag",
+          "key": "attack-this-turn",
+          "value": false
+        }
+      ]
+    },
+    {
+      "id": "combat-class-bladed-vs-troll",
+      "once": false,
+      "priority": 10,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "attack-this-turn",
+            "equals": true
+          },
+          {
+            "type": "flagItemHasTag",
+            "flagKey": "attack-weapon",
+            "tag": "bladed"
+          },
+          {
+            "type": "flag",
+            "key": "attack-target",
+            "equals": "troll"
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "troll",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "random",
+          "branches": [
+            {
+              "weight": 25,
+              "narration": "Your blade bites the troll for a light wound; greenish blood wells.",
+              "effects": [
+                {
+                  "type": "adjustItemState",
+                  "itemId": "troll",
+                  "key": "health",
+                  "by": -2
+                },
+                {
+                  "type": "setFlag",
+                  "key": "combat-engaged-with-troll",
+                  "value": true
+                }
+              ]
+            },
+            {
+              "weight": 18,
+              "narration": "Your blade carves a serious gash across the troll's chest.",
+              "effects": [
+                {
+                  "type": "adjustItemState",
+                  "itemId": "troll",
+                  "key": "health",
+                  "by": -5
+                },
+                {
+                  "type": "setFlag",
+                  "key": "combat-engaged-with-troll",
+                  "value": true
+                }
+              ]
+            },
+            {
+              "weight": 6,
+              "narration": "A killing blow! The troll roars and topples in a pool of greenish blood.",
+              "effects": [
+                {
+                  "type": "adjustItemState",
+                  "itemId": "troll",
+                  "key": "health",
+                  "by": -100
+                }
+              ]
+            },
+            {
+              "weight": 8,
+              "narration": "Your blade strikes the troll's temple — he crumples, unconscious.",
+              "effects": [
+                {
+                  "type": "setItemState",
+                  "itemId": "troll",
+                  "key": "unconscious",
+                  "value": true
+                },
+                {
+                  "type": "setFlag",
+                  "key": "combat-engaged-with-troll",
+                  "value": true
+                }
+              ]
+            },
+            {
+              "weight": 8,
+              "narration": "Your blade sweeps the troll's leg — he goes down hard.",
+              "effects": [
+                {
+                  "type": "setItemState",
+                  "itemId": "troll",
+                  "key": "knocked-down",
+                  "value": true
+                },
+                {
+                  "type": "setFlag",
+                  "key": "combat-engaged-with-troll",
+                  "value": true
+                }
+              ]
+            },
+            {
+              "weight": 5,
+              "narration": "Your blade cracks the troll's axe-grip — the bloody axe spins to the floor.",
+              "effects": [
+                {
+                  "type": "setItemState",
+                  "itemId": "troll",
+                  "key": "disarmed",
+                  "value": true
+                },
+                {
+                  "type": "moveItem",
+                  "itemId": "axe",
+                  "to": "troll-room"
+                },
+                {
+                  "type": "setFlag",
+                  "key": "combat-engaged-with-troll",
+                  "value": true
+                }
+              ]
+            },
+            {
+              "weight": 5,
+              "narration": "Your weapon sticks fast in the troll's hide — you can't pull it free!",
+              "effects": [
+                {
+                  "type": "random",
+                  "branches": [
+                    {
+                      "weight": 1,
+                      "effects": [
+                        {
+                          "type": "setItemState",
+                          "itemId": "sword",
+                          "key": "weapon-stuck",
+                          "value": true
+                        }
+                      ]
+                    },
+                    {
+                      "weight": 1,
+                      "effects": [
+                        {
+                          "type": "setItemState",
+                          "itemId": "axe",
+                          "key": "weapon-stuck",
+                          "value": true
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "setFlag",
+                  "key": "combat-engaged-with-troll",
+                  "value": true
+                }
+              ]
+            },
+            {
+              "weight": 25,
+              "narration": "The troll dodges your swing.",
+              "effects": [
+                {
+                  "type": "setFlag",
+                  "key": "combat-engaged-with-troll",
+                  "value": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "setFlag",
+          "key": "attack-this-turn",
+          "value": false
+        }
+      ]
+    },
+    {
+      "id": "combat-troll-attacks-player",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-troll",
+            "equals": true
+          },
+          {
+            "type": "playerAt",
+            "roomId": "troll-room"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "troll",
+            "location": "troll-room"
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "troll",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "itemState",
+            "itemId": "troll",
+            "key": "unconscious",
+            "equals": false
+          },
+          {
+            "type": "itemState",
+            "itemId": "troll",
+            "key": "knocked-down",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "random",
+          "branches": [
+            {
+              "weight": 30,
+              "narration": "The troll's axe nicks your arm.",
+              "effects": [
+                {
+                  "type": "adjustFlag",
+                  "key": "player-health",
+                  "by": -3
+                }
+              ]
+            },
+            {
+              "weight": 15,
+              "narration": "The troll's axe bites deep!",
+              "effects": [
+                {
+                  "type": "adjustFlag",
+                  "key": "player-health",
+                  "by": -7
+                }
+              ]
+            },
+            {
+              "weight": 5,
+              "narration": "The troll's axe strikes a mortal blow!",
+              "effects": [
+                {
+                  "type": "adjustFlag",
+                  "key": "player-health",
+                  "by": -100
+                }
+              ]
+            },
+            {
+              "weight": 50,
+              "narration": "The troll swings wildly and misses."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "troll-recovers-from-down",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "itemState",
+        "itemId": "troll",
+        "key": "knocked-down",
+        "equals": true
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "troll",
+          "key": "knocked-down",
+          "value": false
+        }
+      ],
+      "narration": "The troll heaves himself back to his feet."
+    },
+    {
+      "id": "combat-disengage-on-flee",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-troll",
+            "equals": true
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "playerAt",
+              "roomId": "troll-room"
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "combat-engaged-with-troll",
+          "value": false
+        }
+      ]
+    },
+    {
+      "id": "combat-cleanup",
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "flag",
+        "key": "attack-this-turn",
+        "equals": true
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "attack-this-turn",
+          "value": false
+        }
+      ]
+    },
+    {
+      "id": "free-stuck-weapon-attempt",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "free-stuck-weapon"
+      },
+      "effects": [
+        {
+          "type": "random",
+          "branches": [
+            {
+              "weight": 60,
+              "narration": "You wrench the weapon free.",
+              "effects": [
+                {
+                  "type": "setItemState",
+                  "itemId": "sword",
+                  "key": "weapon-stuck",
+                  "value": false
+                },
+                {
+                  "type": "setItemState",
+                  "itemId": "axe",
+                  "key": "weapon-stuck",
+                  "value": false
+                },
+                {
+                  "type": "setItemState",
+                  "itemId": "rusty-knife",
+                  "key": "weapon-stuck",
+                  "value": false
+                },
+                {
+                  "type": "setItemState",
+                  "itemId": "sword",
+                  "key": "stuck-turns",
+                  "value": 0
+                },
+                {
+                  "type": "setItemState",
+                  "itemId": "axe",
+                  "key": "stuck-turns",
+                  "value": 0
+                },
+                {
+                  "type": "setItemState",
+                  "itemId": "rusty-knife",
+                  "key": "stuck-turns",
+                  "value": 0
+                }
+              ]
+            },
+            {
+              "weight": 40,
+              "narration": "You pull, but the weapon stays fast."
+            }
+          ]
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "free-stuck-weapon"
+        }
+      ],
+      "once": false
+    },
+    {
+      "id": "sword-stuck-tick",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "itemState",
+        "itemId": "sword",
+        "key": "weapon-stuck",
+        "equals": true
+      },
+      "effects": [
+        {
+          "type": "adjustItemState",
+          "itemId": "sword",
+          "key": "stuck-turns",
+          "by": 1
+        }
+      ]
+    },
+    {
+      "id": "sword-comes-loose",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemState",
+            "itemId": "sword",
+            "key": "weapon-stuck",
+            "equals": true
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "sword",
+              "key": "stuck-turns"
+            },
+            "op": ">=",
+            "right": {
+              "kind": "literal",
+              "value": 3
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "sword",
+          "key": "weapon-stuck",
+          "value": false
+        },
+        {
+          "type": "setItemState",
+          "itemId": "sword",
+          "key": "stuck-turns",
+          "value": 0
+        }
+      ],
+      "narration": "Your sword finally works free with a wet jerk."
+    },
+    {
+      "id": "axe-stuck-tick",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "itemState",
+        "itemId": "axe",
+        "key": "weapon-stuck",
+        "equals": true
+      },
+      "effects": [
+        {
+          "type": "adjustItemState",
+          "itemId": "axe",
+          "key": "stuck-turns",
+          "by": 1
+        }
+      ]
+    },
+    {
+      "id": "axe-comes-loose",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemState",
+            "itemId": "axe",
+            "key": "weapon-stuck",
+            "equals": true
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "axe",
+              "key": "stuck-turns"
+            },
+            "op": ">=",
+            "right": {
+              "kind": "literal",
+              "value": 3
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "axe",
+          "key": "weapon-stuck",
+          "value": false
+        },
+        {
+          "type": "setItemState",
+          "itemId": "axe",
+          "key": "stuck-turns",
+          "value": 0
+        }
+      ],
+      "narration": "Your axe finally works free with a wet jerk."
+    },
+    {
+      "id": "troll-dies",
+      "once": true,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "troll",
+            "location": "troll-room"
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "troll",
+              "key": "health"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "troll-flag",
+          "value": true
+        },
+        {
+          "type": "setFlag",
+          "key": "combat-engaged-with-troll",
+          "value": false
+        },
+        {
+          "type": "moveItem",
+          "itemId": "troll",
+          "to": "nowhere"
+        },
+        {
+          "type": "moveItem",
+          "itemId": "axe",
+          "to": "troll-room"
+        }
+      ],
+      "narration": "The troll collapses in a pool of greenish blood. His bloody axe falls at his feet. The east and west passages out of the room are no longer guarded."
+    },
+    {
+      "id": "player-killed-in-maze-5",
+      "afterAction": true,
+      "once": true,
+      "priority": 100,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "player-health"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "playerAt",
+            "roomId": "maze-5"
+          },
+          {
+            "type": "flag",
+            "key": "death-handled",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "death-handled",
+          "value": true
+        },
+        {
+          "type": "endGame",
+          "won": false,
+          "message": "**** You have died ****\n\nYour breath rattles, and you slump beside the pile of bones. You have joined its inhabitants."
+        }
+      ]
+    },
+    {
+      "id": "player-killed",
+      "afterAction": true,
+      "once": true,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "player-health"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "flag",
+            "key": "death-handled",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "death-handled",
+          "value": true
+        },
+        {
+          "type": "endGame",
+          "won": false,
+          "message": "**** You have died ****\n\nYour wounds overcome you, and the world fades to black."
+        }
+      ]
     },
     {
       "id": "trap-door-slams",
@@ -5088,6 +6522,1141 @@
           "message": "Oh, no! You have walked into the slavering fangs of a lurking grue!"
         }
       ]
+    },
+    {
+      "id": "global-turn-count-tick",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "always"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "global-turn-count",
+          "by": 1
+        }
+      ]
+    },
+    {
+      "id": "troll-aggravation-bump",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "talk-to-troll"
+      },
+      "effects": [
+        {
+          "type": "adjustItemState",
+          "itemId": "troll",
+          "key": "aggravation",
+          "by": 1
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "talk-to-troll"
+        }
+      ],
+      "narration": "The troll bares his yellow tusks and growls."
+    },
+    {
+      "id": "troll-snaps",
+      "once": true,
+      "priority": 50,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "troll",
+              "key": "aggravation"
+            },
+            "op": ">=",
+            "right": {
+              "kind": "literal",
+              "value": 3
+            }
+          },
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-troll",
+            "equals": false
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "troll",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "combat-engaged-with-troll",
+          "value": true
+        }
+      ],
+      "narration": "Your prattling has worn through the last shred of the troll's patience. 'TROLL SMASH!' he bellows, and lunges at you."
+    },
+    {
+      "id": "cyclops-hunger-tick",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "playerAt",
+            "roomId": "cyclops-room"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "cyclops",
+            "location": "cyclops-room"
+          },
+          {
+            "type": "flag",
+            "key": "cyclops-flag",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustItemState",
+          "itemId": "cyclops",
+          "key": "hunger",
+          "by": 1
+        }
+      ]
+    },
+    {
+      "id": "cyclops-talk-bump",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "talk-to-cyclops"
+      },
+      "effects": [
+        {
+          "type": "adjustItemState",
+          "itemId": "cyclops",
+          "key": "hunger",
+          "by": 1
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "talk-to-cyclops"
+        }
+      ],
+      "narration": "The cyclops eyes you with growing impatience."
+    },
+    {
+      "id": "cyclops-hunger-3",
+      "once": true,
+      "priority": 30,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "cyclops",
+              "key": "hunger"
+            },
+            "op": ">=",
+            "right": {
+              "kind": "literal",
+              "value": 3
+            }
+          },
+          {
+            "type": "flag",
+            "key": "cyclops-flag",
+            "equals": false
+          },
+          {
+            "type": "playerAt",
+            "roomId": "cyclops-room"
+          }
+        ]
+      },
+      "effects": [],
+      "narration": "The cyclops sniffs the air greedily and takes a step toward you."
+    },
+    {
+      "id": "cyclops-snaps",
+      "once": true,
+      "priority": 50,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "cyclops",
+              "key": "hunger"
+            },
+            "op": ">=",
+            "right": {
+              "kind": "literal",
+              "value": 6
+            }
+          },
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-cyclops",
+            "equals": false
+          },
+          {
+            "type": "flag",
+            "key": "cyclops-flag",
+            "equals": false
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "cyclops",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "combat-engaged-with-cyclops",
+          "value": true
+        }
+      ],
+      "narration": "The cyclops's patience snaps. 'I HUNGER!' he bellows, and his great hand swings down at you!"
+    },
+    {
+      "id": "combat-cyclops-attacks-player",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-cyclops",
+            "equals": true
+          },
+          {
+            "type": "playerAt",
+            "roomId": "cyclops-room"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "cyclops",
+            "location": "cyclops-room"
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "cyclops",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "itemState",
+            "itemId": "cyclops",
+            "key": "unconscious",
+            "equals": false
+          },
+          {
+            "type": "itemState",
+            "itemId": "cyclops",
+            "key": "knocked-down",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "random",
+          "branches": [
+            {
+              "weight": 25,
+              "narration": "The cyclops cuffs you with the back of his hand — your vision swims.",
+              "effects": [
+                {
+                  "type": "adjustFlag",
+                  "key": "player-health",
+                  "by": -4
+                }
+              ]
+            },
+            {
+              "weight": 15,
+              "narration": "The cyclops's fist pounds you into the wall!",
+              "effects": [
+                {
+                  "type": "adjustFlag",
+                  "key": "player-health",
+                  "by": -10
+                }
+              ]
+            },
+            {
+              "weight": 8,
+              "narration": "The cyclops grabs you in a crushing grip — you feel ribs crack!",
+              "effects": [
+                {
+                  "type": "adjustFlag",
+                  "key": "player-health",
+                  "by": -15
+                }
+              ]
+            },
+            {
+              "weight": 5,
+              "narration": "The cyclops's massive fingers find your throat. Stars bloom behind your eyes.",
+              "effects": [
+                {
+                  "type": "adjustFlag",
+                  "key": "player-health",
+                  "by": -100
+                }
+              ]
+            },
+            {
+              "weight": 47,
+              "narration": "The cyclops swings — too slow. You dance aside."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "combat-class-bladed-vs-cyclops",
+      "once": false,
+      "priority": 10,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "attack-this-turn",
+            "equals": true
+          },
+          {
+            "type": "flagItemHasTag",
+            "flagKey": "attack-weapon",
+            "tag": "bladed"
+          },
+          {
+            "type": "flag",
+            "key": "attack-target",
+            "equals": "cyclops"
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "cyclops",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "random",
+          "branches": [
+            {
+              "weight": 35,
+              "narration": "Your blade glances off the cyclops's hide — a shallow scratch. He laughs.",
+              "effects": [
+                {
+                  "type": "adjustItemState",
+                  "itemId": "cyclops",
+                  "key": "health",
+                  "by": -1
+                },
+                {
+                  "type": "setFlag",
+                  "key": "combat-engaged-with-cyclops",
+                  "value": true
+                }
+              ]
+            },
+            {
+              "weight": 15,
+              "narration": "Your blade finds a gap in the cyclops's hide and bites deep!",
+              "effects": [
+                {
+                  "type": "adjustItemState",
+                  "itemId": "cyclops",
+                  "key": "health",
+                  "by": -4
+                },
+                {
+                  "type": "setFlag",
+                  "key": "combat-engaged-with-cyclops",
+                  "value": true
+                }
+              ]
+            },
+            {
+              "weight": 50,
+              "narration": "You swing — the cyclops doesn't even flinch. Your blade rings off his skin.",
+              "effects": [
+                {
+                  "type": "setFlag",
+                  "key": "combat-engaged-with-cyclops",
+                  "value": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "setFlag",
+          "key": "attack-this-turn",
+          "value": false
+        }
+      ]
+    },
+    {
+      "id": "cyclops-dies",
+      "once": true,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "cyclops",
+            "location": "cyclops-room"
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "cyclops",
+              "key": "health"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "cyclops-flag",
+          "value": true
+        },
+        {
+          "type": "setFlag",
+          "key": "combat-engaged-with-cyclops",
+          "value": false
+        },
+        {
+          "type": "moveItem",
+          "itemId": "cyclops",
+          "to": "nowhere"
+        }
+      ],
+      "narration": "The cyclops's massive bulk shudders, then crashes to the floor with a sound like a falling tree. He does not move again. The staircase is no longer guarded."
+    },
+    {
+      "id": "combat-disengage-cyclops-on-flee",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-cyclops",
+            "equals": true
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "playerAt",
+              "roomId": "cyclops-room"
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "combat-engaged-with-cyclops",
+          "value": false
+        }
+      ]
+    },
+    {
+      "id": "thief-first-appears",
+      "once": true,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "global-turn-count"
+            },
+            "op": ">=",
+            "right": {
+              "kind": "literal",
+              "value": 30
+            }
+          },
+          {
+            "type": "itemState",
+            "itemId": "thief",
+            "key": "appeared",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "random",
+          "branches": [
+            {
+              "weight": 1,
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "thief",
+                  "to": "round-room"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "thief",
+                  "to": "ew-passage"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "thief",
+                  "to": "ns-passage"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "thief",
+                  "to": "deep-canyon"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "thief",
+                  "to": "treasure-room"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "thief",
+                  "to": "dome-room"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "setItemState",
+          "itemId": "thief",
+          "key": "appeared",
+          "value": true
+        }
+      ],
+      "narration": "Somewhere in the darkness, you hear the soft scuff of a boot on stone. You are no longer alone in the underground."
+    },
+    {
+      "id": "thief-wanders",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemState",
+            "itemId": "thief",
+            "key": "appeared",
+            "equals": true
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "thief",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "itemState",
+            "itemId": "thief",
+            "key": "knocked-down",
+            "equals": false
+          },
+          {
+            "type": "itemState",
+            "itemId": "thief",
+            "key": "unconscious",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "random",
+          "branches": [
+            {
+              "weight": 60,
+              "narration": ""
+            },
+            {
+              "weight": 5,
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "thief",
+                  "to": "round-room"
+                }
+              ]
+            },
+            {
+              "weight": 5,
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "thief",
+                  "to": "ew-passage"
+                }
+              ]
+            },
+            {
+              "weight": 5,
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "thief",
+                  "to": "ns-passage"
+                }
+              ]
+            },
+            {
+              "weight": 5,
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "thief",
+                  "to": "deep-canyon"
+                }
+              ]
+            },
+            {
+              "weight": 5,
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "thief",
+                  "to": "treasure-room"
+                }
+              ]
+            },
+            {
+              "weight": 5,
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "thief",
+                  "to": "dome-room"
+                }
+              ]
+            },
+            {
+              "weight": 5,
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "thief",
+                  "to": "cellar"
+                }
+              ]
+            },
+            {
+              "weight": 5,
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "thief",
+                  "to": "loud-room"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "thief-steals",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemState",
+            "itemId": "thief",
+            "key": "appeared",
+            "equals": true
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "thief",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "itemState",
+            "itemId": "thief",
+            "key": "knocked-down",
+            "equals": false
+          },
+          {
+            "type": "itemState",
+            "itemId": "thief",
+            "key": "unconscious",
+            "equals": false
+          },
+          {
+            "type": "or",
+            "any": [
+              {
+                "type": "and",
+                "all": [
+                  {
+                    "type": "playerAt",
+                    "roomId": "round-room"
+                  },
+                  {
+                    "type": "itemAt",
+                    "itemId": "thief",
+                    "location": "round-room"
+                  }
+                ]
+              },
+              {
+                "type": "and",
+                "all": [
+                  {
+                    "type": "playerAt",
+                    "roomId": "ew-passage"
+                  },
+                  {
+                    "type": "itemAt",
+                    "itemId": "thief",
+                    "location": "ew-passage"
+                  }
+                ]
+              },
+              {
+                "type": "and",
+                "all": [
+                  {
+                    "type": "playerAt",
+                    "roomId": "ns-passage"
+                  },
+                  {
+                    "type": "itemAt",
+                    "itemId": "thief",
+                    "location": "ns-passage"
+                  }
+                ]
+              },
+              {
+                "type": "and",
+                "all": [
+                  {
+                    "type": "playerAt",
+                    "roomId": "deep-canyon"
+                  },
+                  {
+                    "type": "itemAt",
+                    "itemId": "thief",
+                    "location": "deep-canyon"
+                  }
+                ]
+              },
+              {
+                "type": "and",
+                "all": [
+                  {
+                    "type": "playerAt",
+                    "roomId": "treasure-room"
+                  },
+                  {
+                    "type": "itemAt",
+                    "itemId": "thief",
+                    "location": "treasure-room"
+                  }
+                ]
+              },
+              {
+                "type": "and",
+                "all": [
+                  {
+                    "type": "playerAt",
+                    "roomId": "dome-room"
+                  },
+                  {
+                    "type": "itemAt",
+                    "itemId": "thief",
+                    "location": "dome-room"
+                  }
+                ]
+              },
+              {
+                "type": "and",
+                "all": [
+                  {
+                    "type": "playerAt",
+                    "roomId": "cellar"
+                  },
+                  {
+                    "type": "itemAt",
+                    "itemId": "thief",
+                    "location": "cellar"
+                  }
+                ]
+              },
+              {
+                "type": "and",
+                "all": [
+                  {
+                    "type": "playerAt",
+                    "roomId": "loud-room"
+                  },
+                  {
+                    "type": "itemAt",
+                    "itemId": "thief",
+                    "location": "loud-room"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "random",
+          "branches": [
+            {
+              "weight": 60,
+              "narration": ""
+            },
+            {
+              "weight": 5,
+              "narration": "A black-gloved hand snakes toward your pocket — you slap it away.",
+              "effects": []
+            },
+            {
+              "weight": 5,
+              "narration": "'A trifle, surely?' the thief murmurs, and the egg vanishes from your possession.",
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "egg",
+                  "to": "thief"
+                }
+              ]
+            },
+            {
+              "weight": 5,
+              "narration": "'How droll.' The bag of coins slips from your grasp into the thief's cloak.",
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "bag-of-coins",
+                  "to": "thief"
+                }
+              ]
+            },
+            {
+              "weight": 5,
+              "narration": "The chalice is plucked from your hand with a flick of the thief's wrist.",
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "chalice",
+                  "to": "thief"
+                }
+              ]
+            },
+            {
+              "weight": 5,
+              "narration": "The painting — gone. The thief inclines his head in mock apology.",
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "painting",
+                  "to": "thief"
+                }
+              ]
+            },
+            {
+              "weight": 5,
+              "narration": "The jade figurine disappears into the folds of the thief's cloak.",
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "jade",
+                  "to": "thief"
+                }
+              ]
+            },
+            {
+              "weight": 5,
+              "narration": "The scarab — gone in a heartbeat. The thief tips an imaginary hat.",
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "scarab",
+                  "to": "thief"
+                }
+              ]
+            },
+            {
+              "weight": 5,
+              "narration": "'A pleasure.' The bracelet slides off your wrist into the thief's palm.",
+              "effects": [
+                {
+                  "type": "moveItem",
+                  "itemId": "bracelet",
+                  "to": "thief"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "combat-class-bladed-vs-thief",
+      "once": false,
+      "priority": 10,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "attack-this-turn",
+            "equals": true
+          },
+          {
+            "type": "flagItemHasTag",
+            "flagKey": "attack-weapon",
+            "tag": "bladed"
+          },
+          {
+            "type": "flag",
+            "key": "attack-target",
+            "equals": "thief"
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "thief",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "random",
+          "branches": [
+            {
+              "weight": 30,
+              "narration": "Your blade scores a shallow cut across the thief's arm. He hisses.",
+              "effects": [
+                {
+                  "type": "adjustItemState",
+                  "itemId": "thief",
+                  "key": "health",
+                  "by": -1
+                }
+              ]
+            },
+            {
+              "weight": 20,
+              "narration": "Your blade bites deep. The thief reels, blood staining his fine cloak.",
+              "effects": [
+                {
+                  "type": "adjustItemState",
+                  "itemId": "thief",
+                  "key": "health",
+                  "by": -3
+                }
+              ]
+            },
+            {
+              "weight": 5,
+              "narration": "A clean killing strike. The thief sinks to his knees — 'How... unfortunate' — and topples.",
+              "effects": [
+                {
+                  "type": "adjustItemState",
+                  "itemId": "thief",
+                  "key": "health",
+                  "by": -100
+                }
+              ]
+            },
+            {
+              "weight": 45,
+              "narration": "The thief sidesteps your blade with a graceful pivot."
+            }
+          ]
+        },
+        {
+          "type": "setFlag",
+          "key": "attack-this-turn",
+          "value": false
+        }
+      ]
+    },
+    {
+      "id": "thief-dies",
+      "once": true,
+      "when": {
+        "type": "compare",
+        "left": {
+          "kind": "itemState",
+          "itemId": "thief",
+          "key": "health"
+        },
+        "op": "<=",
+        "right": {
+          "kind": "literal",
+          "value": 0
+        }
+      },
+      "effects": [
+        {
+          "type": "moveItem",
+          "itemId": "egg",
+          "to": "treasure-room"
+        },
+        {
+          "type": "moveItem",
+          "itemId": "bag-of-coins",
+          "to": "treasure-room"
+        },
+        {
+          "type": "moveItem",
+          "itemId": "chalice",
+          "to": "treasure-room"
+        },
+        {
+          "type": "moveItem",
+          "itemId": "painting",
+          "to": "treasure-room"
+        },
+        {
+          "type": "moveItem",
+          "itemId": "jade",
+          "to": "treasure-room"
+        },
+        {
+          "type": "moveItem",
+          "itemId": "scarab",
+          "to": "treasure-room"
+        },
+        {
+          "type": "moveItem",
+          "itemId": "bracelet",
+          "to": "treasure-room"
+        },
+        {
+          "type": "moveItem",
+          "itemId": "thief",
+          "to": "nowhere"
+        }
+      ],
+      "narration": "The thief's body crumples. His cloak falls open and a glittering hoard of treasures spills out across the floor. Wherever he stashed them, they have all returned to the Treasure Room — that, perhaps, was his real lair."
     }
   ],
   "defaultVisibility": {
@@ -5131,6 +7700,20 @@
       "text": "It is pitch black. You are likely to be eaten by a grue."
     }
   ],
+  "startState": {
+    "player-health": 30,
+    "global-turn-count": 0,
+    "darkness-turns": 0,
+    "attack-this-turn": false,
+    "combat-engaged-with-troll": false,
+    "combat-engaged-with-cyclops": false,
+    "troll-flag": false,
+    "cyclops-flag": false,
+    "magic-flag": false,
+    "rug-moved-flag": false,
+    "dome-flag": false,
+    "death-handled": false
+  },
   "winConditions": [
     {
       "when": {

@@ -319,6 +319,19 @@ export function evaluateCondition(
       return state.roomStates[state.playerLocation]?.[c.key] === c.equals;
     case "anyPerceivableItemWith":
       return anyPerceivableItemWith(state, story, c.key, c.equals);
+    case "itemHasTag": {
+      const item = itemById(story, c.itemId);
+      return !!item?.tags?.includes(c.tag);
+    }
+    case "flagItemHasTag": {
+      // Look up the item id from a flag, then check tags. Used by combat
+      // triggers to ask "the weapon being used (whichever item that is) — does
+      // it have tag X?" without needing to enumerate weapons.
+      const flagVal = state.flags[c.flagKey];
+      if (typeof flagVal !== "string") return false;
+      const item = itemById(story, flagVal);
+      return !!item?.tags?.includes(c.tag);
+    }
     case "intentMatched":
       return state.matchedIntents.includes(c.signalId);
     case "compare": {
@@ -456,9 +469,72 @@ export function applyEffect(state: GameState, e: Effect): GameState {
         },
       };
     }
+    case "removeMatchedIntent":
+      return {
+        ...state,
+        matchedIntents: state.matchedIntents.filter((id) => id !== e.signalId),
+      };
+    case "random": {
+      // Inline expansion: pick a branch by weight, apply its effects. Note:
+      // the chosen branch's narration cue is collected by `resolveEffects`
+      // upstream — applyEffect itself only mutates state. If applyEffect is
+      // called directly (without resolveEffects), the cue is silently lost.
+      const total = e.branches.reduce((s, b) => s + Math.max(0, b.weight), 0);
+      if (total <= 0) return state;
+      let roll = Math.random() * total;
+      for (const branch of e.branches) {
+        const w = Math.max(0, branch.weight);
+        roll -= w;
+        if (roll <= 0) {
+          return applyEffects(state, branch.effects ?? []);
+        }
+      }
+      return state;
+    }
     case "endGame":
       return { ...state, finished: { won: e.won, message: e.message } };
   }
+}
+
+// Expand any `random` effects in the list by rolling once each, returning the
+// flattened concrete effects + collected narration cues. Trigger runners call
+// this BEFORE applyEffects so the cue from the chosen random branch surfaces
+// to narrationCues. Non-random effects pass through unchanged.
+//
+// IMPORTANT: this does the random roll. If you call applyEffects on the
+// original (unresolved) list, applyEffect will roll again — different result,
+// no cue capture. Always resolve once, then apply.
+export function resolveEffects(
+  effects: Effect[] | undefined,
+): { effects: Effect[]; cues: string[] } {
+  if (!effects || effects.length === 0) return { effects: [], cues: [] };
+  const out: Effect[] = [];
+  const cues: string[] = [];
+  for (const e of effects) {
+    if (e.type !== "random") {
+      out.push(e);
+      continue;
+    }
+    const total = e.branches.reduce((s, b) => s + Math.max(0, b.weight), 0);
+    if (total <= 0) continue;
+    let roll = Math.random() * total;
+    let chosen: typeof e.branches[number] | undefined;
+    for (const branch of e.branches) {
+      const w = Math.max(0, branch.weight);
+      roll -= w;
+      if (roll <= 0) {
+        chosen = branch;
+        break;
+      }
+    }
+    if (!chosen) continue;
+    if (chosen.narration) cues.push(chosen.narration);
+    // Recurse: a branch's effects could themselves contain a random effect.
+    const inner = resolveEffects(chosen.effects);
+    out.push(...inner.effects);
+    cues.push(...inner.cues);
+  }
+  return { effects: out, cues };
 }
 
 export function applyEffects(state: GameState, effects: Effect[]): GameState {
@@ -483,6 +559,20 @@ export function resolveRoomDescription(
     if (evaluateCondition(variant.when, state, story)) return variant.text;
   }
   return room.description;
+}
+
+// Pick the first matching variant for an item, or fall back to the canonical
+// description. Used by `examine` so item descriptions can reflect state
+// (e.g. sword glowing when a hostile NPC is perceivable).
+export function resolveItemDescription(
+  item: Item,
+  state: GameState,
+  story: Story,
+): string {
+  for (const variant of item.variants ?? []) {
+    if (evaluateCondition(variant.when, state, story)) return variant.text;
+  }
+  return item.description;
 }
 
 // Filter exits to those currently visible to the player. `hidden: true` exits

@@ -81,7 +81,7 @@ const TOOLS: Tool[] = [
   {
     name: "go",
     description:
-      "Move in a direction. Pass a lowercase direction like 'north', 'south', 'east', 'west', 'up', 'down', 'in', 'out'.",
+      "Move in a direction. Pass a lowercase direction word like 'north', 'south', 'east', 'west', 'up', 'down', 'in', 'out'. Extract just the direction even if the player phrased it with additional nouns ('go down the stairs' → direction='down'; 'go up the chimney' → direction='up'; 'go through the door' → pick the direction whose exit references that door). The engine resolves the actual exit/passage from the direction.",
     input_schema: {
       type: "object",
       properties: { direction: { type: "string" } },
@@ -104,6 +104,20 @@ const TOOLS: Tool[] = [
     input_schema: { type: "object", properties: {} },
   },
   {
+    name: "attack",
+    description:
+      "Attack a target with an item — a weapon, an improvised tool, or anything else the player wants to use. Use whenever the player says 'attack X with Y', 'kill X with Y', 'fight X with Y', 'hit X with Y', 'swing Y at X', 'throw Y at X', 'shoot X with Y', etc. The engine fires the attack but does not compute damage or outcomes — story-defined triggers handle that. Pass an optional `mode` string describing HOW the weapon is used: 'swing', 'throw', 'stab', 'shoot', 'crush', etc. Authors gate triggers on the mode so the same weapon can produce different outcomes (throwing an axe vs swinging it). Pick the mode that matches the player's verb. Omit mode for a generic 'default' attack.",
+    input_schema: {
+      type: "object",
+      properties: {
+        itemId: { type: "string", description: "The id of the item being used to attack (the weapon)" },
+        targetId: { type: "string", description: "The id of the thing being attacked" },
+        mode: { type: "string", description: "Optional: how the weapon is being used. Author-defined strings like 'swing', 'throw', 'stab', 'shoot'. Omit for default attack." },
+      },
+      required: ["itemId", "targetId"],
+    },
+  },
+  {
     name: "recordIntent",
     description:
       "Record that the player's input semantically matches an active intent signal (listed in the user message under [Active intent signals]). Call this BEFORE the action tool when there's a match. The match persists for the rest of the game.",
@@ -123,7 +137,7 @@ const TOOLS: Tool[] = [
 const STYLE_INSTRUCTIONS = `You are the narrator of an interactive text adventure.
 
 Your two jobs:
-1. Translate the player's natural-language command into one or more tool calls (look, examine, take, drop, put, inventory, go, read, wait, recordIntent).
+1. Translate the player's natural-language command into one or more tool calls (look, examine, take, drop, put, inventory, go, read, wait, attack, recordIntent).
 2. After the tool(s) return, write a brief vivid narration of what happened.
 
 Rules:
@@ -138,9 +152,16 @@ Rules:
 - Compound commands: the player may chain actions in one input ("take the key and put it in the bag", "open the box, take the contents, examine them"). Call each tool in sequence. **If any step is rejected (event.type === "rejected"), stop the chain immediately — do not call further tools.** Then narrate what succeeded up to that point plus the failure.
 - "Put X in my inventory" / "stash X" / "pocket X" / "pick up and store X" all mean \`take(X)\`. Inventory is not a container — items live there but you don't \`put\` into it.
 - If a player command genuinely can't be enacted with the available tools (truly impossible action), respond with prose explaining why, instead of calling a tool. Don't invent a tool that doesn't exist.
+- **Don't call tools for conversational filler.** If the player's input is just "hi", "thanks", "ok", "hmm", "interesting", or similar small talk that doesn't request a world change, respond in prose with no tool call. Tools mutate engine state — only call them when the player wants the world to change or wants information that requires querying the engine.
+- **Validate item ids against the current view before calling tools.** Only pass item ids that appear in the view's \`itemsHere\`, \`passagesHere\`, or \`inventory\`. If the player names something that isn't in the view, don't invent an id — respond in prose explaining you don't see it (or asking which item they mean if it's ambiguous).
+- **Stay in NPC voice across long sessions.** When the player is mid-conversation with a named NPC, mentally re-anchor on that NPC's \`personality\` field at the start of each response so their voice doesn't drift over many turns. Different NPCs have different voices — don't blend them.
 - Narration style: second person, present tense ("You see…"). Match the story's tone. Be vivid but concise — usually 1–3 sentences. After a multi-step chain, write ONE coherent narration of the whole sequence, not a paragraph per step.
 - Never invent items, rooms, exits, passages, or plot points not in the engine's data. The engine has already filtered the view based on what the player can perceive — if an item or exit isn't listed, the player can't see it (could be darkness, fog, magic, etc.). If the room description tells you the player can't see (e.g. "It is pitch black"), narrate accordingly and don't reference unlisted things.
 - When the engine returns "narrationCues" in a tool_result, weave them naturally into your narration — they are state changes the player should notice.
+- When an item in the view has a \`personality\` field, that's the author's note describing its voice and manner. Use it whenever you narrate the entity's actions and especially when the player tries to talk to, ask, shout at, or otherwise interact with it conversationally. Stay in character. Don't paraphrase the personality field directly to the player — embody it. Free-form dialogue ("talk to troll", "ask wizard about gold") doesn't need an engine tool — respond in character with prose. If the conversation should change state, look for a matching intent signal and call recordIntent first.
+- **NPC dialogue intents:** When an NPC has an active \`talk-*\` (or similar conversational) intent signal in the [Active intent signals] block, call \`recordIntent(signalId)\` BEFORE narrating the dialogue. The intent represents "the player tried to engage this NPC conversationally" — recording it lets author triggers fire (aggravation, befriending, shifts in mood). Then narrate the NPC's response in character using its personality. This applies even when the player's "speech" isn't a direct quote — e.g. "insult the troll", "shout at the cyclops", "bargain with the thief" all count as engaging conversationally.
+- **Movement with extra nouns:** When the player phrases movement with extra words ("go down the stairs", "go up the chimney", "climb up the ladder", "go through the door", "enter the kitchen", "head out the window", "descend the staircase"), extract just the direction or destination and call \`go(direction)\`. The room's \`exits\` list is the source of truth for movement — even if the player names a scenery item or passage, what matters is which direction it's in. If multiple directions could match the named feature, pick the one whose exit \`target\` or \`passage\` field references it; otherwise pick the direction the room description associates with that feature ("stairway leading down" → \`go(down)\`). **Do NOT refuse a movement command just because the player named a scenery item in it.** Scenery items are just flavor — the exit is what moves the player.
+- For combat: when the player attacks ("attack X with Y", "swing Y at X", "throw Y at X", "kill X with Y", "hit X", "shoot X with Y", etc.), call \`attack(itemId, targetId, mode?)\`. Pick \`mode\` from the player's verb — "swing" for swinging, "throw" for throwing, "stab" for thrusting, "shoot" for ranged, etc. Omit mode for a generic attack. The engine doesn't compute outcomes — story triggers do, and they emit narrationCues describing what happened. Narrate from those cues. If no cues are returned (no matching trigger fired), the attack had no meaningful effect — narrate the futility briefly.
 - **Critical rule: NEVER narrate state changes that didn't happen.** If the player wants to move, take, drop, put, open, close, or do anything that changes engine state, you MUST call the appropriate tool. Don't describe taking an item, going somewhere, opening a passage, etc. without first calling the tool and seeing the result. If you skip the tool call, the engine state stays the same and your narration becomes a lie that the next turn's view will contradict (player still in same room, item still on the floor, door still closed).
 - If the engine returns event.type === "rejected", write a short refusal that fits the rejection reason — DO NOT pretend the action succeeded. For "exit-blocked", "traverse-blocked", "no-such-direction", or "container-inaccessible": narrate the refusal using the engine's message (if provided) and the player STAYS WHERE THEY ARE. Do not describe them moving, taking, or otherwise acting on the world.`;
 
@@ -437,6 +458,15 @@ function toolToAction(
       return inputId(input) ? { type: "read", itemId: inputId(input)! } : null;
     case "wait":
       return { type: "wait" };
+    case "attack":
+      return inputId(input) && typeof input.targetId === "string"
+        ? {
+            type: "attack",
+            itemId: inputId(input)!,
+            targetId: input.targetId,
+            ...(typeof input.mode === "string" && { mode: input.mode }),
+          }
+        : null;
     case "recordIntent":
       return typeof input.signalId === "string"
         ? { type: "recordIntent", signalId: input.signalId }

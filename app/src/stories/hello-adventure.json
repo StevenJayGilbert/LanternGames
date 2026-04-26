@@ -2,7 +2,7 @@
   "schemaVersion": "0.1",
   "id": "hello-adventure",
   "title": "Hello, Adventure",
-  "author": "ZorkAI engine team",
+  "author": "LanternGames engine team",
   "description": "A three-room smoke test for the story format. Solve the puzzle to escape.",
   "intro": "You wake on cold stone. The chamber is dim and silent. A heavy iron door bars your way east; on the north wall hangs a faded oil painting.",
   "startRoom": "chamber",

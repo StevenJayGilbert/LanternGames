@@ -140,6 +140,8 @@ function renderEvent(event: ActionEvent, story: Story): string {
       return event.text;
     case "waited":
       return "Time passes.";
+    case "attacked":
+      return ""; // narration is provided by combat triggers; engine fallback is silent
     case "rejected":
       return renderRejection(event, story);
   }

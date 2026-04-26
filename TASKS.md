@@ -1,4 +1,6 @@
-# ZorkAI — Task Plan
+# LanternGames — Task Plan
+
+(Working title was "ZorkAI" while Zork was the only test story; renamed once the engine proved generic across content.)
 
 **Project shape:** A generic LLM-driven text adventure engine. Players can play, authors can write. Zork I is the first test story — proof that the engine and schema can host a real, complex adventure. The deliverable is a runtime + schema, not a Zork port.
 
@@ -83,7 +85,6 @@ Authored in [`zork-1.overrides.json`](app/src/stories/zork-1.overrides.json):
 Doable now in JSON; just haven't been wired:
 
 - **Bell + candles + book sequence** in temple/Hades — would set flags. No effect today because the spirits in Land-of-Dead aren't modeled as blockers (they're scenery in extraction).
-- **Sword glows red/blue near danger** — would need `variants` on `Item` (currently only `Room` and `Passage` have it). Schema extension; trivial when added.
 - **Maze navigation by dropping items** — the LLM can narrate this from itemAt visibility; no engine help needed beyond what exists.
 
 ### Zork puzzles wired in this batch — landed
@@ -97,6 +98,20 @@ Doable now in JSON; just haven't been wired:
 - [x] **Generic visibility primitives** — `Item.visibleWhen`, `Passage.visibleWhen`, `PassageSide.visibleWhen`, `Exit.visibleWhen`, `Story.defaultVisibility`, `Story.sharedVariants`. Engine has no darkness-aware code; authors compose perception filters from generic Conditions. Visibility participates in both view-rendering AND `isItemAccessible`, so `take` in the dark fails the same way `take leaflet` in the kitchen would: `not-accessible` rejection.
 - [x] **`anyPerceivableItemWith` Condition** — generic "any perceivable item satisfies state[key] === equals." Used by darkness for "any lit lamp"; reusable for "any broken thing", "any magical thing", etc.
 - [x] **lightSource → state.isLit migration** — `Item.lightSource: {}` is now a marker; lit state lives in `state.isLit`. `GameState.lightSourcesLit` removed. Validator rejects legacy `lightSource.isLit` with a migration hint.
+- [x] **Generic randomness primitive** — `Effect.random { branches: [{weight, effects?, narration?}] }`. Weighted branch selection with per-branch narration cue and effects chain. Engine resolves random branches via `resolveEffects` helper (one roll per invocation, surfaces narration to cues). Reusable for combat, bat carry, thief table, dam timer flooding outcomes, etc.
+- [x] **Item.variants** — parallel to Room.variants and Passage.variants. State-conditional alternate descriptions resolved by `examine` via `resolveItemDescription`. Used for sword glow ("glowing with a faint blue glow" when player carries it AND a hostile NPC is perceivable).
+- [x] **Troll combat** — fully composed from primitives. Two `afterAction` ticks (player attacks troll, troll attacks player) each roll via `Effect.random` with light/serious/kill/miss outcomes. `troll-dies` regular trigger drops the axe + opens exits. `player-killed` ends the game when `flag('player-health')` hits zero. Sword glows when troll is perceivable (Item.variants). No NPC kind needed — troll is an Item with `state.hostile=true, state.health=10`.
+- [x] **Generic `attack` primitive (engine has zero combat knowledge)** — `ActionRequest.attack { itemId, targetId, mode? }` and `ActionEvent.attacked { itemId, targetId, mode }`. Engine validates accessibility, sets four transient flags (`attack-weapon`, `attack-target`, `attack-mode`, `attack-this-turn`), emits the event. No HP, damage, statuses, or outcomes baked in — those are story conventions. Authors gate triggers on the flags + their chosen status state to model whatever combat shape they want. Same engine supports HP-based, narrative-only, or wound-level combat.
+- [x] **`Item.tags?: string[]`** — author-defined classification labels (multi-class). Composes with two new Conditions: `itemHasTag { itemId, tag }` (direct) and `flagItemHasTag { flagKey, tag }` (look up an item id from a flag, then check its tags). Lets one class trigger cover N×M (weapon-class × target-class) combat pairs without enumeration. Used story-wide too: treasures, light sources, consumables, NPCs, etc.
+- [x] **`Trigger.priority?: number`** (default 0) — higher fires first within a trigger pass; stable sort within a priority. Replaces implicit array-order ordering. Combined with the consume-the-flag pattern, lets status-aware overrides (priority 100) win over class triggers (priority 10) win over catchalls (priority -100).
+- [x] **`Item.personality?: string`** — LLM-facing voice/manner note for NPCs and other speakable entities. Surfaced via `ItemView.personality`; system prompt instructs the LLM to embody it for free-form dialogue ("talk to troll", "ask wizard about gold"). Engine ignores entirely.
+- [x] **`Story.templates?: Record<string, Partial<Item>>` + `Item.fromTemplate?: string`** — build-time templates that items inherit from. Extractor merges (item fields win at the leaf, arrays union, nested objects deep-merged) and strips `fromTemplate`. Engine never sees templates. Lets one definition seed many instances (mountain troll / swamp troll / troll king share state shape but vary in health and personality).
+- [x] **Zork combat rewired around the generic `attack` primitive** — old auto-attack-every-turn replaced with: `combat-class-bladed-vs-troll` (priority 10, gates on `flagItemHasTag(attack-weapon, bladed)` — covers sword, axe, knife in one trigger); `combat-finish-unconscious-troll` (priority 100, instant kill on stunned target); `combat-axe-throw-vs-troll` (priority 50, mode-gated — throwing axe leaves it on the floor regardless of hit/miss); `combat-knife-vs-troll` (priority 50, weaker outcome table); `combat-troll-attacks-player` (afterAction tick, gated on engagement flag + troll-not-unconscious-or-down); `combat-disengage-on-flee`; `combat-cleanup` (priority -100 catchall); plus stuck-weapon recovery (active intent + passive 3-turn auto-release tick). Combat now starts only when the player explicitly attacks; troll just stands menacingly until then.
+- [x] **`extractor mergeItems` now appends new override items** — previously override items only patched existing ids; new combat items (rusty-knife/axe state, knife template) require appending. Brand-new items must supply all required Item fields; validator catches gaps.
+- [x] **NPC autonomous behavior pattern** — engine-blind recipe of four trigger kinds (provocation tick + threshold + autonomous-action tick + decay/reset) makes NPCs act on their own. Documented and proven on three NPCs in zork-1: **troll** snaps after 3 talks (NPC-initiated combat boots into the existing engagement loop); **cyclops** ticks a hunger counter while you linger and attacks at threshold 6 (full combat wiring incl. class trigger, dies, disengage); **thief** appears after 30 global turns, wanders the underground via random `Effect.random` over `moveItem` branches, steals treasures via OR-of-(playerAt + itemAt) pairs (no engine "co-located" Condition exists), drops everything to the Treasure Room on death. Zero engine code added — pure content + an NPC-dialogue-intent bullet in STYLE_INSTRUCTIONS that tells the LLM to call `recordIntent` before narrating in-character dialogue.
+- [x] **`startState` boolean flag pre-init** — discovered during NPC autonomy authoring that `flag(key, false)` strict-compares against `undefined` (so unset boolean flags fail "false" gates silently). Pre-initialized `combat-engaged-with-troll`, `combat-engaged-with-cyclops`, `cyclops-flag`, `magic-flag`, `troll-flag`, `rug-moved-flag`, `dome-flag`, `attack-this-turn`, `global-turn-count`, `darkness-turns` in startState. Authors must do this for any boolean flag they gate "false" on.
+- [x] **`moveItem.to` accepts item ids** — validator now matches what `Item.location` already permits (and what the runtime always supported). Lets `moveItem(treasure, "thief")` work for thief-steals; lets the player `put` mechanism's runtime parent be expressed in triggers. Self-containment (`moveItem(X, X)`) is rejected.
+- [x] **Movement with extra nouns — STYLE_INSTRUCTIONS rule** — fixes the "go down the stairs" bug where the LLM saw a scenery item with a matching noun and refused movement. Rule: "extract just the direction; the room's `exits` list is the source of truth; do NOT refuse a movement command because of a named scenery item." Generalizes to "go up the chimney", "enter the kitchen", "climb the ladder", "go through the door". Tightened the `go` tool description with an explicit example.
 
 ### Zork puzzles needing engine code (future work)
 
@@ -107,9 +122,8 @@ These still don't fit the current schema:
 - **Coal → diamond machine** — multi-step puzzle (coal in machine, screwdriver to lid, switch). Doable as content, but needs the diamond and machine outputs handled by triggers.
 - **Dam control panel** — multi-button state. Could be done with passage state + 4 intents; needs content.
 - **Boat / river travel** — directional travel along a river with current; landing decisions; cliff death. Needs travel mechanic.
-- **Troll combat** — turn-based fight, randomness, sword hits. Needs combat loop + NPC HP.
-- **Thief NPC** — wandering, steals, fights. Needs NPC tick mechanism (now possible via afterAction triggers + an NPC kind).
-- **Bat carry** — randomly transports player to one of several rooms. Needs randomness primitive in effects.
+- ~~**Thief NPC**~~ — DONE in NPC autonomy batch. Appears after 30 global turns, wanders via `Effect.random` over `moveItem` branches, steals via OR-of-(playerAt + itemAt) pairs, fights via `combat-class-bladed-vs-thief` trigger, drops loot to Treasure Room on death.
+- **Bat carry** — randomly transports player to one of several rooms via `Effect.random` over `movePlayer` branches. Pure content; no engine work.
 - **Score system** — point-per-treasure, max 350; rank thresholds. Now possible with counter primitives; just needs the per-treasure trigger plumbing + display.
 - **Death + reincarnation** — needs death state + altar-respawn integration.
 - **Rainbow + scepter → pot of gold** — wave scepter at rainbow → solidifies → cross to pot. Specific intent + state + new exit.
@@ -186,7 +200,7 @@ Current engine verbs: `look`, `examine`, `take`, `drop`, `inventory`, `go`, `ope
 
 **Candidates to consider (Tier 2):**
 - [ ] **`give(itemId, npcId)`** — hand item to NPC. Requires NPC kind (Tier 2 schema).
-- [ ] **`attack(itemId?, targetId)`** — combat or destruction; needs a weapon model.
+- [x] **`attack(itemId, targetId, mode?)`** — DONE. Engine sets transient flags (`attack-weapon`, `attack-target`, `attack-mode`, `attack-this-turn`); story triggers compute outcomes. No weapon model in engine — authors classify weapons via tags and gate triggers on them.
 - [ ] **`talk(npcId, topicId?)`** — conversation; deeper NPC schema needed.
 - [ ] **`light(itemId)` / `extinguish(itemId)`** — toggle a `lightSource`. Engine already tracks lit state; missing the verb.
 - [ ] **`wear(itemId)` / `remove(itemId)`** — toggle `worn` on a wearable item.
@@ -221,8 +235,9 @@ Schema state today: per-flag atoms + per-passage typed `state: Record<string, At
 - [x] **Comparison/math conditions** — `compare` + `NumericExpr` lands the "score >= 100" / "weight <= capacity" pattern generically. New numeric sources are one-case extensions of `NumericExpr`.
 - [x] **Counter mutation primitives** — `Effect.adjustFlag { key, by }` and `Effect.adjustItemState { itemId, key, by }`. Signed deltas; treat unset as 0. Used by lantern battery + grue darkness counter.
 - [x] **Per-turn ticks** — `Trigger.afterAction: true` fires after every action exactly once (not in a fixed-point loop, to avoid counter-incrementing infinite loops). Engine.execute runs Phase 1 (regular fixed-point) → Phase 2 (afterAction) → Phase 3 (regular cascade). Used by lantern battery drain and grue darkness check; ready for thief wandering, dam timer, etc.
-- [ ] **Randomness primitive** — `Effect.movePlayer` to one of N options; `NumericExpr.random(min, max)`; `Condition.chance(probability)`. Needed for bat carry, troll attacks, thief encounters.
-- [ ] **Combat / NPC HP model** — separate concern from above; probably needs an NPC top-level kind with `hp`, `damage`, attack/defense triggers.
+- [x] **Randomness primitive** — `Effect.random { branches: [{weight, effects?, narration?}] }`. Generic weighted-branch selection with per-branch narration. `NumericExpr.random(min, max)` and `Condition.chance(probability)` not added — `Effect.random` covers the use cases without them.
+- [x] **Combat / NPC HP model** — RESOLVED via the engine-blind `attack` primitive (above). Engine never models HP, damage, or NPC kinds. Authors define HP via `state.health` (number) on items, statuses via boolean state keys, weapon classifications via `tags`, and outcomes via `Effect.random` branches in story triggers. No NPC top-level kind needed — items with state and personality cover it.
+- [ ] **Arithmetic NumericExpr** (`add`, `multiply`, `negate`) — prerequisite for proper buffs/debuffs. Once landed, `Effect.adjustItemState.by` becomes a NumericExpr and one combat trigger can compute `damage = base * (1 + pct/100) + add` from weapon state. Until then, buff state keys are author conventions but no engine math reads them.
 - [ ] **Custom state shapes** (collections, structured data) — authors fake with many flags today. Defer until a story actually needs sets/maps.
 - [ ] **Named handlers / hooks** — JS escape hatch for story-supplied functions. Significant security surface; defer until a real story can't be expressed declaratively.
 
@@ -288,7 +303,8 @@ The point of building a generic engine. If Phase 4 proved the schema can host re
 
 ## Phase 10 — Polish & stretch
 
-- [ ] Multi-LLM: `OllamaClient` (only path to true $0 player experience) and `OpenAIClient` implementations of `LLMClient`
+- [x] **`OllamaClient`** — local-LLM backend, the genuine $0 player tier. Talks to Ollama's OpenAI-compat endpoint at `localhost:11434/v1/chat/completions`. Defaults to `qwen3:14b` (parity with GPT-4 on practical tool-call evals; `qwen3:8b` for low-RAM). Two load-bearing translations: (a) Anthropic-style batched `tool_result` blocks split into separate OpenAI `role:"tool"` messages; (b) tool-call arguments arrive as JSON strings and get `JSON.parse`'d with try/catch. Plus three operational details: explicit `num_ctx: 32768` (Ollama's #1 footgun is its 4K default that silently truncates), `think: false` to disable Qwen3 reasoning chains, and `<think>...</think>` tag stripping for models that leak them. App.tsx adds a provider picker (Anthropic / Local) with conditional config form; localStorage tracks `provider`, `ollama_url`, `ollama_model`, `ollama_ready`. Three small-model reliability bullets added to STYLE_INSTRUCTIONS (don't call tools for chitchat, validate item ids against the view, re-anchor on NPC personality). 24-assertion deterministic smoke test (mocked fetch) covers the full request/response translation path. Browser CORS requires users to run `OLLAMA_ORIGINS="*" ollama serve` — surfaced in the gate's setup hint.
+- [ ] **`OpenAIClient`** — same translation layer as OllamaClient against `api.openai.com`. ~30-line subclass once someone asks for it.
 - [ ] Add Zork II, Zork III as additional test stories (data already in `zil-to-json/data/`)
 - [ ] Achievements / leaderboard
 - [ ] Sound / music toggle

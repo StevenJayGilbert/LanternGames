@@ -140,6 +140,20 @@ export function validateStory(input: unknown): ValidationResult {
     );
   }
 
+  // templates: build-time-only Record<string, Partial<Item>>. The extractor
+  // resolves and strips Item.fromTemplate references; if templates survive
+  // into the validated story, that's a build pipeline error.
+  if ("templates" in input && input.templates !== undefined) {
+    if (!isObject(input.templates)) {
+      err("templates", "must be an object mapping template name to partial item");
+    } else {
+      err(
+        "templates",
+        "templates must be resolved at extractor build-time, not present in final story",
+      );
+    }
+  }
+
   if ("sharedVariants" in input && input.sharedVariants !== undefined) {
     if (!Array.isArray(input.sharedVariants)) {
       err("sharedVariants", "must be an array of TextVariant objects");
@@ -247,6 +261,47 @@ function validateItem(
 
   optionalBoolean(raw, "takeable", err, path);
   optionalBoolean(raw, "fixed", err, path);
+
+  // tags: optional array of non-empty strings — author-defined classification
+  // labels. Engine doesn't interpret values; just checks shape.
+  if ("tags" in raw && raw.tags !== undefined) {
+    if (!Array.isArray(raw.tags)) {
+      err(`${path}.tags`, "must be an array of strings");
+    } else {
+      raw.tags.forEach((t, i) => {
+        if (typeof t !== "string" || t.length === 0) {
+          err(`${path}.tags[${i}]`, "must be a non-empty string");
+        }
+      });
+    }
+  }
+
+  // personality: optional LLM-facing voice/manner string. Engine ignores.
+  optionalString(raw, "personality", err, path);
+
+  // fromTemplate: build-time template inheritance reference. Should be stripped
+  // by the extractor before validation runs; if it appears here, the extractor
+  // failed to resolve it.
+  if ("fromTemplate" in raw && raw.fromTemplate !== undefined) {
+    err(
+      `${path}.fromTemplate`,
+      "fromTemplate must be resolved at extractor build-time, not present in final story",
+    );
+  }
+
+  // variants: state-conditional alternate descriptions, parallel to Room.variants.
+  if ("variants" in raw && raw.variants !== undefined) {
+    if (!Array.isArray(raw.variants)) {
+      err(`${path}.variants`, "must be an array");
+    } else {
+      raw.variants.forEach((v, i) => {
+        if (!isObject(v)) return err(`${path}.variants[${i}]`, "must be an object");
+        if (typeof v.text !== "string") err(`${path}.variants[${i}].text`, "must be a string");
+        if (v.when === undefined) err(`${path}.variants[${i}].when`, "missing condition");
+        else validateCondition(v.when, `${path}.variants[${i}].when`, roomIds, itemIds, new Set(), err);
+      });
+    }
+  }
 
   // visibleWhen: per-item visibility gate. Composes with Story.defaultVisibility.
   if ("visibleWhen" in raw && raw.visibleWhen !== undefined) {
@@ -390,6 +445,14 @@ function validateTrigger(
   }
   optionalBoolean(raw, "once", err, path);
   optionalBoolean(raw, "afterAction", err, path);
+
+  // priority: optional finite number; higher fires first within a single
+  // trigger pass. Default 0 when absent.
+  if ("priority" in raw && raw.priority !== undefined) {
+    if (typeof raw.priority !== "number" || !Number.isFinite(raw.priority)) {
+      err(`${path}.priority`, "must be a finite number if present");
+    }
+  }
 }
 
 const SUPPORTED_PASSAGE_KINDS = new Set(["simple"]);
@@ -661,6 +724,17 @@ function validateCondition(
       if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
       if (!isAtom(raw.equals)) err(`${path}.equals`, "must be string, number, or boolean");
       return;
+    case "itemHasTag":
+      if (typeof raw.itemId !== "string") err(`${path}.itemId`, "must be a string");
+      else if (itemIds.size && !itemIds.has(raw.itemId)) err(`${path}.itemId`, `unknown item "${raw.itemId}"`);
+      if (typeof raw.tag !== "string" || raw.tag.length === 0) err(`${path}.tag`, "must be a non-empty string");
+      return;
+    case "flagItemHasTag":
+      // Soft validation: flagKey is a string; the actual itemId comes from
+      // runtime flag lookup, so cross-reference isn't possible at validate time.
+      if (typeof raw.flagKey !== "string") err(`${path}.flagKey`, "must be a string");
+      if (typeof raw.tag !== "string" || raw.tag.length === 0) err(`${path}.tag`, "must be a non-empty string");
+      return;
     case "containerOpen":
       err(
         `${path}.type`,
@@ -761,8 +835,21 @@ function validateEffect(
       if (typeof raw.itemId !== "string") err(`${path}.itemId`, "must be a string");
       else if (itemIds.size && !itemIds.has(raw.itemId)) err(`${path}.itemId`, `unknown item "${raw.itemId}"`);
       if (typeof raw.to !== "string") err(`${path}.to`, "must be a string");
-      else if (!SPECIAL_LOCATIONS.has(raw.to) && !roomIds.has(raw.to)) {
-        err(`${path}.to`, `unknown destination "${raw.to}"`);
+      else if (
+        !SPECIAL_LOCATIONS.has(raw.to) &&
+        !roomIds.has(raw.to) &&
+        !(itemIds.size > 0 && itemIds.has(raw.to))
+      ) {
+        err(
+          `${path}.to`,
+          `unknown destination "${raw.to}" (must be a roomId, an itemId, "inventory", or "nowhere")`,
+        );
+      } else if (
+        typeof raw.itemId === "string" &&
+        typeof raw.to === "string" &&
+        raw.itemId === raw.to
+      ) {
+        err(`${path}.to`, "an item cannot be moved inside itself");
       }
       return;
     case "movePlayer":
@@ -803,6 +890,47 @@ function validateEffect(
         err(`${path}.by`, "must be a finite number");
       }
       return;
+    case "removeMatchedIntent":
+      if (typeof raw.signalId !== "string") err(`${path}.signalId`, "must be a string");
+      return;
+    case "random": {
+      // branches: non-empty array; each branch has weight (number ≥ 0),
+      // optional effects (Effect[]) and optional narration (string).
+      // Total weight must be > 0 (else trigger would never roll any branch).
+      if (!Array.isArray(raw.branches) || raw.branches.length === 0) {
+        err(`${path}.branches`, "must be a non-empty array");
+        return;
+      }
+      let totalWeight = 0;
+      raw.branches.forEach((b, i) => {
+        const bp = `${path}.branches[${i}]`;
+        if (!isObject(b)) {
+          err(bp, "must be an object");
+          return;
+        }
+        if (typeof b.weight !== "number" || !Number.isFinite(b.weight) || b.weight < 0) {
+          err(`${bp}.weight`, "must be a non-negative finite number");
+        } else {
+          totalWeight += b.weight;
+        }
+        if (b.effects !== undefined) {
+          if (!Array.isArray(b.effects)) {
+            err(`${bp}.effects`, "must be an array of effects");
+          } else {
+            b.effects.forEach((e, j) =>
+              validateEffect(e, `${bp}.effects[${j}]`, roomIds, itemIds, err),
+            );
+          }
+        }
+        if (b.narration !== undefined && typeof b.narration !== "string") {
+          err(`${bp}.narration`, "must be a string");
+        }
+      });
+      if (totalWeight <= 0) {
+        err(`${path}.branches`, "total weight across all branches must be > 0");
+      }
+      return;
+    }
     case "endGame":
       if (typeof raw.won !== "boolean") err(`${path}.won`, "must be boolean");
       if (typeof raw.message !== "string") err(`${path}.message`, "must be a string");

@@ -59,6 +59,8 @@ export type Condition =
   | { type: "roomState"; roomId: string; key: string; equals: Atom }       // per-room typed state equality
   | { type: "currentRoomState"; key: string; equals: Atom }                // shortcut: roomState on the player's current room
   | { type: "anyPerceivableItemWith"; key: string; equals: Atom }          // any item perceivable to the player has state[key] === equals
+  | { type: "itemHasTag"; itemId: string; tag: string }                    // does the named item carry this tag?
+  | { type: "flagItemHasTag"; flagKey: string; tag: string }               // look up itemId from a flag, then check its tags — load-bearing for class-based combat
   | { type: "intentMatched"; signalId: string }            // LLM has matched this intent at least once
   | {                                                      // numeric comparison: left <op> right
       type: "compare";
@@ -83,6 +85,22 @@ export type Effect =
   | { type: "setRoomState"; roomId: string; key: string; value: Atom }        // mutate room state
   | { type: "adjustFlag"; key: string; by: number }                           // signed delta on a numeric flag (treats unset as 0)
   | { type: "adjustItemState"; itemId: string; key: string; by: number }      // signed delta on a numeric item-state value (treats unset as 0)
+  | { type: "removeMatchedIntent"; signalId: string }                          // un-match an intent so its triggers don't re-fire forever
+  | {
+      // Weighted random selection. Engine rolls Math.random() * Σweights and
+      // picks the first branch whose cumulative weight covers the roll. The
+      // chosen branch's `effects` are applied and `narration` (if present) is
+      // appended to narrationCues. Each Effect.random invocation rolls fresh
+      // — multiple random effects in one trigger get independent rolls.
+      // Generic primitive: combat outcomes, bat carrying you to a random
+      // room, thief deciding what to steal, dam timer flooding, etc.
+      type: "random";
+      branches: Array<{
+        weight: number;       // ≥ 0; relative to siblings
+        effects?: Effect[];   // applied if this branch wins (empty = no state change)
+        narration?: string;   // appended to narrationCues if this branch wins
+      }>;
+    }
   | { type: "endGame"; won: boolean; message: string };
 
 // ---------- Rooms ----------
@@ -139,6 +157,25 @@ export interface Item {
   takeable?: boolean;           // can the player pick it up (default false)
   fixed?: boolean;              // scenery; never moves, narrative-only (default false)
   readable?: { text: string };  // if present, "read X" shows this text
+  // Optional list of author-chosen classification labels. Each item can carry
+  // zero or more tags; a multi-class membership system. Engine matches tags
+  // by string equality in `itemHasTag` / `flagItemHasTag` Conditions.
+  // Examples: ["weapon", "sword", "bladed"], ["enemy", "troll"], ["treasure"].
+  tags?: string[];
+  // Optional LLM-facing voice/manner. The engine ignores this field; the view
+  // surfaces it so the LLM can speak / narrate this entity in character.
+  // Useful for NPCs that talk, react, or have distinct personality.
+  personality?: string;
+  // Build-time template inheritance: name a Story.templates entry whose
+  // fields are deep-merged into this item (item fields win, arrays union).
+  // Resolved by the extractor; stripped from the final story JSON before
+  // engine load. Engine never sees this field.
+  fromTemplate?: string;
+  // State-conditional alternate descriptions, evaluated in order; first match
+  // wins, else `description`. Parallel to Room.variants and Passage.variants.
+  // Used by `examine` to pick the description text. Common pattern: sword
+  // glowing when a hostile NPC is perceivable.
+  variants?: TextVariant[];
   // If set, this item is filtered from the view (and from accessibility
   // checks) when the condition is false. Composes with Story.defaultVisibility
   // (both must hold). Default: visible. Used for darkness, fog, blindness,
@@ -194,6 +231,14 @@ export interface Trigger {
   // and fires whenever its `when` is true. Used for lantern battery drain,
   // grue checks, NPC wandering, dam timer, etc.
   afterAction?: boolean;
+  // Sort order within a single trigger pass. Higher fires first; default 0.
+  // Used to make specific triggers (status-aware overrides, specific-id
+  // matches) win over class-based or catchall triggers — combine with the
+  // consume-the-flag convention so lower-priority triggers see a cleared
+  // flag and short-circuit. Recommended bands:
+  //   100+ status-aware overrides; 50-99 specific-id; 10-49 class-based;
+  //   0 default; -100 catchall cleanup.
+  priority?: number;
 }
 
 // ---------- Doors ----------
@@ -347,6 +392,11 @@ export interface Story {
   intentSignals?: IntentSignal[];
   winConditions?: EndCondition[];
   loseConditions?: EndCondition[];
+  // Build-time templates that items can inherit from via Item.fromTemplate.
+  // The extractor merges template fields into items (item fields win, arrays
+  // union) and strips fromTemplate before emitting the final JSON. Engine
+  // never sees this field — by the time a story loads, all items are flat.
+  templates?: Record<string, Partial<Item>>;
   // Optional default applied to every item, passage, and exit lacking its own
   // `visibleWhen`. The engine evaluates per-object: explicit visibleWhen (if
   // set) AND defaultVisibility (if set). Both must hold for the object to

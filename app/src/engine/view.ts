@@ -26,6 +26,13 @@ export interface ItemView {
   id: string;
   name: string;
   fixed?: boolean;          // true = scenery; not enumerated as "you see:"
+  // Author-defined classification labels carried through from Item.tags.
+  // Surfaced so the LLM can describe the item in context (e.g. recognize
+  // weapons, treasures, NPCs, food, light sources).
+  tags?: string[];
+  // LLM-facing voice/manner for NPCs and other speakable entities. Surfaced
+  // so the LLM can voice dialogue / narrate this entity in character.
+  personality?: string;
   // Current item state (e.g. { isOpen: true, broken: false }). Empty if the
   // item declares no state. The LLM uses this to narrate accurately and to
   // decide which intent signals to consider.
@@ -191,6 +198,8 @@ function toPassageView(passage: Passage, state: GameState, story: Story): Passag
 function toItemView(item: Item, state: GameState, story: Story): ItemView {
   const view: ItemView = { id: item.id, name: item.name };
   if (item.fixed) view.fixed = true;
+  if (item.tags && item.tags.length > 0) view.tags = item.tags;
+  if (item.personality) view.personality = item.personality;
 
   const itemState = state.itemStates[item.id];
   if (itemState && Object.keys(itemState).length > 0) {

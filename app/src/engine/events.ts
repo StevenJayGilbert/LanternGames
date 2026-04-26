@@ -16,6 +16,7 @@ export type ActionEvent =
   | { type: "moved"; from: string; to: string; direction: string }
   | { type: "read"; itemId: string; text: string }
   | { type: "waited" }
+  | { type: "attacked"; itemId: string; targetId: string; mode: string }
   | { type: "intent-recorded"; signalId: string }
   | {
       type: "rejected";

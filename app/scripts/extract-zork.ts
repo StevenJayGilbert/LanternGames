@@ -677,15 +677,20 @@ interface OverrideStory {
   skipItemObjects?: string[];
   passages?: Array<Partial<SimplePassage> & { id: string }>;
   rooms?: Array<Partial<Room> & { id: string }>;
-  items?: Array<Partial<Item> & { id: string }>;
+  items?: Array<Partial<Item> & { id: string; fromTemplate?: string }>;
   intentSignals?: IntentSignal[];
   triggers?: Trigger[];
+  // Build-time named partial-Item templates. Items with `fromTemplate: "name"`
+  // inherit fields from the matching template; resolved by resolveTemplates()
+  // before merge. Stripped from the final story.
+  templates?: Record<string, Partial<Item>>;
   // Pass-through Story-level fields. Authors declare these in JSON without
   // touching the extractor.
   winConditions?: EndCondition[];
   loseConditions?: EndCondition[];
   defaultVisibility?: Condition;
   sharedVariants?: TextVariant[];
+  startState?: Record<string, Atom>;
 }
 
 function loadOverrides(path: string): OverrideStory {
@@ -712,6 +717,78 @@ function stripComments(value: unknown): unknown {
     return out;
   }
   return value;
+}
+
+// Resolve `Item.fromTemplate` references in the overrides. For each override
+// item with `fromTemplate: "name"`, deep-merge the matching template's fields
+// in (item fields win at the leaf level; arrays union; nested objects recurse).
+// Strips `fromTemplate` from the resolved item and removes `templates` from
+// the OverrideStory so the merged story never contains build-time fields.
+//
+// Errors out if `fromTemplate` references an unknown template — the author
+// almost certainly mistyped the name, and silent fallthrough would produce a
+// half-built item.
+function resolveTemplates(overrides: OverrideStory): OverrideStory {
+  if (!overrides.items || overrides.items.length === 0) {
+    if (overrides.templates) {
+      const { templates: _drop, ...rest } = overrides;
+      return rest;
+    }
+    return overrides;
+  }
+  const templates = overrides.templates ?? {};
+  const resolvedItems = overrides.items.map((rawItem) => {
+    const tmplName = rawItem.fromTemplate;
+    if (typeof tmplName !== "string" || tmplName.length === 0) return rawItem;
+    const template = templates[tmplName];
+    if (!template) {
+      const known = Object.keys(templates).join(", ") || "(none defined)";
+      throw new Error(
+        `item "${rawItem.id}" references unknown template "${tmplName}". Known templates: ${known}`,
+      );
+    }
+    const merged = deepMergeTemplate(template, rawItem) as Partial<Item> & { id: string; fromTemplate?: string };
+    delete merged.fromTemplate;
+    return merged;
+  });
+  const { templates: _drop, ...rest } = overrides;
+  return { ...rest, items: resolvedItems };
+}
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+// Merge `b` onto `a`. Item fields (`b`) win at the leaf; nested objects merge
+// recursively; arrays union (deduped by JSON-string equality, sufficient for
+// our tag-shaped arrays). `undefined` in `b` is treated as "not specified" and
+// keeps `a`'s value.
+function deepMergeTemplate(
+  a: Record<string, unknown>,
+  b: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...a };
+  for (const [k, v] of Object.entries(b)) {
+    if (v === undefined) continue;
+    const av = out[k];
+    if (Array.isArray(av) && Array.isArray(v)) {
+      const seen = new Set(av.map((x) => JSON.stringify(x)));
+      const union = [...av];
+      for (const entry of v) {
+        const key = JSON.stringify(entry);
+        if (!seen.has(key)) {
+          seen.add(key);
+          union.push(entry);
+        }
+      }
+      out[k] = union;
+    } else if (isPlainObject(av) && isPlainObject(v)) {
+      out[k] = deepMergeTemplate(av, v);
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
 }
 
 function mergePassages(
@@ -780,10 +857,20 @@ function mergeItems(
   overrides: OverrideStory["items"],
 ): Item[] {
   if (!overrides || overrides.length === 0) return base;
-  return base.map((i) => {
+  const out = base.map((i) => {
     const ov = overrides.find((o) => o.id === i.id);
-    return ov ? { ...i, ...ov } : i;
+    return ov ? deepMergeTemplate(i as unknown as Record<string, unknown>, ov as Record<string, unknown>) as unknown as Item : i;
   });
+  // Append override items whose ids don't exist in base (purely author-added
+  // items like new combat NPCs). Authors must supply every required Item
+  // field on a brand-new item; the validator catches missing fields.
+  const baseIds = new Set(base.map((i) => i.id));
+  for (const ov of overrides) {
+    if (!baseIds.has(ov.id)) {
+      out.push(ov as Item);
+    }
+  }
+  return out;
 }
 
 // For every passage OR item that declares a boolean `isOpen` in its state,
@@ -820,14 +907,23 @@ function generateOpenCloseScaffolding(
     triggers.push({
       id: `${p.id}-opens`,
       when: { type: "intentMatched", signalId: openId },
-      effects: [{ type: "setPassageState", passageId: p.id, key: "isOpen", value: true }],
+      effects: [
+        { type: "setPassageState", passageId: p.id, key: "isOpen", value: true },
+        // Consume the matched intent so the trigger doesn't auto-re-fire
+        // every turn (matchedIntents otherwise persists forever, and the
+        // trigger would undo any later state change like a slam).
+        { type: "removeMatchedIntent", signalId: openId },
+      ],
       narration: `You open the ${p.name}.`,
       once: false,
     });
     triggers.push({
       id: `${p.id}-closes`,
       when: { type: "intentMatched", signalId: closeId },
-      effects: [{ type: "setPassageState", passageId: p.id, key: "isOpen", value: false }],
+      effects: [
+        { type: "setPassageState", passageId: p.id, key: "isOpen", value: false },
+        { type: "removeMatchedIntent", signalId: closeId },
+      ],
       narration: `You close the ${p.name}.`,
       once: false,
     });
@@ -852,14 +948,20 @@ function generateOpenCloseScaffolding(
     triggers.push({
       id: `${it.id}-opens`,
       when: { type: "intentMatched", signalId: openId },
-      effects: [{ type: "setItemState", itemId: it.id, key: "isOpen", value: true }],
+      effects: [
+        { type: "setItemState", itemId: it.id, key: "isOpen", value: true },
+        { type: "removeMatchedIntent", signalId: openId },
+      ],
       narration: `You open the ${it.name}.`,
       once: false,
     });
     triggers.push({
       id: `${it.id}-closes`,
       when: { type: "intentMatched", signalId: closeId },
-      effects: [{ type: "setItemState", itemId: it.id, key: "isOpen", value: false }],
+      effects: [
+        { type: "setItemState", itemId: it.id, key: "isOpen", value: false },
+        { type: "removeMatchedIntent", signalId: closeId },
+      ],
       narration: `You close the ${it.name}.`,
       once: false,
     });
@@ -897,7 +999,10 @@ function generateBreakScaffolding(items: Item[]): {
     triggers.push({
       id: `${it.id}-breaks`,
       when: { type: "intentMatched", signalId },
-      effects: [{ type: "setItemState", itemId: it.id, key: "broken", value: true }],
+      effects: [
+        { type: "setItemState", itemId: it.id, key: "broken", value: true },
+        { type: "removeMatchedIntent", signalId },
+      ],
       narration: `The ${it.name} breaks.`,
       once: false,
     });
@@ -923,7 +1028,7 @@ function main() {
 
   const roomIds = new Set(rawRooms.map((r) => id(r.Name)));
   const sharedSceneryRooms = buildSharedSceneryMap(rawRooms);
-  const overrides = loadOverrides(OVERRIDES_PATH);
+  const overrides = resolveTemplates(loadOverrides(OVERRIDES_PATH));
 
   // Passages first — produces the set of object names that the item
   // extractor must skip (so DOORBIT items aren't double-extracted).
@@ -989,6 +1094,9 @@ function main() {
     }),
     ...(overrides.sharedVariants && overrides.sharedVariants.length > 0 && {
       sharedVariants: overrides.sharedVariants,
+    }),
+    ...(overrides.startState && Object.keys(overrides.startState).length > 0 && {
+      startState: overrides.startState,
     }),
     ...(overrides.winConditions && overrides.winConditions.length > 0 && {
       winConditions: overrides.winConditions,

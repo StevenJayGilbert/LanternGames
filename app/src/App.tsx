@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Engine } from "./engine/engine";
 import { renderRoomView } from "./engine/render";
 import { DirectAnthropicClient } from "./llm/DirectAnthropicClient";
+import { OllamaClient } from "./llm/OllamaClient";
+import type { LLMClient } from "./llm/types";
 import { Narrator } from "./llm/narrator";
 import {
   clearSession,
@@ -12,8 +14,22 @@ import {
 import { DEFAULT_STORY_ID, STORIES, findStory } from "./stories";
 import "./App.css";
 
-const KEY_STORAGE = "zorkai_api_key";
-const STORY_STORAGE = "zorkai_story_id";
+type Provider = "anthropic" | "ollama";
+
+const KEY_STORAGE = "lanterngames_api_key";
+const STORY_STORAGE = "lanterngames_story_id";
+const PROVIDER_STORAGE = "lanterngames_provider";
+const OLLAMA_URL_STORAGE = "lanterngames_ollama_url";
+const OLLAMA_MODEL_STORAGE = "lanterngames_ollama_model";
+const OLLAMA_READY_STORAGE = "lanterngames_ollama_ready";
+
+const DEFAULT_OLLAMA_URL = "http://localhost:11434";
+const DEFAULT_OLLAMA_MODEL = "qwen3:14b";
+
+function loadProvider(): Provider {
+  const stored = localStorage.getItem(PROVIDER_STORAGE);
+  return stored === "ollama" ? "ollama" : "anthropic";
+}
 
 // TranscriptEntry + EntryKind types are imported from localSave so the save
 // shape and the in-memory shape stay aligned automatically.
@@ -25,8 +41,29 @@ function App() {
   });
   const story = useMemo(() => findStory(storyId) ?? STORIES[0], [storyId]);
 
+  const [provider, setProvider] = useState<Provider>(loadProvider);
   const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem(KEY_STORAGE) ?? "");
   const [keyDraft, setKeyDraft] = useState("");
+  const [ollamaUrl, setOllamaUrl] = useState<string>(
+    () => localStorage.getItem(OLLAMA_URL_STORAGE) ?? DEFAULT_OLLAMA_URL,
+  );
+  const [ollamaModel, setOllamaModel] = useState<string>(
+    () => localStorage.getItem(OLLAMA_MODEL_STORAGE) ?? DEFAULT_OLLAMA_MODEL,
+  );
+  // Drafts for the gate form. Initialized from persisted values so a user
+  // returning after clicking "Reset config" sees their last URL/model.
+  const [ollamaUrlDraft, setOllamaUrlDraft] = useState<string>(
+    () => localStorage.getItem(OLLAMA_URL_STORAGE) ?? DEFAULT_OLLAMA_URL,
+  );
+  const [ollamaModelDraft, setOllamaModelDraft] = useState<string>(
+    () => localStorage.getItem(OLLAMA_MODEL_STORAGE) ?? DEFAULT_OLLAMA_MODEL,
+  );
+  // The Ollama gate is "passed" once the user clicks Start at least once.
+  // Without this flag, defaults would auto-pass the gate which prevents the
+  // first-time user from seeing the URL/model setup hint.
+  const [ollamaReady, setOllamaReady] = useState<boolean>(
+    () => localStorage.getItem(OLLAMA_READY_STORAGE) === "true",
+  );
   // Initial engine: restore saved state if any. Otherwise fresh.
   const [engine, setEngine] = useState(() => {
     const saved = loadSession(story.id);
@@ -70,15 +107,25 @@ function App() {
     // narrator effect below picks up the new engine
   }, [story]);
 
-  // Build a Narrator whenever the API key or engine changes. Restore saved
-  // conversation history if available for this story.
+  // The gate is "passed" when:
+  //  - Anthropic: the user has supplied an API key
+  //  - Ollama: the user has clicked Start at least once (defaults always work,
+  //    but we want first-timers to see the setup hint and choose a model).
+  const ready =
+    provider === "anthropic" ? !!apiKey : ollamaReady && !!ollamaUrl && !!ollamaModel;
+
+  // Build a Narrator whenever the provider config or engine changes. Restore
+  // saved conversation history if available for this story.
   useEffect(() => {
-    if (!apiKey) {
+    if (!ready) {
       setNarrator(null);
       return;
     }
     const saved = loadSession(engine.story.id);
-    const client = new DirectAnthropicClient({ apiKey });
+    const client: LLMClient =
+      provider === "ollama"
+        ? new OllamaClient({ baseUrl: ollamaUrl, model: ollamaModel })
+        : new DirectAnthropicClient({ apiKey });
     setNarrator(
       new Narrator({
         engine,
@@ -86,7 +133,7 @@ function App() {
         ...(saved?.narratorHistory && { initialHistory: saved.narratorHistory }),
       }),
     );
-  }, [apiKey, engine]);
+  }, [ready, provider, apiKey, ollamaUrl, ollamaModel, engine]);
 
   useEffect(() => {
     const el = transcriptRef.current;
@@ -94,20 +141,42 @@ function App() {
   }, [transcript, loading]);
 
   useEffect(() => {
-    if (apiKey && !loading) inputRef.current?.focus();
-  }, [apiKey, loading]);
+    if (ready && !loading) inputRef.current?.focus();
+  }, [ready, loading]);
 
-  const saveKey = () => {
-    const trimmed = keyDraft.trim();
-    if (!trimmed) return;
-    localStorage.setItem(KEY_STORAGE, trimmed);
-    setApiKey(trimmed);
-    setKeyDraft("");
+  const handleProviderChange = (next: Provider) => {
+    setProvider(next);
+    localStorage.setItem(PROVIDER_STORAGE, next);
   };
 
-  const clearKey = () => {
-    localStorage.removeItem(KEY_STORAGE);
-    setApiKey("");
+  const startGame = () => {
+    if (provider === "anthropic") {
+      const trimmed = keyDraft.trim();
+      if (!trimmed) return;
+      localStorage.setItem(KEY_STORAGE, trimmed);
+      setApiKey(trimmed);
+      setKeyDraft("");
+    } else {
+      const url = ollamaUrlDraft.trim().replace(/\/$/, "");
+      const model = ollamaModelDraft.trim();
+      if (!url || !model) return;
+      localStorage.setItem(OLLAMA_URL_STORAGE, url);
+      localStorage.setItem(OLLAMA_MODEL_STORAGE, model);
+      localStorage.setItem(OLLAMA_READY_STORAGE, "true");
+      setOllamaUrl(url);
+      setOllamaModel(model);
+      setOllamaReady(true);
+    }
+  };
+
+  const resetConfig = () => {
+    if (provider === "anthropic") {
+      localStorage.removeItem(KEY_STORAGE);
+      setApiKey("");
+    } else {
+      localStorage.removeItem(OLLAMA_READY_STORAGE);
+      setOllamaReady(false);
+    }
   };
 
   const submit = async () => {
@@ -194,8 +263,12 @@ function App() {
 
   const finished = engine.state.finished;
 
-  // ----- API key gate -----
-  if (!apiKey) {
+  // ----- Provider / config gate -----
+  if (!ready) {
+    const startDisabled =
+      provider === "anthropic"
+        ? !keyDraft.trim()
+        : !ollamaUrlDraft.trim() || !ollamaModelDraft.trim();
     return (
       <main className="game">
         <header className="game-header">
@@ -205,37 +278,120 @@ function App() {
           </div>
         </header>
         <section className="card">
-          <h2 className="card-title">API key required</h2>
-          <p className="hint">
-            This adventure is narrated by Claude. Paste an Anthropic API key to play.{" "}
-            <strong>This is separate from a Claude Pro / Max subscription</strong> — consumer
-            subscriptions do not include API access. Get a key at{" "}
-            <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer">
-              console.anthropic.com
-            </a>
-            . ~$5 of credits covers many hours of play. The key is stored only in your browser
-            (localStorage) and sent directly to Anthropic.
-          </p>
-          <form
-            className="key-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              saveKey();
-            }}
-          >
-            <input
-              type="password"
-              value={keyDraft}
-              onChange={(e) => setKeyDraft(e.target.value)}
-              placeholder="sk-ant-..."
-              autoComplete="off"
-              spellCheck={false}
-              autoFocus
-            />
-            <button type="submit" disabled={!keyDraft.trim()}>
-              Start
-            </button>
-          </form>
+          <h2 className="card-title">Choose a narrator</h2>
+          <div className="provider-picker">
+            <label className={`provider-option${provider === "anthropic" ? " selected" : ""}`}>
+              <input
+                type="radio"
+                name="provider"
+                value="anthropic"
+                checked={provider === "anthropic"}
+                onChange={() => handleProviderChange("anthropic")}
+              />
+              <div>
+                <strong>Anthropic (BYOK)</strong>
+                <p className="hint">
+                  Fast, polished narration via Claude. Bring your own API key — about $0.01–0.05
+                  per turn. The key stays in your browser.
+                </p>
+              </div>
+            </label>
+            <label className={`provider-option${provider === "ollama" ? " selected" : ""}`}>
+              <input
+                type="radio"
+                name="provider"
+                value="ollama"
+                checked={provider === "ollama"}
+                onChange={() => handleProviderChange("ollama")}
+              />
+              <div>
+                <strong>Local (Ollama)</strong>
+                <p className="hint">
+                  Free, runs entirely on your machine. Requires{" "}
+                  <code>ollama serve</code> and a pulled model — recommended{" "}
+                  <code>qwen3:14b</code> (or <code>qwen3:8b</code> for low RAM).
+                </p>
+              </div>
+            </label>
+          </div>
+
+          {provider === "anthropic" ? (
+            <>
+              <p className="hint">
+                <strong>This is separate from a Claude Pro / Max subscription</strong> — consumer
+                subscriptions do not include API access. Get a key at{" "}
+                <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer">
+                  console.anthropic.com
+                </a>
+                . ~$5 of credits covers many hours of play. The key is stored only in your browser
+                (localStorage) and sent directly to Anthropic.
+              </p>
+              <form
+                className="key-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  startGame();
+                }}
+              >
+                <input
+                  type="password"
+                  value={keyDraft}
+                  onChange={(e) => setKeyDraft(e.target.value)}
+                  placeholder="sk-ant-..."
+                  autoComplete="off"
+                  spellCheck={false}
+                  autoFocus
+                />
+                <button type="submit" disabled={startDisabled}>
+                  Start
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
+              <p className="hint">
+                Make sure Ollama is running and you've pulled the model:
+                <br />
+                <code>OLLAMA_ORIGINS="*" ollama serve</code> (the origins flag is required for
+                browser access)
+                <br />
+                <code>ollama pull qwen3:14b</code>
+              </p>
+              <form
+                className="key-form ollama-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  startGame();
+                }}
+              >
+                <label className="field">
+                  <span>Server URL</span>
+                  <input
+                    type="text"
+                    value={ollamaUrlDraft}
+                    onChange={(e) => setOllamaUrlDraft(e.target.value)}
+                    placeholder={DEFAULT_OLLAMA_URL}
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                </label>
+                <label className="field">
+                  <span>Model</span>
+                  <input
+                    type="text"
+                    value={ollamaModelDraft}
+                    onChange={(e) => setOllamaModelDraft(e.target.value)}
+                    placeholder={DEFAULT_OLLAMA_MODEL}
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                </label>
+                <button type="submit" disabled={startDisabled}>
+                  Start
+                </button>
+              </form>
+            </>
+          )}
         </section>
       </main>
     );
@@ -263,8 +419,8 @@ function App() {
           <button type="button" className="restart" onClick={restart} disabled={loading}>
             Restart
           </button>
-          <button type="button" className="restart" onClick={clearKey} disabled={loading}>
-            Clear key
+          <button type="button" className="restart" onClick={resetConfig} disabled={loading}>
+            {provider === "anthropic" ? "Clear key" : "Switch provider"}
           </button>
         </div>
       </header>

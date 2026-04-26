@@ -1,6 +1,6 @@
-# ZorkAI
+# LanternGames
 
-A generic LLM-narrated text adventure engine. Players bring their own Anthropic API key (BYOK); stories are JSON files; the engine owns state and Claude owns prose. Zork I is the first test story — proof that the engine and schema can host a real, complex adventure.
+A generic LLM-narrated text adventure engine. Players bring their own Anthropic API key (BYOK), or run locally via Ollama for free; stories are JSON files; the engine owns state and the LLM owns prose. Zork I is the first test story — proof that the engine and schema can host a real, complex adventure.
 
 ## Quickstart
 
@@ -18,7 +18,7 @@ Paste an Anthropic API key when prompted, pick a story, play. Get a key at [cons
 app/
   src/
     engine/       — state, actions, view, render, intent signals
-    llm/          — LLMClient interface + DirectAnthropicClient + Narrator
+    llm/          — LLMClient interface + DirectAnthropicClient + OllamaClient + Narrator
     story/        — schema + validator
     stories/      — bundled story JSON (hello-adventure, zork-1)
     persistence/  — localStorage save/load

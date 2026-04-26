@@ -16,6 +16,7 @@ import {
   passageById,
   passagePresentation,
   passagesHere,
+  resolveItemDescription,
   roomById,
   visibleExits,
 } from "./state";
@@ -31,6 +32,7 @@ export type ActionRequest =
   | { type: "go"; direction: string }
   | { type: "read"; itemId: string }
   | { type: "wait" }
+  | { type: "attack"; itemId: string; targetId: string; mode?: string }
   | { type: "recordIntent"; signalId: string };
 
 export interface ActionResult {
@@ -54,6 +56,7 @@ export function performAction(
     case "go": return go(state, story, req.direction);
     case "read": return read(state, story, req.itemId);
     case "wait": return { state, event: { type: "waited" }, ok: true };
+    case "attack": return attack(state, story, req.itemId, req.targetId, req.mode);
     case "recordIntent": return recordIntent(state, story, req.signalId);
   }
 }
@@ -82,7 +85,11 @@ function examine(state: GameState, story: Story, id: string): ActionResult {
       : [...state.examinedItems, item.id];
     return {
       state: { ...state, examinedItems: examined },
-      event: { type: "examined", itemId: item.id, description: item.description },
+      event: {
+        type: "examined",
+        itemId: item.id,
+        description: resolveItemDescription(item, state, story),
+      },
       ok: true,
     };
   }
@@ -259,6 +266,70 @@ function go(state: GameState, story: Story, direction: string): ActionResult {
   return {
     state: { ...state, playerLocation: exit.to, visitedRooms: visited },
     event: { type: "moved", from: room.id, to: exit.to, direction: dir },
+    ok: true,
+  };
+}
+
+// ---------- attack ----------
+//
+// Generic combat verb: declare "I attack THAT with THIS." The engine sets
+// transient flags on state.flags and emits an `attacked` event — that's the
+// entire engine combat surface. Story triggers gate on those flags and decide
+// what damage/outcomes happen. Engine knows nothing about HP, statuses,
+// weapon types, or outcome distributions.
+//
+// `mode` is an author-defined string (swing/throw/stab/etc.) that lets the
+// same weapon produce different outcomes via different triggers. Defaults to
+// "default" if the LLM omits it.
+//
+// Convention: combat triggers self-clean by setting attack-this-turn=false at
+// the end of their effects. A story-wide cleanup trigger handles the case
+// where no specific trigger matched.
+function attack(
+  state: GameState,
+  story: Story,
+  weaponId: string,
+  targetId: string,
+  mode: string | undefined,
+): ActionResult {
+  const weapon = itemById(story, weaponId);
+  if (!weapon) {
+    return { state, event: reject("unknown-item", { itemId: weaponId }), ok: false };
+  }
+  if (
+    state.itemLocations[weapon.id] !== "inventory" &&
+    !isItemAccessible(weapon, state, story)
+  ) {
+    return { state, event: reject("not-accessible", { itemId: weapon.id }), ok: false };
+  }
+  const target = itemById(story, targetId);
+  if (!target) {
+    return {
+      state,
+      event: reject("unknown-item", { itemId: targetId, targetId }),
+      ok: false,
+    };
+  }
+  if (!isItemAccessible(target, state, story)) {
+    return {
+      state,
+      event: reject("not-accessible", { itemId: target.id, targetId: target.id }),
+      ok: false,
+    };
+  }
+  const resolvedMode = mode ?? "default";
+  return {
+    state: {
+      ...state,
+      flags: {
+        ...state.flags,
+        "attack-weapon": weaponId,
+        "attack-target": targetId,
+        "attack-mode": resolvedMode,
+        "attack-this-turn": true,
+      },
+    },
+    event: { type: "attacked", itemId: weaponId, targetId, mode: resolvedMode },
     ok: true,
   };
 }

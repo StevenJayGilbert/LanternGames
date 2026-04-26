@@ -10,7 +10,7 @@
 // (or render.ts for dev/test).
 
 import type { GameState, Story, Trigger } from "../story/schema";
-import { applyEffects, evaluateCondition, initialState } from "./state";
+import { applyEffects, evaluateCondition, initialState, resolveEffects } from "./state";
 import { performAction, type ActionRequest } from "./actions";
 import type { ActionEvent } from "./events";
 import { buildView, type WorldView } from "./view";
@@ -110,7 +110,7 @@ interface TriggerRunOutcome {
 export function runTriggers(state: GameState, story: Story): TriggerRunOutcome {
   const cues: string[] = [];
   const fired: string[] = [];
-  const triggers = (story.triggers ?? []).filter((t) => !t.afterAction);
+  const triggers = sortByPriority((story.triggers ?? []).filter((t) => !t.afterAction));
   if (triggers.length === 0) return { state, cues, fired };
 
   let current = state;
@@ -121,8 +121,10 @@ export function runTriggers(state: GameState, story: Story): TriggerRunOutcome {
     iterations++;
     for (const trigger of triggers) {
       if (shouldFire(trigger, current, story)) {
-        current = fireTrigger(trigger, current);
+        const result = fireTrigger(trigger, current);
+        current = result.state;
         if (trigger.narration) cues.push(trigger.narration);
+        cues.push(...result.cues);
         fired.push(trigger.id);
         changed = true;
       }
@@ -146,18 +148,35 @@ export function runAfterActionTriggers(
 ): TriggerRunOutcome {
   const cues: string[] = [];
   const fired: string[] = [];
-  const triggers = (story.triggers ?? []).filter((t) => t.afterAction);
+  const triggers = sortByPriority((story.triggers ?? []).filter((t) => t.afterAction));
   if (triggers.length === 0) return { state, cues, fired };
 
   let current = state;
   for (const trigger of triggers) {
     if (shouldFire(trigger, current, story)) {
-      current = fireTrigger(trigger, current);
+      const result = fireTrigger(trigger, current);
+      current = result.state;
       if (trigger.narration) cues.push(trigger.narration);
+      cues.push(...result.cues);
       fired.push(trigger.id);
     }
   }
   return { state: current, cues, fired };
+}
+
+// Sort triggers by priority descending (higher fires first). Stable: equal
+// priorities keep their authored array order. Triggers without a priority
+// default to 0.
+function sortByPriority(triggers: Trigger[]): Trigger[] {
+  return triggers
+    .map((t, i) => ({ t, i }))
+    .sort((a, b) => {
+      const pa = a.t.priority ?? 0;
+      const pb = b.t.priority ?? 0;
+      if (pa !== pb) return pb - pa;
+      return a.i - b.i;
+    })
+    .map((x) => x.t);
 }
 
 function shouldFire(trigger: Trigger, state: GameState, story: Story): boolean {
@@ -166,13 +185,24 @@ function shouldFire(trigger: Trigger, state: GameState, story: Story): boolean {
   return evaluateCondition(trigger.when, state, story);
 }
 
-function fireTrigger(trigger: Trigger, state: GameState): GameState {
-  const withEffects = applyEffects(state, trigger.effects ?? []);
+// Fires a trigger: resolves any `random` effects (rolling once each, capturing
+// their narration cues), applies the resolved effects, and marks the trigger
+// as fired. Returns both the new state and any cues from random branches —
+// the trigger's own `narration` is handled by the caller.
+function fireTrigger(
+  trigger: Trigger,
+  state: GameState,
+): { state: GameState; cues: string[] } {
+  const resolved = resolveEffects(trigger.effects);
+  const withEffects = applyEffects(state, resolved.effects);
   return {
-    ...withEffects,
-    firedTriggers: withEffects.firedTriggers.includes(trigger.id)
-      ? withEffects.firedTriggers
-      : [...withEffects.firedTriggers, trigger.id],
+    state: {
+      ...withEffects,
+      firedTriggers: withEffects.firedTriggers.includes(trigger.id)
+        ? withEffects.firedTriggers
+        : [...withEffects.firedTriggers, trigger.id],
+    },
+    cues: resolved.cues,
   };
 }
 
