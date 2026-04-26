@@ -8,9 +8,19 @@ The game runs entirely in your browser. There's no separate backend — the dev 
 
 ### Prerequisites
 
-- **Node.js 22+** ([nodejs.org/download](https://nodejs.org/en/download))
-- **git**
-- *(Optional)* **Ollama** if you want the free local-LLM tier — see [docs/local-llm.md](docs/local-llm.md)
+- **Node.js 22+** ([nodejs.org/download](https://nodejs.org/en/download)) — the installer also bundles **npm**, the package manager used for `npm install` / `npm run dev` below. There's nothing to install separately.
+- **git** ([git-scm.com/downloads](https://git-scm.com/downloads)) — for cloning the repo. macOS users may already have it via Xcode Command Line Tools; Windows users typically install Git for Windows.
+- *(Optional)* **Ollama** if you want the free local-LLM tier — see [docs/local-llm.md](docs/local-llm.md).
+
+Verify Node and npm are both on your PATH before continuing:
+
+```bash
+node --version    # should print v22.x.x or higher
+npm --version     # should print 10.x.x or higher (bundled with Node)
+git --version     # should print any recent version
+```
+
+If `npm --version` errors with "command not found" but `node --version` works, your Node install is broken — reinstall from [nodejs.org](https://nodejs.org/en/download) using the official installer (don't use a homebrew/scoop tap that strips npm).
 
 ### First-time setup
 
