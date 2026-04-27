@@ -5,7 +5,7 @@
 // than formatted prose. The Engine wraps these with trigger evaluation and
 // view building; render.ts formats them for display.
 
-import type { GameState, Story } from "../story/schema";
+import type { Atom, GameState, Story } from "../story/schema";
 import {
   currentRoom,
   evaluateCondition,
@@ -33,7 +33,7 @@ export type ActionRequest =
   | { type: "read"; itemId: string }
   | { type: "wait" }
   | { type: "attack"; itemId: string; targetId: string; mode?: string }
-  | { type: "recordIntent"; signalId: string }
+  | { type: "recordIntent"; signalId: string; args?: Record<string, Atom> }
   | { type: "board"; itemId: string }
   | { type: "disembark" };
 
@@ -59,7 +59,7 @@ export function performAction(
     case "read": return read(state, story, req.itemId);
     case "wait": return { state, event: { type: "waited" }, ok: true };
     case "attack": return attack(state, story, req.itemId, req.targetId, req.mode);
-    case "recordIntent": return recordIntent(state, story, req.signalId);
+    case "recordIntent": return recordIntent(state, story, req.signalId, req.args);
     case "board": return board(state, story, req.itemId);
     case "disembark": return disembark(state);
   }
@@ -376,25 +376,37 @@ function attack(
 // `intentMatched` condition referencing the signal evaluates true thereafter.
 // No-op if the signal is already matched (idempotent).
 
-function recordIntent(state: GameState, story: Story, signalId: string): ActionResult {
+function recordIntent(
+  state: GameState,
+  story: Story,
+  signalId: string,
+  args?: Record<string, Atom>,
+): ActionResult {
+  // The signal may be either an old-style IntentSignal or a new CustomTool.
+  // Both ways are valid during the migration. After the cleanup pass, only
+  // CustomTools will remain.
   const signal = story.intentSignals?.find((s) => s.id === signalId);
-  if (!signal) {
+  const customTool = story.customTools?.find((t) => t.id === signalId);
+  if (!signal && !customTool) {
     return { state, event: reject("unknown-intent", { itemId: signalId }), ok: false };
   }
-  if (state.matchedIntents.includes(signalId)) {
-    // Already matched — return success but don't duplicate.
-    return { state, event: { type: "intent-recorded", signalId }, ok: true };
-  }
-  // Refuse the intent if the author's `active` clause is currently false. The
-  // LLM may know the signal id from earlier turns when it was active and try
-  // to fire it now (e.g. trap-door-open-intent recalled from below the cellar
-  // floor). Without this gate a closed signal can be re-asserted any time the
-  // LLM remembers its id, which breaks puzzle gating.
-  if (signal.active && !evaluateCondition(signal.active, state, story)) {
+  // IntentSignal's deprecated `active` clause: refuse the intent if currently
+  // false. Same defensive behavior we had before — the LLM may remember an
+  // out-of-context signal id from earlier turns. CustomTools don't have an
+  // active gate (their handler/triggers do that work).
+  if (signal?.active && !evaluateCondition(signal.active, state, story)) {
     return { state, event: reject("unknown-intent", { itemId: signalId }), ok: false };
   }
+  // Always store the call args (even on a duplicate match — the new args
+  // supersede whatever was stored before).
+  const nextMatched = state.matchedIntents.includes(signalId)
+    ? state.matchedIntents
+    : [...state.matchedIntents, signalId];
+  const nextArgs = args !== undefined
+    ? { ...state.matchedIntentArgs, [signalId]: args }
+    : state.matchedIntentArgs;
   return {
-    state: { ...state, matchedIntents: [...state.matchedIntents, signalId] },
+    state: { ...state, matchedIntents: nextMatched, matchedIntentArgs: nextArgs },
     event: { type: "intent-recorded", signalId },
     ok: true,
   };

@@ -50,6 +50,7 @@ export function initialState(story: Story): GameState {
     itemStates,
     roomStates,
     matchedIntents: [],
+    matchedIntentArgs: {},
     visitedRooms: [story.startRoom],
     examinedItems: [],
     firedTriggers: [],
@@ -335,6 +336,22 @@ export function evaluateCondition(
     }
     case "intentMatched":
       return state.matchedIntents.includes(c.signalId);
+    case "intentArg":
+      return state.matchedIntentArgs[c.signalId]?.[c.key] === c.equals;
+    case "itemAccessible": {
+      // IdRef should be resolved to a string before reaching the evaluator.
+      // Defensive: if a {fromArg} slipped through (e.g. handler dispatch
+      // skipped substitution), return false rather than crash.
+      if (typeof c.itemId !== "string") return false;
+      const item = itemById(story, c.itemId);
+      return !!item && isItemAccessible(item, state, story);
+    }
+    case "itemHasStateKey": {
+      if (typeof c.itemId !== "string") return false;
+      const item = itemById(story, c.itemId);
+      if (!item) return false;
+      return item.state?.[c.key] !== undefined;
+    }
     case "inventoryHasTag":
       // Walk all items; first match wins. O(n) but n is small (~100 for Zork).
       return story.items.some(
@@ -480,11 +497,14 @@ export function applyEffect(state: GameState, e: Effect): GameState {
         },
       };
     }
-    case "removeMatchedIntent":
+    case "removeMatchedIntent": {
+      const { [e.signalId]: _removed, ...remainingArgs } = state.matchedIntentArgs;
       return {
         ...state,
         matchedIntents: state.matchedIntents.filter((id) => id !== e.signalId),
+        matchedIntentArgs: remainingArgs,
       };
+    }
     case "setPlayerVehicle":
       // Used by triggers that need to forcibly board or eject the player
       // (puncture path: setPlayerVehicle: null; future "vehicle pulls you in"

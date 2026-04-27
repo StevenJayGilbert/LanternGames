@@ -42,6 +42,15 @@ export type NumericExpr =
 //   | { kind: "itemWeight"; itemId: string }
 //   | { kind: "containerFullness"; itemId: string }
 
+// ---------- Arg references (templated values inside tool handlers) ----------
+
+// A handler's preconditions/effects can reference the call's args via
+// { fromArg: "<argName>" } in place of a literal string. The runtime
+// substitutes args eagerly before evaluation, so by the time a Condition
+// or Effect reaches an evaluator the IdRef has been resolved to a string.
+// Outside handlers, all id fields should be plain strings.
+export type IdRef = string | { fromArg: string };
+
 // ---------- Conditions ----------
 
 // A condition is a boolean expression over current GameState. Used in triggers,
@@ -62,6 +71,9 @@ export type Condition =
   | { type: "itemHasTag"; itemId: string; tag: string }                    // does the named item carry this tag?
   | { type: "flagItemHasTag"; flagKey: string; tag: string }               // look up itemId from a flag, then check its tags — load-bearing for class-based combat
   | { type: "intentMatched"; signalId: string }            // LLM has matched this intent at least once
+  | { type: "intentArg"; signalId: string; key: string; equals: Atom }     // matched intent's args[key] === equals (e.g. open(itemId="mailbox") → intentArg("open", "itemId", "mailbox"))
+  | { type: "itemAccessible"; itemId: IdRef }                              // item is currently perceivable to the player (in their room, inventory, or open container they can reach). itemId may be {fromArg: "..."} inside a tool handler.
+  | { type: "itemHasStateKey"; itemId: IdRef; key: string }                // the named item has a defined state[key] (used by handlers to fail gracefully on items that don't support a verb)
   | { type: "inventoryHasTag"; tag: string }               // any item currently in the player's inventory carries this tag (no per-id enumeration)
   | { type: "inVehicle"; itemId?: string }                 // player is currently inside a vehicle. If itemId given, must be that specific vehicle; otherwise any vehicle.
   | {                                                      // numeric comparison: left <op> right
@@ -367,7 +379,55 @@ export interface SimplePassage {
 export interface IntentSignal {
   id: string;          // unique; referenced by intentMatched conditions
   prompt: string;      // natural-language description for the LLM to match
-  active?: Condition;  // optional: only watch when this is true (saves tokens)
+  active?: Condition;  // optional: only watch when this is true (saves tokens). DEPRECATED — use a CustomTool with handler preconditions instead.
+}
+
+// ---------- Custom tools (the new intent system) ----------
+//
+// A CustomTool is an author-declared LLM tool. It supersedes IntentSignal:
+//   - the tool's name is its id; description is the LLM tool description
+//   - args declare the tool's input_schema (parameters with types)
+//   - alwaysAvailable: author opts the tool in to the cache-stable tool tier
+//   - handler: optional declarative response — runs synchronously when the
+//     tool is called, before the trigger pipeline. Lets one tool (e.g. open)
+//     handle dozens of items generically without per-item triggers.
+//
+// Triggers still exist for per-puzzle special cases. They reference a tool
+// call via Condition.intentMatched + Condition.intentArg, just like before.
+
+export interface CustomTool {
+  id: string;
+  description: string;
+  args?: ToolArgsSchema;
+  alwaysAvailable?: boolean;
+  handler?: ToolHandler;
+}
+
+export interface ToolArgsSchema {
+  type: "object";
+  properties: Record<string, ToolArgProp>;
+  required?: string[];
+}
+
+export interface ToolArgProp {
+  type: "string" | "number" | "boolean";
+  description?: string;
+  enum?: (string | number)[];
+}
+
+// A handler runs synchronously when the tool is called, BEFORE the trigger
+// pipeline. Preconditions evaluate top-down; the first failure short-circuits
+// and emits its failedNarration as a cue (no effects applied). If all
+// preconditions pass, effects apply in order and successNarration is emitted.
+export interface ToolHandler {
+  preconditions?: ToolPrecondition[];
+  effects?: Effect[];                  // may contain {fromArg} substitutions in id fields
+  successNarration?: string;           // template; supports {arg.<argName>.name|id}
+}
+
+export interface ToolPrecondition {
+  when: Condition;                     // may contain {fromArg} substitutions in id fields
+  failedNarration: string;             // template; same substitution rules
 }
 
 // ---------- NPCs (placeholder; expanded in a later schema version) ----------
@@ -405,6 +465,7 @@ export interface Story {
   triggers?: Trigger[];
   npcs?: NPC[];
   intentSignals?: IntentSignal[];
+  customTools?: CustomTool[];   // new intent system; supersedes intentSignals
   winConditions?: EndCondition[];
   loseConditions?: EndCondition[];
   // Build-time templates that items can inherit from via Item.fromTemplate.
@@ -444,6 +505,7 @@ export interface GameState {
   // variables (initialized from room.state).
   roomStates: Record<string, Record<string, Atom>>;
   matchedIntents: string[];              // intent signal ids the LLM has matched (persistent)
+  matchedIntentArgs: Record<string, Record<string, Atom>>;  // args of the most-recent match per signalId; cleared on removeMatchedIntent
   visitedRooms: string[];
   examinedItems: string[];
   firedTriggers: string[];
