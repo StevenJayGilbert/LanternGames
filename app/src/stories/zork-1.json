@@ -2829,14 +2829,34 @@
       "name": "platinum bar",
       "description": "On the ground is a large platinum bar.",
       "location": "loud-room",
-      "takeable": true
+      "takeable": true,
+      "tags": [
+        "treasure",
+        "valuable",
+        "carryable"
+      ],
+      "visibleWhen": {
+        "type": "flag",
+        "key": "echo-spoken",
+        "equals": true
+      }
     },
     {
       "id": "pot-of-gold",
       "name": "pot of gold",
       "description": "At the end of the rainbow is a pot of gold.",
       "location": "end-of-rainbow",
-      "takeable": true
+      "takeable": true,
+      "tags": [
+        "treasure",
+        "valuable",
+        "carryable"
+      ],
+      "visibleWhen": {
+        "type": "flag",
+        "key": "rainbow-flag",
+        "equals": true
+      }
     },
     {
       "id": "prayer",
@@ -3370,6 +3390,18 @@
         "ladder-top"
       ],
       "fixed": true
+    },
+    {
+      "id": "diamond",
+      "name": "huge diamond",
+      "description": "A magnificent flawless diamond, gleaming with inner fire.",
+      "location": "nowhere",
+      "takeable": true,
+      "tags": [
+        "treasure",
+        "valuable",
+        "carryable"
+      ]
     }
   ],
   "passages": [
@@ -4285,6 +4317,184 @@
             "type": "flag",
             "key": "cyclops-flag",
             "equals": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "say-echo-in-loud-room",
+      "prompt": "Player says, shouts, calls, invokes, or otherwise utters the word 'echo' in the loud room.",
+      "active": {
+        "type": "and",
+        "all": [
+          {
+            "type": "playerAt",
+            "roomId": "loud-room"
+          },
+          {
+            "type": "flag",
+            "key": "echo-spoken",
+            "equals": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "wave-scepter-at-rainbow",
+      "prompt": "Player waves, raises, brandishes, points, or otherwise invokes the sceptre at the rainbow.",
+      "active": {
+        "type": "and",
+        "all": [
+          {
+            "type": "or",
+            "any": [
+              {
+                "type": "playerAt",
+                "roomId": "end-of-rainbow"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "aragain-falls"
+              }
+            ]
+          },
+          {
+            "type": "hasItem",
+            "itemId": "sceptre"
+          },
+          {
+            "type": "flag",
+            "key": "rainbow-flag",
+            "equals": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "rub-mirror",
+      "prompt": "Player rubs, touches, presses, leans against, steps into, or otherwise interacts physically with the mirror.",
+      "active": {
+        "type": "or",
+        "any": [
+          {
+            "type": "playerAt",
+            "roomId": "mirror-room-1"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "mirror-room-2"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ring-bell",
+      "prompt": "Player rings, tolls, peals, sounds, or otherwise activates the bell.",
+      "active": {
+        "type": "and",
+        "all": [
+          {
+            "type": "hasItem",
+            "itemId": "bell"
+          },
+          {
+            "type": "flag",
+            "key": "bell-rung",
+            "equals": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "read-book-at-hades",
+      "prompt": "Player reads, recites, intones, or speaks aloud from the black book at the entrance to Hades.",
+      "active": {
+        "type": "and",
+        "all": [
+          {
+            "type": "playerAt",
+            "roomId": "entrance-to-hades"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "book"
+          },
+          {
+            "type": "flag",
+            "key": "bell-rung",
+            "equals": true
+          },
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": true
+          },
+          {
+            "type": "flag",
+            "key": "lld-flag",
+            "equals": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "turn-machine-switch",
+      "prompt": "Player turns, presses, activates, or otherwise operates the machine's switch (with the screwdriver as a tool).",
+      "active": {
+        "type": "and",
+        "all": [
+          {
+            "type": "playerAt",
+            "roomId": "machine-room"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "screwdriver"
+          },
+          {
+            "type": "itemState",
+            "itemId": "machine",
+            "key": "isOpen",
+            "equals": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "push-yellow-button",
+      "prompt": "Player pushes, presses, depresses, or activates the yellow button.",
+      "active": {
+        "type": "playerAt",
+        "roomId": "maintenance-room"
+      }
+    },
+    {
+      "id": "push-brown-button",
+      "prompt": "Player pushes, presses, depresses, or activates the brown button.",
+      "active": {
+        "type": "playerAt",
+        "roomId": "maintenance-room"
+      }
+    },
+    {
+      "id": "turn-dam-bolt",
+      "prompt": "Player turns, twists, rotates, or otherwise operates the bolt on the dam control panel using the wrench.",
+      "active": {
+        "type": "and",
+        "all": [
+          {
+            "type": "playerAt",
+            "roomId": "dam-room"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "wrench"
+          },
+          {
+            "type": "flag",
+            "key": "gate-flag",
+            "equals": true
           }
         ]
       }
@@ -7650,6 +7860,755 @@
         }
       ],
       "narration": "The thief's body crumples. His cloak falls open and a glittering hoard of treasures spills out across the floor. Wherever he stashed them, they have all returned to the Treasure Room — that, perhaps, was his real lair."
+    },
+    {
+      "id": "coffin-cure-on",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "playerAt",
+            "roomId": "south-temple"
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "hasItem",
+              "itemId": "coffin"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "coffin-cure",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "coffin-cure",
+          "value": true
+        }
+      ],
+      "narration": "A cool draft seems to flow up from the floor of the temple — a passage somewhere has opened."
+    },
+    {
+      "id": "coffin-cure-off",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "playerAt",
+            "roomId": "south-temple"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "coffin"
+          },
+          {
+            "type": "flag",
+            "key": "coffin-cure",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "coffin-cure",
+          "value": false
+        }
+      ],
+      "narration": "As you take the coffin in hand, the draft from below ceases. The way down has sealed itself again."
+    },
+    {
+      "id": "echo-reveals-bar",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "say-echo-in-loud-room"
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "echo-spoken",
+          "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "say-echo-in-loud-room"
+        }
+      ],
+      "narration": "Your voice goes out — and instead of the cacophony you've been suffering, perfect silence answers. The acoustics of the room have changed. A platinum bar gleams on the floor where the noise had hidden it.",
+      "once": true
+    },
+    {
+      "id": "wave-scepter-solidifies-rainbow",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "wave-scepter-at-rainbow"
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "rainbow-flag",
+          "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "wave-scepter-at-rainbow"
+        }
+      ],
+      "narration": "You raise the sceptre and trace a slow figure in the air. The rainbow shudders and solidifies — its colors hardening into a luminous bridge of gold and prismatic light. At your feet, a heavy pot of gold appears, gleaming where the rainbow now touches earth.",
+      "once": true
+    },
+    {
+      "id": "unlock-endgame",
+      "once": true,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "egg",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "canary",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "bag-of-coins",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "painting",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "chalice",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "torch",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "trident",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "coffin",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "sceptre",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "jade",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "scarab",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "skull",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "emerald",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "bracelet",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "trunk",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "bar",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "pot-of-gold",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "diamond",
+            "location": "trophy-case"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "won-flag",
+          "value": true
+        }
+      ],
+      "narration": "An almost inaudible voice whispers in your ear: 'Look to your treasures for the final secret.' Across the room, the trophy case glitters; in the depths of the wood, an ancient map appears — and far above ground, the way to a stone barrow stands open."
+    },
+    {
+      "id": "stone-barrow-ends-game",
+      "afterAction": true,
+      "once": true,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "playerAt",
+            "roomId": "stone-barrow"
+          },
+          {
+            "type": "flag",
+            "key": "endgame-narrated",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "endgame-narrated",
+          "value": true
+        },
+        {
+          "type": "endGame",
+          "won": true,
+          "message": "**** You have completed the Great Underground Empire ****\n\nA voice calls out from the depths of the barrow: 'Welcome, adventurer. Your name shall be inscribed in the chronicles of those who have braved the Empire and prevailed. The treasures you have gathered, the perils you have overcome, the cunning you have shown — all shall be remembered.'\n\nThe stone slab settles back into place behind you. Your adventure is at an end."
+        }
+      ]
+    },
+    {
+      "id": "rub-mirror-1to2",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "rub-mirror"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "mirror-room-1"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "movePlayer",
+          "to": "mirror-room-2"
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "rub-mirror"
+        }
+      ],
+      "narration": "You touch the cool surface of the mirror — and feel a brief, dizzying lurch. The room around you seems unchanged, yet subtly different, as if you've stepped through a hidden door."
+    },
+    {
+      "id": "rub-mirror-2to1",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "rub-mirror"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "mirror-room-2"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "movePlayer",
+          "to": "mirror-room-1"
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "rub-mirror"
+        }
+      ],
+      "narration": "You touch the cool surface of the mirror — and feel a brief, dizzying lurch. The room around you seems unchanged, yet subtly different, as if you've stepped through a hidden door."
+    },
+    {
+      "id": "bat-carries-player",
+      "once": false,
+      "priority": 50,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "playerAt",
+            "roomId": "bat-room"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "bat",
+            "location": "bat-room"
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "hasItem",
+              "itemId": "garlic"
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemAt",
+              "itemId": "garlic",
+              "location": "bat-room"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "bat-carried-this-visit",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "bat-carried-this-visit",
+          "value": true
+        },
+        {
+          "type": "random",
+          "branches": [
+            {
+              "weight": 1,
+              "narration": "Fweep! The bat seizes you by the scruff of the neck and lifts you away through utter blackness. You are deposited, dazed, in a coal mine.",
+              "effects": [
+                {
+                  "type": "movePlayer",
+                  "to": "mine-1"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "narration": "Fweep! The bat carries you through tunnels you cannot see, depositing you in another part of the mine.",
+              "effects": [
+                {
+                  "type": "movePlayer",
+                  "to": "mine-2"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "narration": "Fweep! The bat hauls you off into the darkness and drops you somewhere deep underground.",
+              "effects": [
+                {
+                  "type": "movePlayer",
+                  "to": "mine-3"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "narration": "Fweep! The bat seizes you and bears you off to a distant shaft.",
+              "effects": [
+                {
+                  "type": "movePlayer",
+                  "to": "mine-4"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "narration": "Fweep! The bat carries you up a narrow shaft and drops you at the top.",
+              "effects": [
+                {
+                  "type": "movePlayer",
+                  "to": "ladder-top"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "narration": "Fweep! The bat plummets with you down a long, dark drop and releases you at the bottom.",
+              "effects": [
+                {
+                  "type": "movePlayer",
+                  "to": "ladder-bottom"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "narration": "Fweep! The bat takes you on a winding journey and drops you in a squeaky-floored cavern.",
+              "effects": [
+                {
+                  "type": "movePlayer",
+                  "to": "squeeky-room"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "narration": "Fweep! The bat carries you back near where the mining began.",
+              "effects": [
+                {
+                  "type": "movePlayer",
+                  "to": "mine-entrance"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bat-carry-reset",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "not",
+            "condition": {
+              "type": "playerAt",
+              "roomId": "bat-room"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "bat-carried-this-visit",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "bat-carried-this-visit",
+          "value": false
+        }
+      ]
+    },
+    {
+      "id": "bell-rings",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "ring-bell"
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "bell-rung",
+          "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "ring-bell"
+        }
+      ],
+      "narration": "The bell tolls once — a deep, hollow note that hangs in the air far longer than seems natural. The metal grows warm in your grasp.",
+      "once": true
+    },
+    {
+      "id": "lld-ritual-completes",
+      "when": {
+        "type": "intentMatched",
+        "signalId": "read-book-at-hades"
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "lld-flag",
+          "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "read-book-at-hades"
+        }
+      ],
+      "narration": "You read the words from page 569 aloud — and they hang in the air like smoke. The shrieks of the unseen wraiths fall silent, the candles flicker as if in a sudden wind, and a passage gapes open in the wall ahead. The Land of the Dead lies beyond.",
+      "once": true
+    },
+    {
+      "id": "machine-makes-diamond",
+      "once": true,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "turn-machine-switch"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "coal",
+            "location": "machine"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "moveItem",
+          "itemId": "coal",
+          "to": "nowhere"
+        },
+        {
+          "type": "moveItem",
+          "itemId": "diamond",
+          "to": "machine-room"
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "turn-machine-switch"
+        }
+      ],
+      "narration": "The machine comes to life with a dazzling display of colored lights and bizarre noises — clattering, whirring, sparks. After a few moments the racket subsides. The lid pops open. Where you placed the coal, a magnificent diamond now lies."
+    },
+    {
+      "id": "machine-fails-no-coal",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "turn-machine-switch"
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemAt",
+              "itemId": "coal",
+              "location": "machine"
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "turn-machine-switch"
+        }
+      ],
+      "narration": "The machine clatters and whirs, but produces only a faint puff of greenish smoke. Whatever it's looking for, it isn't finding."
+    },
+    {
+      "id": "yellow-button-enables-bolt",
+      "once": false,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "push-yellow-button"
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "gate-flag",
+          "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "push-yellow-button"
+        }
+      ],
+      "narration": "Click. A green bubble on the panel flickers and glows steadily."
+    },
+    {
+      "id": "brown-button-disables-bolt",
+      "once": false,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "push-brown-button"
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "gate-flag",
+          "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "push-brown-button"
+        }
+      ],
+      "narration": "Click. The green bubble dims and goes dark."
+    },
+    {
+      "id": "bolt-opens-gates",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "turn-dam-bolt"
+          },
+          {
+            "type": "flag",
+            "key": "gates-open",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "gates-open",
+          "value": true
+        },
+        {
+          "type": "setFlag",
+          "key": "low-tide-countdown",
+          "value": 8
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "turn-dam-bolt"
+        }
+      ],
+      "narration": "The bolt turns slowly. Somewhere below, the sluice gates open and water pours through the dam with a sustained roar. The reservoir will take some time to drain."
+    },
+    {
+      "id": "bolt-closes-gates",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "turn-dam-bolt"
+          },
+          {
+            "type": "flag",
+            "key": "gates-open",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "gates-open",
+          "value": false
+        },
+        {
+          "type": "setFlag",
+          "key": "low-tide-countdown",
+          "value": 0
+        },
+        {
+          "type": "setFlag",
+          "key": "low-tide",
+          "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "turn-dam-bolt"
+        }
+      ],
+      "narration": "The bolt turns the other way. Below, the sluice gates rumble shut, and water begins to back up behind the dam once again."
+    },
+    {
+      "id": "low-tide-tick",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "gates-open",
+            "equals": true
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "low-tide-countdown"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "low-tide-countdown",
+          "by": -1
+        }
+      ]
+    },
+    {
+      "id": "low-tide-fires",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "gates-open",
+            "equals": true
+          },
+          {
+            "type": "flag",
+            "key": "low-tide",
+            "equals": false
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "low-tide-countdown"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "low-tide",
+          "value": true
+        }
+      ],
+      "narration": "Far below, the reservoir empties at last. What was deep water is now mud and silt — passable, if unpleasant."
     }
   ],
   "defaultVisibility": {
@@ -7705,7 +8664,20 @@
     "magic-flag": false,
     "rug-moved-flag": false,
     "dome-flag": false,
-    "death-handled": false
+    "death-handled": false,
+    "coffin-cure": false,
+    "rainbow-flag": false,
+    "won-flag": false,
+    "echo-spoken": false,
+    "bell-rung": false,
+    "candles-ready": false,
+    "lld-flag": false,
+    "bat-carried-this-visit": false,
+    "gate-flag": false,
+    "gates-open": false,
+    "low-tide": false,
+    "low-tide-countdown": 0,
+    "endgame-narrated": false
   },
   "winConditions": [
     {
@@ -7785,6 +8757,21 @@
           {
             "type": "itemAt",
             "itemId": "trunk",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "bar",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "pot-of-gold",
+            "location": "trophy-case"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "diamond",
             "location": "trophy-case"
           }
         ]

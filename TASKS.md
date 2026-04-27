@@ -115,36 +115,38 @@ Doable now in JSON; just haven't been wired:
 
 ### Soft-locks from unwired flag-gated exits (audit, 2026)
 
-Eighteen room exits across the extracted Zork are gated on flags that nothing in the story sets — they belong to puzzles below that aren't wired yet, and several create one-way soft-locks (player walks in via an ungated exit, can't walk out because the return is gated). One of these (`white-cliffs-north` / `-south` ↔ `damp-cave` on `flag(deflate)`) was hot-fixed by ungating the foot exits since the magic-boat puzzle is unlikely to land soon. The rest still permanently block their respective rooms:
+Originally 18 exits gated on flags that nothing set. After the canonical-Zork-puzzle batch (Phase 4 content wiring), only 3 remain — all from a single deferred puzzle.
 
-| Flag | Puzzle | Affected exits |
+| Flag | Puzzle | Status |
 |---|---|---|
-| `won-flag` | endgame stone barrow | west-of-house → stone-barrow (sw, in) |
-| `low-tide` | dam / reservoir drain | reservoir-north ↔ reservoir-south |
-| `lld-flag` | bell + book + candles ritual | entrance-to-hades → land-of-living-dead (in, south) |
-| `coffin-cure` | coffin-at-altar | south-temple → tiny-cave (down) |
-| `rainbow-flag` | wave scepter at rainbow | aragain-falls → on-rainbow (west, up); end-of-rainbow → on-rainbow (up, ne, e) |
-| `empty-handed` | coal-mine "drop everything" | timber-room ↔ lower-shaft |
-| ~~`deflate`~~ | ~~magic raft / boat~~ | ~~white-cliffs ↔ damp-cave~~ — HOT-FIXED |
+| ~~`won-flag`~~ | endgame stone barrow | ✓ WIRED — `unlock-endgame` trigger fires when all 18 treasures in trophy-case |
+| ~~`low-tide`~~ | dam / reservoir drain | ✓ WIRED — yellow-button → bolt-with-wrench → 8-turn delay → `low-tide` |
+| ~~`lld-flag`~~ | bell + book + candles ritual | ✓ WIRED — ring bell + read book at hades w/ lit candles |
+| ~~`coffin-cure`~~ | coffin at altar | ✓ WIRED — passive: leave coffin out of inventory at south-temple |
+| ~~`rainbow-flag`~~ | wave scepter at rainbow | ✓ WIRED — wave sceptre at end-of-rainbow or aragain-falls; pot-of-gold materializes |
+| `empty-handed` | coal-mine "drop everything" | NOT WIRED — trivially doable: 2 triggers gated on `compare(inventoryCount, '<=', 0)` setting/clearing `empty-handed` when player at timber-room or lower-shaft. The lamp must be droppable (lit on floor) for the puzzle to be solvable in the dark. |
+| ~~`deflate`~~ | magic raft / boat | ~~HOT-FIXED~~ (white-cliffs ungated). Boat itself deferred — vehicle concept missing; canonical mechanics doc'd in puzzle list below. |
 
-When wiring each puzzle below, set the corresponding flag at the appropriate trigger and the exits open automatically. Repro audit: the `node -e` snippet that found this is in commit history; re-run after each puzzle wires to confirm cleanup.
+Repro audit: same `node -e` snippet — re-running confirms only `empty-handed` (3 exits) remains. Down from 18 → 3 in one batch.
 
 ### Zork puzzles needing engine code (future work)
 
 These still don't fit the current schema:
 
-- **Echo room → silver bar** — needs an item-add path in the overrides merge (currently merge only modifies existing items by id; new items would need to be appended, parallel to passages).
-- **Inflate raft with pump** — raft item not extracted; same item-add gap as above. After mergeItems supports appending, this becomes content.
-- **Coal → diamond machine** — multi-step puzzle (coal in machine, screwdriver to lid, switch). Doable as content, but needs the diamond and machine outputs handled by triggers.
-- **Dam control panel** — multi-button state. Could be done with passage state + 4 intents; needs content.
-- **Boat / river travel** — directional travel along a river with current; landing decisions; cliff death. Needs travel mechanic.
-- ~~**Thief NPC**~~ — DONE in NPC autonomy batch. Appears after 30 global turns, wanders via `Effect.random` over `moveItem` branches, steals via OR-of-(playerAt + itemAt) pairs, fights via `combat-class-bladed-vs-thief` trigger, drops loot to Treasure Room on death.
-- **Bat carry** — randomly transports player to one of several rooms via `Effect.random` over `movePlayer` branches. Pure content; no engine work.
-- **Score system** — point-per-treasure, max 350; rank thresholds. Now possible with counter primitives; just needs the per-treasure trigger plumbing + display.
-- **Death + reincarnation** — needs death state + altar-respawn integration.
-- **Rainbow + scepter → pot of gold** — wave scepter at rainbow → solidifies → cross to pot. Specific intent + state + new exit.
-- **Bank of Zork** — walk through specific wall combinations. Specific.
-- **Mirror room** — break mirror, walk through. Specific.
+- ~~**Echo room → bar (platinum)**~~ — DONE. Item is `bar` (already extracted, was hidden via SACREDBIT in canonical); we adapt with `visibleWhen: flag(echo-spoken)`. Intent + 1 trigger.
+- ~~**Coal → diamond machine**~~ — DONE. NEW `diamond` item appended via mergeItems, located at `nowhere` initially. `turn-machine-switch` intent + 2 triggers (success and no-coal-fallback) move coal to nowhere and diamond to machine-room when the lid is closed.
+- ~~**Dam control panel**~~ — DONE. Multi-step canonical mechanics: yellow-button enables `gate-flag`, brown-button disables it, `turn-dam-bolt` (with wrench at dam-room) toggles `gates-open` and queues an 8-turn `low-tide-countdown` via afterAction tick, which then sets `low-tide`. 4 intents + 6 triggers + 4 flags.
+- ~~**Bat carry**~~ — DONE. M-ENTER trigger (regular, gated on `playerAt(bat-room) AND not(garlic accessible) AND not(bat-carried-this-visit)`) with `Effect.random` over 8 canonical drop rooms. Reset trigger clears the flag when player leaves bat-room.
+- ~~**Rainbow + scepter → pot of gold**~~ — DONE. Wave-scepter intent at end-of-rainbow OR aragain-falls. Sets `rainbow-flag`; pot-of-gold's `visibleWhen` flips it perceivable.
+- ~~**Mirror room**~~ — DONE. Adapted from canonical RUB mechanic. `rub-mirror` intent + 2 directional triggers teleport player between mirror-room-1 and mirror-room-2.
+- ~~**Bell + candles + book ritual** (LLD-flag)~~ — DONE. Adapted: ring-bell sets bell-rung; read-book-at-hades intent (gated on bell-rung + lit candles + book in inventory at hades) sets lld-flag and unblocks the in/south exits.
+- ~~**Coffin at altar**~~ — DONE. Passive triggers (no intent): on/off based on whether player carries the coffin while at south-temple. Mirrors canonical SOUTH-TEMPLE-FCN exactly.
+- ~~**Endgame stone barrow + won-flag**~~ — DONE. `unlock-endgame` trigger fires when all 18 treasures in trophy-case (15 original + bar + pot-of-gold + diamond), sets won-flag, narrates "almost inaudible voice" line. `stone-barrow-ends-game` afterAction trigger ends the game with credits when player enters.
+- **Coal-mine "drop everything" (`empty-handed`)** — STILL UNWIRED. Trivially doable in 2 triggers (see soft-lock audit above). Skipped in this batch only because not in plan.
+- **Boat / river travel** — DEFERRED. Canonical mechanics richer than initially scoped: VEHBIT vehicle, `inflatable-boat`+`pump`+`inflated-boat`+`punctured-boat` state machine, automatic current via queued I-RIVER tick, weapon-puncture on board, BOAT-LABEL inside boat, river-5 waterfall death. Faking with flags has too many failure modes. Wait for vehicle/enterable concept (Tier 2 schema) or ship a heavily simplified version that loses puzzle integrity.
+- **Score system** — point-per-treasure, max 350; rank thresholds. Counter mechanics work but **dynamic narration substitution** (interpolating running score into prose) doesn't exist; would require templated narration. Defer.
+- **Death + reincarnation** — current `player-killed` calls `endGame` (terminal). Needs new `respawn` effect OR per-treasure conditional moveItem chain to drop everything and respawn at temple altar.
+- **Bank of Zork** — needs new rooms (`bank-of-zork`, `safe-deposit-room`) and new items (`portrait`, `stack-of-bills`). Complex spatial walk-through-walls puzzle. Author later as own batch.
 
 ## Phase 4.5 — Schema additions backlog (rolling)
 

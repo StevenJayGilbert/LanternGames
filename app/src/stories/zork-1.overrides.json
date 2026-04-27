@@ -16,7 +16,22 @@
     "magic-flag": false,
     "rug-moved-flag": false,
     "dome-flag": false,
-    "death-handled": false
+    "death-handled": false,
+
+    "$puzzleFlagsComment": "Pre-init for the Phase-4 puzzle batch. Each is paired to its setter trigger below; pre-init avoids the unset-vs-false strict-equality gotcha when triggers gate on flag(X, false).",
+    "coffin-cure": false,
+    "rainbow-flag": false,
+    "won-flag": false,
+    "echo-spoken": false,
+    "bell-rung": false,
+    "candles-ready": false,
+    "lld-flag": false,
+    "bat-carried-this-visit": false,
+    "gate-flag": false,
+    "gates-open": false,
+    "low-tide": false,
+    "low-tide-countdown": 0,
+    "endgame-narrated": false
   },
 
   "$darknessComment": "Darkness model: a room is dark when it declares state.dark === true and no perceivable item has state.isLit === true. Composed from generic primitives (currentRoomState + anyPerceivableItemWith) — engine has no hardcoded darkness concept.",
@@ -401,6 +416,28 @@
       "$comment": "Land of the Living Dead treasure. The crystal skull of an ancient adventurer.",
       "id": "skull",
       "tags": ["treasure", "valuable", "carryable", "fragile"]
+    },
+
+    {
+      "$comment": "Echo-room treasure. Hidden by SACREDBIT in canonical Zork until ECHO is spoken in loud-room. We adapt via visibleWhen on echo-spoken — bar isn't perceivable until the echo trigger fires.",
+      "id": "bar",
+      "tags": ["treasure", "valuable", "carryable"],
+      "visibleWhen": { "type": "flag", "key": "echo-spoken", "equals": true }
+    },
+    {
+      "$comment": "Rainbow treasure. INVISIBLE in canonical Zork until the player waves the sceptre at end-of-rainbow. We adapt via visibleWhen on rainbow-flag.",
+      "id": "pot-of-gold",
+      "tags": ["treasure", "valuable", "carryable"],
+      "visibleWhen": { "type": "flag", "key": "rainbow-flag", "equals": true }
+    },
+    {
+      "$comment": "NEW item appended via mergeItems — diamond produced by the coal-machine puzzle. Starts at 'nowhere'; the machine-trigger moves it to the machine on success.",
+      "id": "diamond",
+      "name": "huge diamond",
+      "description": "A magnificent flawless diamond, gleaming with inner fire.",
+      "location": "nowhere",
+      "takeable": true,
+      "tags": ["treasure", "valuable", "carryable"]
     }
   ],
 
@@ -549,6 +586,117 @@
           { "type": "playerAt", "roomId": "cyclops-room" },
           { "type": "itemAt", "itemId": "cyclops", "location": "cyclops-room" },
           { "type": "flag", "key": "cyclops-flag", "equals": false }
+        ]
+      }
+    },
+
+    {
+      "$comment": "ECHO room — say 'echo' in loud-room. Bare verb in canonical Zork (special command loop in LOUD-ROOM-FCN). We accept any phrasing that's clearly invoking the echo: 'echo', 'say echo', 'shout echo', 'call out echo'.",
+      "id": "say-echo-in-loud-room",
+      "prompt": "Player says, shouts, calls, invokes, or otherwise utters the word 'echo' in the loud room.",
+      "active": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "loud-room" },
+          { "type": "flag", "key": "echo-spoken", "equals": false }
+        ]
+      }
+    },
+
+    {
+      "$comment": "WAVE SCEPTRE at the rainbow. Active at end-of-rainbow OR aragain-falls (per canonical SCEPTRE-FUNCTION). Requires the sceptre in inventory. Wave / raise / brandish / point all count.",
+      "id": "wave-scepter-at-rainbow",
+      "prompt": "Player waves, raises, brandishes, points, or otherwise invokes the sceptre at the rainbow.",
+      "active": {
+        "type": "and",
+        "all": [
+          { "type": "or", "any": [
+            { "type": "playerAt", "roomId": "end-of-rainbow" },
+            { "type": "playerAt", "roomId": "aragain-falls" }
+          ]},
+          { "type": "hasItem", "itemId": "sceptre" },
+          { "type": "flag", "key": "rainbow-flag", "equals": false }
+        ]
+      }
+    },
+
+    {
+      "$comment": "RUB the mirror in either mirror-room. Canonical mechanic teleports the player to the OTHER mirror room. We accept rub / touch / press / lean against / step into.",
+      "id": "rub-mirror",
+      "prompt": "Player rubs, touches, presses, leans against, steps into, or otherwise interacts physically with the mirror.",
+      "active": {
+        "type": "or",
+        "any": [
+          { "type": "playerAt", "roomId": "mirror-room-1" },
+          { "type": "playerAt", "roomId": "mirror-room-2" }
+        ]
+      }
+    },
+
+    {
+      "$comment": "RING the bell. Canonical: bell must be in inventory; bell becomes hot-bell and drops to floor. Adapted: just track that it was rung. Active when player has bell.",
+      "id": "ring-bell",
+      "prompt": "Player rings, tolls, peals, sounds, or otherwise activates the bell.",
+      "active": {
+        "type": "and",
+        "all": [
+          { "type": "hasItem", "itemId": "bell" },
+          { "type": "flag", "key": "bell-rung", "equals": false }
+        ]
+      }
+    },
+    {
+      "$comment": "READ the book — canonical capstone of the bell+candles+book ritual. Active at entrance-to-hades with book + bell already rung + candles still lit.",
+      "id": "read-book-at-hades",
+      "prompt": "Player reads, recites, intones, or speaks aloud from the black book at the entrance to Hades.",
+      "active": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "entrance-to-hades" },
+          { "type": "hasItem", "itemId": "book" },
+          { "type": "flag", "key": "bell-rung", "equals": true },
+          { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true },
+          { "type": "flag", "key": "lld-flag", "equals": false }
+        ]
+      }
+    },
+
+    {
+      "$comment": "TURN the machine switch (with screwdriver, when machine is closed and contains coal). Active in machine-room with the screwdriver, machine closed.",
+      "id": "turn-machine-switch",
+      "prompt": "Player turns, presses, activates, or otherwise operates the machine's switch (with the screwdriver as a tool).",
+      "active": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "machine-room" },
+          { "type": "hasItem", "itemId": "screwdriver" },
+          { "type": "itemState", "itemId": "machine", "key": "isOpen", "equals": false }
+        ]
+      }
+    },
+
+    {
+      "$comment": "PUSH the YELLOW button — enables the bolt control. Active in maintenance-room. Bare press is canonical.",
+      "id": "push-yellow-button",
+      "prompt": "Player pushes, presses, depresses, or activates the yellow button.",
+      "active": { "type": "playerAt", "roomId": "maintenance-room" }
+    },
+    {
+      "$comment": "PUSH the BROWN button — disables the bolt control. Active in maintenance-room.",
+      "id": "push-brown-button",
+      "prompt": "Player pushes, presses, depresses, or activates the brown button.",
+      "active": { "type": "playerAt", "roomId": "maintenance-room" }
+    },
+    {
+      "$comment": "TURN the dam bolt with wrench — toggles the gates. Requires gate-flag (yellow pressed) + wrench in inventory.",
+      "id": "turn-dam-bolt",
+      "prompt": "Player turns, twists, rotates, or otherwise operates the bolt on the dam control panel using the wrench.",
+      "active": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "dam-room" },
+          { "type": "hasItem", "itemId": "wrench" },
+          { "type": "flag", "key": "gate-flag", "equals": true }
         ]
       }
     }
@@ -1702,10 +1850,372 @@
         { "type": "moveItem", "itemId": "thief", "to": "nowhere" }
       ],
       "narration": "The thief's body crumples. His cloak falls open and a glittering hoard of treasures spills out across the floor. Wherever he stashed them, they have all returned to the Treasure Room — that, perhaps, was his real lair."
+    },
+
+    {
+      "$comment": "PUZZLE #2 COFFIN AT ALTAR — canonical: SOUTH-TEMPLE-FCN sets COFFIN-CURE = NOT(coffin in inventory) every turn at south-temple. We mirror with two symmetric triggers — one to set the flag when player arrives without coffin, one to clear it if they re-pick up the coffin. The down→tiny-cave exit unblocks/re-blocks dynamically.",
+      "id": "coffin-cure-on",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "south-temple" },
+          { "type": "not", "condition": { "type": "hasItem", "itemId": "coffin" } },
+          { "type": "flag", "key": "coffin-cure", "equals": false }
+        ]
+      },
+      "effects": [
+        { "type": "setFlag", "key": "coffin-cure", "value": true }
+      ],
+      "narration": "A cool draft seems to flow up from the floor of the temple — a passage somewhere has opened."
+    },
+    {
+      "id": "coffin-cure-off",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "south-temple" },
+          { "type": "hasItem", "itemId": "coffin" },
+          { "type": "flag", "key": "coffin-cure", "equals": true }
+        ]
+      },
+      "effects": [
+        { "type": "setFlag", "key": "coffin-cure", "value": false }
+      ],
+      "narration": "As you take the coffin in hand, the draft from below ceases. The way down has sealed itself again."
+    },
+
+    {
+      "$comment": "PUZZLE #6 ECHO ROOM — canonical: bare 'echo' verb in loud-room's special command loop sets LOUD-FLAG and clears SACREDBIT on the platinum bar. We use visibleWhen on the bar (already added in items overrides) so the bar materializes once echo-spoken is true. Removes the matched intent so it can fire on later visits if needed (though it's gated on echo-spoken=false so it's effectively once).",
+      "id": "echo-reveals-bar",
+      "when": { "type": "intentMatched", "signalId": "say-echo-in-loud-room" },
+      "effects": [
+        { "type": "setFlag", "key": "echo-spoken", "value": true },
+        { "type": "removeMatchedIntent", "signalId": "say-echo-in-loud-room" }
+      ],
+      "narration": "Your voice goes out — and instead of the cacophony you've been suffering, perfect silence answers. The acoustics of the room have changed. A platinum bar gleams on the floor where the noise had hidden it.",
+      "once": true
+    },
+
+    {
+      "$comment": "PUZZLE #3 WAVE SCEPTRE AT RAINBOW — canonical: SCEPTRE-FUNCTION sets RAINBOW-FLAG and clears INVISIBLE on POT-OF-GOLD. We use visibleWhen on pot-of-gold (already added in items overrides). Skip the canonical toggle-off-on-second-wave; once solid, stays solid.",
+      "id": "wave-scepter-solidifies-rainbow",
+      "when": { "type": "intentMatched", "signalId": "wave-scepter-at-rainbow" },
+      "effects": [
+        { "type": "setFlag", "key": "rainbow-flag", "value": true },
+        { "type": "removeMatchedIntent", "signalId": "wave-scepter-at-rainbow" }
+      ],
+      "narration": "You raise the sceptre and trace a slow figure in the air. The rainbow shudders and solidifies — its colors hardening into a luminous bridge of gold and prismatic light. At your feet, a heavy pot of gold appears, gleaming where the rainbow now touches earth.",
+      "once": true
+    },
+
+    {
+      "$comment": "PUZZLE #4 ENDGAME — when the win condition is met, set won-flag (which unblocks west-of-house→stone-barrow). Narrates the canonical 'almost inaudible voice' line. once:true. Kept as a regular trigger so it fires on the same turn the win condition becomes true (cascading through the fixed-point loop).",
+      "id": "unlock-endgame",
+      "once": true,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "itemAt", "itemId": "egg", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "canary", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "bag-of-coins", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "painting", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "chalice", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "torch", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "trident", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "coffin", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "sceptre", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "jade", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "scarab", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "skull", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "emerald", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "bracelet", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "trunk", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "bar", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "pot-of-gold", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "diamond", "location": "trophy-case" }
+        ]
+      },
+      "effects": [
+        { "type": "setFlag", "key": "won-flag", "value": true }
+      ],
+      "narration": "An almost inaudible voice whispers in your ear: 'Look to your treasures for the final secret.' Across the room, the trophy case glitters; in the depths of the wood, an ancient map appears — and far above ground, the way to a stone barrow stands open."
+    },
+    {
+      "$comment": "Stone-barrow finale — canonical STONE-BARROW-FCN runs FINISH (game over with credits). We end the game when the player enters.",
+      "id": "stone-barrow-ends-game",
+      "afterAction": true,
+      "once": true,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "stone-barrow" },
+          { "type": "flag", "key": "endgame-narrated", "equals": false }
+        ]
+      },
+      "effects": [
+        { "type": "setFlag", "key": "endgame-narrated", "value": true },
+        {
+          "type": "endGame",
+          "won": true,
+          "message": "**** You have completed the Great Underground Empire ****\n\nA voice calls out from the depths of the barrow: 'Welcome, adventurer. Your name shall be inscribed in the chronicles of those who have braved the Empire and prevailed. The treasures you have gathered, the perils you have overcome, the cunning you have shown — all shall be remembered.'\n\nThe stone slab settles back into place behind you. Your adventure is at an end."
+        }
+      ]
+    },
+
+    {
+      "$comment": "PUZZLE #5 MIRROR ROOM — RUB the mirror to teleport between mirror-room-1 and mirror-room-2. (Canonical also swaps room contents to maintain the 'same room' illusion; we skip that — the LLM can narrate the disorientation.)",
+      "id": "rub-mirror-1to2",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "rub-mirror" },
+          { "type": "playerAt", "roomId": "mirror-room-1" }
+        ]
+      },
+      "effects": [
+        { "type": "movePlayer", "to": "mirror-room-2" },
+        { "type": "removeMatchedIntent", "signalId": "rub-mirror" }
+      ],
+      "narration": "You touch the cool surface of the mirror — and feel a brief, dizzying lurch. The room around you seems unchanged, yet subtly different, as if you've stepped through a hidden door."
+    },
+    {
+      "id": "rub-mirror-2to1",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "rub-mirror" },
+          { "type": "playerAt", "roomId": "mirror-room-2" }
+        ]
+      },
+      "effects": [
+        { "type": "movePlayer", "to": "mirror-room-1" },
+        { "type": "removeMatchedIntent", "signalId": "rub-mirror" }
+      ],
+      "narration": "You touch the cool surface of the mirror — and feel a brief, dizzying lurch. The room around you seems unchanged, yet subtly different, as if you've stepped through a hidden door."
+    },
+
+    {
+      "$comment": "PUZZLE #8 BAT CARRY — when the player is in bat-room without garlic, the vampire bat seizes them and drops them at a random underground location (canonical FLY-ME picks from BAT-DROPS). Gated on bat-carried-this-visit so the trigger fires once per visit, not every fixed-point iteration. Reset trigger below clears the flag when player leaves the room.",
+      "id": "bat-carries-player",
+      "once": false,
+      "priority": 50,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "bat-room" },
+          { "type": "itemAt", "itemId": "bat", "location": "bat-room" },
+          { "type": "not", "condition": { "type": "hasItem", "itemId": "garlic" } },
+          { "type": "not", "condition": { "type": "itemAt", "itemId": "garlic", "location": "bat-room" } },
+          { "type": "flag", "key": "bat-carried-this-visit", "equals": false }
+        ]
+      },
+      "effects": [
+        { "type": "setFlag", "key": "bat-carried-this-visit", "value": true },
+        {
+          "type": "random",
+          "branches": [
+            { "weight": 1, "narration": "Fweep! The bat seizes you by the scruff of the neck and lifts you away through utter blackness. You are deposited, dazed, in a coal mine.",
+              "effects": [{ "type": "movePlayer", "to": "mine-1" }] },
+            { "weight": 1, "narration": "Fweep! The bat carries you through tunnels you cannot see, depositing you in another part of the mine.",
+              "effects": [{ "type": "movePlayer", "to": "mine-2" }] },
+            { "weight": 1, "narration": "Fweep! The bat hauls you off into the darkness and drops you somewhere deep underground.",
+              "effects": [{ "type": "movePlayer", "to": "mine-3" }] },
+            { "weight": 1, "narration": "Fweep! The bat seizes you and bears you off to a distant shaft.",
+              "effects": [{ "type": "movePlayer", "to": "mine-4" }] },
+            { "weight": 1, "narration": "Fweep! The bat carries you up a narrow shaft and drops you at the top.",
+              "effects": [{ "type": "movePlayer", "to": "ladder-top" }] },
+            { "weight": 1, "narration": "Fweep! The bat plummets with you down a long, dark drop and releases you at the bottom.",
+              "effects": [{ "type": "movePlayer", "to": "ladder-bottom" }] },
+            { "weight": 1, "narration": "Fweep! The bat takes you on a winding journey and drops you in a squeaky-floored cavern.",
+              "effects": [{ "type": "movePlayer", "to": "squeeky-room" }] },
+            { "weight": 1, "narration": "Fweep! The bat carries you back near where the mining began.",
+              "effects": [{ "type": "movePlayer", "to": "mine-entrance" }] }
+          ]
+        }
+      ]
+    },
+    {
+      "$comment": "Reset bat-carried-this-visit when player is no longer in bat-room, so the bat will grab them again on the next visit (canonical Zork lets the bat re-grab on every entry).",
+      "id": "bat-carry-reset",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "not", "condition": { "type": "playerAt", "roomId": "bat-room" } },
+          { "type": "flag", "key": "bat-carried-this-visit", "equals": true }
+        ]
+      },
+      "effects": [
+        { "type": "setFlag", "key": "bat-carried-this-visit", "value": false }
+      ]
+    },
+
+    {
+      "$comment": "PUZZLE #1 BELL + BOOK + CANDLES — adapted from canonical (which has strict bell→candles→book sequence with bell becoming hot, candles dropping, etc.). Our simplified take: ring the bell anywhere (sets bell-rung); candles start lit per extraction; reading the book at entrance-to-hades while bell-rung AND candles-lit triggers lld-flag.",
+      "id": "bell-rings",
+      "when": { "type": "intentMatched", "signalId": "ring-bell" },
+      "effects": [
+        { "type": "setFlag", "key": "bell-rung", "value": true },
+        { "type": "removeMatchedIntent", "signalId": "ring-bell" }
+      ],
+      "narration": "The bell tolls once — a deep, hollow note that hangs in the air far longer than seems natural. The metal grows warm in your grasp.",
+      "once": true
+    },
+    {
+      "$comment": "Capstone of the LLD ritual — read the book at entrance-to-hades while bell-rung and candles still lit. Sets lld-flag, opening the in/south exits to land-of-living-dead.",
+      "id": "lld-ritual-completes",
+      "when": { "type": "intentMatched", "signalId": "read-book-at-hades" },
+      "effects": [
+        { "type": "setFlag", "key": "lld-flag", "value": true },
+        { "type": "removeMatchedIntent", "signalId": "read-book-at-hades" }
+      ],
+      "narration": "You read the words from page 569 aloud — and they hang in the air like smoke. The shrieks of the unseen wraiths fall silent, the candles flicker as if in a sudden wind, and a passage gapes open in the wall ahead. The Land of the Dead lies beyond.",
+      "once": true
+    },
+
+    {
+      "$comment": "PUZZLE #7 COAL → DIAMOND MACHINE — canonical: TURN switch WITH screwdriver only fires the conversion if machine lid is CLOSED. We gate the intent on machine being closed; this trigger additionally checks coal is inside the machine. On success: coal → nowhere, diamond → machine-room (player can then take it).",
+      "id": "machine-makes-diamond",
+      "once": true,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "turn-machine-switch" },
+          { "type": "itemAt", "itemId": "coal", "location": "machine" }
+        ]
+      },
+      "effects": [
+        { "type": "moveItem", "itemId": "coal", "to": "nowhere" },
+        { "type": "moveItem", "itemId": "diamond", "to": "machine-room" },
+        { "type": "removeMatchedIntent", "signalId": "turn-machine-switch" }
+      ],
+      "narration": "The machine comes to life with a dazzling display of colored lights and bizarre noises — clattering, whirring, sparks. After a few moments the racket subsides. The lid pops open. Where you placed the coal, a magnificent diamond now lies."
+    },
+    {
+      "$comment": "Failure case: TURN switch with non-coal in machine (or empty). Canonical produces 'gunk'. We just narrate frustration to keep the puzzle solvable without polluting the inventory.",
+      "id": "machine-fails-no-coal",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "turn-machine-switch" },
+          { "type": "not", "condition": { "type": "itemAt", "itemId": "coal", "location": "machine" } }
+        ]
+      },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "turn-machine-switch" }
+      ],
+      "narration": "The machine clatters and whirs, but produces only a faint puff of greenish smoke. Whatever it's looking for, it isn't finding."
+    },
+
+    {
+      "$comment": "PUZZLE #9 DAM CONTROL PANEL — multi-step. YELLOW button enables bolt control (gate-flag). BROWN button disables it. With gate-flag set, TURN BOLT WITH WRENCH at dam-room toggles gates-open. Opening gates queues an 8-turn delay (low-tide-countdown). When countdown hits 0, low-tide flag flips → reservoir exits open.",
+      "id": "yellow-button-enables-bolt",
+      "once": false,
+      "when": { "type": "intentMatched", "signalId": "push-yellow-button" },
+      "effects": [
+        { "type": "setFlag", "key": "gate-flag", "value": true },
+        { "type": "removeMatchedIntent", "signalId": "push-yellow-button" }
+      ],
+      "narration": "Click. A green bubble on the panel flickers and glows steadily."
+    },
+    {
+      "id": "brown-button-disables-bolt",
+      "once": false,
+      "when": { "type": "intentMatched", "signalId": "push-brown-button" },
+      "effects": [
+        { "type": "setFlag", "key": "gate-flag", "value": false },
+        { "type": "removeMatchedIntent", "signalId": "push-brown-button" }
+      ],
+      "narration": "Click. The green bubble dims and goes dark."
+    },
+    {
+      "$comment": "Bolt toggles the gates open (when currently closed). Starts the 8-turn drain countdown.",
+      "id": "bolt-opens-gates",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "turn-dam-bolt" },
+          { "type": "flag", "key": "gates-open", "equals": false }
+        ]
+      },
+      "effects": [
+        { "type": "setFlag", "key": "gates-open", "value": true },
+        { "type": "setFlag", "key": "low-tide-countdown", "value": 8 },
+        { "type": "removeMatchedIntent", "signalId": "turn-dam-bolt" }
+      ],
+      "narration": "The bolt turns slowly. Somewhere below, the sluice gates open and water pours through the dam with a sustained roar. The reservoir will take some time to drain."
+    },
+    {
+      "$comment": "Bolt toggles the gates closed (when currently open). Cancels the drain.",
+      "id": "bolt-closes-gates",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "turn-dam-bolt" },
+          { "type": "flag", "key": "gates-open", "equals": true }
+        ]
+      },
+      "effects": [
+        { "type": "setFlag", "key": "gates-open", "value": false },
+        { "type": "setFlag", "key": "low-tide-countdown", "value": 0 },
+        { "type": "setFlag", "key": "low-tide", "value": false },
+        { "type": "removeMatchedIntent", "signalId": "turn-dam-bolt" }
+      ],
+      "narration": "The bolt turns the other way. Below, the sluice gates rumble shut, and water begins to back up behind the dam once again."
+    },
+    {
+      "$comment": "Tick the drain countdown each turn while gates are open and countdown > 0. Mirrors the lamp battery / grue tick patterns.",
+      "id": "low-tide-tick",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "flag", "key": "gates-open", "equals": true },
+          { "type": "compare",
+            "left": { "kind": "flag", "key": "low-tide-countdown" },
+            "op": ">",
+            "right": { "kind": "literal", "value": 0 }
+          }
+        ]
+      },
+      "effects": [
+        { "type": "adjustFlag", "key": "low-tide-countdown", "by": -1 }
+      ]
+    },
+    {
+      "$comment": "When countdown hits 0 and gates still open, set low-tide. Once-only narration (the reservoir cascades will re-flood if gates close, but we don't re-narrate every cycle).",
+      "id": "low-tide-fires",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "flag", "key": "gates-open", "equals": true },
+          { "type": "flag", "key": "low-tide", "equals": false },
+          { "type": "compare",
+            "left": { "kind": "flag", "key": "low-tide-countdown" },
+            "op": "<=",
+            "right": { "kind": "literal", "value": 0 }
+          }
+        ]
+      },
+      "effects": [
+        { "type": "setFlag", "key": "low-tide", "value": true }
+      ],
+      "narration": "Far below, the reservoir empties at last. What was deep water is now mud and silt — passable, if unpleasant."
     }
   ],
 
-  "$winConditionsComment": "Win when all 15 currently-extracted treasures are deposited in the trophy case. Canonical Zork has up to 19 treasures; the missing four (diamond, platinum bar, pot of gold, crystal sphere) require puzzles that aren't yet wired (coal-machine, echo-room, rainbow-scepter, gallery). The win condition will activate naturally when the remaining puzzles + their items land.",
+  "$winConditionsComment": "Win when ALL canonical Zork I treasures (incl. those previously unwired) are deposited in the trophy case. Three new treasures from the Phase-4 puzzle batch: bar (echo-room), pot-of-gold (rainbow), diamond (coal-machine).",
   "winConditions": [
     {
       "when": {
@@ -1725,7 +2235,10 @@
           { "type": "itemAt", "itemId": "skull", "location": "trophy-case" },
           { "type": "itemAt", "itemId": "emerald", "location": "trophy-case" },
           { "type": "itemAt", "itemId": "bracelet", "location": "trophy-case" },
-          { "type": "itemAt", "itemId": "trunk", "location": "trophy-case" }
+          { "type": "itemAt", "itemId": "trunk", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "bar", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "pot-of-gold", "location": "trophy-case" },
+          { "type": "itemAt", "itemId": "diamond", "location": "trophy-case" }
         ]
       },
       "message": "An almost inaudible voice whispers in your ear, 'Look to your treasures for the final secret.' The trophy case glitters; the Great Underground Empire is conquered."
