@@ -479,6 +479,106 @@
     }
   ],
 
+  "$customToolsComment": "Custom tools are author-defined LLM tools. Each becomes a tool the narrator can call directly with typed args. Handlers do the generic state mutation (open sets isOpen=true on any item with that state key); per-puzzle special cases are layered on as triggers that match on intentMatched + intentArg. open/close/break here replace the dozens of per-item intents that the auto-gen used to emit.",
+  "customTools": [
+    {
+      "id": "open",
+      "description": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens an item. Use the item id from the current view. The engine's handler reports failure when the item isn't accessible, isn't openable, or is already open — the LLM should narrate from those cues.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": { "type": "string", "description": "the item to open (use the id from the current view)" }
+        },
+        "required": ["itemId"]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } },
+            "failedNarration": "You don't see {arg.itemId.name} here."
+          },
+          {
+            "when": { "type": "itemHasStateKey", "itemId": { "fromArg": "itemId" }, "key": "isOpen" },
+            "failedNarration": "{arg.itemId.name} isn't something you can open."
+          },
+          {
+            "when": { "type": "itemState", "itemId": { "fromArg": "itemId" }, "key": "isOpen", "equals": false },
+            "failedNarration": "{arg.itemId.name} is already open."
+          }
+        ],
+        "effects": [
+          { "type": "setItemState", "itemId": { "fromArg": "itemId" }, "key": "isOpen", "value": true }
+        ],
+        "successNarration": "You open the {arg.itemId.name}."
+      }
+    },
+    {
+      "id": "close",
+      "description": "Player closes, shuts, latches, lids, or otherwise closes an item.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": { "type": "string", "description": "the item to close (use the id from the current view)" }
+        },
+        "required": ["itemId"]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } },
+            "failedNarration": "You don't see {arg.itemId.name} here."
+          },
+          {
+            "when": { "type": "itemHasStateKey", "itemId": { "fromArg": "itemId" }, "key": "isOpen" },
+            "failedNarration": "{arg.itemId.name} isn't something you can close."
+          },
+          {
+            "when": { "type": "itemState", "itemId": { "fromArg": "itemId" }, "key": "isOpen", "equals": true },
+            "failedNarration": "{arg.itemId.name} is already closed."
+          }
+        ],
+        "effects": [
+          { "type": "setItemState", "itemId": { "fromArg": "itemId" }, "key": "isOpen", "value": false }
+        ],
+        "successNarration": "You close the {arg.itemId.name}."
+      }
+    },
+    {
+      "id": "break",
+      "description": "Player breaks, smashes, shatters, hurls, or otherwise destroys an item. Once broken, an item stays broken — opening or repairing it requires a separate puzzle.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": { "type": "string", "description": "the item to break" }
+        },
+        "required": ["itemId"]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } },
+            "failedNarration": "You don't see {arg.itemId.name} here."
+          },
+          {
+            "when": { "type": "itemHasStateKey", "itemId": { "fromArg": "itemId" }, "key": "broken" },
+            "failedNarration": "{arg.itemId.name} doesn't seem like something you could break."
+          },
+          {
+            "when": { "type": "itemState", "itemId": { "fromArg": "itemId" }, "key": "broken", "equals": false },
+            "failedNarration": "{arg.itemId.name} is already broken."
+          }
+        ],
+        "effects": [
+          { "type": "setItemState", "itemId": { "fromArg": "itemId" }, "key": "broken", "value": true }
+        ],
+        "successNarration": "You break the {arg.itemId.name}."
+      }
+    }
+  ],
+
   "intentSignals": [
     {
       "$comment": "Rope-and-dome puzzle. Player ties the rope to the railing in the Dome Room; that flips dome-flag, unlocking the existing dome-room.down → torch-room exit. Active only when you're standing in the dome with the rope (and haven't already done it — once-matched intents auto-deactivate).",

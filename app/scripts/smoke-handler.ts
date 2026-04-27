@@ -23,10 +23,10 @@ function fail(label: string, detail?: string) {
   failed++;
 }
 
-// Build a story copy with a synthetic `open` custom tool. We can't reuse
-// the real mailbox-open-intent because the auto-gen still emits the old
-// per-item triggers — those would also fire and confuse the assertions.
-// Use a synthetic tool id ("test-open") with no consuming triggers.
+// Build a story copy with a synthetic `open` custom tool. The real "open"
+// custom tool from zork-1.json would also work, but using a synthetic id
+// ("test-open") keeps the assertions independent of any author triggers
+// that might layer on top of the live "open" call.
 function storyWithTestTools(): Story {
   const openTool: CustomTool = {
     id: "test-open",

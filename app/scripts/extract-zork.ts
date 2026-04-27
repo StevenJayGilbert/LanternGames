@@ -23,6 +23,7 @@ import { fileURLToPath } from "node:url";
 import type {
   Atom,
   Condition,
+  CustomTool,
   EndCondition,
   Exit,
   IntentSignal,
@@ -928,6 +929,7 @@ interface OverrideStory {
   rooms?: Array<Partial<Room> & { id: string }>;
   items?: Array<Partial<Item> & { id: string; fromTemplate?: string }>;
   intentSignals?: IntentSignal[];
+  customTools?: CustomTool[];
   triggers?: Trigger[];
   // Build-time named partial-Item templates. Items with `fromTemplate: "name"`
   // inherit fields from the matching template; resolved by resolveTemplates()
@@ -1178,43 +1180,16 @@ function generateOpenCloseScaffolding(
     });
   }
 
-  for (const it of items) {
-    if (typeof it.state?.isOpen !== "boolean") continue;
-    const openId = `${it.id}-open-intent`;
-    const closeId = `${it.id}-close-intent`;
-    const baseOpen: Condition = { type: "itemState", itemId: it.id, key: "isOpen", equals: false };
-    const baseClose: Condition = { type: "itemState", itemId: it.id, key: "isOpen", equals: true };
-    intentSignals.push({
-      id: openId,
-      prompt: `Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the ${it.name}.`,
-      active: andWith(baseOpen, it.openWhen),
-    });
-    intentSignals.push({
-      id: closeId,
-      prompt: `Player closes, shuts, latches, lids, or otherwise closes the ${it.name}.`,
-      active: andWith(baseClose, it.closeWhen),
-    });
-    triggers.push({
-      id: `${it.id}-opens`,
-      when: { type: "intentMatched", signalId: openId },
-      effects: [
-        { type: "setItemState", itemId: it.id, key: "isOpen", value: true },
-        { type: "removeMatchedIntent", signalId: openId },
-      ],
-      narration: `You open the ${it.name}.`,
-      once: false,
-    });
-    triggers.push({
-      id: `${it.id}-closes`,
-      when: { type: "intentMatched", signalId: closeId },
-      effects: [
-        { type: "setItemState", itemId: it.id, key: "isOpen", value: false },
-        { type: "removeMatchedIntent", signalId: closeId },
-      ],
-      narration: `You close the ${it.name}.`,
-      once: false,
-    });
-  }
+  // Per-item open/close intents/triggers no longer auto-genned. The author-
+  // declared `open`/`close` CustomTools (in zork-1.overrides.json) handle
+  // the generic case via their handlers — any item with state.isOpen gets
+  // toggled by the open/close handler, with proper preconditions and
+  // narration. Story-specific consequences (gain points on first open, etc.)
+  // are author-written triggers that match on intentMatched("open") +
+  // intentArg("open", "itemId", "<the-item>"). Items used as items here
+  // is a no-op intentionally; the parameter is left for symmetry with
+  // passages.
+  void items;
 
   return { intentSignals, triggers };
 }
@@ -1235,28 +1210,13 @@ function generateBreakScaffolding(items: Item[]): {
   intentSignals: IntentSignal[];
   triggers: Trigger[];
 } {
-  const intentSignals: IntentSignal[] = [];
-  const triggers: Trigger[] = [];
-  for (const it of items) {
-    if (it.state?.broken !== false) continue;
-    const signalId = `${it.id}-break-intent`;
-    intentSignals.push({
-      id: signalId,
-      prompt: `Player breaks, smashes, shatters, hurls, or otherwise destroys the ${it.name}.`,
-      active: { type: "itemState", itemId: it.id, key: "broken", equals: false },
-    });
-    triggers.push({
-      id: `${it.id}-breaks`,
-      when: { type: "intentMatched", signalId },
-      effects: [
-        { type: "setItemState", itemId: it.id, key: "broken", value: true },
-        { type: "removeMatchedIntent", signalId },
-      ],
-      narration: `The ${it.name} breaks.`,
-      once: false,
-    });
-  }
-  return { intentSignals, triggers };
+  // Per-item break intents/triggers no longer auto-genned. The author-
+  // declared `break` CustomTool handler does the generic state mutation.
+  // Special-case "breaking the egg spills its contents" still needs an
+  // author-written trigger that matches on intentMatched("break") +
+  // intentArg("break", "itemId", "egg").
+  void items;
+  return { intentSignals: [], triggers: [] };
 }
 
 // ---------- main ----------
@@ -1337,6 +1297,7 @@ function main() {
     items,
     ...(passages.length > 0 && { passages }),
     ...(intentSignals.length > 0 && { intentSignals }),
+    ...(overrides.customTools && overrides.customTools.length > 0 && { customTools: overrides.customTools }),
     ...(triggers.length > 0 && { triggers }),
     ...(overrides.defaultVisibility && {
       defaultVisibility: overrides.defaultVisibility,

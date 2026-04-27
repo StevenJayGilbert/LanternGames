@@ -3701,419 +3701,6 @@
       }
     },
     {
-      "id": "raised-basket-open-intent",
-      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the basket.",
-      "active": {
-        "type": "itemState",
-        "itemId": "raised-basket",
-        "key": "isOpen",
-        "equals": false
-      }
-    },
-    {
-      "id": "raised-basket-close-intent",
-      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the basket.",
-      "active": {
-        "type": "itemState",
-        "itemId": "raised-basket",
-        "key": "isOpen",
-        "equals": true
-      }
-    },
-    {
-      "id": "altar-open-intent",
-      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the altar.",
-      "active": {
-        "type": "itemState",
-        "itemId": "altar",
-        "key": "isOpen",
-        "equals": false
-      }
-    },
-    {
-      "id": "altar-close-intent",
-      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the altar.",
-      "active": {
-        "type": "itemState",
-        "itemId": "altar",
-        "key": "isOpen",
-        "equals": true
-      }
-    },
-    {
-      "id": "book-open-intent",
-      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the black book.",
-      "active": {
-        "type": "itemState",
-        "itemId": "book",
-        "key": "isOpen",
-        "equals": false
-      }
-    },
-    {
-      "id": "book-close-intent",
-      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the black book.",
-      "active": {
-        "type": "itemState",
-        "itemId": "book",
-        "key": "isOpen",
-        "equals": true
-      }
-    },
-    {
-      "id": "kitchen-table-open-intent",
-      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the kitchen table.",
-      "active": {
-        "type": "itemState",
-        "itemId": "kitchen-table",
-        "key": "isOpen",
-        "equals": false
-      }
-    },
-    {
-      "id": "kitchen-table-close-intent",
-      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the kitchen table.",
-      "active": {
-        "type": "itemState",
-        "itemId": "kitchen-table",
-        "key": "isOpen",
-        "equals": true
-      }
-    },
-    {
-      "id": "attic-table-open-intent",
-      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the table.",
-      "active": {
-        "type": "itemState",
-        "itemId": "attic-table",
-        "key": "isOpen",
-        "equals": false
-      }
-    },
-    {
-      "id": "attic-table-close-intent",
-      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the table.",
-      "active": {
-        "type": "itemState",
-        "itemId": "attic-table",
-        "key": "isOpen",
-        "equals": true
-      }
-    },
-    {
-      "id": "sandwich-bag-open-intent",
-      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the brown sack.",
-      "active": {
-        "type": "itemState",
-        "itemId": "sandwich-bag",
-        "key": "isOpen",
-        "equals": false
-      }
-    },
-    {
-      "id": "sandwich-bag-close-intent",
-      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the brown sack.",
-      "active": {
-        "type": "itemState",
-        "itemId": "sandwich-bag",
-        "key": "isOpen",
-        "equals": true
-      }
-    },
-    {
-      "id": "tool-chest-open-intent",
-      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the group of tool chests.",
-      "active": {
-        "type": "itemState",
-        "itemId": "tool-chest",
-        "key": "isOpen",
-        "equals": false
-      }
-    },
-    {
-      "id": "tool-chest-close-intent",
-      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the group of tool chests.",
-      "active": {
-        "type": "itemState",
-        "itemId": "tool-chest",
-        "key": "isOpen",
-        "equals": true
-      }
-    },
-    {
-      "id": "trophy-case-open-intent",
-      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the trophy case.",
-      "active": {
-        "type": "itemState",
-        "itemId": "trophy-case",
-        "key": "isOpen",
-        "equals": false
-      }
-    },
-    {
-      "id": "trophy-case-close-intent",
-      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the trophy case.",
-      "active": {
-        "type": "itemState",
-        "itemId": "trophy-case",
-        "key": "isOpen",
-        "equals": true
-      }
-    },
-    {
-      "id": "chalice-open-intent",
-      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the chalice.",
-      "active": {
-        "type": "itemState",
-        "itemId": "chalice",
-        "key": "isOpen",
-        "equals": false
-      }
-    },
-    {
-      "id": "chalice-close-intent",
-      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the chalice.",
-      "active": {
-        "type": "itemState",
-        "itemId": "chalice",
-        "key": "isOpen",
-        "equals": true
-      }
-    },
-    {
-      "id": "bottle-open-intent",
-      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the glass bottle.",
-      "active": {
-        "type": "itemState",
-        "itemId": "bottle",
-        "key": "isOpen",
-        "equals": false
-      }
-    },
-    {
-      "id": "bottle-close-intent",
-      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the glass bottle.",
-      "active": {
-        "type": "itemState",
-        "itemId": "bottle",
-        "key": "isOpen",
-        "equals": true
-      }
-    },
-    {
-      "id": "coffin-open-intent",
-      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the gold coffin.",
-      "active": {
-        "type": "itemState",
-        "itemId": "coffin",
-        "key": "isOpen",
-        "equals": false
-      }
-    },
-    {
-      "id": "coffin-close-intent",
-      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the gold coffin.",
-      "active": {
-        "type": "itemState",
-        "itemId": "coffin",
-        "key": "isOpen",
-        "equals": true
-      }
-    },
-    {
-      "id": "machine-open-intent",
-      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the machine.",
-      "active": {
-        "type": "itemState",
-        "itemId": "machine",
-        "key": "isOpen",
-        "equals": false
-      }
-    },
-    {
-      "id": "machine-close-intent",
-      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the machine.",
-      "active": {
-        "type": "itemState",
-        "itemId": "machine",
-        "key": "isOpen",
-        "equals": true
-      }
-    },
-    {
-      "id": "mailbox-open-intent",
-      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the small mailbox.",
-      "active": {
-        "type": "itemState",
-        "itemId": "mailbox",
-        "key": "isOpen",
-        "equals": false
-      }
-    },
-    {
-      "id": "mailbox-close-intent",
-      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the small mailbox.",
-      "active": {
-        "type": "itemState",
-        "itemId": "mailbox",
-        "key": "isOpen",
-        "equals": true
-      }
-    },
-    {
-      "id": "buoy-open-intent",
-      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the red buoy.",
-      "active": {
-        "type": "itemState",
-        "itemId": "buoy",
-        "key": "isOpen",
-        "equals": false
-      }
-    },
-    {
-      "id": "buoy-close-intent",
-      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the red buoy.",
-      "active": {
-        "type": "itemState",
-        "itemId": "buoy",
-        "key": "isOpen",
-        "equals": true
-      }
-    },
-    {
-      "id": "thief-open-intent",
-      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the thief.",
-      "active": {
-        "type": "and",
-        "all": [
-          {
-            "type": "itemState",
-            "itemId": "thief",
-            "key": "isOpen",
-            "equals": false
-          },
-          {
-            "type": "not",
-            "condition": {
-              "type": "always"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "id": "thief-close-intent",
-      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the thief.",
-      "active": {
-        "type": "and",
-        "all": [
-          {
-            "type": "itemState",
-            "itemId": "thief",
-            "key": "isOpen",
-            "equals": true
-          },
-          {
-            "type": "not",
-            "condition": {
-              "type": "always"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "id": "pedestal-open-intent",
-      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the pedestal.",
-      "active": {
-        "type": "itemState",
-        "itemId": "pedestal",
-        "key": "isOpen",
-        "equals": false
-      }
-    },
-    {
-      "id": "pedestal-close-intent",
-      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the pedestal.",
-      "active": {
-        "type": "itemState",
-        "itemId": "pedestal",
-        "key": "isOpen",
-        "equals": true
-      }
-    },
-    {
-      "id": "tube-open-intent",
-      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the tube.",
-      "active": {
-        "type": "itemState",
-        "itemId": "tube",
-        "key": "isOpen",
-        "equals": false
-      }
-    },
-    {
-      "id": "tube-close-intent",
-      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the tube.",
-      "active": {
-        "type": "itemState",
-        "itemId": "tube",
-        "key": "isOpen",
-        "equals": true
-      }
-    },
-    {
-      "id": "nest-open-intent",
-      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the bird's nest.",
-      "active": {
-        "type": "itemState",
-        "itemId": "nest",
-        "key": "isOpen",
-        "equals": false
-      }
-    },
-    {
-      "id": "nest-close-intent",
-      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the bird's nest.",
-      "active": {
-        "type": "itemState",
-        "itemId": "nest",
-        "key": "isOpen",
-        "equals": true
-      }
-    },
-    {
-      "id": "egg-open-intent",
-      "prompt": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens the jewel-encrusted egg.",
-      "active": {
-        "type": "and",
-        "all": [
-          {
-            "type": "itemState",
-            "itemId": "egg",
-            "key": "isOpen",
-            "equals": false
-          },
-          {
-            "type": "not",
-            "condition": {
-              "type": "always"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "id": "egg-close-intent",
-      "prompt": "Player closes, shuts, latches, lids, or otherwise closes the jewel-encrusted egg.",
-      "active": {
-        "type": "itemState",
-        "itemId": "egg",
-        "key": "isOpen",
-        "equals": true
-      }
-    },
-    {
       "id": "rope-tied-to-railing",
       "prompt": "Player ties, fastens, attaches, lashes, secures, or otherwise affixes the rope to the railing (or to the dome).",
       "active": {
@@ -4597,6 +4184,194 @@
       }
     }
   ],
+  "customTools": [
+    {
+      "id": "open",
+      "description": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens an item. Use the item id from the current view. The engine's handler reports failure when the item isn't accessible, isn't openable, or is already open — the LLM should narrate from those cues.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "the item to open (use the id from the current view)"
+          }
+        },
+        "required": [
+          "itemId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
+            "failedNarration": "You don't see {arg.itemId.name} here."
+          },
+          {
+            "when": {
+              "type": "itemHasStateKey",
+              "itemId": {
+                "fromArg": "itemId"
+              },
+              "key": "isOpen"
+            },
+            "failedNarration": "{arg.itemId.name} isn't something you can open."
+          },
+          {
+            "when": {
+              "type": "itemState",
+              "itemId": {
+                "fromArg": "itemId"
+              },
+              "key": "isOpen",
+              "equals": false
+            },
+            "failedNarration": "{arg.itemId.name} is already open."
+          }
+        ],
+        "effects": [
+          {
+            "type": "setItemState",
+            "itemId": {
+              "fromArg": "itemId"
+            },
+            "key": "isOpen",
+            "value": true
+          }
+        ],
+        "successNarration": "You open the {arg.itemId.name}."
+      }
+    },
+    {
+      "id": "close",
+      "description": "Player closes, shuts, latches, lids, or otherwise closes an item.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "the item to close (use the id from the current view)"
+          }
+        },
+        "required": [
+          "itemId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
+            "failedNarration": "You don't see {arg.itemId.name} here."
+          },
+          {
+            "when": {
+              "type": "itemHasStateKey",
+              "itemId": {
+                "fromArg": "itemId"
+              },
+              "key": "isOpen"
+            },
+            "failedNarration": "{arg.itemId.name} isn't something you can close."
+          },
+          {
+            "when": {
+              "type": "itemState",
+              "itemId": {
+                "fromArg": "itemId"
+              },
+              "key": "isOpen",
+              "equals": true
+            },
+            "failedNarration": "{arg.itemId.name} is already closed."
+          }
+        ],
+        "effects": [
+          {
+            "type": "setItemState",
+            "itemId": {
+              "fromArg": "itemId"
+            },
+            "key": "isOpen",
+            "value": false
+          }
+        ],
+        "successNarration": "You close the {arg.itemId.name}."
+      }
+    },
+    {
+      "id": "break",
+      "description": "Player breaks, smashes, shatters, hurls, or otherwise destroys an item. Once broken, an item stays broken — opening or repairing it requires a separate puzzle.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "the item to break"
+          }
+        },
+        "required": [
+          "itemId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
+            "failedNarration": "You don't see {arg.itemId.name} here."
+          },
+          {
+            "when": {
+              "type": "itemHasStateKey",
+              "itemId": {
+                "fromArg": "itemId"
+              },
+              "key": "broken"
+            },
+            "failedNarration": "{arg.itemId.name} doesn't seem like something you could break."
+          },
+          {
+            "when": {
+              "type": "itemState",
+              "itemId": {
+                "fromArg": "itemId"
+              },
+              "key": "broken",
+              "equals": false
+            },
+            "failedNarration": "{arg.itemId.name} is already broken."
+          }
+        ],
+        "effects": [
+          {
+            "type": "setItemState",
+            "itemId": {
+              "fromArg": "itemId"
+            },
+            "key": "broken",
+            "value": true
+          }
+        ],
+        "successNarration": "You break the {arg.itemId.name}."
+      }
+    }
+  ],
   "triggers": [
     {
       "id": "kitchen-window-opens",
@@ -4722,804 +4497,6 @@
         }
       ],
       "narration": "You close the grating.",
-      "once": false
-    },
-    {
-      "id": "raised-basket-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "raised-basket-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "raised-basket",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "raised-basket-open-intent"
-        }
-      ],
-      "narration": "You open the basket.",
-      "once": false
-    },
-    {
-      "id": "raised-basket-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "raised-basket-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "raised-basket",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "raised-basket-close-intent"
-        }
-      ],
-      "narration": "You close the basket.",
-      "once": false
-    },
-    {
-      "id": "altar-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "altar-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "altar",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "altar-open-intent"
-        }
-      ],
-      "narration": "You open the altar.",
-      "once": false
-    },
-    {
-      "id": "altar-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "altar-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "altar",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "altar-close-intent"
-        }
-      ],
-      "narration": "You close the altar.",
-      "once": false
-    },
-    {
-      "id": "book-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "book-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "book",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "book-open-intent"
-        }
-      ],
-      "narration": "You open the black book.",
-      "once": false
-    },
-    {
-      "id": "book-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "book-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "book",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "book-close-intent"
-        }
-      ],
-      "narration": "You close the black book.",
-      "once": false
-    },
-    {
-      "id": "kitchen-table-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "kitchen-table-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "kitchen-table",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "kitchen-table-open-intent"
-        }
-      ],
-      "narration": "You open the kitchen table.",
-      "once": false
-    },
-    {
-      "id": "kitchen-table-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "kitchen-table-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "kitchen-table",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "kitchen-table-close-intent"
-        }
-      ],
-      "narration": "You close the kitchen table.",
-      "once": false
-    },
-    {
-      "id": "attic-table-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "attic-table-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "attic-table",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "attic-table-open-intent"
-        }
-      ],
-      "narration": "You open the table.",
-      "once": false
-    },
-    {
-      "id": "attic-table-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "attic-table-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "attic-table",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "attic-table-close-intent"
-        }
-      ],
-      "narration": "You close the table.",
-      "once": false
-    },
-    {
-      "id": "sandwich-bag-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "sandwich-bag-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "sandwich-bag",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "sandwich-bag-open-intent"
-        }
-      ],
-      "narration": "You open the brown sack.",
-      "once": false
-    },
-    {
-      "id": "sandwich-bag-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "sandwich-bag-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "sandwich-bag",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "sandwich-bag-close-intent"
-        }
-      ],
-      "narration": "You close the brown sack.",
-      "once": false
-    },
-    {
-      "id": "tool-chest-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "tool-chest-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "tool-chest",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "tool-chest-open-intent"
-        }
-      ],
-      "narration": "You open the group of tool chests.",
-      "once": false
-    },
-    {
-      "id": "tool-chest-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "tool-chest-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "tool-chest",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "tool-chest-close-intent"
-        }
-      ],
-      "narration": "You close the group of tool chests.",
-      "once": false
-    },
-    {
-      "id": "trophy-case-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "trophy-case-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "trophy-case",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "trophy-case-open-intent"
-        }
-      ],
-      "narration": "You open the trophy case.",
-      "once": false
-    },
-    {
-      "id": "trophy-case-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "trophy-case-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "trophy-case",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "trophy-case-close-intent"
-        }
-      ],
-      "narration": "You close the trophy case.",
-      "once": false
-    },
-    {
-      "id": "chalice-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "chalice-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "chalice",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "chalice-open-intent"
-        }
-      ],
-      "narration": "You open the chalice.",
-      "once": false
-    },
-    {
-      "id": "chalice-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "chalice-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "chalice",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "chalice-close-intent"
-        }
-      ],
-      "narration": "You close the chalice.",
-      "once": false
-    },
-    {
-      "id": "bottle-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "bottle-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "bottle",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "bottle-open-intent"
-        }
-      ],
-      "narration": "You open the glass bottle.",
-      "once": false
-    },
-    {
-      "id": "bottle-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "bottle-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "bottle",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "bottle-close-intent"
-        }
-      ],
-      "narration": "You close the glass bottle.",
-      "once": false
-    },
-    {
-      "id": "coffin-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "coffin-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "coffin",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "coffin-open-intent"
-        }
-      ],
-      "narration": "You open the gold coffin.",
-      "once": false
-    },
-    {
-      "id": "coffin-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "coffin-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "coffin",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "coffin-close-intent"
-        }
-      ],
-      "narration": "You close the gold coffin.",
-      "once": false
-    },
-    {
-      "id": "machine-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "machine-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "machine",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "machine-open-intent"
-        }
-      ],
-      "narration": "You open the machine.",
-      "once": false
-    },
-    {
-      "id": "machine-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "machine-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "machine",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "machine-close-intent"
-        }
-      ],
-      "narration": "You close the machine.",
-      "once": false
-    },
-    {
-      "id": "mailbox-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "mailbox-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "mailbox",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "mailbox-open-intent"
-        }
-      ],
-      "narration": "You open the small mailbox.",
-      "once": false
-    },
-    {
-      "id": "mailbox-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "mailbox-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "mailbox",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "mailbox-close-intent"
-        }
-      ],
-      "narration": "You close the small mailbox.",
-      "once": false
-    },
-    {
-      "id": "buoy-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "buoy-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "buoy",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "buoy-open-intent"
-        }
-      ],
-      "narration": "You open the red buoy.",
-      "once": false
-    },
-    {
-      "id": "buoy-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "buoy-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "buoy",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "buoy-close-intent"
-        }
-      ],
-      "narration": "You close the red buoy.",
-      "once": false
-    },
-    {
-      "id": "thief-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "thief-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "thief",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "thief-open-intent"
-        }
-      ],
-      "narration": "You open the thief.",
-      "once": false
-    },
-    {
-      "id": "thief-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "thief-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "thief",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "thief-close-intent"
-        }
-      ],
-      "narration": "You close the thief.",
-      "once": false
-    },
-    {
-      "id": "pedestal-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "pedestal-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "pedestal",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "pedestal-open-intent"
-        }
-      ],
-      "narration": "You open the pedestal.",
-      "once": false
-    },
-    {
-      "id": "pedestal-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "pedestal-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "pedestal",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "pedestal-close-intent"
-        }
-      ],
-      "narration": "You close the pedestal.",
-      "once": false
-    },
-    {
-      "id": "tube-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "tube-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "tube",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "tube-open-intent"
-        }
-      ],
-      "narration": "You open the tube.",
-      "once": false
-    },
-    {
-      "id": "tube-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "tube-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "tube",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "tube-close-intent"
-        }
-      ],
-      "narration": "You close the tube.",
-      "once": false
-    },
-    {
-      "id": "nest-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "nest-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "nest",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "nest-open-intent"
-        }
-      ],
-      "narration": "You open the bird's nest.",
-      "once": false
-    },
-    {
-      "id": "nest-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "nest-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "nest",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "nest-close-intent"
-        }
-      ],
-      "narration": "You close the bird's nest.",
-      "once": false
-    },
-    {
-      "id": "egg-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "egg-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "egg",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "egg-open-intent"
-        }
-      ],
-      "narration": "You open the jewel-encrusted egg.",
-      "once": false
-    },
-    {
-      "id": "egg-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "egg-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "egg",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "egg-close-intent"
-        }
-      ],
-      "narration": "You close the jewel-encrusted egg.",
       "once": false
     },
     {
