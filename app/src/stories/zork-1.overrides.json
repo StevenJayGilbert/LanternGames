@@ -32,7 +32,8 @@
     "low-tide": false,
     "low-tide-countdown": 0,
     "endgame-narrated": false,
-    "empty-handed": true
+    "empty-handed": true,
+    "river-tick-counter": 0
   },
 
   "$darknessComment": "Darkness model: a room is dark when it declares state.dark === true and no perceivable item has state.isLit === true. Composed from generic primitives (currentRoomState + anyPerceivableItemWith) — engine has no hardcoded darkness concept.",
@@ -204,41 +205,9 @@
     },
 
     {
-      "$devNoteComment": "DEV TESTING NOTES: rooms tied to deferred puzzles get an inline marker so playtesters can spot incomplete content immediately. Format: '[DEV NOTE: <puzzle> — <status>]' appended to the canonical description. Remove these overrides once the corresponding puzzles ship.",
-      "id": "dam-base",
-      "description": "You are at the base of Flood Control Dam #3, which looms above you and to the north. The river Frigid is flowing by here. Along the river are the White Cliffs which seem to form giant walls stretching from north to south along the shores of the river as it winds its way downstream.\n\n[DEV NOTE: boat/river travel is unwired. The inflatable boat is here but cannot yet be inflated, boarded, or launched.]"
-    },
-    {
-      "id": "reservoir-north",
-      "description": "There is a slimy stairway leaving the room to the north.\n\n[DEV NOTE: boat/river travel is unwired. The pump here cannot yet be used to inflate the boat at dam-base.]"
-    },
-    {
-      "id": "river-1",
-      "description": "You are on the Frigid River in the vicinity of the Dam. The river flows quietly here. There is a landing on the west shore.\n\n[DEV NOTE: boat/river travel is unwired. River rooms are currently unreachable through normal play (the boat puzzle is the only intended path here).]"
-    },
-    {
-      "id": "river-2",
-      "description": "The river turns a corner here making it impossible to see the Dam. The White Cliffs loom on the east bank and large rocks prevent landing on the west.\n\n[DEV NOTE: boat/river travel is unwired.]"
-    },
-    {
-      "id": "river-3",
-      "description": "The river descends here into a valley. There is a narrow beach on the west shore below the cliffs. In the distance a faint rumbling can be heard.\n\n[DEV NOTE: boat/river travel is unwired.]"
-    },
-    {
-      "id": "river-4",
-      "description": "The river is running faster here and the sound ahead appears to be that of rushing water. On the east shore is a sandy beach. A small area of beach can also be seen below the cliffs on the west shore.\n\n[DEV NOTE: boat/river travel is unwired.]"
-    },
-    {
-      "id": "river-5",
-      "description": "The sound of rushing water is nearly unbearable here. On the east shore is a large landing area.\n\n[DEV NOTE: boat/river travel is unwired. Canonical: failing to land here = waterfall death.]"
-    },
-    {
-      "id": "shore",
-      "description": "You are on the east shore of the river. The water here seems somewhat treacherous. A path travels from north to south here, the south end quickly turning around a sharp corner.\n\n[DEV NOTE: boat/river travel is unwired. This shore is the canonical landing point from river-5; reaching it without the boat is currently impossible.]"
-    },
-    {
+      "$comment": "sandy-beach still has the dig-with-shovel scarab dev note — that puzzle remains unwired even after the boat ships.",
       "id": "sandy-beach",
-      "description": "You are on a large sandy beach on the east shore of the river, which is flowing quickly by. A path runs beside the river to the south here, and a passage is partially buried in sand to the northeast.\n\n[DEV NOTE: two unwired puzzles touch this room — (1) boat/river travel (the canonical access path), and (2) the dig-with-shovel scarab puzzle (canonical: dig the sand four times to unbury the scarab; in our extraction the scarab is currently visible without digging).]"
+      "description": "You are on a large sandy beach on the east shore of the river, which is flowing quickly by. A path runs beside the river to the south here, and a passage is partially buried in sand to the northeast.\n\n[DEV NOTE: dig-with-shovel scarab puzzle is unwired. The scarab is currently visible without digging — canonical Zork required four DIG WITH SHOVEL actions to unbury it.]"
     },
     {
       "id": "sandy-cave",
@@ -481,6 +450,32 @@
       "location": "nowhere",
       "takeable": true,
       "tags": ["treasure", "valuable", "carryable"]
+    },
+    {
+      "$comment": "Tag scepter as a weapon so the inventoryHasTag(weapon) check on the boat catches it. Canonical Zork includes SCEPTRE in the boat-puncture list because it has WEAPONBIT — the magic boat treats it as sharp.",
+      "id": "sceptre",
+      "tags": ["weapon", "treasure", "valuable", "carryable"]
+    },
+    {
+      "$comment": "Tag thief's stiletto as a weapon (canonical Zork has it in WEAPONBIT). Used for the boat-puncture check.",
+      "id": "stiletto",
+      "tags": ["weapon", "bladed", "carryable"]
+    },
+    {
+      "$comment": "Make the inflatable boat a real engine vehicle. state.inflation: 'deflated' (default) | 'inflated' | 'punctured'. The vehicle.enterableWhen gate ensures players can only board the inflated form. mobile=true so the boat travels with the player on go() — drifts downstream with the current.",
+      "id": "inflatable-boat",
+      "tags": ["vehicle", "carryable"],
+      "state": { "inflation": "deflated" },
+      "vehicle": {
+        "mobile": true,
+        "enterableWhen": {
+          "type": "itemState",
+          "itemId": "inflatable-boat",
+          "key": "inflation",
+          "equals": "inflated"
+        },
+        "enterBlockedMessage": "The boat is a flat pile of plastic — it'd need to be inflated first."
+      }
     }
   ],
 
@@ -740,6 +735,35 @@
           { "type": "playerAt", "roomId": "dam-room" },
           { "type": "hasItem", "itemId": "wrench" },
           { "type": "flag", "key": "gate-flag", "equals": true }
+        ]
+      }
+    },
+
+    {
+      "$comment": "BOAT INFLATE: pump the deflated raft. Requires hasItem(pump) and the boat in the same room (or carryable in inventory while deflated). Active only while deflated. Boarding/disembarking are engine actions (not intents) — the LLM calls board(itemId) directly.",
+      "id": "inflate-boat",
+      "prompt": "Player inflates, pumps up, fills, or blows up the boat (with the pump).",
+      "active": {
+        "type": "and",
+        "all": [
+          { "type": "or", "any": [
+            { "type": "itemAt", "itemId": "inflatable-boat", "location": "dam-base" },
+            { "type": "hasItem", "itemId": "inflatable-boat" }
+          ]},
+          { "type": "hasItem", "itemId": "pump" },
+          { "type": "itemState", "itemId": "inflatable-boat", "key": "inflation", "equals": "deflated" }
+        ]
+      }
+    },
+    {
+      "$comment": "BOAT REPAIR with putty (in tube). Active only when boat is punctured and player carries putty. Consumed on use.",
+      "id": "repair-boat-with-putty",
+      "prompt": "Player plugs, repairs, patches, or applies putty to the punctured boat.",
+      "active": {
+        "type": "and",
+        "all": [
+          { "type": "itemState", "itemId": "inflatable-boat", "key": "inflation", "equals": "punctured" },
+          { "type": "hasItem", "itemId": "putty" }
         ]
       }
     }
@@ -2292,6 +2316,246 @@
       },
       "effects": [
         { "type": "setFlag", "key": "empty-handed", "value": false }
+      ]
+    },
+
+    {
+      "$comment": "BOAT INFLATE — pump turns the deflated boat into a seaworthy vehicle. The vehicle.enterableWhen on the item gates board()ing on this state automatically.",
+      "id": "boat-inflates",
+      "once": false,
+      "when": { "type": "intentMatched", "signalId": "inflate-boat" },
+      "effects": [
+        { "type": "setItemState", "itemId": "inflatable-boat", "key": "inflation", "value": "inflated" },
+        { "type": "removeMatchedIntent", "signalId": "inflate-boat" }
+      ],
+      "narration": "The boat hisses and swells into a sturdy yellow raft, ready for the river."
+    },
+    {
+      "$comment": "BOAT REPAIR — putty closes the puncture. Returns boat to deflated state (must be re-inflated). Putty consumed.",
+      "id": "boat-repairs",
+      "once": false,
+      "when": { "type": "intentMatched", "signalId": "repair-boat-with-putty" },
+      "effects": [
+        { "type": "setItemState", "itemId": "inflatable-boat", "key": "inflation", "value": "deflated" },
+        { "type": "moveItem", "itemId": "putty", "to": "nowhere" },
+        { "type": "removeMatchedIntent", "signalId": "repair-boat-with-putty" }
+      ],
+      "narration": "You smear the putty over the gash. With a final hiss the rip seals; the boat is patched, deflated, and ready to inflate again. The tube of putty is now empty."
+    },
+    {
+      "$comment": "WEAPON-IN-VEHICLE PUNCTURES BOAT — the canonical 'thin plastic vs sharp object' check, done in the simplest possible framing: player is in the boat AND has any item tagged weapon → boat punctures, player ejected back to dam-base. Catches both the boarding-with-weapon case AND any other path that leaves a weapon in the boat-with-player state. Tag-driven so any new weapon (just give it tag:weapon) automatically participates.",
+      "id": "weapon-in-vehicle-punctures-boat",
+      "once": false,
+      "priority": 100,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "inVehicle", "itemId": "inflatable-boat" },
+          { "type": "inventoryHasTag", "tag": "weapon" }
+        ]
+      },
+      "effects": [
+        { "type": "setItemState", "itemId": "inflatable-boat", "key": "inflation", "value": "punctured" },
+        { "type": "setPlayerVehicle", "itemId": null },
+        { "type": "moveItem", "itemId": "inflatable-boat", "to": "dam-base" },
+        { "type": "movePlayer", "to": "dam-base" }
+      ],
+      "narration": "Something sharp slips — the boat hisses, sputters, and collapses to a useless pile of plastic. You're spat out onto the riverbank at the foot of the dam."
+    },
+
+    {
+      "$comment": "RIVER CURRENT TICKS — increment a counter each turn the player is in-boat at any river-N. The advance triggers (next block) gate on the counter reaching 2 (gives player one full turn at each river to choose where to land before the current carries them). Five separate triggers per river so afterAction:once-each prevents cascading all the way down in one turn.",
+      "id": "river-1-tick",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "river-1" },
+          { "type": "inVehicle", "itemId": "inflatable-boat" }
+        ]
+      },
+      "effects": [
+        { "type": "adjustFlag", "key": "river-tick-counter", "by": 1 }
+      ]
+    },
+    {
+      "id": "river-2-tick",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "river-2" },
+          { "type": "inVehicle", "itemId": "inflatable-boat" }
+        ]
+      },
+      "effects": [
+        { "type": "adjustFlag", "key": "river-tick-counter", "by": 1 }
+      ]
+    },
+    {
+      "id": "river-3-tick",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "river-3" },
+          { "type": "inVehicle", "itemId": "inflatable-boat" }
+        ]
+      },
+      "effects": [
+        { "type": "adjustFlag", "key": "river-tick-counter", "by": 1 }
+      ]
+    },
+    {
+      "id": "river-4-tick",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "river-4" },
+          { "type": "inVehicle", "itemId": "inflatable-boat" }
+        ]
+      },
+      "effects": [
+        { "type": "adjustFlag", "key": "river-tick-counter", "by": 1 }
+      ]
+    },
+    {
+      "id": "river-5-tick",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "river-5" },
+          { "type": "inVehicle", "itemId": "inflatable-boat" }
+        ]
+      },
+      "effects": [
+        { "type": "adjustFlag", "key": "river-tick-counter", "by": 1 }
+      ]
+    },
+
+    {
+      "$comment": "RIVER CURRENT ADVANCE — when the per-river counter hits 2, advance player + boat one room downstream and reset counter. River-5 doesn't have an advance — it has the waterfall-death trigger instead. Threshold of 2 means player gets the arrival turn + 1 more turn to land before drifting on.",
+      "id": "river-1-advance",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "river-1" },
+          { "type": "inVehicle", "itemId": "inflatable-boat" },
+          { "type": "compare",
+            "left": { "kind": "flag", "key": "river-tick-counter" },
+            "op": ">=",
+            "right": { "kind": "literal", "value": 2 }
+          }
+        ]
+      },
+      "effects": [
+        { "type": "movePlayer", "to": "river-2" },
+        { "type": "moveItem", "itemId": "inflatable-boat", "to": "river-2" },
+        { "type": "setFlag", "key": "river-tick-counter", "value": 0 }
+      ],
+      "narration": "The current carries you downstream."
+    },
+    {
+      "id": "river-2-advance",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "river-2" },
+          { "type": "inVehicle", "itemId": "inflatable-boat" },
+          { "type": "compare",
+            "left": { "kind": "flag", "key": "river-tick-counter" },
+            "op": ">=",
+            "right": { "kind": "literal", "value": 2 }
+          }
+        ]
+      },
+      "effects": [
+        { "type": "movePlayer", "to": "river-3" },
+        { "type": "moveItem", "itemId": "inflatable-boat", "to": "river-3" },
+        { "type": "setFlag", "key": "river-tick-counter", "value": 0 }
+      ],
+      "narration": "The current carries you downstream, around a bend."
+    },
+    {
+      "id": "river-3-advance",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "river-3" },
+          { "type": "inVehicle", "itemId": "inflatable-boat" },
+          { "type": "compare",
+            "left": { "kind": "flag", "key": "river-tick-counter" },
+            "op": ">=",
+            "right": { "kind": "literal", "value": 2 }
+          }
+        ]
+      },
+      "effects": [
+        { "type": "movePlayer", "to": "river-4" },
+        { "type": "moveItem", "itemId": "inflatable-boat", "to": "river-4" },
+        { "type": "setFlag", "key": "river-tick-counter", "value": 0 }
+      ],
+      "narration": "The current carries you faster — the rumble ahead grows louder."
+    },
+    {
+      "id": "river-4-advance",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "river-4" },
+          { "type": "inVehicle", "itemId": "inflatable-boat" },
+          { "type": "compare",
+            "left": { "kind": "flag", "key": "river-tick-counter" },
+            "op": ">=",
+            "right": { "kind": "literal", "value": 2 }
+          }
+        ]
+      },
+      "effects": [
+        { "type": "movePlayer", "to": "river-5" },
+        { "type": "moveItem", "itemId": "inflatable-boat", "to": "river-5" },
+        { "type": "setFlag", "key": "river-tick-counter", "value": 0 }
+      ],
+      "narration": "The current sweeps you forward; the roar of falling water fills your ears. This is your last chance to land — east to the sandy beach!"
+    },
+    {
+      "$comment": "RIVER-5 WATERFALL DEATH — at river-5 with counter >= 2, player goes over Aragain Falls. Threshold same as the others (2 ticks of grace). Player has one full turn at river-5 to escape east → shore.",
+      "id": "river-5-waterfall-death",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "playerAt", "roomId": "river-5" },
+          { "type": "inVehicle", "itemId": "inflatable-boat" },
+          { "type": "compare",
+            "left": { "kind": "flag", "key": "river-tick-counter" },
+            "op": ">=",
+            "right": { "kind": "literal", "value": 2 }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "endGame",
+          "won": false,
+          "message": "**** You have died ****\n\nUnfortunately, the magic boat doesn't provide any protection from the rocks and boulders one meets at the bottom of waterfalls. Including this one. Aragain Falls roars its indifference."
+        }
       ]
     }
   ],

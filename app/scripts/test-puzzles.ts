@@ -308,6 +308,156 @@ console.log("\n=== #10 Empty-handed (timber-room squeeze) ===");
     : fail("west still blocked or hidden", JSON.stringify(w));
 }
 
+// ----- Puzzle #11: Boat / river travel (vehicle primitive) -----
+console.log("\n=== #11 Boat / river travel ===");
+{
+  // Inflate path: pump + boat in inventory + at dam-base + deflated
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    playerLocation: "dam-base",
+    itemLocations: { ...e.state.itemLocations, pump: "inventory" },
+  };
+  // Confirm boat starts deflated and not boardable
+  const r0 = e.execute({ type: "board", itemId: "inflatable-boat" });
+  !r0.ok && (r0.event as { reason?: string }).reason === "vehicle-blocked"
+    ? pass("can't board deflated boat (vehicle-blocked)")
+    : fail(`expected vehicle-blocked, got ${JSON.stringify(r0.event)}`);
+
+  // Match inflate intent → trigger fires → boat is inflated
+  e.execute({ type: "recordIntent", signalId: "inflate-boat" });
+  e.state.itemStates["inflatable-boat"]?.inflation === "inflated"
+    ? pass("inflate intent → boat state is inflated")
+    : fail(`inflation = ${e.state.itemStates["inflatable-boat"]?.inflation}`);
+
+  // Try to board with sword in inventory → puncture trigger fires
+  const e2 = newEngine();
+  e2.state = {
+    ...e2.state,
+    playerLocation: "dam-base",
+    itemLocations: { ...e2.state.itemLocations, pump: "inventory", sword: "inventory" },
+  };
+  e2.execute({ type: "recordIntent", signalId: "inflate-boat" });
+  // Now board — engine boards (no weapon check at engine level), but the
+  // puncture trigger fires immediately (priority 100) on inVehicle+weapon.
+  e2.execute({ type: "board", itemId: "inflatable-boat" });
+  e2.state.itemStates["inflatable-boat"]?.inflation === "punctured" &&
+    e2.state.playerVehicle === null &&
+    e2.state.playerLocation === "dam-base"
+    ? pass("board with sword → puncture trigger ejects player + sets boat punctured")
+    : fail(
+        `inflation=${e2.state.itemStates["inflatable-boat"]?.inflation} vehicle=${e2.state.playerVehicle} loc=${e2.state.playerLocation}`,
+      );
+
+  // Repair with putty → boat back to deflated
+  const e3 = newEngine();
+  e3.state = {
+    ...e3.state,
+    playerLocation: "dam-base",
+    itemLocations: { ...e3.state.itemLocations, putty: "inventory" },
+    itemStates: {
+      ...e3.state.itemStates,
+      "inflatable-boat": {
+        ...(e3.state.itemStates["inflatable-boat"] ?? {}),
+        inflation: "punctured",
+      },
+    },
+  };
+  e3.execute({ type: "recordIntent", signalId: "repair-boat-with-putty" });
+  e3.state.itemStates["inflatable-boat"]?.inflation === "deflated" &&
+    e3.state.itemLocations.putty === "nowhere"
+    ? pass("repair with putty → boat deflated, putty consumed")
+    : fail(
+        `inflation=${e3.state.itemStates["inflatable-boat"]?.inflation} putty=${e3.state.itemLocations.putty}`,
+      );
+
+  // Clean launch: no weapons, inflated, board → in vehicle, then ride downstream
+  const e4 = newEngine();
+  e4.state = {
+    ...e4.state,
+    playerLocation: "dam-base",
+    itemLocations: { ...e4.state.itemLocations, pump: "inventory" },
+  };
+  e4.execute({ type: "recordIntent", signalId: "inflate-boat" });
+  e4.execute({ type: "board", itemId: "inflatable-boat" });
+  e4.state.playerVehicle === "inflatable-boat"
+    ? pass("clean board → playerVehicle set")
+    : fail(`vehicle=${e4.state.playerVehicle}`);
+
+  // go(down) from dam-base → river-1? Actually dam-base has no down exit.
+  // Use movePlayer effect via /tp-style state to start at river-1 with the boat.
+  e4.state = {
+    ...e4.state,
+    playerLocation: "river-1",
+    itemLocations: { ...e4.state.itemLocations, "inflatable-boat": "river-1" },
+  };
+
+  // Tick 1 — counter increments to 1, no advance
+  e4.execute({ type: "wait" });
+  e4.state.flags["river-tick-counter"] === 1 && e4.state.playerLocation === "river-1"
+    ? pass("river-1 turn 1: counter=1, still at river-1")
+    : fail(`counter=${e4.state.flags["river-tick-counter"]} loc=${e4.state.playerLocation}`);
+
+  // Tick 2 — counter hits 2, advance fires, player moves to river-2 + counter
+  // resets to 0. River-2-tick was already checked earlier in this Phase 2
+  // pass (when player was still at river-1) so it doesn't fire — player
+  // arrives at river-2 with counter=0, getting the full grace turn at the
+  // new room. Generous-by-design.
+  e4.execute({ type: "wait" });
+  e4.state.playerLocation === "river-2" &&
+    e4.state.itemLocations["inflatable-boat"] === "river-2" &&
+    e4.state.flags["river-tick-counter"] === 0
+    ? pass("river-1 turn 2: advance to river-2 (boat follows, counter resets, no cascade)")
+    : fail(
+        `loc=${e4.state.playerLocation} boat=${e4.state.itemLocations["inflatable-boat"]} counter=${e4.state.flags["river-tick-counter"]}`,
+      );
+
+  // Land at river-3 via go(west) → boat travels to white-cliffs-north
+  const e5 = newEngine();
+  e5.state = {
+    ...e5.state,
+    playerLocation: "river-3",
+    itemLocations: { ...e5.state.itemLocations, "inflatable-boat": "river-3" },
+    itemStates: {
+      ...e5.state.itemStates,
+      "inflatable-boat": { ...(e5.state.itemStates["inflatable-boat"] ?? {}), inflation: "inflated" },
+    },
+    playerVehicle: "inflatable-boat",
+  };
+  e5.execute({ type: "go", direction: "west" });
+  e5.state.playerLocation === "white-cliffs-north" &&
+    e5.state.itemLocations["inflatable-boat"] === "white-cliffs-north"
+    ? pass("go(west) at river-3 lands player + boat at white-cliffs-north")
+    : fail(
+        `player=${e5.state.playerLocation} boat=${e5.state.itemLocations["inflatable-boat"]}`,
+      );
+
+  // Disembark at landing → playerVehicle clears
+  e5.execute({ type: "disembark" });
+  e5.state.playerVehicle === null
+    ? pass("disembark at landing → playerVehicle null")
+    : fail(`vehicle=${e5.state.playerVehicle}`);
+
+  // Waterfall death: at river-5, in-boat, after 2 ticks → endGame
+  const e6 = newEngine();
+  e6.state = {
+    ...e6.state,
+    playerLocation: "river-5",
+    itemLocations: { ...e6.state.itemLocations, "inflatable-boat": "river-5" },
+    itemStates: {
+      ...e6.state.itemStates,
+      "inflatable-boat": { ...(e6.state.itemStates["inflatable-boat"] ?? {}), inflation: "inflated" },
+    },
+    playerVehicle: "inflatable-boat",
+  };
+  e6.execute({ type: "wait" }); // tick 1
+  e6.execute({ type: "wait" }); // tick 2 → death
+  e6.state.finished?.won === false &&
+    /waterfall/i.test(e6.state.finished?.message ?? "")
+    ? pass("river-5 + 2 turns → endGame waterfall death")
+    : fail(`finished=${JSON.stringify(e6.state.finished)}`);
+}
+
 // ----- Done -----
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

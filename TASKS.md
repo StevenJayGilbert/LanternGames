@@ -143,7 +143,7 @@ These still don't fit the current schema:
 - ~~**Coffin at altar**~~ — DONE. Passive triggers (no intent): on/off based on whether player carries the coffin while at south-temple. Mirrors canonical SOUTH-TEMPLE-FCN exactly.
 - ~~**Endgame stone barrow + won-flag**~~ — DONE. `unlock-endgame` trigger fires when all 18 treasures in trophy-case (15 original + bar + pot-of-gold + diamond), sets won-flag, narrates "almost inaudible voice" line. `stone-barrow-ends-game` afterAction trigger ends the game with credits when player enters.
 - ~~**Coal-mine "drop everything" (`empty-handed`)**~~ — DONE. 2 symmetric triggers track inventoryCount and toggle the flag automatically.
-- **Boat / river travel** — DEFERRED. Canonical mechanics richer than initially scoped: VEHBIT vehicle, `inflatable-boat`+`pump`+`inflated-boat`+`punctured-boat` state machine, automatic current via queued I-RIVER tick, weapon-puncture on board, BOAT-LABEL inside boat, river-5 waterfall death. Faking with flags has too many failure modes. Wait for vehicle/enterable concept (Tier 2 schema) or ship a heavily simplified version that loses puzzle integrity.
+- ~~**Boat / river travel**~~ — DONE via the new vehicle primitive (see Phase 4.5 schema additions below). `inflatable-boat` is a real engine vehicle with `state.inflation: deflated|inflated|punctured`, mobile=true so it travels with the player on go(). Boarding with any item tagged `weapon` triggers the puncture (`inVehicle + inventoryHasTag(weapon)` → eject + setItemState(punctured)). Per-river current via afterAction tick + threshold pattern: 5 ticks, 4 advances (river-1..4), 1 waterfall death (river-5). Putty repair available in tube. River-tick-counter resets on advance, no cascade.
 - **Score system** — point-per-treasure, max 350; rank thresholds. Counter mechanics work but **dynamic narration substitution** (interpolating running score into prose) doesn't exist; would require templated narration. Defer.
 - **Death + reincarnation** — current `player-killed` calls `endGame` (terminal). Needs new `respawn` effect OR per-treasure conditional moveItem chain to drop everything and respawn at temple altar.
 - **Bank of Zork** — needs new rooms (`bank-of-zork`, `safe-deposit-room`) and new items (`portrait`, `stack-of-bills`). Complex spatial walk-through-walls puzzle. Author later as own batch.
@@ -161,6 +161,8 @@ Discoveries from Phase 4 play and from surveying established IF systems. All add
 - [x] **Compare + NumericExpr** — generic numeric comparisons (replaced narrow `inventoryCount` Condition). Sources: literal, flag, passageState, itemState, inventoryCount, itemCountAt, matchedIntentsCount, visitedCount.
 - [x] **`openWhen?: Condition` / `closeWhen?: Condition`** on Item and Passage — extra Condition AND'd into the auto-gen open/close intent's active clause. Enables locked-chest, ritual-only-open, suppress-auto-gen patterns. Egg + grate + trap-door use it.
 - [x] **Overrides JSON layer** — [`zork-1.overrides.json`](app/src/stories/zork-1.overrides.json) holds hand-authored content (descriptions, glimpse prompts, manual passages, room exit patches, intents, triggers, win/lose conditions) merged into the mechanical extraction by id. Adding a new puzzle is a JSON edit, not a code change.
+- [x] **Vehicle primitive** — `Item.vehicle = { mobile?, enterableWhen?, enterBlockedMessage? }` + `GameState.playerVehicle: string | null` + `board(itemId)` / `disembark()` actions + `Condition.inVehicle({ itemId? })` + `Effect.setPlayerVehicle({ itemId })` + `WorldView.vehicle` field. Mobile vehicles travel with the player on `go()`; stationary ones reject movement (`vehicle-stationary`). The `inflatable-boat` is the first consumer; pattern generalizes to mounts, carts, magic carpets.
+- [x] **`inventoryHasTag` Condition** — `{ type: "inventoryHasTag", tag: string }` mirrors `itemHasTag` but scopes to the player's inventory. Lets triggers fire on tag-based player state (e.g. `inVehicle(boat) AND inventoryHasTag(weapon)` → puncture) without enumerating item ids. Future weapons participate automatically by carrying the `weapon` tag.
 
 ### Tier 1 — Must-have (puzzles break without these)
 
@@ -188,7 +190,6 @@ These exist in established systems but would be over-engineering until we have a
 - `edible`, `drinkable`
 - `flammable`, `burnable`
 - `climbable` (often expressible as a custom exit)
-- `enterable` / `vehicle` (Zork II boat, Eliza's couch)
 - `pushable between rooms`
 - `region` (story-wide grouping; LLM handles ambient mood from prose)
 - `weapon`, `plural-named`, `proper-named` — niche or LLM-handled
