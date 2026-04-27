@@ -82,6 +82,11 @@ function App() {
     () => loadSession(story.id)?.inputHistory ?? [],
   );
   const [historyIndex, setHistoryIndex] = useState(-1);
+  // Dev debug mode: when on, slash commands (/tp, /give, /help) are intercepted
+  // before reaching the narrator. Persisted across reloads. Off by default.
+  const [debugMode, setDebugMode] = useState<boolean>(
+    () => localStorage.getItem("lanterngames_debug") === "true",
+  );
   const transcriptRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -194,8 +199,29 @@ function App() {
     setHistory(nextHistory);
     setHistoryIndex(-1);
     setTranscript(transcriptAfterInput);
-    setLoading(true);
 
+    // Dev debug intercept — when debug mode is on, slash commands bypass the
+    // narrator entirely. Mutates engine state directly (no triggers fire) and
+    // appends a system message to the transcript. Off by default; safely no-op
+    // if the toggle is off (commands fall through to normal narration).
+    if (debugMode && text.startsWith("/")) {
+      const result = handleDebugCommand(text, engine);
+      const transcriptAfterDebug: TranscriptEntry[] = [
+        ...transcriptAfterInput,
+        { kind: "system", text: result },
+      ];
+      setTranscript(transcriptAfterDebug);
+      saveSession({
+        storyId: engine.story.id,
+        engineState: engine.state,
+        narratorHistory: narrator.getHistory(),
+        transcript: transcriptAfterDebug,
+        inputHistory: nextHistory,
+      });
+      return;
+    }
+
+    setLoading(true);
     try {
       const turn = await narrator.narrate(text);
       const entries: TranscriptEntry[] = [{ kind: "narration", text: turn.text }];
@@ -419,6 +445,18 @@ function App() {
           <button type="button" className="restart" onClick={restart} disabled={loading}>
             Restart
           </button>
+          <button
+            type="button"
+            className={`restart${debugMode ? " active" : ""}`}
+            onClick={() => {
+              const next = !debugMode;
+              setDebugMode(next);
+              localStorage.setItem("lanterngames_debug", String(next));
+            }}
+            title={debugMode ? "Debug ON — slash commands intercepted (/help)" : "Enable debug slash commands"}
+          >
+            {debugMode ? "Debug ●" : "Debug ○"}
+          </button>
           <button type="button" className="restart" onClick={resetConfig} disabled={loading}>
             {provider === "anthropic" ? "Clear key" : "Switch provider"}
           </button>
@@ -468,6 +506,91 @@ function App() {
       </form>
     </main>
   );
+}
+
+// Dev debug commands. Intercepted in submit() before reaching the narrator
+// when debugMode is on. Mutates engine.state directly — no triggers fire,
+// no LLM round-trip. Returns a plain string for the system transcript entry.
+function handleDebugCommand(text: string, engine: Engine): string {
+  const parts = text.trim().split(/\s+/);
+  const cmd = parts[0].toLowerCase();
+  const args = parts.slice(1);
+
+  switch (cmd) {
+    case "/help":
+      return [
+        "[DEBUG] Available commands:",
+        "  /tp <roomId>         — teleport to a room",
+        "  /give <itemId>       — add an item to your inventory",
+        "  /flag <key> <val>    — set a flag (val: true/false/<number>/<string>)",
+        "  /room                — show your current room id",
+        "  /find <substr>       — search for room/item ids matching the substring",
+        "  /help                — this help",
+      ].join("\n");
+
+    case "/room":
+      return `[DEBUG] You are at: ${engine.state.playerLocation}`;
+
+    case "/tp": {
+      const roomId = args[0];
+      if (!roomId) return "[DEBUG] Usage: /tp <roomId>";
+      const room = engine.story.rooms.find((r) => r.id === roomId);
+      if (!room) return `[DEBUG] No such room: "${roomId}". Try /find ${roomId}`;
+      engine.state = { ...engine.state, playerLocation: roomId };
+      return `[DEBUG] Teleported to ${roomId} (${room.name}).`;
+    }
+
+    case "/give": {
+      const itemId = args[0];
+      if (!itemId) return "[DEBUG] Usage: /give <itemId>";
+      const item = engine.story.items.find((i) => i.id === itemId);
+      if (!item) return `[DEBUG] No such item: "${itemId}". Try /find ${itemId}`;
+      engine.state = {
+        ...engine.state,
+        itemLocations: { ...engine.state.itemLocations, [itemId]: "inventory" },
+      };
+      return `[DEBUG] Added ${itemId} (${item.name}) to inventory.`;
+    }
+
+    case "/flag": {
+      const key = args[0];
+      const valStr = args.slice(1).join(" ");
+      if (!key || valStr === "") {
+        return "[DEBUG] Usage: /flag <key> <true|false|<number>|<string>>";
+      }
+      let val: string | number | boolean;
+      if (valStr === "true") val = true;
+      else if (valStr === "false") val = false;
+      else if (/^-?\d+(\.\d+)?$/.test(valStr)) val = Number(valStr);
+      else val = valStr;
+      engine.state = {
+        ...engine.state,
+        flags: { ...engine.state.flags, [key]: val },
+      };
+      return `[DEBUG] Set flag ${key} = ${JSON.stringify(val)}`;
+    }
+
+    case "/find": {
+      const q = (args[0] ?? "").toLowerCase();
+      if (!q) return "[DEBUG] Usage: /find <substring>";
+      const rooms = engine.story.rooms
+        .filter((r) => r.id.toLowerCase().includes(q))
+        .map((r) => r.id);
+      const items = engine.story.items
+        .filter((i) => i.id.toLowerCase().includes(q))
+        .map((i) => i.id);
+      const trim = (arr: string[]) =>
+        arr.length > 25 ? arr.slice(0, 25).join(", ") + ` … (+${arr.length - 25} more)` : arr.join(", ");
+      return [
+        `[DEBUG] Search "${q}":`,
+        `  rooms (${rooms.length}): ${trim(rooms) || "(none)"}`,
+        `  items (${items.length}): ${trim(items) || "(none)"}`,
+      ].join("\n");
+    }
+
+    default:
+      return `[DEBUG] Unknown command: ${cmd}. Try /help.`;
+  }
 }
 
 function buildIntro(engine: Engine, resumed: boolean): TranscriptEntry[] {

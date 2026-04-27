@@ -354,6 +354,12 @@ body {
   text-overflow: ellipsis;
 }
 
+.restart.active {
+  border-color: var(--accent);
+  background: rgba(122, 162, 255, 0.18);
+  color: var(--accent);
+}
+
 @media (max-width: 700px) {
   .game-header {
     flex-wrap: wrap;
