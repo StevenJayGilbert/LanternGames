@@ -31,7 +31,8 @@
     "gates-open": false,
     "low-tide": false,
     "low-tide-countdown": 0,
-    "endgame-narrated": false
+    "endgame-narrated": false,
+    "empty-handed": true
   },
 
   "$darknessComment": "Darkness model: a room is dark when it declares state.dark === true and no perceivable item has state.isLit === true. Composed from generic primitives (currentRoomState + anyPerceivableItemWith) — engine has no hardcoded darkness concept.",
@@ -2212,6 +2213,44 @@
         { "type": "setFlag", "key": "low-tide", "value": true }
       ],
       "narration": "Far below, the reservoir empties at last. What was deep water is now mud and silt — passable, if unpleasant."
+    },
+
+    {
+      "$comment": "PUZZLE #10 (bonus) EMPTY-HANDED COAL MINE — canonical: timber-room ↔ lower-shaft is a narrow squeeze that requires the player to carry NOTHING. Tracks inventoryCount in real time via two symmetric triggers; flag flips automatically on take/drop. The flag-gated exits (timber-room.west and lower-shaft's two return exits) open/close as a side effect. Player must drop the lit lamp before squeezing through; the lamp glows on the floor of the room they leave.",
+      "id": "empty-handed-on",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "compare",
+            "left": { "kind": "inventoryCount" },
+            "op": "<=",
+            "right": { "kind": "literal", "value": 0 }
+          },
+          { "type": "flag", "key": "empty-handed", "equals": false }
+        ]
+      },
+      "effects": [
+        { "type": "setFlag", "key": "empty-handed", "value": true }
+      ]
+    },
+    {
+      "id": "empty-handed-off",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "compare",
+            "left": { "kind": "inventoryCount" },
+            "op": ">",
+            "right": { "kind": "literal", "value": 0 }
+          },
+          { "type": "flag", "key": "empty-handed", "equals": true }
+        ]
+      },
+      "effects": [
+        { "type": "setFlag", "key": "empty-handed", "value": false }
+      ]
     }
   ],
 

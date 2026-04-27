@@ -124,10 +124,10 @@ Originally 18 exits gated on flags that nothing set. After the canonical-Zork-pu
 | ~~`lld-flag`~~ | bell + book + candles ritual | ✓ WIRED — ring bell + read book at hades w/ lit candles |
 | ~~`coffin-cure`~~ | coffin at altar | ✓ WIRED — passive: leave coffin out of inventory at south-temple |
 | ~~`rainbow-flag`~~ | wave scepter at rainbow | ✓ WIRED — wave sceptre at end-of-rainbow or aragain-falls; pot-of-gold materializes |
-| `empty-handed` | coal-mine "drop everything" | NOT WIRED — trivially doable: 2 triggers gated on `compare(inventoryCount, '<=', 0)` setting/clearing `empty-handed` when player at timber-room or lower-shaft. The lamp must be droppable (lit on floor) for the puzzle to be solvable in the dark. |
+| ~~`empty-handed`~~ | coal-mine "drop everything" | ✓ WIRED — 2 symmetric triggers track `inventoryCount` in real time, flipping `empty-handed` automatically as the player picks up / drops items. Player drops the lit lamp on the floor of timber-room (room stays lit via perceivable-light), squeezes through, retrieves on return. |
 | ~~`deflate`~~ | magic raft / boat | ~~HOT-FIXED~~ (white-cliffs ungated). Boat itself deferred — vehicle concept missing; canonical mechanics doc'd in puzzle list below. |
 
-Repro audit: same `node -e` snippet — re-running confirms only `empty-handed` (3 exits) remains. Down from 18 → 3 in one batch.
+Repro audit: same `node -e` snippet — re-running confirms **0 unwired flag-gated exits remain**. Down from 18 → 0 in one batch.
 
 ### Zork puzzles needing engine code (future work)
 
@@ -142,7 +142,7 @@ These still don't fit the current schema:
 - ~~**Bell + candles + book ritual** (LLD-flag)~~ — DONE. Adapted: ring-bell sets bell-rung; read-book-at-hades intent (gated on bell-rung + lit candles + book in inventory at hades) sets lld-flag and unblocks the in/south exits.
 - ~~**Coffin at altar**~~ — DONE. Passive triggers (no intent): on/off based on whether player carries the coffin while at south-temple. Mirrors canonical SOUTH-TEMPLE-FCN exactly.
 - ~~**Endgame stone barrow + won-flag**~~ — DONE. `unlock-endgame` trigger fires when all 18 treasures in trophy-case (15 original + bar + pot-of-gold + diamond), sets won-flag, narrates "almost inaudible voice" line. `stone-barrow-ends-game` afterAction trigger ends the game with credits when player enters.
-- **Coal-mine "drop everything" (`empty-handed`)** — STILL UNWIRED. Trivially doable in 2 triggers (see soft-lock audit above). Skipped in this batch only because not in plan.
+- ~~**Coal-mine "drop everything" (`empty-handed`)**~~ — DONE. 2 symmetric triggers track inventoryCount and toggle the flag automatically.
 - **Boat / river travel** — DEFERRED. Canonical mechanics richer than initially scoped: VEHBIT vehicle, `inflatable-boat`+`pump`+`inflated-boat`+`punctured-boat` state machine, automatic current via queued I-RIVER tick, weapon-puncture on board, BOAT-LABEL inside boat, river-5 waterfall death. Faking with flags has too many failure modes. Wait for vehicle/enterable concept (Tier 2 schema) or ship a heavily simplified version that loses puzzle integrity.
 - **Score system** — point-per-treasure, max 350; rank thresholds. Counter mechanics work but **dynamic narration substitution** (interpolating running score into prose) doesn't exist; would require templated narration. Defer.
 - **Death + reincarnation** — current `player-killed` calls `endGame` (terminal). Needs new `respawn` effect OR per-treasure conditional moveItem chain to drop everything and respawn at temple altar.

@@ -8609,6 +8609,70 @@
         }
       ],
       "narration": "Far below, the reservoir empties at last. What was deep water is now mud and silt — passable, if unpleasant."
+    },
+    {
+      "id": "empty-handed-on",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "inventoryCount"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "flag",
+            "key": "empty-handed",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "empty-handed",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "empty-handed-off",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "inventoryCount"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "flag",
+            "key": "empty-handed",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "empty-handed",
+          "value": false
+        }
+      ]
     }
   ],
   "defaultVisibility": {
@@ -8677,7 +8741,8 @@
     "gates-open": false,
     "low-tide": false,
     "low-tide-countdown": 0,
-    "endgame-narrated": false
+    "endgame-narrated": false,
+    "empty-handed": true
   },
   "winConditions": [
     {

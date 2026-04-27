@@ -271,6 +271,43 @@ console.log("\n=== #9 Dam control panel ===");
     : fail("north still blocked", JSON.stringify(n));
 }
 
+// ----- Puzzle #10 (bonus): Empty-handed coal mine -----
+console.log("\n=== #10 Empty-handed (timber-room squeeze) ===");
+{
+  const e = newEngine();
+  // Player starts with empty inventory; empty-handed should be true at boot
+  e.state.flags["empty-handed"] === true
+    ? pass("empty-handed = true at start (player has nothing)")
+    : fail(`empty-handed = ${e.state.flags["empty-handed"]} at start`);
+
+  // Pick up an item — flag should flip to false
+  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, lamp: "inventory" } };
+  e.execute({ type: "wait" });
+  e.state.flags["empty-handed"] === false
+    ? pass("empty-handed flips false when player carries lamp")
+    : fail(`empty-handed = ${e.state.flags["empty-handed"]} after pickup`);
+
+  // Drop the item LIT at timber-room — flag flips back true; lit lamp on
+  // floor keeps the dark room visible so the exit appears in the view.
+  e.state = {
+    ...e.state,
+    playerLocation: "timber-room",
+    itemLocations: { ...e.state.itemLocations, lamp: "timber-room" },
+    itemStates: { ...e.state.itemStates, lamp: { ...(e.state.itemStates.lamp ?? {}), isLit: true } },
+  };
+  e.execute({ type: "wait" });
+  e.state.flags["empty-handed"] === true
+    ? pass("empty-handed flips back true when player drops everything")
+    : fail(`empty-handed = ${e.state.flags["empty-handed"]} after drop`);
+
+  // Verify the gated exit is now passable
+  const v = e.getView();
+  const w = v.exits.find((x) => x.direction === "west");
+  w && !w.blocked
+    ? pass("timber-room.west → lower-shaft unblocked when empty-handed")
+    : fail("west still blocked or hidden", JSON.stringify(w));
+}
+
 // ----- Done -----
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);
