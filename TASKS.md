@@ -113,6 +113,22 @@ Doable now in JSON; just haven't been wired:
 - [x] **`moveItem.to` accepts item ids** — validator now matches what `Item.location` already permits (and what the runtime always supported). Lets `moveItem(treasure, "thief")` work for thief-steals; lets the player `put` mechanism's runtime parent be expressed in triggers. Self-containment (`moveItem(X, X)`) is rejected.
 - [x] **Movement with extra nouns — STYLE_INSTRUCTIONS rule** — fixes the "go down the stairs" bug where the LLM saw a scenery item with a matching noun and refused movement. Rule: "extract just the direction; the room's `exits` list is the source of truth; do NOT refuse a movement command because of a named scenery item." Generalizes to "go up the chimney", "enter the kitchen", "climb the ladder", "go through the door". Tightened the `go` tool description with an explicit example.
 
+### Soft-locks from unwired flag-gated exits (audit, 2026)
+
+Eighteen room exits across the extracted Zork are gated on flags that nothing in the story sets — they belong to puzzles below that aren't wired yet, and several create one-way soft-locks (player walks in via an ungated exit, can't walk out because the return is gated). One of these (`white-cliffs-north` / `-south` ↔ `damp-cave` on `flag(deflate)`) was hot-fixed by ungating the foot exits since the magic-boat puzzle is unlikely to land soon. The rest still permanently block their respective rooms:
+
+| Flag | Puzzle | Affected exits |
+|---|---|---|
+| `won-flag` | endgame stone barrow | west-of-house → stone-barrow (sw, in) |
+| `low-tide` | dam / reservoir drain | reservoir-north ↔ reservoir-south |
+| `lld-flag` | bell + book + candles ritual | entrance-to-hades → land-of-living-dead (in, south) |
+| `coffin-cure` | coffin-at-altar | south-temple → tiny-cave (down) |
+| `rainbow-flag` | wave scepter at rainbow | aragain-falls → on-rainbow (west, up); end-of-rainbow → on-rainbow (up, ne, e) |
+| `empty-handed` | coal-mine "drop everything" | timber-room ↔ lower-shaft |
+| ~~`deflate`~~ | ~~magic raft / boat~~ | ~~white-cliffs ↔ damp-cave~~ — HOT-FIXED |
+
+When wiring each puzzle below, set the corresponding flag at the appropriate trigger and the exits open automatically. Repro audit: the `node -e` snippet that found this is in commit history; re-run after each puzzle wires to confirm cleanup.
+
 ### Zork puzzles needing engine code (future work)
 
 These still don't fit the current schema:
@@ -295,6 +311,7 @@ The point of building a generic engine. If Phase 4 proved the schema can host re
 
 - [ ] Author docs: `docs/story-format.md` polished, complete, with examples for every feature
 - [ ] Standalone JSON Schema validator + helpful error messages (catch typos, dangling references, unreachable rooms)
+- [ ] **Validator rule: detect intent-loop foot-guns.** If a trigger has `once: false` AND its `when` evaluates `intentMatched(X)` (anywhere in the condition tree, including inside `and`/`or`/`not`), AND its effects don't include `removeMatchedIntent(X)` for that signal (anywhere, including inside `random` branches), warn at story-load. Reason: `matchedIntents` persists forever once flipped, so without consume-the-flag the trigger re-fires every iteration of the regular fixed-point loop and floods narrationCues until `MAX_TRIGGER_ITERATIONS` (100). Hit this in v0 — the hand-authored `lamp-lights` and `lamp-extinguishes` triggers shipped without the consume; ~100 duplicate "The brass lantern flickers on" cues per turn until detected via the dev debug panel. Caveat: false positives possible when `when` is `intentMatched(X) AND not(flag(Y))` and effects flip `flag(Y)` to invalidate the second clause — make the warning suppressible with a `$validator-skip-intent-loop-check: true` annotation on the trigger if needed. Existing reusable scan: see the inline `node -e` script used to detect the bug; that logic is the spec.
 - [ ] Example stories shipped in-repo: 3-room toy, 10-room mid-size, the full Zork
 - [ ] CLI: `npm run validate <story.json>` for authors editing locally
 - [ ] (Stretch) In-browser story uploader so authors can playtest without forking the repo

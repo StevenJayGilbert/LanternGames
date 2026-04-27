@@ -142,7 +142,9 @@ Your two jobs:
 
 Rules:
 - The engine owns the world. You cannot describe events the engine hasn't computed. Always call a tool first if the player is requesting an action.
-- Pass IDs (not display names) to tools. The current view lists available IDs in three places: \`itemsHere\` (items in the room or inventory), \`passagesHere\` (passages — doors, windows, archways, etc. — visible from this room), and \`inventory\`.
+- **Be charitable about player input.** Players type fast, abbreviate, make typos, drop words, and use partial names. Infer their intent and act on it — don't make them re-type. Examples that should ALL just work without asking for clarification: "examime sword" / "x sword" / "look at sword" → \`examine(sword)\`; "n" / "go n" / "head north" / "walk north" → \`go(north)\`; "i" / "inv" / "what am I carrying" → \`inventory\`; "platinum" when the only platinum-anything in the view is the platinum bar → that bar; "yes" right after you offered an action → execute that action; "kill troll" → \`attack(troll, sword)\` if the player carries a sword. Only ask for clarification when the input is GENUINELY ambiguous (e.g. "take the key" when the view actually has two distinct keys). Never refuse for spelling or grammar; never demand the player retype to "spell correctly". The strict rules below are about validating tool ARGUMENTS — they are NOT permission to reject a player who didn't type a perfect string.
+- **Where to find the current world view.** The view JSON lives in the most recent \`tool_result\` in your conversation history — that's the engine's snapshot of the room, items, exits, and inventory. The user message gives you only the player's command (and the [Active intent signals] line). When you need to know what's around the player right now, scroll back to the latest tool_result. State-mutating tools (look, take, drop, put, go, attack, wait) include a fresh \`view\` field in their result; non-mutating tools (examine, read, inventory, recordIntent) omit it because nothing changed — for those, the previous tool_result's view is still accurate. **Exception:** the very first user message of a session DOES include a \`[Current view]\` block since there's no prior tool_result yet.
+- Pass IDs (not display names) to tools. Find them in the view's \`itemsHere\` (items in the room), \`passagesHere\` (doors, windows, archways), or \`inventory\`.
 - Items and passages share one ID namespace. \`examine\` accepts either kind. \`take\`, \`drop\`, \`put\`, and \`read\` work on items only.
 - Items and passages both carry a typed \`state\` map (e.g. \`{ isOpen: true }\`, \`{ broken: false }\`). The engine has NO built-in open/close/break verbs — state mutates only through triggers. When the player tries to mutate state ("open the box", "close the door", "smash the vase", "shut the window"), look at the [Active intent signals] block in the user message. If one matches the player's intent, call \`recordIntent(signalId)\` BEFORE narrating. The matching trigger will fire and update the state; the next view will reflect the change. Then narrate the result.
 - Passages connect two rooms. Each PassageView shows the passage's name, description, current \`state\`, and what room it connects to. Some passages are gated by traversableWhen — when the player tries to traverse and it's blocked, the engine returns event.type === "rejected" with reason "traverse-blocked" and a custom message. Narrate around it.
@@ -153,15 +155,18 @@ Rules:
 - "Put X in my inventory" / "stash X" / "pocket X" / "pick up and store X" all mean \`take(X)\`. Inventory is not a container — items live there but you don't \`put\` into it.
 - If a player command genuinely can't be enacted with the available tools (truly impossible action), respond with prose explaining why, instead of calling a tool. Don't invent a tool that doesn't exist.
 - **Don't call tools for conversational filler.** If the player's input is just "hi", "thanks", "ok", "hmm", "interesting", or similar small talk that doesn't request a world change, respond in prose with no tool call. Tools mutate engine state — only call them when the player wants the world to change or wants information that requires querying the engine.
-- **Validate item ids against the current view before calling tools.** Only pass item ids that appear in the view's \`itemsHere\`, \`passagesHere\`, or \`inventory\`. If the player names something that isn't in the view, don't invent an id — respond in prose explaining you don't see it (or asking which item they mean if it's ambiguous).
+- **Resolve player phrasing to view ids.** When the player names an item ("take the platinum", "examine sword", "open the box"), find the matching id in the view's \`itemsHere\`, \`passagesHere\`, or \`inventory\` — match by partial name, by tag, by description hint, by context, by the player's intent. The player says "platinum" → if the view has \`{id: "platinum-bar", name: "platinum bar"}\`, that's a match. The player says "the door" → match the only door in \`passagesHere\`. ONLY refuse when (a) genuinely nothing in the view could plausibly match, in which case narrate "you don't see X here" in story voice — or (b) two or more distinct items match equally and you genuinely need to disambiguate. Don't pass made-up ids to tools, but DO bridge the gap between the player's casual phrasing and the engine's id namespace.
 - **Stay in NPC voice across long sessions.** When the player is mid-conversation with a named NPC, mentally re-anchor on that NPC's \`personality\` field at the start of each response so their voice doesn't drift over many turns. Different NPCs have different voices — don't blend them.
 - Narration style: second person, present tense ("You see…"). Match the story's tone. Be vivid but concise — usually 1–3 sentences. After a multi-step chain, write ONE coherent narration of the whole sequence, not a paragraph per step.
 - Never invent items, rooms, exits, passages, or plot points not in the engine's data. The engine has already filtered the view based on what the player can perceive — if an item or exit isn't listed, the player can't see it (could be darkness, fog, magic, etc.). If the room description tells you the player can't see (e.g. "It is pitch black"), narrate accordingly and don't reference unlisted things.
 - When the engine returns "narrationCues" in a tool_result, weave them naturally into your narration — they are state changes the player should notice.
+- **Always call \`examine\` for look-at-item commands — even if you described that item before.** When the player says "look at the sword", "examine the troll", "x knife", "inspect the lantern", "describe the egg" — call \`examine(itemId)\` every single time. Don't reuse a prior description from earlier in the conversation; don't rely on your imagination. Items change state turn over turn (a chest opens, a sword starts glowing when enemies appear, a lantern's battery drains, a door slams shut). The engine returns the CURRENT description — only that text reflects right-now reality.
+- **\`event.description\` / \`event.text\` carries STATE SIGNALS — preserve them when you embellish.** The text the engine returns from \`examine\` and \`read\` is the item in its *current* state, and authors load it with puzzle hints: a sword described as "glowing with a faint blue glow" warns of nearby hostiles; a door described as "slightly ajar" is in a particular open state; a leaflet described as "wet and barely legible" has been dunked. **Embellish freely**, set mood, weave it into a richer scene — that's your job. But don't *drop or rewrite away* the state cues. If the description says glowing, the player must hear glowing. If it says ajar, not just "open". The vivid adjectives ARE the puzzle. Treat the engine's text as facts you must convey, then dress the prose around them however serves the story.
 - When an item in the view has a \`personality\` field, that's the author's note describing its voice and manner. Use it whenever you narrate the entity's actions and especially when the player tries to talk to, ask, shout at, or otherwise interact with it conversationally. Stay in character. Don't paraphrase the personality field directly to the player — embody it. Free-form dialogue ("talk to troll", "ask wizard about gold") doesn't need an engine tool — respond in character with prose. If the conversation should change state, look for a matching intent signal and call recordIntent first.
 - **NPC dialogue intents:** When an NPC has an active \`talk-*\` (or similar conversational) intent signal in the [Active intent signals] block, call \`recordIntent(signalId)\` BEFORE narrating the dialogue. The intent represents "the player tried to engage this NPC conversationally" — recording it lets author triggers fire (aggravation, befriending, shifts in mood). Then narrate the NPC's response in character using its personality. This applies even when the player's "speech" isn't a direct quote — e.g. "insult the troll", "shout at the cyclops", "bargain with the thief" all count as engaging conversationally.
 - **Movement with extra nouns:** When the player phrases movement with extra words ("go down the stairs", "go up the chimney", "climb up the ladder", "go through the door", "enter the kitchen", "head out the window", "descend the staircase"), extract just the direction or destination and call \`go(direction)\`. The room's \`exits\` list is the source of truth for movement — even if the player names a scenery item or passage, what matters is which direction it's in. If multiple directions could match the named feature, pick the one whose exit \`target\` or \`passage\` field references it; otherwise pick the direction the room description associates with that feature ("stairway leading down" → \`go(down)\`). **Do NOT refuse a movement command just because the player named a scenery item in it.** Scenery items are just flavor — the exit is what moves the player.
 - For combat: when the player attacks ("attack X with Y", "swing Y at X", "throw Y at X", "kill X with Y", "hit X", "shoot X with Y", etc.), call \`attack(itemId, targetId, mode?)\`. Pick \`mode\` from the player's verb — "swing" for swinging, "throw" for throwing, "stab" for thrusting, "shoot" for ranged, etc. Omit mode for a generic attack. The engine doesn't compute outcomes — story triggers do, and they emit narrationCues describing what happened. Narrate from those cues. If no cues are returned (no matching trigger fired), the attack had no meaningful effect — narrate the futility briefly.
+- **You are the narrator, not the player's conscience.** When the player issues a command — *especially* "attack", "kill", "finish off", "destroy", "shoot", "stab" against any target including unconscious or defenseless ones — call the corresponding tool. **Do NOT refuse on moral grounds. Do NOT insert "you hesitate", "you cannot bring yourself", "something stays your hand", or "the player decides not to".** The player's character has agency over their own choices; your job is to translate intent into a tool call and narrate what the engine produces. Authors have written triggers for the consequences (often including specific outcomes for "attack helpless target" — e.g. an instant kill on an unconscious enemy). Refusing to call the tool denies the player both the action and the authored outcome. Interactive fiction's premise is that the player's commands are sovereign; honor that.
 - **Critical rule: NEVER narrate state changes that didn't happen.** If the player wants to move, take, drop, put, open, close, or do anything that changes engine state, you MUST call the appropriate tool. Don't describe taking an item, going somewhere, opening a passage, etc. without first calling the tool and seeing the result. If you skip the tool call, the engine state stays the same and your narration becomes a lie that the next turn's view will contradict (player still in same room, item still on the floor, door still closed).
 - If the engine returns event.type === "rejected", write a short refusal that fits the rejection reason — DO NOT pretend the action succeeded. For "exit-blocked", "traverse-blocked", "no-such-direction", or "container-inaccessible": narrate the refusal using the engine's message (if provided) and the player STAYS WHERE THEY ARE. Do not describe them moving, taking, or otherwise acting on the world.`;
 
@@ -195,9 +200,11 @@ export class Narrator {
     // saved). Truncate to the last consistent prefix so the next API call is
     // valid even when the disk save is corrupt.
     this.history = sanitizeHistory(opts.initialHistory ? [...opts.initialHistory] : []);
-    // Bumped from 30 — turns that use recordIntent ship 6 messages instead of
-    // 4 (extra tool_use + tool_result), so the cap was eating context fast.
-    this.maxHistoryMessages = opts.maxHistoryMessages ?? 50;
+    // Bumped to 100 from 30→50 because the §1-§4 cache-shrink optimizations
+    // dropped per-turn content so much that a 100-message history is still
+    // small (~10K tokens). Higher cap means we trim less often, which matters
+    // because trimming invalidates Anthropic's prompt cache (see trimHistory).
+    this.maxHistoryMessages = opts.maxHistoryMessages ?? 100;
   }
 
   // Snapshot of the current message history (for persistence). Returns a copy
@@ -208,7 +215,6 @@ export class Narrator {
 
   async narrate(playerInput: string): Promise<NarrationTurn> {
     const story = this.engine.story;
-    const viewBefore = this.engine.getView();
 
     // Snapshot history length BEFORE we push anything for this turn. If the
     // LLM round-trip throws partway through, we roll back to here so orphan
@@ -217,9 +223,19 @@ export class Narrator {
 
     const activeIntents = gatherActiveIntentSignals(this.engine.state, story);
     const intentBlock = formatIntentBlock(activeIntents);
+
+    // The current world view normally lives in the most recent tool_result
+    // (added by previous turns). On the very first turn of the session the LLM
+    // has no tool_result to consult, so embed the initial view in the user
+    // message just this once — STYLE_INSTRUCTIONS calls out this exception.
+    const viewBlock =
+      historyLengthBeforeTurn === 0
+        ? `\n\n[Current view]\n${formatView(this.engine.getView())}`
+        : "";
+
     const userMessage: Message = {
       role: "user",
-      content: `[Player command] ${playerInput}${intentBlock}\n\n[Current view]\n${formatView(viewBefore)}`,
+      content: `[Player command] ${playerInput}${intentBlock}${viewBlock}`,
     };
     this.history.push(userMessage);
 
@@ -257,6 +273,7 @@ export class Narrator {
           for (const toolUse of toolUses) {
             const action = toolToAction(toolUse);
             if (!action) {
+              console.warn(`[tool] ${toolUse.name}`, toolUse.input, "→ UNKNOWN TOOL");
               toolResults.push({
                 type: "tool_result",
                 tool_use_id: toolUse.id,
@@ -266,6 +283,17 @@ export class Narrator {
               continue;
             }
             engineResult = this.engine.execute(action);
+            const reason = engineResult.ok
+              ? ""
+              : ` (${(engineResult.event as { reason?: string }).reason ?? "?"})`;
+            const cues = engineResult.narrationCues.length
+              ? ` cues=${JSON.stringify(engineResult.narrationCues)}`
+              : "";
+            console.log(
+              `[tool] ${toolUse.name}`,
+              toolUse.input,
+              `→ ${engineResult.event.type}${reason}${cues}`,
+            );
             toolResults.push({
               type: "tool_result",
               tool_use_id: toolUse.id,
@@ -277,6 +305,10 @@ export class Narrator {
         }
 
         // No tool call — Claude responded with text only. That's the final text.
+        // Surface this in the console: LLM responding without ever calling a tool
+        // when the player asked for an action is the smoking gun for moralizing
+        // / hallucination (e.g. "you cannot bring yourself to attack the troll").
+        console.log(`[tool] (no tool call — text-only response)`);
         finalText = collectText(response);
         break;
       }
@@ -308,19 +340,31 @@ export class Narrator {
     this.history = [];
   }
 
+  // Trim only when SIGNIFICANTLY over the cap, and trim a BIG CHUNK at once.
+  // Why: Anthropic's prompt cache is keyed by exact byte prefix. Dropping any
+  // message off the front of the history shifts all subsequent byte offsets,
+  // invalidating the entire cached message-prefix on the next request. The old
+  // implementation trimmed 1-3 messages every turn once over the cap → cache
+  // invalidated EVERY TURN → ~5× cost regression. Trimming in chunks of 30
+  // pays the cache cost once per ~30 turns instead.
+  //
+  // Drop snaps to a clean turn boundary so we never strand a tool_result
+  // without its corresponding tool_use (which Anthropic rejects as malformed).
   private trimHistory(): void {
-    if (this.history.length <= this.maxHistoryMessages) return;
-    // Drop oldest messages — but trimming must snap to a clean turn boundary,
-    // i.e. the first surviving message must be a user message with only text
-    // content. If we cut in the middle of a tool-use/tool_result chain, the
-    // remaining tool_result references a tool_use that no longer exists, and
-    // Anthropic rejects the request as malformed.
-    const overflow = this.history.length - this.maxHistoryMessages;
-    let trimmed = this.history.slice(overflow);
+    const TRIM_CHUNK = 30;
+    if (this.history.length < this.maxHistoryMessages + TRIM_CHUNK) return;
+
+    const before = this.history.length;
+    let trimmed = this.history.slice(TRIM_CHUNK);
     while (trimmed.length > 0 && !isCleanUserTurnStart(trimmed[0])) {
       trimmed = trimmed.slice(1);
     }
     this.history = trimmed;
+    console.log(
+      `[narrator] history trim: ${before} → ${trimmed.length} messages (drop ${
+        before - trimmed.length
+      }). Prompt cache will reset on next request — expected.`,
+    );
   }
 }
 
@@ -373,62 +417,80 @@ function buildSystemPrompt(story: Story): string {
   const parts = [STYLE_INSTRUCTIONS, "", `Story: "${story.title}" by ${story.author}.`];
   if (story.description) parts.push("", story.description);
   if (story.systemPromptOverride) parts.push("", story.systemPromptOverride);
+
+  // Intent-signals reference. The full prompt text for every intent the story
+  // declares lives in the system prompt (cached once per session). Per-turn
+  // user messages then only list which IDs are currently *active*, dropping
+  // ~200-600 tokens per turn versus repeating the prompts every time.
+  const intentSignals = story.intentSignals ?? [];
+  if (intentSignals.length > 0) {
+    parts.push(
+      "",
+      "## Intent signals (reference)",
+      "When the player's input semantically matches one of the prompts below AND the matching id appears in [Active intent signals: ...] in the user message, call recordIntent(signalId=\"<id>\") BEFORE any other tool. Matches persist for the rest of the game. If an id is NOT in the active list, do not call recordIntent for it — the precondition isn't satisfied.",
+      "",
+      ...intentSignals.map((s) => `- ${s.id}: ${s.prompt}`),
+    );
+  }
+
   return parts.join("\n");
 }
 
 function formatIntentBlock(signals: IntentSignal[]): string {
   if (signals.length === 0) return "";
-  const lines = signals.map((s) => `  - "${s.id}": ${s.prompt}`);
-  return (
-    `\n\n[Active intent signals]\n` +
-    `If the player's input semantically matches any of these descriptions, call recordIntent(signalId="...") BEFORE any other tool. Matches persist for the rest of the game.\n` +
-    lines.join("\n")
-  );
+  // Per-turn: just IDs. Full prompts are in the system prompt's reference table.
+  return `\n\n[Active intent signals: ${signals.map((s) => s.id).join(", ")}]`;
+}
+
+// Reshape the WorldView into the JSON-shaped structure we serialize for the
+// LLM. Single source of truth so formatView and formatToolResult stay in sync.
+function compactView(view: WorldView) {
+  return {
+    room: view.room,
+    itemsHere: view.itemsHere,
+    passagesHere: view.passagesHere,
+    exits: view.exits.map((e) => ({
+      direction: e.direction,
+      target: e.targetRoomName,
+      ...(e.passageId && { passage: e.passageId }),
+      ...(e.blocked && { blocked: true }),
+      ...(e.blockedMessage && { blockedMessage: e.blockedMessage }),
+    })),
+    inventory: view.inventory,
+  };
 }
 
 function formatView(view: WorldView): string {
-  return JSON.stringify(
-    {
-      room: view.room,
-      itemsHere: view.itemsHere,
-      passagesHere: view.passagesHere,
-      exits: view.exits.map((e) => ({
-        direction: e.direction,
-        target: e.targetRoomName,
-        ...(e.passageId && { passage: e.passageId }),
-        ...(e.blocked && { blocked: true }),
-        ...(e.blockedMessage && { blockedMessage: e.blockedMessage }),
-      })),
-      inventory: view.inventory,
-    },
-    null,
-    2,
-  );
+  // Minified: pretty-printing the JSON inflates token count by ~25-30% with
+  // no LLM benefit (Claude/Qwen parse minified JSON identically).
+  return JSON.stringify(compactView(view));
 }
 
+// Events that don't visibly change the world state — including their post-
+// action view in the tool_result is pure duplication of the user message's
+// [Current view] (or, after dropping that, of the previous tool_result that's
+// still in history). Skipping the view here is the single biggest per-turn
+// cache_create reduction since look/examine/inventory dominate real play.
+const STATE_CHANGING_EVENTS = new Set<string>([
+  "moved",
+  "took",
+  "dropped",
+  "put",
+  "attacked",
+  "looked",
+  "waited",
+]);
+
 function formatToolResult(result: EngineResult): string {
-  return JSON.stringify(
-    {
-      ok: result.ok,
-      event: result.event,
-      view: {
-        room: result.view.room,
-        itemsHere: result.view.itemsHere,
-        passagesHere: result.view.passagesHere,
-        exits: result.view.exits.map((e) => ({
-          direction: e.direction,
-          target: e.targetRoomName,
-          ...(e.passageId && { passage: e.passageId }),
-          ...(e.blocked && { blocked: true }),
-        })),
-        inventory: result.view.inventory,
-      },
-      narrationCues: result.narrationCues,
-      ...(result.ended && { ended: result.ended }),
-    },
-    null,
-    2,
-  );
+  const includeView =
+    STATE_CHANGING_EVENTS.has(result.event.type) || result.ended !== undefined;
+  return JSON.stringify({
+    ok: result.ok,
+    event: result.event,
+    ...(includeView && { view: compactView(result.view) }),
+    narrationCues: result.narrationCues,
+    ...(result.ended && { ended: result.ended }),
+  });
 }
 
 function toolToAction(

@@ -171,6 +171,21 @@
         }
       }
     },
+    {
+      "$comment": "white-cliffs-north: ZIL gates south + west on flag(deflate) — the canonical 'you're on foot, not in the raft' check for the unwired magic-boat puzzle. Since deflate is never set, both exits are permanently blocked, soft-locking the player who walks east from damp-cave (which has NO matching gate, so entry is one-way). Strip the gates so the beach is navigable on foot. When the boat puzzle eventually lands, re-add the gating with the proper boat-state condition.",
+      "id": "white-cliffs-north",
+      "exits": {
+        "south": { "to": "white-cliffs-south" },
+        "west": { "to": "damp-cave" }
+      }
+    },
+    {
+      "$comment": "white-cliffs-south: same deflate-flag soft-lock as north. Ungate so the player can walk back north along the beach.",
+      "id": "white-cliffs-south",
+      "exits": {
+        "north": { "to": "white-cliffs-north" }
+      }
+    },
 
     { "$comment": "DARK ROOMS: canonical Zork I dark rooms get state.dark=true. Combined with the player having no perceivable lit light source, this satisfies the story-level darkness condition (defaultVisibility) and triggers the pitch-black sharedVariant + the grue tick triggers below.", "id": "cellar", "state": { "dark": true } },
     { "id": "troll-room", "state": { "dark": true } },
@@ -1123,10 +1138,12 @@
     },
 
     {
+      "$comment": "Consume the matched intent so the trigger doesn't auto-re-fire every turn (matchedIntents persists forever; without removeMatchedIntent the regular fixed-point loop would re-fire this on every iteration up to MAX_TRIGGER_ITERATIONS, flooding narrationCues with duplicate 'flickers on' lines).",
       "id": "lamp-lights",
       "when": { "type": "intentMatched", "signalId": "light-lamp" },
       "effects": [
-        { "type": "setItemState", "itemId": "lamp", "key": "isLit", "value": true }
+        { "type": "setItemState", "itemId": "lamp", "key": "isLit", "value": true },
+        { "type": "removeMatchedIntent", "signalId": "light-lamp" }
       ],
       "narration": "The brass lantern flickers on, casting a warm glow.",
       "once": false
@@ -1135,7 +1152,8 @@
       "id": "lamp-extinguishes",
       "when": { "type": "intentMatched", "signalId": "extinguish-lamp" },
       "effects": [
-        { "type": "setItemState", "itemId": "lamp", "key": "isLit", "value": false }
+        { "type": "setItemState", "itemId": "lamp", "key": "isLit", "value": false },
+        { "type": "removeMatchedIntent", "signalId": "extinguish-lamp" }
       ],
       "narration": "The lantern goes dark.",
       "once": false

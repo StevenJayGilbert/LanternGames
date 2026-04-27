@@ -1512,20 +1512,10 @@
       "description": "You are on a narrow strip of beach which runs along the base of the White Cliffs. There is a narrow path heading south along the Cliffs and a tight passage leading west into the cliffs themselves.",
       "exits": {
         "south": {
-          "to": "white-cliffs-south",
-          "when": {
-            "type": "flag",
-            "key": "deflate",
-            "equals": true
-          }
+          "to": "white-cliffs-south"
         },
         "west": {
-          "to": "damp-cave",
-          "when": {
-            "type": "flag",
-            "key": "deflate",
-            "equals": true
-          }
+          "to": "damp-cave"
         }
       }
     },
@@ -1535,12 +1525,7 @@
       "description": "You are on a rocky, narrow strip of beach beside the Cliffs. A narrow path leads north along the shore.",
       "exits": {
         "north": {
-          "to": "white-cliffs-north",
-          "when": {
-            "type": "flag",
-            "key": "deflate",
-            "equals": true
-          }
+          "to": "white-cliffs-north"
         }
       }
     },
@@ -6339,6 +6324,10 @@
           "itemId": "lamp",
           "key": "isLit",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "light-lamp"
         }
       ],
       "narration": "The brass lantern flickers on, casting a warm glow.",
@@ -6356,6 +6345,10 @@
           "itemId": "lamp",
           "key": "isLit",
           "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "extinguish-lamp"
         }
       ],
       "narration": "The lantern goes dark.",
