@@ -62,6 +62,8 @@ export type Condition =
   | { type: "itemHasTag"; itemId: string; tag: string }                    // does the named item carry this tag?
   | { type: "flagItemHasTag"; flagKey: string; tag: string }               // look up itemId from a flag, then check its tags — load-bearing for class-based combat
   | { type: "intentMatched"; signalId: string }            // LLM has matched this intent at least once
+  | { type: "inventoryHasTag"; tag: string }               // any item currently in the player's inventory carries this tag (no per-id enumeration)
+  | { type: "inVehicle"; itemId?: string }                 // player is currently inside a vehicle. If itemId given, must be that specific vehicle; otherwise any vehicle.
   | {                                                      // numeric comparison: left <op> right
       type: "compare";
       left: NumericExpr;
@@ -86,6 +88,7 @@ export type Effect =
   | { type: "adjustFlag"; key: string; by: number }                           // signed delta on a numeric flag (treats unset as 0)
   | { type: "adjustItemState"; itemId: string; key: string; by: number }      // signed delta on a numeric item-state value (treats unset as 0)
   | { type: "removeMatchedIntent"; signalId: string }                          // un-match an intent so its triggers don't re-fire forever
+  | { type: "setPlayerVehicle"; itemId: string | null }                        // put the player in a vehicle (itemId) or eject them (null). Used by triggers like puncture that need to forcibly disembark.
   | {
       // Weighted random selection. Engine rolls Math.random() * Σweights and
       // picks the first branch whose cumulative weight covers the roll. The
@@ -213,6 +216,18 @@ export interface Item {
   // Condition finds lit lamps without any light-specific engine code.
   // Field shape kept open for future per-source metadata (radius, color, etc.).
   lightSource?: Record<string, never>;
+  // Vehicle capability: presence makes the item enterable. The player can
+  // BOARD it, sit DISEMBARK from it, and (if `mobile`) the vehicle travels
+  // with them on `go(direction)`. Combined with the new Condition.inVehicle
+  // and Effect.setPlayerVehicle, lets authors model boats, carts, mounts,
+  // magic carpets, etc. without baking vehicle semantics into specific items.
+  // Engine state: `GameState.playerVehicle` tracks which vehicle the player
+  // is currently inside (or null on foot).
+  vehicle?: {
+    mobile?: boolean;            // false = enterable but stationary (booth, throne); true = travels with player on go() (default false)
+    enterableWhen?: Condition;   // gate on conditions (e.g. boat must be inflated). If absent, always enterable when accessible.
+    enterBlockedMessage?: string; // shown on board attempt when enterableWhen is false
+  };
 }
 
 // ---------- Triggers ----------
@@ -432,5 +447,10 @@ export interface GameState {
   visitedRooms: string[];
   examinedItems: string[];
   firedTriggers: string[];
+  // itemId of the vehicle the player is currently inside, or null on foot.
+  // Set/cleared by board / disembark actions and the setPlayerVehicle Effect.
+  // The vehicle item is at some room; the player is "inside" it; mobile
+  // vehicles travel with the player when go() is called.
+  playerVehicle: string | null;
   finished?: { won: boolean; message: string };
 }

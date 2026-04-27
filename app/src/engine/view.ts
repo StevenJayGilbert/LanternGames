@@ -96,6 +96,19 @@ export interface WorldView {
   passagesHere: PassageView[];
   exits: ExitView[];
   inventory: ItemView[];
+  // Vehicle the player is currently inside (if any). Surfaces the LLM-facing
+  // signal "you're not on foot, you're inside this thing" — vehicle.id is the
+  // engine identifier, vehicle.name is the player-facing label. Items
+  // contained AT the vehicle (location === vehicle.id) appear in itemsHere
+  // with `containedIn` referencing the vehicle, so the LLM can narrate
+  // "in the boat with you: a tan label".
+  vehicle?: {
+    id: string;
+    name: string;
+    description: string;
+    mobile: boolean;
+    state?: Record<string, Atom>;
+  };
   finished?: { won: boolean; message: string };
 }
 
@@ -117,9 +130,19 @@ export function buildView(state: GameState, story: Story): WorldView {
   }
 
   const description = resolveRoomDescription(room, state, story);
-  const itemsHere = itemsAccessibleHere(state, story).map((i) =>
+  // Items accessible from the room (room floor + open containers there).
+  const baseItemsHere = itemsAccessibleHere(state, story).map((i) =>
     toItemView(i, state, story),
   );
+  // If the player is in a vehicle, items located AT the vehicle are also
+  // perceivable — the LLM should see what's "in the boat with you".
+  const vehicleContents =
+    state.playerVehicle !== null
+      ? story.items
+          .filter((i) => state.itemLocations[i.id] === state.playerVehicle)
+          .map((i) => toItemView(i, state, story))
+      : [];
+  const itemsHere = [...baseItemsHere, ...vehicleContents];
   const exits = visibleExits(room, state, story).map(([direction, info]) => {
     const target = roomById(story, info.to);
     const view: ExitView = {
@@ -140,12 +163,32 @@ export function buildView(state: GameState, story: Story): WorldView {
     toItemView(i, state, story),
   );
 
+  // Populate the vehicle field if player is currently inside one. The vehicle
+  // item itself is at some room (state.itemLocations[vehicleId]) — usually the
+  // current room since mobile vehicles travel with go(), but we don't enforce.
+  let vehicleView: WorldView["vehicle"];
+  if (state.playerVehicle !== null) {
+    const v = itemById(story, state.playerVehicle);
+    if (v?.vehicle) {
+      vehicleView = {
+        id: v.id,
+        name: v.name,
+        description: v.description,
+        mobile: v.vehicle.mobile === true,
+        ...(state.itemStates[v.id] && Object.keys(state.itemStates[v.id]).length > 0 && {
+          state: { ...state.itemStates[v.id] },
+        }),
+      };
+    }
+  }
+
   return {
     room: { id: room.id, name: room.name, description },
     itemsHere,
     passagesHere: passages,
     exits,
     inventory,
+    ...(vehicleView && { vehicle: vehicleView }),
     finished: state.finished,
   };
 }

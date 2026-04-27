@@ -142,6 +142,10 @@ function renderEvent(event: ActionEvent, story: Story): string {
       return "Time passes.";
     case "attacked":
       return ""; // narration is provided by combat triggers; engine fallback is silent
+    case "boarded":
+      return `You climb aboard the ${nameOf(story, event.itemId)}.`;
+    case "disembarked":
+      return `You step out of the ${nameOf(story, event.itemId)}.`;
     case "rejected":
       return renderRejection(event, story);
   }
@@ -186,6 +190,10 @@ function rejectionMessage(
     case "container-full": return `The ${target} is full.`;
     case "self-containment": return `You can't put the ${item} inside itself.`;
     case "no-current-room": return `(error: you are nowhere)`;
+    case "not-enterable": return `You can't get into the ${item}.`;
+    case "vehicle-blocked": return ctx.message ?? `You can't get into the ${item} right now.`;
+    case "vehicle-stationary": return ctx.message ?? `You'd have to get out of the ${item} first.`;
+    case "not-in-vehicle": return `You're not in anything to step out of.`;
     case "game-over": return `The game has ended.`;
   }
 }

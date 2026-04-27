@@ -321,6 +321,25 @@ function validateItem(
     }
   }
 
+  // vehicle: presence makes the item enterable. Validate shape; recurse
+  // enterableWhen as a Condition.
+  if ("vehicle" in raw && raw.vehicle !== undefined) {
+    if (!isObject(raw.vehicle)) {
+      err(`${path}.vehicle`, "must be an object (or omit it)");
+    } else {
+      const v = raw.vehicle;
+      if ("mobile" in v && v.mobile !== undefined && typeof v.mobile !== "boolean") {
+        err(`${path}.vehicle.mobile`, "must be a boolean if present");
+      }
+      if ("enterableWhen" in v && v.enterableWhen !== undefined) {
+        validateCondition(v.enterableWhen, `${path}.vehicle.enterableWhen`, roomIds, itemIds, new Set(), err);
+      }
+      if ("enterBlockedMessage" in v && v.enterBlockedMessage !== undefined && typeof v.enterBlockedMessage !== "string") {
+        err(`${path}.vehicle.enterBlockedMessage`, "must be a string if present");
+      }
+    }
+  }
+
   // state: per-item typed state map. Each value must be Atom.
   if ("state" in raw && raw.state !== undefined) {
     if (!isObject(raw.state)) {
@@ -735,6 +754,16 @@ function validateCondition(
       if (typeof raw.flagKey !== "string") err(`${path}.flagKey`, "must be a string");
       if (typeof raw.tag !== "string" || raw.tag.length === 0) err(`${path}.tag`, "must be a non-empty string");
       return;
+    case "inventoryHasTag":
+      if (typeof raw.tag !== "string" || raw.tag.length === 0) err(`${path}.tag`, "must be a non-empty string");
+      return;
+    case "inVehicle":
+      // itemId is optional (undefined = "any vehicle"); when present must be a known item id.
+      if (raw.itemId !== undefined) {
+        if (typeof raw.itemId !== "string") err(`${path}.itemId`, "must be a string if present");
+        else if (itemIds.size && !itemIds.has(raw.itemId)) err(`${path}.itemId`, `unknown item "${raw.itemId}"`);
+      }
+      return;
     case "containerOpen":
       err(
         `${path}.type`,
@@ -892,6 +921,19 @@ function validateEffect(
       return;
     case "removeMatchedIntent":
       if (typeof raw.signalId !== "string") err(`${path}.signalId`, "must be a string");
+      return;
+    case "setPlayerVehicle":
+      // null = eject; non-null must reference a known item with a `vehicle` field.
+      // We validate the id exists; the vehicle-field check is soft (not threaded
+      // through here for cycle reasons). Authors typing nonsense get caught by
+      // unknown-item; missing vehicle field is silently a no-op effectively.
+      if (raw.itemId !== null) {
+        if (typeof raw.itemId !== "string") {
+          err(`${path}.itemId`, "must be a string or null");
+        } else if (itemIds.size && !itemIds.has(raw.itemId)) {
+          err(`${path}.itemId`, `unknown item "${raw.itemId}"`);
+        }
+      }
       return;
     case "random": {
       // branches: non-empty array; each branch has weight (number ≥ 0),

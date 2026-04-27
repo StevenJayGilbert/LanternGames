@@ -53,6 +53,7 @@ export function initialState(story: Story): GameState {
     visitedRooms: [story.startRoom],
     examinedItems: [],
     firedTriggers: [],
+    playerVehicle: null,
   };
 }
 
@@ -334,6 +335,16 @@ export function evaluateCondition(
     }
     case "intentMatched":
       return state.matchedIntents.includes(c.signalId);
+    case "inventoryHasTag":
+      // Walk all items; first match wins. O(n) but n is small (~100 for Zork).
+      return story.items.some(
+        (it) => state.itemLocations[it.id] === "inventory" && (it.tags ?? []).includes(c.tag),
+      );
+    case "inVehicle":
+      // c.itemId is optional: if given, must be that specific vehicle;
+      // otherwise true if player is in any vehicle at all.
+      if (c.itemId !== undefined) return state.playerVehicle === c.itemId;
+      return state.playerVehicle !== null;
     case "compare": {
       const left = evaluateNumericExpr(c.left, state);
       const right = evaluateNumericExpr(c.right, state);
@@ -474,6 +485,13 @@ export function applyEffect(state: GameState, e: Effect): GameState {
         ...state,
         matchedIntents: state.matchedIntents.filter((id) => id !== e.signalId),
       };
+    case "setPlayerVehicle":
+      // Used by triggers that need to forcibly board or eject the player
+      // (puncture path: setPlayerVehicle: null; future "vehicle pulls you in"
+      // mechanic: setPlayerVehicle: <itemId>). The engine's board/disembark
+      // actions run validation; this effect bypasses validation for trigger-
+      // driven state mutations.
+      return { ...state, playerVehicle: e.itemId };
     case "random": {
       // Inline expansion: pick a branch by weight, apply its effects. Note:
       // the chosen branch's narration cue is collected by `resolveEffects`

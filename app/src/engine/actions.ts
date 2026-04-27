@@ -33,7 +33,9 @@ export type ActionRequest =
   | { type: "read"; itemId: string }
   | { type: "wait" }
   | { type: "attack"; itemId: string; targetId: string; mode?: string }
-  | { type: "recordIntent"; signalId: string };
+  | { type: "recordIntent"; signalId: string }
+  | { type: "board"; itemId: string }
+  | { type: "disembark" };
 
 export interface ActionResult {
   state: GameState;
@@ -58,6 +60,8 @@ export function performAction(
     case "wait": return { state, event: { type: "waited" }, ok: true };
     case "attack": return attack(state, story, req.itemId, req.targetId, req.mode);
     case "recordIntent": return recordIntent(state, story, req.signalId);
+    case "board": return board(state, story, req.itemId);
+    case "disembark": return disembark(state);
   }
 }
 
@@ -260,11 +264,42 @@ function go(state: GameState, story: Story, direction: string): ActionResult {
       ok: false,
     };
   }
+  // Vehicle handling: if the player is inside a vehicle, the vehicle either
+  // travels with them (mobile) or refuses (stationary). Mobile vehicles get
+  // moveItem'd to the new room so the data model stays honest — the boat is
+  // physically at river-3, not stuck at dam-base while the player floats away.
+  let nextItemLocations = state.itemLocations;
+  if (state.playerVehicle !== null) {
+    const vehicle = itemById(story, state.playerVehicle);
+    if (vehicle?.vehicle) {
+      if (!vehicle.vehicle.mobile) {
+        return {
+          state,
+          event: reject("vehicle-stationary", {
+            direction: dir,
+            itemId: vehicle.id,
+            message: vehicle.vehicle.enterBlockedMessage,
+          }),
+          ok: false,
+        };
+      }
+      // Mobile vehicle follows the player.
+      nextItemLocations = {
+        ...state.itemLocations,
+        [vehicle.id]: exit.to,
+      };
+    }
+  }
   const visited = state.visitedRooms.includes(exit.to)
     ? state.visitedRooms
     : [...state.visitedRooms, exit.to];
   return {
-    state: { ...state, playerLocation: exit.to, visitedRooms: visited },
+    state: {
+      ...state,
+      playerLocation: exit.to,
+      visitedRooms: visited,
+      itemLocations: nextItemLocations,
+    },
     event: { type: "moved", from: room.id, to: exit.to, direction: dir },
     ok: true,
   };
@@ -381,6 +416,62 @@ function read(state: GameState, story: Story, itemId: string): ActionResult {
   return {
     state,
     event: { type: "read", itemId: item.id, text: item.readable.text },
+    ok: true,
+  };
+}
+
+// ---------- board ----------
+//
+// Enter a vehicle. The vehicle item must be accessible AND have a `vehicle`
+// field AND its `enterableWhen` must evaluate true (or be absent). On success,
+// state.playerVehicle = itemId. The player's playerLocation doesn't change —
+// they're now inside the vehicle which is at that room.
+//
+// Note: this engine action validates entry but does NOT prevent boarding with
+// weapons or other story-specific concerns. Authors gate that via post-board
+// triggers (e.g. inVehicle + inventoryHasTag(weapon) → puncture).
+
+function board(state: GameState, story: Story, itemId: string): ActionResult {
+  const item = itemById(story, itemId);
+  if (!item) {
+    return { state, event: reject("unknown-item", { itemId }), ok: false };
+  }
+  if (!isItemAccessible(item, state, story)) {
+    return { state, event: reject("not-accessible", { itemId: item.id }), ok: false };
+  }
+  if (!item.vehicle) {
+    return { state, event: reject("not-enterable", { itemId: item.id }), ok: false };
+  }
+  if (item.vehicle.enterableWhen && !evaluateCondition(item.vehicle.enterableWhen, state, story)) {
+    return {
+      state,
+      event: reject("vehicle-blocked", {
+        itemId: item.id,
+        message: item.vehicle.enterBlockedMessage,
+      }),
+      ok: false,
+    };
+  }
+  return {
+    state: { ...state, playerVehicle: item.id },
+    event: { type: "boarded", itemId: item.id },
+    ok: true,
+  };
+}
+
+// ---------- disembark ----------
+//
+// Exit the current vehicle. Player remains at the same playerLocation; just
+// no longer inside the vehicle. The vehicle stays where it is.
+
+function disembark(state: GameState): ActionResult {
+  if (state.playerVehicle === null) {
+    return { state, event: reject("not-in-vehicle"), ok: false };
+  }
+  const exited = state.playerVehicle;
+  return {
+    state: { ...state, playerVehicle: null },
+    event: { type: "disembarked", itemId: exited },
     ok: true,
   };
 }

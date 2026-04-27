@@ -18,6 +18,8 @@ export type ActionEvent =
   | { type: "waited" }
   | { type: "attacked"; itemId: string; targetId: string; mode: string }
   | { type: "intent-recorded"; signalId: string }
+  | { type: "boarded"; itemId: string }      // player entered a vehicle
+  | { type: "disembarked"; itemId: string }  // player left a vehicle (itemId = the vehicle they exited)
   | {
       type: "rejected";
       reason: RejectionReason;
@@ -46,4 +48,8 @@ export type RejectionReason =
   | "container-full"      // for put: target container at capacity
   | "self-containment"    // for put: can't put X into X
   | "no-current-room"     // engine bug: player is in a nonexistent room
+  | "not-enterable"       // for board: target is not a vehicle (no `vehicle` field)
+  | "vehicle-blocked"     // for board: vehicle.enterableWhen is false (e.g. boat not yet inflated)
+  | "vehicle-stationary"  // for go: player is in a !mobile vehicle and tried to move
+  | "not-in-vehicle"      // for disembark: player isn't currently in any vehicle
   | "game-over";          // action attempted after the game ended

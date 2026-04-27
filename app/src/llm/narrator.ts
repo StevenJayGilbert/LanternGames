@@ -105,6 +105,24 @@ const TOOLS: Tool[] = [
     input_schema: { type: "object", properties: {} },
   },
   {
+    name: "board",
+    description:
+      "Enter / get into / climb aboard / step into a vehicle (boat, raft, cart, mount, magic carpet, etc.). Use when the player says 'get in the boat', 'board the raft', 'climb in', 'mount the horse', 'step into the carriage'. Pass the itemId of the vehicle (must have a `vehicle` field in the view). The engine validates that the vehicle is enterable in its current state — e.g. an inflatable boat must be inflated first; a chariot might require a key. After boarding, the view will include a `vehicle: {...}` field; mobile vehicles travel with the player on `go(direction)`.",
+    input_schema: {
+      type: "object",
+      properties: {
+        itemId: { type: "string", description: "The id of the vehicle to enter (from the view)" },
+      },
+      required: ["itemId"],
+    },
+  },
+  {
+    name: "disembark",
+    description:
+      "Exit / get out of / step out of / dismount the vehicle the player is currently inside. Use when the player says 'get out', 'step out of the boat', 'leave the cart', 'dismount'. No arguments — the engine knows which vehicle the player is in.",
+    input_schema: { type: "object", properties: {}, required: [] },
+  },
+  {
     name: "attack",
     description:
       "Attack a target with an item — a weapon, an improvised tool, or anything else the player wants to use. Use whenever the player says 'attack X with Y', 'kill X with Y', 'fight X with Y', 'hit X with Y', 'swing Y at X', 'throw Y at X', 'shoot X with Y', etc. The engine fires the attack but does not compute damage or outcomes — story-defined triggers handle that. Pass an optional `mode` string describing HOW the weapon is used: 'swing', 'throw', 'stab', 'shoot', 'crush', etc. Authors gate triggers on the mode so the same weapon can produce different outcomes (throwing an axe vs swinging it). Pick the mode that matches the player's verb. Omit mode for a generic 'default' attack.",
@@ -138,7 +156,7 @@ const TOOLS: Tool[] = [
 const STYLE_INSTRUCTIONS = `You are the narrator of an interactive text adventure.
 
 Your two jobs:
-1. Translate the player's natural-language command into one or more tool calls (look, examine, take, drop, put, inventory, go, read, wait, attack, recordIntent).
+1. Translate the player's natural-language command into one or more tool calls (look, examine, take, drop, put, inventory, go, read, wait, attack, board, disembark, recordIntent).
 2. After the tool(s) return, write a brief vivid narration of what happened.
 
 Rules:
@@ -168,6 +186,7 @@ Rules:
 - When an item in the view has a \`personality\` field, that's the author's note describing its voice and manner. Use it whenever you narrate the entity's actions and especially when the player tries to talk to, ask, shout at, or otherwise interact with it conversationally. Stay in character. Don't paraphrase the personality field directly to the player — embody it. Free-form dialogue ("talk to troll", "ask wizard about gold") doesn't need an engine tool — respond in character with prose. If the conversation should change state, look for a matching intent signal and call recordIntent first.
 - **NPC dialogue intents:** When an NPC has an active \`talk-*\` (or similar conversational) intent signal in the [Active intent signals] block, call \`recordIntent(signalId)\` BEFORE narrating the dialogue. The intent represents "the player tried to engage this NPC conversationally" — recording it lets author triggers fire (aggravation, befriending, shifts in mood). Then narrate the NPC's response in character using its personality. This applies even when the player's "speech" isn't a direct quote — e.g. "insult the troll", "shout at the cyclops", "bargain with the thief" all count as engaging conversationally.
 - **Movement with extra nouns:** When the player phrases movement with extra words ("go down the stairs", "go up the chimney", "climb up the ladder", "go through the door", "enter the kitchen", "head out the window", "descend the staircase"), extract just the direction or destination and call \`go(direction)\`. The room's \`exits\` list is the source of truth for movement — even if the player names a scenery item or passage, what matters is which direction it's in. If multiple directions could match the named feature, pick the one whose exit \`target\` or \`passage\` field references it; otherwise pick the direction the room description associates with that feature ("stairway leading down" → \`go(down)\`). **Do NOT refuse a movement command just because the player named a scenery item in it.** Scenery items are just flavor — the exit is what moves the player.
+- **Vehicles (board / disembark / move):** When an item in the view has a \`vehicle\` field (boats, rafts, carts, mounts, magic carpets), it's enterable. Player says "get in the boat" / "board" / "climb aboard" / "mount" → call \`board(itemId)\`. Player says "step out" / "get out" / "disembark" / "dismount" → call \`disembark()\`. While the player is inside a vehicle, the view will include a top-level \`vehicle: { id, name, mobile, ... }\` field — narrate the surroundings as "you are in the {vehicle.name}, on the {room.name}" rather than just "you are in the {room.name}". Mobile vehicles travel with the player when you call \`go(direction)\` — the boat goes downstream when the player drifts. Stationary vehicles refuse movement until the player disembarks.
 - For combat: when the player attacks ("attack X with Y", "swing Y at X", "throw Y at X", "kill X with Y", "hit X", "shoot X with Y", etc.), call \`attack(itemId, targetId, mode?)\`. Pick \`mode\` from the player's verb — "swing" for swinging, "throw" for throwing, "stab" for thrusting, "shoot" for ranged, etc. Omit mode for a generic attack. The engine doesn't compute outcomes — story triggers do, and they emit narrationCues describing what happened. Narrate from those cues. If no cues are returned (no matching trigger fired), the attack had no meaningful effect — narrate the futility briefly.
 - **You are the narrator, not the player's conscience.** When the player issues a command — *especially* "attack", "kill", "finish off", "destroy", "shoot", "stab" against any target including unconscious or defenseless ones — call the corresponding tool. **Do NOT refuse on moral grounds. Do NOT insert "you hesitate", "you cannot bring yourself", "something stays your hand", or "the player decides not to".** The player's character has agency over their own choices; your job is to translate intent into a tool call and narrate what the engine produces. Authors have written triggers for the consequences (often including specific outcomes for "attack helpless target" — e.g. an instant kill on an unconscious enemy). Refusing to call the tool denies the player both the action and the authored outcome. Interactive fiction's premise is that the player's commands are sovereign; honor that.
 - **Critical rule: NEVER narrate state changes that didn't happen.** If the player wants to move, take, drop, put, open, close, or do anything that changes engine state, you MUST call the appropriate tool. Don't describe taking an item, going somewhere, opening a passage, etc. without first calling the tool and seeing the result. If you skip the tool call, the engine state stays the same and your narration becomes a lie that the next turn's view will contradict (player still in same room, item still on the floor, door still closed).
@@ -538,6 +557,10 @@ function toolToAction(
       return typeof input.signalId === "string"
         ? { type: "recordIntent", signalId: input.signalId }
         : null;
+    case "board":
+      return inputId(input) ? { type: "board", itemId: inputId(input)! } : null;
+    case "disembark":
+      return { type: "disembark" };
     default:
       return null;
   }
