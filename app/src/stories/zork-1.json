@@ -882,7 +882,7 @@
     {
       "id": "reservoir",
       "name": "Reservoir",
-      "description": "(Reservoir)",
+      "description": "You are in a vast underground chamber, half-filled with cold dark water. The reservoir stretches north and south, fed from the north and drained by the dam to the south. Boats might cross when the water is high; at low tide, mud and silt stretch where the water once stood.",
       "exits": {
         "north": {
           "to": "reservoir-north"
@@ -2036,7 +2036,7 @@
     {
       "id": "songbird",
       "name": "songbird",
-      "description": "(songbird)",
+      "description": "A small bright-feathered songbird, watching you with curious black eyes. Its trill is impossibly pure.",
       "location": "forest-1",
       "appearsIn": [
         "forest-2",
@@ -2076,7 +2076,7 @@
     {
       "id": "forest",
       "name": "forest",
-      "description": "(forest)",
+      "description": "Dense pine and hemlock surround the clearing on every side, the canopy filtering daylight to a green twilight.",
       "location": "west-of-house",
       "appearsIn": [
         "north-of-house",
@@ -2094,7 +2094,7 @@
     {
       "id": "tree",
       "name": "tree",
-      "description": "(tree)",
+      "description": "A large, leaf-bearing tree whose lower branches look climbable.",
       "location": "forest-1",
       "appearsIn": [
         "forest-2",
@@ -2109,14 +2109,14 @@
     {
       "id": "mountain-range",
       "name": "mountain range",
-      "description": "(mountain range)",
+      "description": "The Flathead Mountains rear up to the south — a wall of impassable peaks against the horizon.",
       "location": "mountains",
       "fixed": true
     },
     {
       "id": "global-water",
       "name": "water",
-      "description": "(water)",
+      "description": "Cold, dark water — drinkable, you suppose, though the thought isn't appetizing.",
       "location": "reservoir-south",
       "appearsIn": [
         "reservoir",
@@ -2142,14 +2142,14 @@
     {
       "id": "water",
       "name": "quantity of water",
-      "description": "(quantity of water)",
+      "description": "A measure of clear water, presently held inside the bottle.",
       "location": "bottle",
       "takeable": true
     },
     {
       "id": "ghosts",
       "name": "number of ghosts",
-      "description": "(number of ghosts)",
+      "description": "Translucent figures drift through the chamber, faces blank with ancient grief. They take no notice of you.",
       "location": "entrance-to-hades",
       "fixed": true
     },
@@ -2206,20 +2206,20 @@
     {
       "id": "bat",
       "name": "bat",
-      "description": "(bat)",
+      "description": "A vampire bat, sleek and quick, hangs from the ceiling watching you with bright unblinking eyes.",
       "location": "bat-room"
     },
     {
       "id": "bell",
       "name": "brass bell",
-      "description": "(brass bell)",
+      "description": "A small brass bell with a worn handle. Polished smooth by use.",
       "location": "north-temple",
       "takeable": true
     },
     {
       "id": "axe",
       "name": "bloody axe",
-      "description": "(bloody axe)",
+      "description": "A heavy iron axe, its head crusted with dried blood.",
       "location": "troll",
       "takeable": true,
       "tags": [
@@ -2239,14 +2239,14 @@
     {
       "id": "bolt",
       "name": "bolt",
-      "description": "(bolt)",
+      "description": "A heavy iron bolt set into the dam's control panel. The slot accepts a wrench.",
       "location": "dam-room",
       "fixed": true
     },
     {
       "id": "bubble",
       "name": "green bubble",
-      "description": "(green bubble)",
+      "description": "A small green bubble of glass embedded in the panel, currently dark.",
       "location": "dam-room",
       "fixed": true
     },
@@ -2299,14 +2299,14 @@
     {
       "id": "timbers",
       "name": "broken timber",
-      "description": "(broken timber)",
+      "description": "A length of broken timber, splintered at one end and surprisingly heavy.",
       "location": "timber-room",
       "takeable": true
     },
     {
       "id": "slide",
       "name": "chute",
-      "description": "(chute)",
+      "description": "A long metal chute angling downward into darkness. Once you commit, there is no climbing back.",
       "location": "cellar",
       "appearsIn": [
         "slide-room"
@@ -2375,35 +2375,35 @@
     {
       "id": "yellow-button",
       "name": "yellow button",
-      "description": "(yellow button)",
+      "description": "A worn yellow button set into the maintenance panel.",
       "location": "maintenance-room",
       "fixed": true
     },
     {
       "id": "brown-button",
       "name": "brown button",
-      "description": "(brown button)",
+      "description": "A brown button beside the yellow one, slightly recessed.",
       "location": "maintenance-room",
       "fixed": true
     },
     {
       "id": "red-button",
       "name": "red button",
-      "description": "(red button)",
+      "description": "A red button marked with a faded warning symbol.",
       "location": "maintenance-room",
       "fixed": true
     },
     {
       "id": "blue-button",
       "name": "blue button",
-      "description": "(blue button)",
+      "description": "A blue button set into the panel.",
       "location": "maintenance-room",
       "fixed": true
     },
     {
       "id": "trophy-case",
       "name": "trophy case",
-      "description": "(trophy case)",
+      "description": "A handsome glass-fronted case mounted on the wall — clearly meant to display a collector's prizes.",
       "location": "living-room",
       "fixed": true,
       "state": {
@@ -2428,7 +2428,7 @@
     {
       "id": "rug",
       "name": "carpet",
-      "description": "(carpet)",
+      "description": "A heavy oriental carpet covers the center of the floor, oddly out of place. Something about its position invites curiosity.",
       "location": "living-room",
       "fixed": true,
       "tags": [
@@ -2459,7 +2459,7 @@
     {
       "id": "garlic",
       "name": "clove of garlic",
-      "description": "(clove of garlic)",
+      "description": "A pungent clove of garlic, its papery skin crackling at the slightest touch.",
       "location": "sandwich-bag",
       "takeable": true
     },
@@ -2494,14 +2494,14 @@
     {
       "id": "dam",
       "name": "dam",
-      "description": "(dam)",
+      "description": "Flood Control Dam #3, a vast concrete structure holding back the reservoir to the north. A control panel is set into one wall.",
       "location": "dam-room",
       "fixed": true
     },
     {
       "id": "boarded-window",
       "name": "boarded window",
-      "description": "(boarded window)",
+      "description": "The window has been securely boarded over from the inside. There's no entering the house this way.",
       "location": "north-of-house",
       "appearsIn": [
         "south-of-house"
@@ -2511,21 +2511,21 @@
     {
       "id": "front-door",
       "name": "door",
-      "description": "(door)",
+      "description": "The front door is solid wood, banded with iron. There is no handle on this side and no obvious way to open it.",
       "location": "west-of-house",
       "fixed": true
     },
     {
       "id": "barrow-door",
       "name": "stone door",
-      "description": "(stone door)",
+      "description": "The stone door is enormous and impossibly heavy. It would take more than human strength to budge it.",
       "location": "stone-barrow",
       "fixed": true
     },
     {
       "id": "barrow",
       "name": "stone barrow",
-      "description": "(stone barrow)",
+      "description": "A great mound of weathered stone, ancient beyond reckoning. A massive door is set into one face.",
       "location": "stone-barrow",
       "fixed": true
     },
@@ -2559,7 +2559,7 @@
     {
       "id": "crack",
       "name": "crack",
-      "description": "(crack)",
+      "description": "A narrow vertical crack in the cave wall — far too thin for anyone to slip through.",
       "location": "damp-cave",
       "appearsIn": [
         "chasm-room"
@@ -2589,7 +2589,7 @@
     {
       "id": "pump",
       "name": "hand-held air pump",
-      "description": "(hand-held air pump)",
+      "description": "A small hand-held pump, the sort you'd use for a bicycle tire — or a folded raft.",
       "location": "reservoir-north",
       "takeable": true
     },
@@ -2622,7 +2622,7 @@
     {
       "id": "bones",
       "name": "skeleton",
-      "description": "(skeleton)",
+      "description": "A weathered skeleton sprawled against the wall, long picked clean. A small leather bag lies beside it.",
       "location": "maze-5",
       "fixed": true
     },
@@ -2665,7 +2665,7 @@
     {
       "id": "emerald",
       "name": "large emerald",
-      "description": "(large emerald)",
+      "description": "A flawless emerald the size of a small egg, its green depths catching every gleam of light. A treasure.",
       "location": "buoy",
       "takeable": true
     },
@@ -2687,14 +2687,14 @@
     {
       "id": "leak",
       "name": "leak",
-      "description": "(leak)",
+      "description": "Water trickles steadily from a small leak in the wall — for now, a nuisance rather than a disaster.",
       "location": "maintenance-room",
       "fixed": true
     },
     {
       "id": "machine",
       "name": "machine",
-      "description": "(machine)",
+      "description": "A complicated piece of machinery, all gears and curious nozzles, with a hinged lid on top and a small switch on its flank.",
       "location": "machine-room",
       "fixed": true,
       "state": {
@@ -2714,7 +2714,7 @@
     {
       "id": "mailbox",
       "name": "small mailbox",
-      "description": "(small mailbox)",
+      "description": "A small mailbox of dented metal, fixed firmly to a post outside the front door.",
       "location": "west-of-house",
       "state": {
         "isOpen": false
@@ -2799,7 +2799,7 @@
     {
       "id": "bodies",
       "name": "pile of bodies",
-      "description": "(pile of bodies)",
+      "description": "A heap of corpses, far too long-dead to identify. Disturbing them feels like a very poor idea.",
       "location": "entrance-to-hades",
       "appearsIn": [
         "land-of-living-dead"
@@ -2874,7 +2874,7 @@
     {
       "id": "prayer",
       "name": "prayer",
-      "description": "(prayer)",
+      "description": "Words in an ancient script are inscribed around the altar — a prayer of safe passage, you somehow understand.",
       "location": "north-temple",
       "fixed": true,
       "readable": {
@@ -2884,14 +2884,14 @@
     {
       "id": "railing",
       "name": "wooden railing",
-      "description": "(wooden railing)",
+      "description": "A worn wooden railing rings the edge of the dome, polished smooth by countless hands.",
       "location": "dome-room",
       "fixed": true
     },
     {
       "id": "rainbow",
       "name": "rainbow",
-      "description": "(rainbow)",
+      "description": "A perfect rainbow arcs across the falls, shimmering with a strange and almost solid presence.",
       "location": "aragain-falls",
       "appearsIn": [
         "on-rainbow",
@@ -2903,7 +2903,7 @@
     {
       "id": "river",
       "name": "river",
-      "description": "(river)",
+      "description": "The Frigid River slides past with quiet, steady force. The current is swift, the water cold, the rocks below half-hidden.",
       "location": "dam-base",
       "appearsIn": [
         "river-1",
@@ -2976,28 +2976,28 @@
     {
       "id": "sand",
       "name": "sand",
-      "description": "(sand)",
+      "description": "Fine pale sand, soft underfoot. It would respond to digging.",
       "location": "sandy-cave",
       "fixed": true
     },
     {
       "id": "bracelet",
       "name": "sapphire-encrusted bracelet",
-      "description": "(sapphire-encrusted bracelet)",
+      "description": "A delicate bracelet set with sapphires, glittering even in dim light. A treasure.",
       "location": "gas-room",
       "takeable": true
     },
     {
       "id": "screwdriver",
       "name": "screwdriver",
-      "description": "(screwdriver)",
+      "description": "A standard flat-head screwdriver, well-worn but serviceable.",
       "location": "maintenance-room",
       "takeable": true
     },
     {
       "id": "keys",
       "name": "skeleton key",
-      "description": "(skeleton key)",
+      "description": "A skeleton key of dark iron, deeply worn — clearly very old.",
       "location": "maze-5",
       "takeable": true,
       "tags": [
@@ -3008,21 +3008,21 @@
     {
       "id": "shovel",
       "name": "shovel",
-      "description": "(shovel)",
+      "description": "A long-handled shovel, balanced for digging.",
       "location": "sandy-beach",
       "takeable": true
     },
     {
       "id": "coal",
       "name": "small pile of coal",
-      "description": "(small pile of coal)",
+      "description": "A small heap of dusty black coal — surprisingly heavy, and very dirty.",
       "location": "dead-end-5",
       "takeable": true
     },
     {
       "id": "ladder",
       "name": "wooden ladder",
-      "description": "(wooden ladder)",
+      "description": "A sturdy wooden ladder, bolted to the wall, descending into darkness.",
       "location": "ladder-top",
       "appearsIn": [
         "ladder-bottom"
@@ -3032,7 +3032,7 @@
     {
       "id": "scarab",
       "name": "beautiful jeweled scarab",
-      "description": "(beautiful jeweled scarab)",
+      "description": "An exquisite scarab beetle carved from a single piece of jade and chased with gold. A treasure.",
       "location": "sandy-cave",
       "takeable": true
     },
@@ -3046,7 +3046,7 @@
     {
       "id": "stiletto",
       "name": "stiletto",
-      "description": "(stiletto)",
+      "description": "A slim, wickedly pointed stiletto — the thief's signature weapon.",
       "location": "thief",
       "takeable": true,
       "tags": [
@@ -3058,14 +3058,14 @@
     {
       "id": "machine-switch",
       "name": "switch",
-      "description": "(switch)",
+      "description": "A small switch set into the machine's flank, with a slot evidently sized for a screwdriver.",
       "location": "machine-room",
       "fixed": true
     },
     {
       "id": "wooden-door",
       "name": "wooden door",
-      "description": "(wooden door)",
+      "description": "A heavy wooden door set into the western wall.",
       "location": "living-room",
       "fixed": true,
       "readable": {
@@ -3255,7 +3255,7 @@
     {
       "id": "putty",
       "name": "viscous material",
-      "description": "(viscous material)",
+      "description": "A small lump of viscous greyish material, useful for sealing a puncture or two.",
       "location": "tube",
       "takeable": true
     },
@@ -3281,7 +3281,7 @@
     {
       "id": "climbable-cliff",
       "name": "cliff",
-      "description": "(cliff)",
+      "description": "A rough cliff face, weathered into ledges and handholds. Climbing it would be possible — and perilous.",
       "location": "canyon-bottom",
       "appearsIn": [
         "cliff-middle",
@@ -3292,7 +3292,7 @@
     {
       "id": "white-cliff",
       "name": "white cliffs",
-      "description": "(white cliffs)",
+      "description": "Tall white cliffs rise sheer from the riverbank, scoured by centuries of water and quite unscalable.",
       "location": "white-cliffs-north",
       "appearsIn": [
         "white-cliffs-south"
@@ -3302,14 +3302,14 @@
     {
       "id": "wrench",
       "name": "wrench",
-      "description": "(wrench)",
+      "description": "A solid iron wrench, sized for a familiar bolt.",
       "location": "maintenance-room",
       "takeable": true
     },
     {
       "id": "control-panel",
       "name": "control panel",
-      "description": "(control panel)",
+      "description": "A bank of indicator lights, buttons, and a single bolt — clearly a maintenance station for the dam.",
       "location": "dam-room",
       "fixed": true
     },
@@ -3375,7 +3375,7 @@
     {
       "id": "stairs",
       "name": "stairs",
-      "description": "(stairs)",
+      "description": "A narrow flight of stairs ascending into shadow.",
       "location": "kitchen",
       "appearsIn": [
         "attic",
@@ -3505,7 +3505,7 @@
       "kind": "simple",
       "id": "grate",
       "name": "grating",
-      "description": "(grating)",
+      "description": "A heavy iron grating set into the floor — or, depending on which side you stand on, into the ceiling. Beyond it lies a clearing of scattered leaves.",
       "state": {
         "isOpen": false
       },

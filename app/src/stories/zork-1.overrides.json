@@ -212,6 +212,7 @@
     {
       "$comment": "Grate is locked from above; opens only with the skeleton key (item id: keys, found in the maze near the skeleton). Symmetric — once unlocked, can open from either side. traversableWhen gates traversal on its open state.",
       "id": "grate",
+      "description": "A heavy iron grating set into the floor — or, depending on which side you stand on, into the ceiling. Beyond it lies a clearing of scattered leaves.",
       "openWhen": {
         "type": "hasItem",
         "itemId": "keys"
@@ -226,6 +227,11 @@
     }
   ],
   "rooms": [
+    {
+      "$comment": "Reservoir is the canonical missing room description — the ZIL routine walker didn't catch its M-LOOK branch. Authored prose here matches Infocom voice.",
+      "id": "reservoir",
+      "description": "You are in a vast underground chamber, half-filled with cold dark water. The reservoir stretches north and south, fed from the north and drained by the dam to the south. Boats might cross when the water is high; at low tide, mud and silt stretch where the water once stood."
+    },
     {
       "$comment": "kitchen.down: ZIL has CEXIT against FALSE-FLAG (a never-true sentinel) — mechanical extraction produces an unreachable flag-gated exit. Replace with a passage exit so the chimney passage's traversableWhen drives it.",
       "id": "kitchen",
@@ -694,6 +700,62 @@
     }
   ],
   "items": [
+    { "$comment": "Authored descriptions for items the mechanical extractor left as placeholders. Voice: terse, atmospheric, faintly dry — Infocom house style.", "id": "forest", "description": "Dense pine and hemlock surround the clearing on every side, the canopy filtering daylight to a green twilight." },
+    { "id": "tree", "description": "A large, leaf-bearing tree whose lower branches look climbable." },
+    { "id": "mountain-range", "description": "The Flathead Mountains rear up to the south — a wall of impassable peaks against the horizon." },
+    { "id": "river", "description": "The Frigid River slides past with quiet, steady force. The current is swift, the water cold, the rocks below half-hidden." },
+    { "id": "white-cliff", "description": "Tall white cliffs rise sheer from the riverbank, scoured by centuries of water and quite unscalable." },
+    { "id": "climbable-cliff", "description": "A rough cliff face, weathered into ledges and handholds. Climbing it would be possible — and perilous." },
+    { "id": "rainbow", "description": "A perfect rainbow arcs across the falls, shimmering with a strange and almost solid presence." },
+    { "id": "sand", "description": "Fine pale sand, soft underfoot. It would respond to digging." },
+    { "id": "crack", "description": "A narrow vertical crack in the cave wall — far too thin for anyone to slip through." },
+    { "id": "global-water", "description": "Cold, dark water — drinkable, you suppose, though the thought isn't appetizing." },
+    { "id": "water", "description": "A measure of clear water, presently held inside the bottle." },
+
+    { "id": "ghosts", "description": "Translucent figures drift through the chamber, faces blank with ancient grief. They take no notice of you." },
+    { "id": "bodies", "description": "A heap of corpses, far too long-dead to identify. Disturbing them feels like a very poor idea." },
+    { "id": "bat", "description": "A vampire bat, sleek and quick, hangs from the ceiling watching you with bright unblinking eyes." },
+    { "id": "prayer", "description": "Words in an ancient script are inscribed around the altar — a prayer of safe passage, you somehow understand." },
+
+    { "id": "front-door", "description": "The front door is solid wood, banded with iron. There is no handle on this side and no obvious way to open it." },
+    { "id": "wooden-door", "description": "A heavy wooden door set into the western wall." },
+    { "id": "boarded-window", "description": "The window has been securely boarded over from the inside. There's no entering the house this way." },
+    { "id": "barrow", "description": "A great mound of weathered stone, ancient beyond reckoning. A massive door is set into one face." },
+    { "id": "barrow-door", "description": "The stone door is enormous and impossibly heavy. It would take more than human strength to budge it." },
+
+    { "id": "stairs", "description": "A narrow flight of stairs ascending into shadow." },
+    { "id": "ladder", "description": "A sturdy wooden ladder, bolted to the wall, descending into darkness." },
+    { "id": "railing", "description": "A worn wooden railing rings the edge of the dome, polished smooth by countless hands." },
+
+    { "id": "dam", "description": "Flood Control Dam #3, a vast concrete structure holding back the reservoir to the north. A control panel is set into one wall." },
+    { "id": "control-panel", "description": "A bank of indicator lights, buttons, and a single bolt — clearly a maintenance station for the dam." },
+    { "id": "bolt", "description": "A heavy iron bolt set into the dam's control panel. The slot accepts a wrench." },
+    { "id": "bubble", "description": "A small green bubble of glass embedded in the panel, currently dark." },
+    { "id": "yellow-button", "description": "A worn yellow button set into the maintenance panel." },
+    { "id": "brown-button", "description": "A brown button beside the yellow one, slightly recessed." },
+    { "id": "red-button", "description": "A red button marked with a faded warning symbol." },
+    { "id": "blue-button", "description": "A blue button set into the panel." },
+    { "id": "leak", "description": "Water trickles steadily from a small leak in the wall — for now, a nuisance rather than a disaster." },
+    { "id": "machine", "description": "A complicated piece of machinery, all gears and curious nozzles, with a hinged lid on top and a small switch on its flank." },
+    { "id": "machine-switch", "description": "A small switch set into the machine's flank, with a slot evidently sized for a screwdriver." },
+
+    { "id": "slide", "description": "A long metal chute angling downward into darkness. Once you commit, there is no climbing back." },
+    { "id": "timbers", "description": "A length of broken timber, splintered at one end and surprisingly heavy." },
+
+    { "id": "bell", "description": "A small brass bell with a worn handle. Polished smooth by use." },
+    { "id": "bones", "description": "A weathered skeleton sprawled against the wall, long picked clean. A small leather bag lies beside it." },
+    { "id": "garlic", "description": "A pungent clove of garlic, its papery skin crackling at the slightest touch." },
+    { "id": "pump", "description": "A small hand-held pump, the sort you'd use for a bicycle tire — or a folded raft." },
+    { "id": "putty", "description": "A small lump of viscous greyish material, useful for sealing a puncture or two." },
+    { "id": "screwdriver", "description": "A standard flat-head screwdriver, well-worn but serviceable." },
+    { "id": "shovel", "description": "A long-handled shovel, balanced for digging." },
+    { "id": "wrench", "description": "A solid iron wrench, sized for a familiar bolt." },
+
+    { "id": "coal", "description": "A small heap of dusty black coal — surprisingly heavy, and very dirty." },
+    { "id": "emerald", "description": "A flawless emerald the size of a small egg, its green depths catching every gleam of light. A treasure." },
+    { "id": "scarab", "description": "An exquisite scarab beetle carved from a single piece of jade and chased with gold. A treasure." },
+    { "id": "bracelet", "description": "A delicate bracelet set with sapphires, glittering even in dim light. A treasure." },
+
     {
       "$comment": "SURFACE: kitchen-table is canonically a flat surface (CONTBIT in ZIL so the parser handles 'put X on table', no OPENBIT). state.isOpen + accessibleWhen are nulled out so the close handler refuses ('isn't something you can close'). Real description + narratorNote tell the LLM how to handle the on-vs-in mismatch.",
       "id": "kitchen-table",
@@ -820,6 +882,7 @@
     {
       "$comment": "Troll's axe. After the troll drops it (disarm outcome OR death), the player can pick it up and either swing it or throw it — different mode triggers, different outcome tables. fromTemplate gives shared bladed-weapon state; tags 'axe' and 'throwable' unioned in.",
       "id": "axe",
+      "description": "A heavy iron axe, its head crusted with dried blood.",
       "fromTemplate": "bladed-weapon",
       "tags": [
         "axe",
@@ -869,6 +932,7 @@
     },
     {
       "id": "mailbox",
+      "description": "A small mailbox of dented metal, fixed firmly to a post outside the front door.",
       "tags": [
         "container",
         "scenery"
@@ -876,6 +940,7 @@
     },
     {
       "id": "trophy-case",
+      "description": "A handsome glass-fronted case mounted on the wall — clearly meant to display a collector's prizes.",
       "tags": [
         "container",
         "scenery",
@@ -889,7 +954,8 @@
         "animal",
         "friendly"
       ],
-      "personality": "A bright forest songbird with a clear, perfect trill. Doesn't speak — communicates through song. Curious about shiny things, especially the jewel-encrusted egg. Gentle, never threatening."
+      "personality": "A bright forest songbird with a clear, perfect trill. Doesn't speak — communicates through song. Curious about shiny things, especially the jewel-encrusted egg. Gentle, never threatening.",
+      "description": "A small bright-feathered songbird, watching you with curious black eyes. Its trill is impossibly pure."
     },
     {
       "$comment": "Cyclops gets HP, hunger counter, and combat status state. hunger ticks up while the player lingers in his room; at threshold he attacks. Health is high (huge enemy); class triggers will favor misses over kills.",
@@ -948,6 +1014,7 @@
     },
     {
       "id": "rug",
+      "description": "A heavy oriental carpet covers the center of the floor, oddly out of place. Something about its position invites curiosity.",
       "tags": [
         "scenery",
         "fixed"
@@ -955,6 +1022,7 @@
     },
     {
       "id": "keys",
+      "description": "A skeleton key of dark iron, deeply worn — clearly very old.",
       "tags": [
         "key",
         "carryable"
@@ -1042,6 +1110,7 @@
     {
       "$comment": "Tag thief's stiletto as a weapon (canonical Zork has it in WEAPONBIT). Used for the boat-puncture check.",
       "id": "stiletto",
+      "description": "A slim, wickedly pointed stiletto — the thief's signature weapon.",
       "tags": [
         "weapon",
         "bladed",
