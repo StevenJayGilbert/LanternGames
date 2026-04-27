@@ -901,7 +901,7 @@
     {
       "id": "reservoir-north",
       "name": "Reservoir North",
-      "description": "There is a slimy stairway leaving the room to the north.",
+      "description": "There is a slimy stairway leaving the room to the north.\n\n[DEV NOTE: boat/river travel is unwired. The pump here cannot yet be used to inflate the boat at dam-base.]",
       "exits": {
         "north": {
           "to": "atlantis-room"
@@ -1454,7 +1454,7 @@
     {
       "id": "dam-base",
       "name": "Dam Base",
-      "description": "You are at the base of Flood Control Dam #3, which looms above you and to the north. The river Frigid is flowing by here. Along the river are the White Cliffs which seem to form giant walls stretching from north to south along the shores of the river as it winds its way downstream.",
+      "description": "You are at the base of Flood Control Dam #3, which looms above you and to the north. The river Frigid is flowing by here. Along the river are the White Cliffs which seem to form giant walls stretching from north to south along the shores of the river as it winds its way downstream.\n\n[DEV NOTE: boat/river travel is unwired. The inflatable boat is here but cannot yet be inflated, boarded, or launched.]",
       "exits": {
         "north": {
           "to": "dam-room"
@@ -1467,7 +1467,7 @@
     {
       "id": "river-1",
       "name": "Frigid River",
-      "description": "You are on the Frigid River in the vicinity of the Dam. The river flows quietly here. There is a landing on the west shore.",
+      "description": "You are on the Frigid River in the vicinity of the Dam. The river flows quietly here. There is a landing on the west shore.\n\n[DEV NOTE: boat/river travel is unwired. River rooms are currently unreachable through normal play (the boat puzzle is the only intended path here).]",
       "exits": {
         "west": {
           "to": "dam-base"
@@ -1483,7 +1483,7 @@
     {
       "id": "river-2",
       "name": "Frigid River",
-      "description": "The river turns a corner here making it impossible to see the Dam. The White Cliffs loom on the east bank and large rocks prevent landing on the west.",
+      "description": "The river turns a corner here making it impossible to see the Dam. The White Cliffs loom on the east bank and large rocks prevent landing on the west.\n\n[DEV NOTE: boat/river travel is unwired.]",
       "exits": {
         "down": {
           "to": "river-3"
@@ -1493,7 +1493,7 @@
     {
       "id": "river-3",
       "name": "Frigid River",
-      "description": "The river descends here into a valley. There is a narrow beach on the west shore below the cliffs. In the distance a faint rumbling can be heard.",
+      "description": "The river descends here into a valley. There is a narrow beach on the west shore below the cliffs. In the distance a faint rumbling can be heard.\n\n[DEV NOTE: boat/river travel is unwired.]",
       "exits": {
         "down": {
           "to": "river-4"
@@ -1532,7 +1532,7 @@
     {
       "id": "river-4",
       "name": "Frigid River",
-      "description": "The river is running faster here and the sound ahead appears to be that of rushing water. On the east shore is a sandy beach. A small area of beach can also be seen below the cliffs on the west shore.",
+      "description": "The river is running faster here and the sound ahead appears to be that of rushing water. On the east shore is a sandy beach. A small area of beach can also be seen below the cliffs on the west shore.\n\n[DEV NOTE: boat/river travel is unwired.]",
       "exits": {
         "down": {
           "to": "river-5"
@@ -1548,7 +1548,7 @@
     {
       "id": "river-5",
       "name": "Frigid River",
-      "description": "The sound of rushing water is nearly unbearable here. On the east shore is a large landing area.",
+      "description": "The sound of rushing water is nearly unbearable here. On the east shore is a large landing area.\n\n[DEV NOTE: boat/river travel is unwired. Canonical: failing to land here = waterfall death.]",
       "exits": {
         "east": {
           "to": "shore"
@@ -1561,7 +1561,7 @@
     {
       "id": "shore",
       "name": "Shore",
-      "description": "You are on the east shore of the river. The water here seems somewhat treacherous. A path travels from north to south here, the south end quickly turning around a sharp corner.",
+      "description": "You are on the east shore of the river. The water here seems somewhat treacherous. A path travels from north to south here, the south end quickly turning around a sharp corner.\n\n[DEV NOTE: boat/river travel is unwired. This shore is the canonical landing point from river-5; reaching it without the boat is currently impossible.]",
       "exits": {
         "north": {
           "to": "sandy-beach"
@@ -1574,7 +1574,7 @@
     {
       "id": "sandy-beach",
       "name": "Sandy Beach",
-      "description": "You are on a large sandy beach on the east shore of the river, which is flowing quickly by. A path runs beside the river to the south here, and a passage is partially buried in sand to the northeast.",
+      "description": "You are on a large sandy beach on the east shore of the river, which is flowing quickly by. A path runs beside the river to the south here, and a passage is partially buried in sand to the northeast.\n\n[DEV NOTE: two unwired puzzles touch this room — (1) boat/river travel (the canonical access path), and (2) the dig-with-shovel scarab puzzle (canonical: dig the sand four times to unbury the scarab; in our extraction the scarab is currently visible without digging).]",
       "exits": {
         "northeast": {
           "to": "sandy-cave"
@@ -1587,14 +1587,11 @@
     {
       "id": "sandy-cave",
       "name": "Sandy Cave",
-      "description": "This is a sand-filled cave whose exit is to the southwest.",
+      "description": "This is a sand-filled cave whose exit is to the southwest.\n\n[DEV NOTE: dig-with-shovel scarab puzzle is unwired. The scarab is currently visible here without digging — canonical Zork required four DIG WITH SHOVEL actions to unbury it.]",
       "exits": {
         "southwest": {
           "to": "sandy-beach"
         }
-      },
-      "state": {
-        "dark": true
       }
     },
     {
