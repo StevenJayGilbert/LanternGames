@@ -2256,18 +2256,8 @@
       "description": "(altar)",
       "location": "south-temple",
       "fixed": true,
-      "state": {
-        "isOpen": true
-      },
       "container": {
-        "capacity": 50,
-        "accessibleWhen": {
-          "type": "itemState",
-          "itemId": "altar",
-          "key": "isOpen",
-          "equals": true
-        },
-        "accessBlockedMessage": "The altar is closed."
+        "capacity": 50
       }
     },
     {
@@ -2327,18 +2317,8 @@
       "description": "(kitchen table)",
       "location": "kitchen",
       "fixed": true,
-      "state": {
-        "isOpen": true
-      },
       "container": {
-        "capacity": 50,
-        "accessibleWhen": {
-          "type": "itemState",
-          "itemId": "kitchen-table",
-          "key": "isOpen",
-          "equals": true
-        },
-        "accessBlockedMessage": "The kitchen table is closed."
+        "capacity": 50
       }
     },
     {
@@ -2347,18 +2327,8 @@
       "description": "(table)",
       "location": "attic",
       "fixed": true,
-      "state": {
-        "isOpen": true
-      },
       "container": {
-        "capacity": 40,
-        "accessibleWhen": {
-          "type": "itemState",
-          "itemId": "attic-table",
-          "key": "isOpen",
-          "equals": true
-        },
-        "accessBlockedMessage": "The table is closed."
+        "capacity": 40
       }
     },
     {
@@ -3195,18 +3165,8 @@
       "description": "(pedestal)",
       "location": "torch-room",
       "fixed": true,
-      "state": {
-        "isOpen": true
-      },
       "container": {
-        "capacity": 30,
-        "accessibleWhen": {
-          "type": "itemState",
-          "itemId": "pedestal",
-          "key": "isOpen",
-          "equals": true
-        },
-        "accessBlockedMessage": "The pedestal is closed."
+        "capacity": 30
       }
     },
     {

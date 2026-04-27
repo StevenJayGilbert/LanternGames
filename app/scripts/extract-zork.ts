@@ -1019,6 +1019,13 @@ function deepMergeTemplate(
   const out: Record<string, unknown> = { ...a };
   for (const [k, v] of Object.entries(b)) {
     if (v === undefined) continue;
+    // null is the delete sentinel: remove the field from the merged result.
+    // Used to strip extractor-provided fields that don't apply to a specific
+    // item (e.g. surface-style containers that shouldn't have state.isOpen).
+    if (v === null) {
+      delete out[k];
+      continue;
+    }
     const av = out[k];
     if (Array.isArray(av) && Array.isArray(v)) {
       const seen = new Set(av.map((x) => JSON.stringify(x)));

@@ -243,6 +243,26 @@ console.log("\n=== handler: passage open/close ===");
     : fail("isOpen mutated unexpectedly");
 }
 
+// ----- Surface items refuse close (kitchen-table etc.) -----
+console.log("\n=== handler: close refuses on surface containers ===");
+{
+  const e = new Engine(zork as unknown as Story);
+  e.state = { ...e.state, playerLocation: "kitchen" };
+  // kitchen-table has no state.isOpen after the surface override → close
+  // handler's itemHasStateKey precondition fails with the right narration.
+  const r = e.execute({
+    type: "recordIntent",
+    signalId: "close",
+    args: { itemId: "kitchen-table" },
+  });
+  r.narrationCues.some((c) => c.includes("isn't something you can close"))
+    ? pass("close(kitchen-table) refused with 'isn't something you can close' cue")
+    : fail(`cues=${JSON.stringify(r.narrationCues)}`);
+  e.state.itemStates["kitchen-table"]?.isOpen === undefined
+    ? pass("kitchen-table.isOpen stays undefined (no phantom mutation)")
+    : fail(`unexpected isOpen=${e.state.itemStates["kitchen-table"]?.isOpen}`);
+}
+
 // ----- removeMatchedIntent clears args -----
 console.log("\n=== removeMatchedIntent clears args ===");
 {
