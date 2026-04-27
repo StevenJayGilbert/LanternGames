@@ -278,9 +278,9 @@ export interface Trigger {
 //
 // Doors live in their own top-level array and share an id namespace with
 // items (the validator enforces no collisions). The `examine` tool dispatches
-// over either kind. Container open/close still applies to items only; for
-// passages the player's intent to "open" is matched via IntentSignals and
-// applied via Triggers (no built-in passage open/close action).
+// over either kind. Open/close are author-declared CustomTools whose
+// handlers operate on either an item OR a passage with state.isOpen, so
+// "open the kitchen window" and "open the mailbox" go through the same path.
 //
 // `Passage` is a discriminated union on `kind` so future variants (magic
 // passages with per-side state, secret passages, etc.) can be added without
@@ -378,15 +378,10 @@ export interface SimplePassage {
 // Use sparingly — each active signal costs prompt tokens. The `active`
 // gate ensures a signal is only watched when it's relevant (e.g. only watch
 // "slip leaflet under door" once the player has the leaflet).
-export interface IntentSignal {
-  id: string;          // unique; referenced by intentMatched conditions
-  prompt: string;      // natural-language description for the LLM to match
-  active?: Condition;  // optional: only watch when this is true (saves tokens). DEPRECATED — use a CustomTool with handler preconditions instead.
-}
-
-// ---------- Custom tools (the new intent system) ----------
+// ---------- Custom tools (the intent system) ----------
 //
-// A CustomTool is an author-declared LLM tool. It supersedes IntentSignal:
+// A CustomTool is an author-declared LLM tool — story-defined verbs that
+// the LLM calls by name, alongside the engine's built-in verbs.
 //   - the tool's name is its id; description is the LLM tool description
 //   - args declare the tool's input_schema (parameters with types)
 //   - alwaysAvailable: author opts the tool in to the cache-stable tool tier
@@ -466,8 +461,7 @@ export interface Story {
   passages?: Passage[];
   triggers?: Trigger[];
   npcs?: NPC[];
-  intentSignals?: IntentSignal[];
-  customTools?: CustomTool[];   // new intent system; supersedes intentSignals
+  customTools?: CustomTool[];
   winConditions?: EndCondition[];
   loseConditions?: EndCondition[];
   // Build-time templates that items can inherit from via Item.fromTemplate.

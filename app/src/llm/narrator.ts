@@ -15,11 +15,10 @@
 import type { Engine, EngineResult } from "../engine/engine";
 import type { ActionRequest } from "../engine/actions";
 import type { WorldView } from "../engine/view";
-import type { CustomTool, IntentSignal, Story } from "../story/schema";
+import type { CustomTool, Story } from "../story/schema";
 import {
   alwaysOnCustomTools,
   activeConditionalCustomTools,
-  gatherActiveIntentSignals,
 } from "../engine/intents";
 import type {
   AssistantMessage,
@@ -156,15 +155,15 @@ TOOLS[TOOLS.length - 1].cacheBreakpoint = true;
 const STYLE_INSTRUCTIONS = `You are the narrator of an interactive text adventure.
 
 Your two jobs:
-1. Translate the player's natural-language command into one or more tool calls (look, examine, take, drop, put, inventory, go, read, wait, attack, board, disembark, recordIntent).
+1. Translate the player's natural-language command into one or more tool calls. Tools include engine built-ins (look, examine, take, drop, put, inventory, go, read, wait, attack, board, disembark) AND story-defined verbs (open, close, push, turn, give, light, ring, etc.) — call whichever tool's description fits the player's input.
 2. After the tool(s) return, write a brief vivid narration of what happened.
 
 Rules:
 - The engine owns the world. You cannot describe events the engine hasn't computed. Always call a tool first if the player is requesting an action.
 - **Be charitable about player input.** Players type fast, abbreviate, make typos, drop words, and use partial names. Infer their intent and act on it — don't make them re-type. Examples that should ALL just work without asking for clarification: "examime sword" / "x sword" / "look at sword" → \`examine(sword)\`; "n" / "go n" / "head north" / "walk north" → \`go(north)\`; "i" / "inv" / "what am I carrying" → \`inventory\`; "platinum" when the only platinum-anything in the view is the platinum bar → that bar; "yes" right after you offered an action → execute that action; "kill troll" → \`attack(troll, sword)\` if the player carries a sword. Only ask for clarification when the input is GENUINELY ambiguous (e.g. "take the key" when the view actually has two distinct keys). Never refuse for spelling or grammar; never demand the player retype to "spell correctly". The strict rules below are about validating tool ARGUMENTS — they are NOT permission to reject a player who didn't type a perfect string.
-- **Engine identifiers are internal — NEVER speak them to the player.** Anything inside the [Active intents] block in the user message, any \`id\` field in the view JSON, any tool argument like \`push-yellow-button\`, \`talk-to-troll\`, \`coffin-cure\`, \`pot-of-gold\` — these are machine-readable identifiers for the engine, NOT names the player should see. The player sees the \`name\` field ("yellow button", "troll", "pot of gold"). When you need to disambiguate between options, describe them in plain prose ("the yellow button or the brown one?", "the troll or the cyclops?") — never list the underlying IDs. **If you find yourself about to type an id-shaped string (lowercase-hyphenated, like \`push-yellow-button\` or \`pot-of-gold\`), rewrite it as natural English first.** Same goes for engine internals like "active intent signals", "trigger fired", "tool_result" — these belong to the system, not the story.
+- **Engine identifiers are internal — NEVER speak them to the player.** Any \`id\` field in the view JSON, any tool name or argument like \`push-yellow-button\`, \`talk-to-troll\`, \`coffin-cure\`, \`pot-of-gold\` — these are machine-readable identifiers for the engine, NOT names the player should see. The player sees the \`name\` field ("yellow button", "troll", "pot of gold"). When you need to disambiguate between options, describe them in plain prose ("the yellow button or the brown one?", "the troll or the cyclops?") — never list the underlying IDs. **If you find yourself about to type an id-shaped string (lowercase-hyphenated, like \`push-yellow-button\` or \`pot-of-gold\`), rewrite it as natural English first.** Same goes for engine internals like "trigger fired", "tool_result" — these belong to the system, not the story.
 - **Always call \`look\` for orientation requests.** When the player asks where they are, what's around them, what they see, or for a description of the room ("look", "look around", "where am I", "describe the room", "what's here", "what do I see", "survey the area"), CALL the \`look\` tool — even if you described the room in an earlier turn. Triggers may have fired silently between turns (state changes that didn't generate a narration cue), and your prior narration could be stale. The \`look\` tool returns the current view from the engine; trust it over your memory. Don't paraphrase the room from earlier in the conversation; query fresh.
-- **Where to find the current world view.** The view JSON lives in the most recent \`tool_result\` in your conversation history — that's the engine's snapshot of the room, items, exits, and inventory. The user message gives you only the player's command (and any [Active intents] block). When you need to know what's around the player right now, scroll back to the latest tool_result. State-mutating tools (look, take, drop, put, go, attack, wait) include a fresh \`view\` field in their result; non-mutating tools (examine, read, inventory, recordIntent) omit it because nothing changed — for those, the previous tool_result's view is still accurate. **Exception:** the very first user message of a session DOES include a \`[Current view]\` block since there's no prior tool_result yet.
+- **Where to find the current world view.** The view JSON lives in the most recent \`tool_result\` in your conversation history — that's the engine's snapshot of the room, items, exits, and inventory. The user message gives you only the player's command. When you need to know what's around the player right now, scroll back to the latest tool_result. State-mutating tools (look, take, drop, put, go, attack, wait, custom verbs like open/close/push) include a fresh \`view\` field in their result; pure-info tools (examine, read, inventory) omit it because nothing changed — for those, the previous tool_result's view is still accurate. **Exception:** the very first user message of a session DOES include a \`[Current view]\` block since there's no prior tool_result yet.
 - Pass IDs (not display names) to tools. Find them in the view's \`itemsHere\` (items in the room), \`passagesHere\` (doors, windows, archways), or \`inventory\`.
 - Items and passages share one ID namespace. \`examine\` accepts either kind. \`take\`, \`drop\`, \`put\`, and \`read\` work on items only.
 - Items and passages both carry a typed \`state\` map (e.g. \`{ isOpen: true }\`, \`{ broken: false }\`). State mutates only through triggers and through author-defined custom tools. Author-defined verbs (open, close, push, turn, give, light, ring, etc.) appear as **named tools** in your tools list — call them like any built-in tool, passing the relevant item id from the current view. The engine reports failure for impossible cases (item not perceivable, item doesn't support that verb, item already in the target state) by returning narration cues — weave those into your prose. **Critical:** if you narrate that something turned, opened, broke, lit, rang, etc. without first calling the corresponding tool, the engine state stays the same and your prose becomes a lie the next view will contradict. When in doubt, call the tool first.
@@ -183,8 +182,8 @@ Rules:
 - When the engine returns "narrationCues" in a tool_result, weave them naturally into your narration — they are state changes the player should notice.
 - **Always call \`examine\` for look-at-item commands — even if you described that item before.** When the player says "look at the sword", "examine the troll", "x knife", "inspect the lantern", "describe the egg" — call \`examine(itemId)\` every single time. Don't reuse a prior description from earlier in the conversation; don't rely on your imagination. Items change state turn over turn (a chest opens, a sword starts glowing when enemies appear, a lantern's battery drains, a door slams shut). The engine returns the CURRENT description — only that text reflects right-now reality.
 - **\`event.description\` / \`event.text\` carries STATE SIGNALS — preserve them when you embellish.** The text the engine returns from \`examine\` and \`read\` is the item in its *current* state, and authors load it with puzzle hints: a sword described as "glowing with a faint blue glow" warns of nearby hostiles; a door described as "slightly ajar" is in a particular open state; a leaflet described as "wet and barely legible" has been dunked. **Embellish freely**, set mood, weave it into a richer scene — that's your job. But don't *drop or rewrite away* the state cues. If the description says glowing, the player must hear glowing. If it says ajar, not just "open". The vivid adjectives ARE the puzzle. Treat the engine's text as facts you must convey, then dress the prose around them however serves the story.
-- When an item in the view has a \`personality\` field, that's the author's note describing its voice and manner. Use it whenever you narrate the entity's actions and especially when the player tries to talk to, ask, shout at, or otherwise interact with it conversationally. Stay in character. Don't paraphrase the personality field directly to the player — embody it. Free-form dialogue ("talk to troll", "ask wizard about gold") doesn't need an engine tool — respond in character with prose. If the conversation should change state, look for a matching intent signal and call recordIntent first.
-- **NPC dialogue intents:** When an NPC has an active \`talk-*\` (or similar conversational) intent signal in the [Active intents] block, call \`recordIntent(signalId)\` BEFORE narrating the dialogue. The intent represents "the player tried to engage this NPC conversationally" — recording it lets author triggers fire (aggravation, befriending, shifts in mood). Then narrate the NPC's response in character using its personality. This applies even when the player's "speech" isn't a direct quote — e.g. "insult the troll", "shout at the cyclops", "bargain with the thief" all count as engaging conversationally.
+- When an item in the view has a \`personality\` field, that's the author's note describing its voice and manner. Use it whenever you narrate the entity's actions and especially when the player tries to talk to, ask, shout at, or otherwise interact with it conversationally. Stay in character. Don't paraphrase the personality field directly to the player — embody it. Free-form dialogue ("talk to troll", "ask wizard about gold") doesn't need an engine tool — respond in character with prose. If the conversation should change state, look for a story-defined verb tool that matches (e.g. \`talk-to-troll\`, \`feed-cyclops\`) and call it first.
+- **NPC dialogue verbs:** When the story exposes a tool like \`talk-to-troll\` or \`talk-to-cyclops\` and the player engages an NPC conversationally ("insult the troll", "shout at the cyclops", "bargain with the thief"), call that tool BEFORE narrating the dialogue. The tool call lets author triggers fire (aggravation, befriending, mood shifts). Then narrate the NPC's response in character using its personality.
 - **Movement with extra nouns:** When the player phrases movement with extra words ("go down the stairs", "go up the chimney", "climb up the ladder", "go through the door", "enter the kitchen", "head out the window", "descend the staircase"), extract just the direction or destination and call \`go(direction)\`. The room's \`exits\` list is the source of truth for movement — even if the player names a scenery item or passage, what matters is which direction it's in. If multiple directions could match the named feature, pick the one whose exit \`target\` or \`passage\` field references it; otherwise pick the direction the room description associates with that feature ("stairway leading down" → \`go(down)\`). **Do NOT refuse a movement command just because the player named a scenery item in it.** Scenery items are just flavor — the exit is what moves the player.
 - **Vehicles (board / disembark / move):** When an item in the view has a \`vehicle\` field (boats, rafts, carts, mounts, magic carpets), it's enterable. Player says "get in the boat" / "board" / "climb aboard" / "mount" → call \`board(itemId)\`. Player says "step out" / "get out" / "disembark" / "dismount" → call \`disembark()\`. While the player is inside a vehicle, the view will include a top-level \`vehicle: { id, name, mobile, ... }\` field — narrate the surroundings as "you are in the {vehicle.name}, on the {room.name}" rather than just "you are in the {room.name}". Mobile vehicles travel with the player when you call \`go(direction)\` — the boat goes downstream when the player drifts. Stationary vehicles refuse movement until the player disembarks.
 - For combat: when the player attacks ("attack X with Y", "swing Y at X", "throw Y at X", "kill X with Y", "hit X", "shoot X with Y", etc.), call \`attack(itemId, targetId, mode?)\`. Pick \`mode\` from the player's verb — "swing" for swinging, "throw" for throwing, "stab" for thrusting, "shoot" for ranged, etc. Omit mode for a generic attack. The engine doesn't compute outcomes — story triggers do, and they emit narrationCues describing what happened. Narrate from those cues. If no cues are returned (no matching trigger fired), the attack had no meaningful effect — narrate the futility briefly.
@@ -243,12 +242,6 @@ export class Narrator {
     // tool_use blocks don't poison future turns or get persisted to save.
     const historyLengthBeforeTurn = this.history.length;
 
-    // Legacy IntentSignal block — only includes intents that haven't yet
-    // migrated to CustomTools. Once all hand-authored intents migrate,
-    // gatherActiveIntentSignals returns [] and intentBlock is empty.
-    const activeIntents = gatherActiveIntentSignals(this.engine.state, story);
-    const intentBlock = formatIntentBlock(activeIntents);
-
     // Per-turn tool list: built-ins (cache-stable) + always-on customs
     // (cache-stable for this story) + conditional customs (cache while set
     // is byte-stable across turns).
@@ -265,13 +258,6 @@ export class Narrator {
         conditionalCustoms.map((t) => t.name).join(", "),
       );
     }
-    if (activeIntents.length > 0) {
-      debugLog(
-        "intents",
-        `[intents-legacy] ${activeIntents.length} legacy IntentSignal(s) still present (migrate to CustomTools):`,
-        activeIntents.map((s) => s.id).join(", "),
-      );
-    }
 
     // The current world view normally lives in the most recent tool_result
     // (added by previous turns). On the very first turn of the session the LLM
@@ -284,7 +270,7 @@ export class Narrator {
 
     const userMessage: Message = {
       role: "user",
-      content: `[Player command] ${playerInput}${intentBlock}${viewBlock}`,
+      content: `[Player command] ${playerInput}${viewBlock}`,
     };
     this.history.push(userMessage);
 
@@ -295,7 +281,7 @@ export class Narrator {
     try {
       // Tool-use round-trip cap. Most turns use 2–3 (action + narration). Bumped
       // to 10 to accommodate compound commands ("take X and put it in Y and
-      // close Z") plus an upfront recordIntent call.
+      // close Z") chaining multiple verb tools.
       const MAX_ROUND_TRIPS = 10;
       for (let i = 0; i < MAX_ROUND_TRIPS; i++) {
         const response = await this.client.send({
@@ -474,28 +460,7 @@ function buildSystemPrompt(story: Story): string {
   if (story.description) parts.push("", story.description);
   if (story.systemPromptOverride) parts.push("", story.systemPromptOverride);
 
-  // Story-defined verbs are surfaced as named tools alongside the engine
-  // built-ins. Just call the tool whose description matches the player's
-  // input. Legacy IntentSignals (still using recordIntent) get a backward-
-  // compat note while migration is in progress.
-  if ((story.intentSignals ?? []).length > 0) {
-    parts.push(
-      "",
-      "## Legacy intent signals",
-      "Some author-defined verbs are still surfaced via the [Active intents] block in each user message AND the recordIntent tool. When the player's input matches one of those prompts, call recordIntent(signalId=\"<id>\") BEFORE any other tool. (New verbs appear directly as named tools — call them by name; this legacy block is being phased out.)",
-    );
-  }
-
   return parts.join("\n");
-}
-
-function formatIntentBlock(signals: IntentSignal[]): string {
-  if (signals.length === 0) return "";
-  // Legacy IntentSignal block, surfaced for hand-authored intents that
-  // haven't yet been migrated to CustomTools. After migration, this returns
-  // empty and the block is omitted entirely.
-  const lines = signals.map((s) => `- ${s.id}: ${s.prompt}`).join("\n");
-  return `\n\n[Active intents — if the player's input matches one, call recordIntent(signalId) BEFORE any other tool. Don't speak the IDs to the player.]\n${lines}`;
 }
 
 // Build the per-turn tools[] array. Layout:
@@ -630,10 +595,6 @@ function toolToAction(
             targetId: input.targetId,
             ...(typeof input.mode === "string" && { mode: input.mode }),
           }
-        : null;
-    case "recordIntent":
-      return typeof input.signalId === "string"
-        ? { type: "recordIntent", signalId: input.signalId }
         : null;
     case "board":
       return inputId(input) ? { type: "board", itemId: inputId(input)! } : null;

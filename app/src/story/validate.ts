@@ -102,14 +102,6 @@ export function validateStory(input: unknown): ValidationResult {
   const npcs = optionalArray(input, "npcs", err) ?? [];
   npcs.forEach((npc, i) => validateNpc(npc, `npcs[${i}]`, roomIds, err));
 
-  const intentSignals = optionalArray(input, "intentSignals", err) ?? [];
-  // collectIds runs duplicate-id detection as a side effect; the returned set
-  // isn't needed because intentMatched conditions skip reference validation.
-  collectIds(intentSignals, "intentSignals", err);
-  intentSignals.forEach((s, i) =>
-    validateIntentSignal(s, `intentSignals[${i}]`, roomIds, itemIds, triggerIds, err),
-  );
-
   const customTools = optionalArray(input, "customTools", err) ?? [];
   collectIds(customTools, "customTools", err);
   customTools.forEach((t, i) =>
@@ -625,22 +617,6 @@ function validatePassageSide(
 
   if (raw.visibleWhen !== undefined) {
     validateCondition(raw.visibleWhen, `${path}.visibleWhen`, roomIds, itemIds, triggerIds, err);
-  }
-}
-
-function validateIntentSignal(
-  raw: unknown,
-  path: string,
-  roomIds: Set<string>,
-  itemIds: Set<string>,
-  triggerIds: Set<string>,
-  err: (p: string, m: string) => void,
-) {
-  if (!isObject(raw)) return err(path, "must be an object");
-  requireString(raw, "id", err, path);
-  requireString(raw, "prompt", err, path);
-  if (raw.active !== undefined) {
-    validateCondition(raw.active, `${path}.active`, roomIds, itemIds, triggerIds, err);
   }
 }
 

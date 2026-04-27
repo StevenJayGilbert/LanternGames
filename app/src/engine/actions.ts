@@ -385,12 +385,10 @@ function recordIntent(
   signalId: string,
   args?: Record<string, Atom>,
 ): ActionResult {
-  // Look up the customTool. If the story still has any legacy IntentSignals
-  // (in-flight migration), we accept those too with no `active` gate — the
-  // active clause has already been folded into the consuming trigger's `when`.
+  // Look up the customTool. Unknown signalIds are rejected — defensive
+  // against the LLM hallucinating a tool name.
   const customTool = story.customTools?.find((t) => t.id === signalId);
-  const legacy = story.intentSignals?.find((s) => s.id === signalId);
-  if (!customTool && !legacy) {
+  if (!customTool) {
     return { state, event: reject("unknown-intent", { itemId: signalId }), ok: false };
   }
   // Store the call args (even on a duplicate match — new args supersede).

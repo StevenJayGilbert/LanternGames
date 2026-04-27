@@ -26,7 +26,6 @@ import type {
   CustomTool,
   EndCondition,
   Exit,
-  IntentSignal,
   Item,
   Passage,
   PassageSide,
@@ -918,7 +917,7 @@ function firstNumber(value: unknown): number | undefined {
 //                       New → appended as a complete passage.
 //   - rooms:    by id. Existing → field override; exits shallow-merged.
 //   - items:    by id. Existing → field override.
-//   - intentSignals / triggers: appended.
+//   - customTools / triggers: appended.
 //
 // Stripped `$comment` fields (any nesting depth) are tolerated — JSON has no
 // native comment syntax and authors lean on the convention.
@@ -928,7 +927,6 @@ interface OverrideStory {
   passages?: Array<Partial<SimplePassage> & { id: string }>;
   rooms?: Array<Partial<Room> & { id: string }>;
   items?: Array<Partial<Item> & { id: string; fromTemplate?: string }>;
-  intentSignals?: IntentSignal[];
   customTools?: CustomTool[];
   triggers?: Trigger[];
   // Build-time named partial-Item templates. Items with `fromTemplate: "name"`
@@ -1124,50 +1122,6 @@ function mergeItems(
   return out;
 }
 
-// For every passage OR item that declares a boolean `isOpen` in its state,
-// generate a pair of intent signals (open / close) and a pair of triggers
-// that flip the state when the LLM matches the player's intent. This is how
-// players "open the window" / "open the mailbox" without engine open/close
-// verbs — one uniform mutation path for both kinds.
-// Per-passage and per-item open/close intents and triggers are NO LONGER
-// auto-generated. The author-declared `open` / `close` CustomTools in
-// zork-1.overrides.json handle both via their polymorphic handlers — any
-// item OR passage with state.isOpen gets toggled with the same handler,
-// preconditions, and narration. Story-specific consequences (gain points
-// on first open, reveal contents, etc.) become author-written triggers
-// keyed on intentMatched("open") + intentArg("open", "itemId", "<id>").
-//
-// This stub stays so callers don't have to change shape; it just returns
-// empty arrays. Delete once no other code path depends on it.
-function generateOpenCloseScaffolding(
-  passages: Passage[],
-  items: Item[],
-): {
-  intentSignals: IntentSignal[];
-  triggers: Trigger[];
-} {
-  void passages;
-  void items;
-  return { intentSignals: [], triggers: [] };
-}
-
-// For every item with a boolean `state.broken: false`, generate a break
-// intent + trigger. Once broken stays broken (no "unbreak" symmetry by
-// default). Authors can layer additional triggers (e.g. "broken egg spills
-// contents") on top of this one.
-function generateBreakScaffolding(items: Item[]): {
-  intentSignals: IntentSignal[];
-  triggers: Trigger[];
-} {
-  // Per-item break intents/triggers no longer auto-genned. The author-
-  // declared `break` CustomTool handler does the generic state mutation.
-  // Special-case "breaking the egg spills its contents" still needs an
-  // author-written trigger that matches on intentMatched("break") +
-  // intentArg("break", "itemId", "egg").
-  void items;
-  return { intentSignals: [], triggers: [] };
-}
-
 // ---------- main ----------
 
 function main() {
@@ -1215,21 +1169,12 @@ function main() {
 
   // For every passage OR item with boolean state.isOpen, auto-generate
   // open/close intent signals + triggers so players can "open the window"
-  // and "open the mailbox" via the same uniform mutation path.
-  const openClose = generateOpenCloseScaffolding(passages, items);
-  // For every item with boolean state.broken (initial false), auto-generate
-  // a break intent + trigger.
-  const breakable = generateBreakScaffolding(items);
-  const intentSignals = [
-    ...openClose.intentSignals,
-    ...breakable.intentSignals,
-    ...(overrides.intentSignals ?? []),
-  ];
-  const triggers = [
-    ...openClose.triggers,
-    ...breakable.triggers,
-    ...(overrides.triggers ?? []),
-  ];
+  // open/close/break used to be auto-genned per item/passage as IntentSignals
+  // + triggers. They're now author-declared CustomTools with polymorphic
+  // handlers in zork-1.overrides.json that operate on either items or
+  // passages with state.isOpen / state.broken. Story-specific consequences
+  // become author-written triggers keyed on intentMatched + intentArg.
+  const triggers = overrides.triggers ?? [];
 
   const story: Story = {
     schemaVersion: SCHEMA_VERSION,
@@ -1245,7 +1190,6 @@ function main() {
     rooms,
     items,
     ...(passages.length > 0 && { passages }),
-    ...(intentSignals.length > 0 && { intentSignals }),
     ...(overrides.customTools && overrides.customTools.length > 0 && { customTools: overrides.customTools }),
     ...(triggers.length > 0 && { triggers }),
     ...(overrides.defaultVisibility && {
@@ -1293,7 +1237,7 @@ function main() {
   console.log(`  items: ${items.length}`);
   console.log(`  passages: ${passages.length}`);
   console.log(`  exits: ${exitCount} (${passageGatedExits} gated by passages)`);
-  console.log(`  intent signals + triggers (auto-generated + overrides): ${intentSignals.length} + ${triggers.length}`);
+  console.log(`  triggers (overrides): ${triggers.length}`);
   console.log(`  takeable items: ${items.filter((i) => i.takeable).length}`);
   console.log(`  containers:     ${items.filter((i) => i.container).length}`);
   console.log(`  light sources:  ${items.filter((i) => i.lightSource).length}`);

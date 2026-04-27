@@ -1,5 +1,5 @@
 {
-  "$comment": "Hand-authored content layered over the mechanical ZIL extraction. Merged by app/scripts/extract-zork.ts after the ZIL pass. Per-id deep merge for passages/rooms/items (sides matched by roomId, exits shallow-merged); intentSignals and triggers are appended.",
+  "$comment": "Hand-authored content layered over the mechanical ZIL extraction. Merged by app/scripts/extract-zork.ts after the ZIL pass. Per-id deep merge for passages/rooms/items (sides matched by roomId, exits shallow-merged); customTools and triggers are appended.",
   "skipItemObjects": [
     "CHIMNEY"
   ],

@@ -8,11 +8,10 @@
 
 import config from "./debug.config.json" with { type: "json" };
 
-export type DebugCategory = "tools" | "intents" | "rooms" | "anthropic";
+export type DebugCategory = "tools" | "rooms" | "anthropic";
 
 const FLAGS: Record<DebugCategory, boolean> = {
   tools: !!config.logs?.tools,
-  intents: !!config.logs?.intents,
   rooms: !!config.logs?.rooms,
   anthropic: !!config.logs?.anthropic,
 };
