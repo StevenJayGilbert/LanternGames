@@ -33,6 +33,9 @@ export interface ItemView {
   // LLM-facing voice/manner for NPCs and other speakable entities. Surfaced
   // so the LLM can voice dialogue / narrate this entity in character.
   personality?: string;
+  // Engine-side narration guidance for the LLM. NOT flavor — never spoken
+  // to the player. STYLE_INSTRUCTIONS calls this out explicitly.
+  narratorNote?: string;
   // Current item state (e.g. { isOpen: true, broken: false }). Empty if the
   // item declares no state. The LLM uses this to narrate accurately and to
   // decide which intent signals to consider.
@@ -62,6 +65,8 @@ export interface PassageView {
   id: string;
   name: string;             // resolved from current side + variants
   description: string;      // resolved from current side + variants
+  // Engine-side narration guidance — see ItemView.narratorNote.
+  narratorNote?: string;
   // Current passage state (e.g. { isOpen: true }). Empty if the passage
   // declares no state. The LLM uses this to narrate accurately ("the door is
   // already open").
@@ -85,6 +90,7 @@ export interface WorldView {
     id: string;
     name: string;
     description: string;
+    narratorNote?: string;     // engine-side narration guidance — see ItemView.narratorNote
   };
   // All items the player can perceive — directly in the room AND inside any
   // open containers in the room. Items inside closed containers are omitted.
@@ -183,7 +189,12 @@ export function buildView(state: GameState, story: Story): WorldView {
   }
 
   return {
-    room: { id: room.id, name: room.name, description },
+    room: {
+      id: room.id,
+      name: room.name,
+      description,
+      ...(room.narratorNote && { narratorNote: room.narratorNote }),
+    },
     itemsHere,
     passagesHere: passages,
     exits,
@@ -208,6 +219,7 @@ function toPassageView(passage: Passage, state: GameState, story: Story): Passag
       name: otherRoom?.name ?? "(unknown)",
     },
   };
+  if (passage.narratorNote) view.narratorNote = passage.narratorNote;
 
   // Glimpse: presence of an effective glimpse (side override > passage
   // default) declares that the passage is see-through. Its `when` condition
@@ -243,6 +255,7 @@ function toItemView(item: Item, state: GameState, story: Story): ItemView {
   if (item.fixed) view.fixed = true;
   if (item.tags && item.tags.length > 0) view.tags = item.tags;
   if (item.personality) view.personality = item.personality;
+  if (item.narratorNote) view.narratorNote = item.narratorNote;
 
   const itemState = state.itemStates[item.id];
   if (itemState && Object.keys(itemState).length > 0) {

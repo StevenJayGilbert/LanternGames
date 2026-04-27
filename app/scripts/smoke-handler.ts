@@ -243,6 +243,24 @@ console.log("\n=== handler: passage open/close ===");
     : fail("isOpen mutated unexpectedly");
 }
 
+// ----- narratorNote surfaces in the view -----
+console.log("\n=== view: narratorNote on surface items ===");
+{
+  const e = new Engine(zork as unknown as Story);
+  e.state = { ...e.state, playerLocation: "kitchen" };
+  const view = e.getView();
+  const kt = view.itemsHere.find((i) => i.id === "kitchen-table");
+  kt?.narratorNote?.includes("flat work surface")
+    ? pass("kitchen-table view includes narratorNote")
+    : fail(`narratorNote missing or wrong: ${JSON.stringify(kt?.narratorNote)}`);
+  // Author description should also be the real prose, not the placeholder.
+  const examined = e.execute({ type: "examine", itemId: "kitchen-table" });
+  examined.event.type === "examined" &&
+  (examined.event as { description?: string }).description?.includes("kitchen table")
+    ? pass("examine returns the authored description")
+    : fail(`examine event: ${JSON.stringify(examined.event)}`);
+}
+
 // ----- Surface items refuse close (kitchen-table etc.) -----
 console.log("\n=== handler: close refuses on surface containers ===");
 {

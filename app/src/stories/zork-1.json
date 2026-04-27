@@ -2253,12 +2253,13 @@
     {
       "id": "altar",
       "name": "altar",
-      "description": "(altar)",
+      "description": "A massive stone altar, carved with worn ritual figures and stained dark by centuries of offerings.",
       "location": "south-temple",
       "fixed": true,
       "container": {
         "capacity": 50
-      }
+      },
+      "narratorNote": "The altar is a flat ritual surface, not a closeable container. Items located 'in' the altar (candles, the black book) are actually resting ON top of it. Never refer to the altar as 'open' or 'closed'."
     },
     {
       "id": "book",
@@ -2314,22 +2315,24 @@
     {
       "id": "kitchen-table",
       "name": "kitchen table",
-      "description": "(kitchen table)",
+      "description": "A long wooden kitchen table, scarred by years of food preparation.",
       "location": "kitchen",
       "fixed": true,
       "container": {
         "capacity": 50
-      }
+      },
+      "narratorNote": "This is a flat work surface, not a closeable container. Items located 'in' the kitchen-table (sandwich-bag, bottle) are actually resting ON its surface — narrate them as such. Never refer to the table as 'open' or 'closed'."
     },
     {
       "id": "attic-table",
       "name": "table",
-      "description": "(table)",
+      "description": "An old wooden table standing in the dusty attic.",
       "location": "attic",
       "fixed": true,
       "container": {
         "capacity": 40
-      }
+      },
+      "narratorNote": "Flat surface, not a closeable container. Items located 'in' this table are resting ON its surface. Never refer to the table as 'open' or 'closed'."
     },
     {
       "id": "sandwich-bag",
@@ -3162,12 +3165,13 @@
     {
       "id": "pedestal",
       "name": "pedestal",
-      "description": "(pedestal)",
+      "description": "A polished stone pedestal, waist-high.",
       "location": "torch-room",
       "fixed": true,
       "container": {
         "capacity": 30
-      }
+      },
+      "narratorNote": "A short column, not a container. Items located 'in' the pedestal (the torch) are resting ON its top. Never refer to the pedestal as 'open' or 'closed'."
     },
     {
       "id": "torch",

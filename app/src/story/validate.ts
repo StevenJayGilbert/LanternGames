@@ -182,6 +182,7 @@ function validateRoom(
   requireString(raw, "id", err, path);
   requireString(raw, "name", err, path);
   requireString(raw, "description", err, path);
+  optionalString(raw, "narratorNote", err, path);
 
   const exits = raw.exits;
   if (exits !== undefined) {
@@ -276,6 +277,8 @@ function validateItem(
 
   // personality: optional LLM-facing voice/manner string. Engine ignores.
   optionalString(raw, "personality", err, path);
+  // narratorNote: engine-side narration guidance — see schema.ts comment.
+  optionalString(raw, "narratorNote", err, path);
 
   // fromTemplate: build-time template inheritance reference. Should be stripped
   // by the extractor before validation runs; if it appears here, the extractor
@@ -486,6 +489,7 @@ function validatePassage(
   requireString(raw, "id", err, path);
   requireString(raw, "name", err, path);
   requireString(raw, "description", err, path);
+  optionalString(raw, "narratorNote", err, path);
 
   // kind is optional in v1; default "simple". When present, must be supported.
   if (raw.kind !== undefined) {

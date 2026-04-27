@@ -156,6 +156,8 @@ export interface Room {
   // Condition.currentRoomState / NumericExpr.roomState. Common pattern:
   // { dark: true } for unlit rooms.
   state?: Record<string, Atom>;
+  // Engine-side narration guidance for the LLM. NOT flavor — see Item.narratorNote.
+  narratorNote?: string;
 }
 
 // ---------- Items ----------
@@ -183,6 +185,12 @@ export interface Item {
   // surfaces it so the LLM can speak / narrate this entity in character.
   // Useful for NPCs that talk, react, or have distinct personality.
   personality?: string;
+  // Engine-side narration guidance for the LLM. NOT flavor — the LLM follows
+  // it silently and never quotes it to the player. Distinct from
+  // `personality` (NPC voice) and `description` (canonical prose). Used to
+  // tell the narrator HOW to handle the entity — e.g. "treat anything 'in'
+  // this as resting on the surface", "describe in past tense", etc.
+  narratorNote?: string;
   // Build-time template inheritance: name a Story.templates entry whose
   // fields are deep-merged into this item (item fields win, arrays union).
   // Resolved by the extractor; stripped from the final story JSON before
@@ -349,6 +357,8 @@ export interface SimplePassage {
   // NumericExpr.passageState (numeric extraction for use with `compare`).
   // Common pattern: { isOpen: false } for openable passages.
   state?: Record<string, Atom>;
+  // Engine-side narration guidance for the LLM. NOT flavor — see Item.narratorNote.
+  narratorNote?: string;
   // Optional extra gates on the auto-generated open/close intents. Same
   // semantics as Item.openWhen/closeWhen — AND'd into the auto-gen `active`
   // clause when set. Use for locked passages, ritual-only passages, etc.

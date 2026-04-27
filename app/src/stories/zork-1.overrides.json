@@ -695,26 +695,34 @@
   ],
   "items": [
     {
-      "$comment": "SURFACE FIX: kitchen-table is canonically a flat surface (CONTBIT in ZIL so the parser handles 'put X on table', but no OPENBIT). Without these overrides the auto-extraction marks it as an openable container with state.isOpen=true and an accessibleWhen gate — and the polymorphic close handler will happily 'close' it, locking out any items resting on top. Drop both via null-as-delete: the table becomes a fixed always-accessible container, and the close handler refuses with 'kitchen table isn't something you can close' (itemHasStateKey precondition fails).",
+      "$comment": "SURFACE: kitchen-table is canonically a flat surface (CONTBIT in ZIL so the parser handles 'put X on table', no OPENBIT). state.isOpen + accessibleWhen are nulled out so the close handler refuses ('isn't something you can close'). Real description + narratorNote tell the LLM how to handle the on-vs-in mismatch.",
       "id": "kitchen-table",
+      "description": "A long wooden kitchen table, scarred by years of food preparation.",
+      "narratorNote": "This is a flat work surface, not a closeable container. Items located 'in' the kitchen-table (sandwich-bag, bottle) are actually resting ON its surface — narrate them as such. Never refer to the table as 'open' or 'closed'.",
       "state": null,
       "container": { "accessibleWhen": null, "accessBlockedMessage": null }
     },
     {
-      "$comment": "SURFACE FIX: attic-table — same as kitchen-table.",
+      "$comment": "SURFACE: attic-table — same shape as kitchen-table.",
       "id": "attic-table",
+      "description": "An old wooden table standing in the dusty attic.",
+      "narratorNote": "Flat surface, not a closeable container. Items located 'in' this table are resting ON its surface. Never refer to the table as 'open' or 'closed'.",
       "state": null,
       "container": { "accessibleWhen": null, "accessBlockedMessage": null }
     },
     {
-      "$comment": "SURFACE FIX: altar in south-temple. A flat stone surface; you can put offerings (candles, book) on it but you don't 'close' it.",
+      "$comment": "SURFACE: altar in south-temple. A flat stone surface for offerings.",
       "id": "altar",
+      "description": "A massive stone altar, carved with worn ritual figures and stained dark by centuries of offerings.",
+      "narratorNote": "The altar is a flat ritual surface, not a closeable container. Items located 'in' the altar (candles, the black book) are actually resting ON top of it. Never refer to the altar as 'open' or 'closed'.",
       "state": null,
       "container": { "accessibleWhen": null, "accessBlockedMessage": null }
     },
     {
-      "$comment": "SURFACE FIX: pedestal in torch-room. The torch rests on top; nobody opens or closes a pedestal.",
+      "$comment": "SURFACE: pedestal in torch-room. A stone column with a torch on top.",
       "id": "pedestal",
+      "description": "A polished stone pedestal, waist-high.",
+      "narratorNote": "A short column, not a container. Items located 'in' the pedestal (the torch) are resting ON its top. Never refer to the pedestal as 'open' or 'closed'.",
       "state": null,
       "container": { "accessibleWhen": null, "accessBlockedMessage": null }
     },
