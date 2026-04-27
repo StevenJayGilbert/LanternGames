@@ -206,6 +206,14 @@ function App() {
     // if the toggle is off (commands fall through to normal narration).
     if (debugMode && text.startsWith("/")) {
       const result = handleDebugCommand(text, engine);
+      // State-mutating commands invalidate the narrator's cached conversation
+      // history (the LLM's prior tool_result views describe the OLD world).
+      // Reset the narrator so the next turn starts fresh with the new state
+      // in the BEFORE-view block of the user message. Pure read commands
+      // (/help, /room, /find) leave history alone.
+      const cmd = text.trim().split(/\s+/)[0].toLowerCase();
+      const mutating = cmd === "/tp" || cmd === "/give" || cmd === "/flag";
+      if (mutating) narrator.reset();
       const transcriptAfterDebug: TranscriptEntry[] = [
         ...transcriptAfterInput,
         { kind: "system", text: result },
@@ -526,6 +534,11 @@ function handleDebugCommand(text: string, engine: Engine): string {
         "  /room                — show your current room id",
         "  /find <substr>       — search for room/item ids matching the substring",
         "  /help                — this help",
+        "",
+        "Note: /tp /give /flag reset the narrator's conversation history so the",
+        "LLM doesn't keep narrating from stale views. The transcript stays;",
+        "only the LLM's internal context is cleared. /room /find /help are",
+        "read-only and leave history alone.",
       ].join("\n");
 
     case "/room":
