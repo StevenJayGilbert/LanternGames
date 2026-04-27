@@ -385,18 +385,12 @@ function recordIntent(
   signalId: string,
   args?: Record<string, Atom>,
 ): ActionResult {
-  // The signal may be either an old-style IntentSignal or a new CustomTool.
-  // Both forms are accepted during the migration. After the cleanup pass,
-  // only CustomTools will remain.
-  const signal = story.intentSignals?.find((s) => s.id === signalId);
+  // Look up the customTool. If the story still has any legacy IntentSignals
+  // (in-flight migration), we accept those too with no `active` gate — the
+  // active clause has already been folded into the consuming trigger's `when`.
   const customTool = story.customTools?.find((t) => t.id === signalId);
-  if (!signal && !customTool) {
-    return { state, event: reject("unknown-intent", { itemId: signalId }), ok: false };
-  }
-  // IntentSignal's deprecated `active` clause: refuse the intent if currently
-  // false. CustomTools don't have an active gate (their handler/triggers do
-  // that work).
-  if (signal?.active && !evaluateCondition(signal.active, state, story)) {
+  const legacy = story.intentSignals?.find((s) => s.id === signalId);
+  if (!customTool && !legacy) {
     return { state, event: reject("unknown-intent", { itemId: signalId }), ok: false };
   }
   // Store the call args (even on a duplicate match — new args supersede).

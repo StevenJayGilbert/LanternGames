@@ -3699,489 +3699,6 @@
         "key": "isOpen",
         "equals": true
       }
-    },
-    {
-      "id": "rope-tied-to-railing",
-      "prompt": "Player ties, fastens, attaches, lashes, secures, or otherwise affixes the rope to the railing (or to the dome).",
-      "active": {
-        "type": "and",
-        "all": [
-          {
-            "type": "playerAt",
-            "roomId": "dome-room"
-          },
-          {
-            "type": "hasItem",
-            "itemId": "rope"
-          }
-        ]
-      }
-    },
-    {
-      "id": "give-egg-to-songbird",
-      "prompt": "Player gives the jewel-encrusted egg to the songbird, offers it to the bird, hands it to her, presents it to the singer.",
-      "active": {
-        "type": "and",
-        "all": [
-          {
-            "type": "hasItem",
-            "itemId": "egg"
-          },
-          {
-            "type": "itemState",
-            "itemId": "egg",
-            "key": "isOpen",
-            "equals": false
-          },
-          {
-            "type": "or",
-            "any": [
-              {
-                "type": "playerAt",
-                "roomId": "forest-1"
-              },
-              {
-                "type": "playerAt",
-                "roomId": "forest-2"
-              },
-              {
-                "type": "playerAt",
-                "roomId": "forest-3"
-              },
-              {
-                "type": "playerAt",
-                "roomId": "path"
-              },
-              {
-                "type": "playerAt",
-                "roomId": "up-a-tree"
-              },
-              {
-                "type": "playerAt",
-                "roomId": "clearing"
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "id": "move-the-rug",
-      "prompt": "Player moves, slides, lifts, pulls aside, kicks aside, rolls up, or otherwise displaces the rug (carpet) in the living room.",
-      "active": {
-        "type": "playerAt",
-        "roomId": "living-room"
-      }
-    },
-    {
-      "id": "cyclops-magic-word",
-      "prompt": "Player says, shouts, whispers, or invokes 'Ulysses', 'Odysseus', or otherwise utters the magic word that terrifies the cyclops.",
-      "active": {
-        "type": "and",
-        "all": [
-          {
-            "type": "playerAt",
-            "roomId": "cyclops-room"
-          },
-          {
-            "type": "flag",
-            "key": "cyclops-flag",
-            "equals": false
-          }
-        ]
-      }
-    },
-    {
-      "id": "feed-cyclops",
-      "prompt": "Player gives, offers, or hands the cyclops the lunch (hot pepper sandwich) and the bottle of water — feeding and watering him.",
-      "active": {
-        "type": "and",
-        "all": [
-          {
-            "type": "playerAt",
-            "roomId": "cyclops-room"
-          },
-          {
-            "type": "flag",
-            "key": "cyclops-flag",
-            "equals": false
-          },
-          {
-            "type": "hasItem",
-            "itemId": "lunch"
-          },
-          {
-            "type": "hasItem",
-            "itemId": "bottle"
-          }
-        ]
-      }
-    },
-    {
-      "id": "pray-at-altar",
-      "prompt": "Player prays, kneels, makes an offering, or performs a ritual at the altar.",
-      "active": {
-        "type": "playerAt",
-        "roomId": "south-temple"
-      }
-    },
-    {
-      "id": "light-lamp",
-      "prompt": "Player turns on, lights, switches on, fires up, or activates the brass lantern.",
-      "active": {
-        "type": "and",
-        "all": [
-          {
-            "type": "hasItem",
-            "itemId": "lamp"
-          },
-          {
-            "type": "itemState",
-            "itemId": "lamp",
-            "key": "isLit",
-            "equals": false
-          },
-          {
-            "type": "compare",
-            "left": {
-              "kind": "itemState",
-              "itemId": "lamp",
-              "key": "batteryTurns"
-            },
-            "op": ">",
-            "right": {
-              "kind": "literal",
-              "value": 0
-            }
-          }
-        ]
-      }
-    },
-    {
-      "id": "extinguish-lamp",
-      "prompt": "Player turns off, douses, switches off, or extinguishes the brass lantern.",
-      "active": {
-        "type": "itemState",
-        "itemId": "lamp",
-        "key": "isLit",
-        "equals": true
-      }
-    },
-    {
-      "id": "free-stuck-weapon",
-      "prompt": "Player tries to free, yank, pull, dislodge, retrieve, or wrench loose their stuck weapon (sword, knife, or axe).",
-      "active": {
-        "type": "or",
-        "any": [
-          {
-            "type": "itemState",
-            "itemId": "sword",
-            "key": "weapon-stuck",
-            "equals": true
-          },
-          {
-            "type": "itemState",
-            "itemId": "rusty-knife",
-            "key": "weapon-stuck",
-            "equals": true
-          },
-          {
-            "type": "itemState",
-            "itemId": "axe",
-            "key": "weapon-stuck",
-            "equals": true
-          }
-        ]
-      }
-    },
-    {
-      "id": "talk-to-troll",
-      "prompt": "Player tries to talk to, address, ask, shout at, insult, threaten, bargain with, beg, taunt, or otherwise engage the troll conversationally.",
-      "active": {
-        "type": "and",
-        "all": [
-          {
-            "type": "playerAt",
-            "roomId": "troll-room"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "troll",
-            "location": "troll-room"
-          },
-          {
-            "type": "compare",
-            "left": {
-              "kind": "itemState",
-              "itemId": "troll",
-              "key": "health"
-            },
-            "op": ">",
-            "right": {
-              "kind": "literal",
-              "value": 0
-            }
-          },
-          {
-            "type": "flag",
-            "key": "combat-engaged-with-troll",
-            "equals": false
-          }
-        ]
-      }
-    },
-    {
-      "id": "talk-to-cyclops",
-      "prompt": "Player tries to talk to, address, ask, taunt, insult, threaten, or otherwise engage the cyclops conversationally — but NOT saying 'Ulysses' or 'Odysseus' (those match cyclops-magic-word instead).",
-      "active": {
-        "type": "and",
-        "all": [
-          {
-            "type": "playerAt",
-            "roomId": "cyclops-room"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "cyclops",
-            "location": "cyclops-room"
-          },
-          {
-            "type": "flag",
-            "key": "cyclops-flag",
-            "equals": false
-          }
-        ]
-      }
-    },
-    {
-      "id": "say-echo-in-loud-room",
-      "prompt": "Player says, shouts, calls, invokes, or otherwise utters the word 'echo' in the loud room.",
-      "active": {
-        "type": "and",
-        "all": [
-          {
-            "type": "playerAt",
-            "roomId": "loud-room"
-          },
-          {
-            "type": "flag",
-            "key": "echo-spoken",
-            "equals": false
-          }
-        ]
-      }
-    },
-    {
-      "id": "wave-scepter-at-rainbow",
-      "prompt": "Player waves, raises, brandishes, points, or otherwise invokes the sceptre at the rainbow.",
-      "active": {
-        "type": "and",
-        "all": [
-          {
-            "type": "or",
-            "any": [
-              {
-                "type": "playerAt",
-                "roomId": "end-of-rainbow"
-              },
-              {
-                "type": "playerAt",
-                "roomId": "aragain-falls"
-              }
-            ]
-          },
-          {
-            "type": "hasItem",
-            "itemId": "sceptre"
-          },
-          {
-            "type": "flag",
-            "key": "rainbow-flag",
-            "equals": false
-          }
-        ]
-      }
-    },
-    {
-      "id": "rub-mirror",
-      "prompt": "Player rubs, touches, presses, leans against, steps into, or otherwise interacts physically with the mirror.",
-      "active": {
-        "type": "or",
-        "any": [
-          {
-            "type": "playerAt",
-            "roomId": "mirror-room-1"
-          },
-          {
-            "type": "playerAt",
-            "roomId": "mirror-room-2"
-          }
-        ]
-      }
-    },
-    {
-      "id": "ring-bell",
-      "prompt": "Player rings, tolls, peals, sounds, or otherwise activates the bell.",
-      "active": {
-        "type": "and",
-        "all": [
-          {
-            "type": "hasItem",
-            "itemId": "bell"
-          },
-          {
-            "type": "flag",
-            "key": "bell-rung",
-            "equals": false
-          }
-        ]
-      }
-    },
-    {
-      "id": "read-book-at-hades",
-      "prompt": "Player reads, recites, intones, or speaks aloud from the black book at the entrance to Hades.",
-      "active": {
-        "type": "and",
-        "all": [
-          {
-            "type": "playerAt",
-            "roomId": "entrance-to-hades"
-          },
-          {
-            "type": "hasItem",
-            "itemId": "book"
-          },
-          {
-            "type": "flag",
-            "key": "bell-rung",
-            "equals": true
-          },
-          {
-            "type": "itemState",
-            "itemId": "candles",
-            "key": "isLit",
-            "equals": true
-          },
-          {
-            "type": "flag",
-            "key": "lld-flag",
-            "equals": false
-          }
-        ]
-      }
-    },
-    {
-      "id": "turn-machine-switch",
-      "prompt": "Player turns, presses, activates, or otherwise operates the machine's switch (with the screwdriver as a tool).",
-      "active": {
-        "type": "and",
-        "all": [
-          {
-            "type": "playerAt",
-            "roomId": "machine-room"
-          },
-          {
-            "type": "hasItem",
-            "itemId": "screwdriver"
-          },
-          {
-            "type": "itemState",
-            "itemId": "machine",
-            "key": "isOpen",
-            "equals": false
-          }
-        ]
-      }
-    },
-    {
-      "id": "push-yellow-button",
-      "prompt": "Player pushes, presses, depresses, or activates the yellow button.",
-      "active": {
-        "type": "playerAt",
-        "roomId": "maintenance-room"
-      }
-    },
-    {
-      "id": "push-brown-button",
-      "prompt": "Player pushes, presses, depresses, or activates the brown button.",
-      "active": {
-        "type": "playerAt",
-        "roomId": "maintenance-room"
-      }
-    },
-    {
-      "id": "turn-dam-bolt",
-      "prompt": "Player turns, twists, rotates, or otherwise operates the bolt on the dam control panel using the wrench.",
-      "active": {
-        "type": "and",
-        "all": [
-          {
-            "type": "playerAt",
-            "roomId": "dam-room"
-          },
-          {
-            "type": "hasItem",
-            "itemId": "wrench"
-          },
-          {
-            "type": "flag",
-            "key": "gate-flag",
-            "equals": true
-          }
-        ]
-      }
-    },
-    {
-      "id": "inflate-boat",
-      "prompt": "Player inflates, pumps up, fills, or blows up the boat (with the pump).",
-      "active": {
-        "type": "and",
-        "all": [
-          {
-            "type": "or",
-            "any": [
-              {
-                "type": "itemAt",
-                "itemId": "inflatable-boat",
-                "location": "dam-base"
-              },
-              {
-                "type": "hasItem",
-                "itemId": "inflatable-boat"
-              }
-            ]
-          },
-          {
-            "type": "hasItem",
-            "itemId": "pump"
-          },
-          {
-            "type": "itemState",
-            "itemId": "inflatable-boat",
-            "key": "inflation",
-            "equals": "deflated"
-          }
-        ]
-      }
-    },
-    {
-      "id": "repair-boat-with-putty",
-      "prompt": "Player plugs, repairs, patches, or applies putty to the punctured boat.",
-      "active": {
-        "type": "and",
-        "all": [
-          {
-            "type": "itemState",
-            "itemId": "inflatable-boat",
-            "key": "inflation",
-            "equals": "punctured"
-          },
-          {
-            "type": "hasItem",
-            "itemId": "putty"
-          }
-        ]
-      }
     }
   ],
   "customTools": [
@@ -4370,6 +3887,94 @@
         ],
         "successNarration": "You break the {arg.itemId.name}."
       }
+    },
+    {
+      "id": "rope-tied-to-railing",
+      "description": "Player ties, fastens, attaches, lashes, secures, or otherwise affixes the rope to the railing (or to the dome)."
+    },
+    {
+      "id": "give-egg-to-songbird",
+      "description": "Player gives the jewel-encrusted egg to the songbird, offers it to the bird, hands it to her, presents it to the singer."
+    },
+    {
+      "id": "move-the-rug",
+      "description": "Player moves, slides, lifts, pulls aside, kicks aside, rolls up, or otherwise displaces the rug (carpet) in the living room."
+    },
+    {
+      "id": "cyclops-magic-word",
+      "description": "Player says, shouts, whispers, or invokes 'Ulysses', 'Odysseus', or otherwise utters the magic word that terrifies the cyclops."
+    },
+    {
+      "id": "feed-cyclops",
+      "description": "Player gives, offers, or hands the cyclops the lunch (hot pepper sandwich) and the bottle of water — feeding and watering him."
+    },
+    {
+      "id": "pray-at-altar",
+      "description": "Player prays, kneels, makes an offering, or performs a ritual at the altar."
+    },
+    {
+      "id": "light-lamp",
+      "description": "Player turns on, lights, switches on, fires up, or activates the brass lantern."
+    },
+    {
+      "id": "extinguish-lamp",
+      "description": "Player turns off, douses, switches off, or extinguishes the brass lantern."
+    },
+    {
+      "id": "free-stuck-weapon",
+      "description": "Player tries to free, yank, pull, dislodge, retrieve, or wrench loose their stuck weapon (sword, knife, or axe)."
+    },
+    {
+      "id": "talk-to-troll",
+      "description": "Player tries to talk to, address, ask, shout at, insult, threaten, bargain with, beg, taunt, or otherwise engage the troll conversationally."
+    },
+    {
+      "id": "talk-to-cyclops",
+      "description": "Player tries to talk to, address, ask, taunt, insult, threaten, or otherwise engage the cyclops conversationally — but NOT saying 'Ulysses' or 'Odysseus' (those match cyclops-magic-word instead)."
+    },
+    {
+      "id": "say-echo-in-loud-room",
+      "description": "Player says, shouts, calls, invokes, or otherwise utters the word 'echo' in the loud room."
+    },
+    {
+      "id": "wave-scepter-at-rainbow",
+      "description": "Player waves, raises, brandishes, points, or otherwise invokes the sceptre at the rainbow."
+    },
+    {
+      "id": "rub-mirror",
+      "description": "Player rubs, touches, presses, leans against, steps into, or otherwise interacts physically with the mirror."
+    },
+    {
+      "id": "ring-bell",
+      "description": "Player rings, tolls, peals, sounds, or otherwise activates the bell."
+    },
+    {
+      "id": "read-book-at-hades",
+      "description": "Player reads, recites, intones, or speaks aloud from the black book at the entrance to Hades."
+    },
+    {
+      "id": "turn-machine-switch",
+      "description": "Player turns, presses, activates, or otherwise operates the machine's switch (with the screwdriver as a tool)."
+    },
+    {
+      "id": "push-yellow-button",
+      "description": "Player pushes, presses, depresses, or activates the yellow button."
+    },
+    {
+      "id": "push-brown-button",
+      "description": "Player pushes, presses, depresses, or activates the brown button."
+    },
+    {
+      "id": "turn-dam-bolt",
+      "description": "Player turns, twists, rotates, or otherwise operates the bolt on the dam control panel using the wrench."
+    },
+    {
+      "id": "inflate-boat",
+      "description": "Player inflates, pumps up, fills, or blows up the boat (with the pump)."
+    },
+    {
+      "id": "repair-boat-with-putty",
+      "description": "Player plugs, repairs, patches, or applies putty to the punctured boat."
     }
   ],
   "triggers": [
@@ -4502,8 +4107,21 @@
     {
       "id": "tie-rope",
       "when": {
-        "type": "intentMatched",
-        "signalId": "rope-tied-to-railing"
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "rope-tied-to-railing"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "dome-room"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "rope"
+          }
+        ]
       },
       "effects": [
         {
@@ -4518,8 +4136,52 @@
     {
       "id": "songbird-opens-egg",
       "when": {
-        "type": "intentMatched",
-        "signalId": "give-egg-to-songbird"
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "give-egg-to-songbird"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "egg"
+          },
+          {
+            "type": "itemState",
+            "itemId": "egg",
+            "key": "isOpen",
+            "equals": false
+          },
+          {
+            "type": "or",
+            "any": [
+              {
+                "type": "playerAt",
+                "roomId": "forest-1"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "forest-2"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "forest-3"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "path"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "up-a-tree"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "clearing"
+              }
+            ]
+          }
+        ]
       },
       "effects": [
         {
@@ -4535,8 +4197,17 @@
     {
       "id": "rug-moved",
       "when": {
-        "type": "intentMatched",
-        "signalId": "move-the-rug"
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "move-the-rug"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "living-room"
+          }
+        ]
       },
       "effects": [
         {
@@ -4551,8 +4222,22 @@
     {
       "id": "cyclops-flees",
       "when": {
-        "type": "intentMatched",
-        "signalId": "cyclops-magic-word"
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "cyclops-magic-word"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "cyclops-room"
+          },
+          {
+            "type": "flag",
+            "key": "cyclops-flag",
+            "equals": false
+          }
+        ]
       },
       "effects": [
         {
@@ -4577,8 +4262,30 @@
     {
       "id": "cyclops-fed",
       "when": {
-        "type": "intentMatched",
-        "signalId": "feed-cyclops"
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "feed-cyclops"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "cyclops-room"
+          },
+          {
+            "type": "flag",
+            "key": "cyclops-flag",
+            "equals": false
+          },
+          {
+            "type": "hasItem",
+            "itemId": "lunch"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "bottle"
+          }
+        ]
       },
       "effects": [
         {
@@ -4603,8 +4310,17 @@
     {
       "id": "altar-prayer",
       "when": {
-        "type": "intentMatched",
-        "signalId": "pray-at-altar"
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "pray-at-altar"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "south-temple"
+          }
+        ]
       },
       "effects": [
         {
@@ -5246,8 +4962,36 @@
     {
       "id": "free-stuck-weapon-attempt",
       "when": {
-        "type": "intentMatched",
-        "signalId": "free-stuck-weapon"
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "free-stuck-weapon"
+          },
+          {
+            "type": "or",
+            "any": [
+              {
+                "type": "itemState",
+                "itemId": "sword",
+                "key": "weapon-stuck",
+                "equals": true
+              },
+              {
+                "type": "itemState",
+                "itemId": "rusty-knife",
+                "key": "weapon-stuck",
+                "equals": true
+              },
+              {
+                "type": "itemState",
+                "itemId": "axe",
+                "key": "weapon-stuck",
+                "equals": true
+              }
+            ]
+          }
+        ]
       },
       "effects": [
         {
@@ -5599,8 +5343,36 @@
     {
       "id": "lamp-lights",
       "when": {
-        "type": "intentMatched",
-        "signalId": "light-lamp"
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "light-lamp"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "lamp"
+          },
+          {
+            "type": "itemState",
+            "itemId": "lamp",
+            "key": "isLit",
+            "equals": false
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "lamp",
+              "key": "batteryTurns"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
       },
       "effects": [
         {
@@ -5620,8 +5392,19 @@
     {
       "id": "lamp-extinguishes",
       "when": {
-        "type": "intentMatched",
-        "signalId": "extinguish-lamp"
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "extinguish-lamp"
+          },
+          {
+            "type": "itemState",
+            "itemId": "lamp",
+            "key": "isLit",
+            "equals": true
+          }
+        ]
       },
       "effects": [
         {
@@ -5820,8 +5603,40 @@
       "afterAction": true,
       "once": false,
       "when": {
-        "type": "intentMatched",
-        "signalId": "talk-to-troll"
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "talk-to-troll"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "troll-room"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "troll",
+            "location": "troll-room"
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "troll",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-troll",
+            "equals": false
+          }
+        ]
       },
       "effects": [
         {
@@ -5923,8 +5738,27 @@
       "afterAction": true,
       "once": false,
       "when": {
-        "type": "intentMatched",
-        "signalId": "talk-to-cyclops"
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "talk-to-cyclops"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "cyclops-room"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "cyclops",
+            "location": "cyclops-room"
+          },
+          {
+            "type": "flag",
+            "key": "cyclops-flag",
+            "equals": false
+          }
+        ]
       },
       "effects": [
         {
@@ -7001,8 +6835,22 @@
     {
       "id": "echo-reveals-bar",
       "when": {
-        "type": "intentMatched",
-        "signalId": "say-echo-in-loud-room"
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "say-echo-in-loud-room"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "loud-room"
+          },
+          {
+            "type": "flag",
+            "key": "echo-spoken",
+            "equals": false
+          }
+        ]
       },
       "effects": [
         {
@@ -7021,8 +6869,35 @@
     {
       "id": "wave-scepter-solidifies-rainbow",
       "when": {
-        "type": "intentMatched",
-        "signalId": "wave-scepter-at-rainbow"
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "wave-scepter-at-rainbow"
+          },
+          {
+            "type": "or",
+            "any": [
+              {
+                "type": "playerAt",
+                "roomId": "end-of-rainbow"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "aragain-falls"
+              }
+            ]
+          },
+          {
+            "type": "hasItem",
+            "itemId": "sceptre"
+          },
+          {
+            "type": "flag",
+            "key": "rainbow-flag",
+            "equals": false
+          }
+        ]
       },
       "effects": [
         {
@@ -7189,6 +7064,19 @@
           {
             "type": "playerAt",
             "roomId": "mirror-room-1"
+          },
+          {
+            "type": "or",
+            "any": [
+              {
+                "type": "playerAt",
+                "roomId": "mirror-room-1"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "mirror-room-2"
+              }
+            ]
           }
         ]
       },
@@ -7217,6 +7105,19 @@
           {
             "type": "playerAt",
             "roomId": "mirror-room-2"
+          },
+          {
+            "type": "or",
+            "any": [
+              {
+                "type": "playerAt",
+                "roomId": "mirror-room-1"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "mirror-room-2"
+              }
+            ]
           }
         ]
       },
@@ -7395,8 +7296,22 @@
     {
       "id": "bell-rings",
       "when": {
-        "type": "intentMatched",
-        "signalId": "ring-bell"
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "ring-bell"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "bell"
+          },
+          {
+            "type": "flag",
+            "key": "bell-rung",
+            "equals": false
+          }
+        ]
       },
       "effects": [
         {
@@ -7415,8 +7330,37 @@
     {
       "id": "lld-ritual-completes",
       "when": {
-        "type": "intentMatched",
-        "signalId": "read-book-at-hades"
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "read-book-at-hades"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "entrance-to-hades"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "book"
+          },
+          {
+            "type": "flag",
+            "key": "bell-rung",
+            "equals": true
+          },
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": true
+          },
+          {
+            "type": "flag",
+            "key": "lld-flag",
+            "equals": false
+          }
+        ]
       },
       "effects": [
         {
@@ -7446,6 +7390,20 @@
             "type": "itemAt",
             "itemId": "coal",
             "location": "machine"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "machine-room"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "screwdriver"
+          },
+          {
+            "type": "itemState",
+            "itemId": "machine",
+            "key": "isOpen",
+            "equals": false
           }
         ]
       },
@@ -7484,6 +7442,20 @@
               "itemId": "coal",
               "location": "machine"
             }
+          },
+          {
+            "type": "playerAt",
+            "roomId": "machine-room"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "screwdriver"
+          },
+          {
+            "type": "itemState",
+            "itemId": "machine",
+            "key": "isOpen",
+            "equals": false
           }
         ]
       },
@@ -7499,8 +7471,17 @@
       "id": "yellow-button-enables-bolt",
       "once": false,
       "when": {
-        "type": "intentMatched",
-        "signalId": "push-yellow-button"
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "push-yellow-button"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "maintenance-room"
+          }
+        ]
       },
       "effects": [
         {
@@ -7519,8 +7500,17 @@
       "id": "brown-button-disables-bolt",
       "once": false,
       "when": {
-        "type": "intentMatched",
-        "signalId": "push-brown-button"
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "push-brown-button"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "maintenance-room"
+          }
+        ]
       },
       "effects": [
         {
@@ -7549,6 +7539,19 @@
             "type": "flag",
             "key": "gates-open",
             "equals": false
+          },
+          {
+            "type": "playerAt",
+            "roomId": "dam-room"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "wrench"
+          },
+          {
+            "type": "flag",
+            "key": "gate-flag",
+            "equals": true
           }
         ]
       },
@@ -7583,6 +7586,19 @@
           {
             "type": "flag",
             "key": "gates-open",
+            "equals": true
+          },
+          {
+            "type": "playerAt",
+            "roomId": "dam-room"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "wrench"
+          },
+          {
+            "type": "flag",
+            "key": "gate-flag",
             "equals": true
           }
         ]
@@ -7752,8 +7768,37 @@
       "id": "boat-inflates",
       "once": false,
       "when": {
-        "type": "intentMatched",
-        "signalId": "inflate-boat"
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "inflate-boat"
+          },
+          {
+            "type": "or",
+            "any": [
+              {
+                "type": "itemAt",
+                "itemId": "inflatable-boat",
+                "location": "dam-base"
+              },
+              {
+                "type": "hasItem",
+                "itemId": "inflatable-boat"
+              }
+            ]
+          },
+          {
+            "type": "hasItem",
+            "itemId": "pump"
+          },
+          {
+            "type": "itemState",
+            "itemId": "inflatable-boat",
+            "key": "inflation",
+            "equals": "deflated"
+          }
+        ]
       },
       "effects": [
         {
@@ -7773,8 +7818,23 @@
       "id": "boat-repairs",
       "once": false,
       "when": {
-        "type": "intentMatched",
-        "signalId": "repair-boat-with-putty"
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "repair-boat-with-putty"
+          },
+          {
+            "type": "itemState",
+            "itemId": "inflatable-boat",
+            "key": "inflation",
+            "equals": "punctured"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "putty"
+          }
+        ]
       },
       "effects": [
         {
