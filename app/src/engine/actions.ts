@@ -7,6 +7,7 @@
 
 import type { Atom, GameState, Story } from "../story/schema";
 import {
+  applyEffect,
   currentRoom,
   evaluateCondition,
   isContainerAccessible,
@@ -20,6 +21,7 @@ import {
   roomById,
   visibleExits,
 } from "./state";
+import { substituteCondition, substituteEffect } from "./substituteArgs";
 import type { ActionEvent } from "./events";
 
 export type ActionRequest =
@@ -41,6 +43,7 @@ export interface ActionResult {
   state: GameState;
   event: ActionEvent;
   ok: boolean;
+  cues?: string[];   // narration cues emitted by the action itself (e.g. tool handler success/failure text)
 }
 
 export function performAction(
@@ -383,33 +386,95 @@ function recordIntent(
   args?: Record<string, Atom>,
 ): ActionResult {
   // The signal may be either an old-style IntentSignal or a new CustomTool.
-  // Both ways are valid during the migration. After the cleanup pass, only
-  // CustomTools will remain.
+  // Both forms are accepted during the migration. After the cleanup pass,
+  // only CustomTools will remain.
   const signal = story.intentSignals?.find((s) => s.id === signalId);
   const customTool = story.customTools?.find((t) => t.id === signalId);
   if (!signal && !customTool) {
     return { state, event: reject("unknown-intent", { itemId: signalId }), ok: false };
   }
   // IntentSignal's deprecated `active` clause: refuse the intent if currently
-  // false. Same defensive behavior we had before — the LLM may remember an
-  // out-of-context signal id from earlier turns. CustomTools don't have an
-  // active gate (their handler/triggers do that work).
+  // false. CustomTools don't have an active gate (their handler/triggers do
+  // that work).
   if (signal?.active && !evaluateCondition(signal.active, state, story)) {
     return { state, event: reject("unknown-intent", { itemId: signalId }), ok: false };
   }
-  // Always store the call args (even on a duplicate match — the new args
-  // supersede whatever was stored before).
+  // Store the call args (even on a duplicate match — new args supersede).
   const nextMatched = state.matchedIntents.includes(signalId)
     ? state.matchedIntents
     : [...state.matchedIntents, signalId];
   const nextArgs = args !== undefined
     ? { ...state.matchedIntentArgs, [signalId]: args }
     : state.matchedIntentArgs;
+  let nextState: GameState = { ...state, matchedIntents: nextMatched, matchedIntentArgs: nextArgs };
+  const cues: string[] = [];
+
+  // Run the handler if the tool declares one.
+  if (customTool?.handler) {
+    const callArgs = args ?? {};
+    const handlerResult = runHandler(nextState, story, customTool.handler, callArgs);
+    nextState = handlerResult.state;
+    cues.push(...handlerResult.cues);
+  }
+
   return {
-    state: { ...state, matchedIntents: nextMatched, matchedIntentArgs: nextArgs },
+    state: nextState,
     event: { type: "intent-recorded", signalId },
     ok: true,
+    cues,
   };
+}
+
+// Run a tool handler: evaluate preconditions in order (first failure
+// short-circuits with its failedNarration), then apply effects in order
+// emitting successNarration. All Conditions/Effects are substituted with
+// the call's args before evaluation/application.
+function runHandler(
+  state: GameState,
+  story: Story,
+  handler: import("../story/schema").ToolHandler,
+  args: Record<string, Atom>,
+): { state: GameState; cues: string[] } {
+  for (const pre of handler.preconditions ?? []) {
+    const sub = substituteCondition(pre.when, args);
+    if (sub === null) {
+      // Substitution failed (missing arg). Skip this precondition — defensive.
+      continue;
+    }
+    if (!evaluateCondition(sub, state, story)) {
+      return { state, cues: [renderHandlerTemplate(pre.failedNarration, args, story)] };
+    }
+  }
+
+  let nextState = state;
+  for (const eff of handler.effects ?? []) {
+    const sub = substituteEffect(eff, args);
+    if (sub === null) continue;
+    nextState = applyEffect(nextState, sub);
+  }
+
+  const cues: string[] = [];
+  if (handler.successNarration) {
+    cues.push(renderHandlerTemplate(handler.successNarration, args, story));
+  }
+  return { state: nextState, cues };
+}
+
+// Replace {arg.<name>.<field>} in handler templates. Supported fields for
+// item args: name, id. Falls back to the raw arg value if the lookup fails.
+function renderHandlerTemplate(
+  template: string,
+  args: Record<string, Atom>,
+  story: Story,
+): string {
+  return template.replace(/\{arg\.([a-zA-Z0-9_-]+)\.(name|id)\}/g, (_match, argName, field) => {
+    const value = args[argName];
+    if (typeof value !== "string") return String(value ?? "");
+    if (field === "id") return value;
+    // field === "name": resolve item by id
+    const item = itemById(story, value);
+    return item?.name ?? value;
+  });
 }
 
 // ---------- read ----------

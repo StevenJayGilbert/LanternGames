@@ -110,6 +110,12 @@ export function validateStory(input: unknown): ValidationResult {
     validateIntentSignal(s, `intentSignals[${i}]`, roomIds, itemIds, triggerIds, err),
   );
 
+  const customTools = optionalArray(input, "customTools", err) ?? [];
+  collectIds(customTools, "customTools", err);
+  customTools.forEach((t, i) =>
+    validateCustomTool(t, `customTools[${i}]`, roomIds, itemIds, triggerIds, err),
+  );
+
   const winConds = optionalArray(input, "winConditions", err) ?? [];
   winConds.forEach((c, i) =>
     validateEndCondition(c, `winConditions[${i}]`, roomIds, itemIds, triggerIds, err),
@@ -638,6 +644,120 @@ function validateIntentSignal(
   }
 }
 
+function validateCustomTool(
+  raw: unknown,
+  path: string,
+  roomIds: Set<string>,
+  itemIds: Set<string>,
+  triggerIds: Set<string>,
+  err: (p: string, m: string) => void,
+) {
+  if (!isObject(raw)) return err(path, "must be an object");
+  requireString(raw, "id", err, path);
+  requireString(raw, "description", err, path);
+  if (raw.alwaysAvailable !== undefined && typeof raw.alwaysAvailable !== "boolean") {
+    err(`${path}.alwaysAvailable`, "must be a boolean");
+  }
+
+  // Validate args schema. Tracks declared arg names so handler {fromArg}
+  // refs can be checked.
+  const declaredArgs = new Set<string>();
+  if (raw.args !== undefined) {
+    if (!isObject(raw.args)) {
+      err(`${path}.args`, "must be an object");
+    } else {
+      const a = raw.args as Record<string, unknown>;
+      if (a.type !== "object") err(`${path}.args.type`, "must be the literal \"object\"");
+      const props = a.properties;
+      if (!isObject(props)) {
+        err(`${path}.args.properties`, "must be an object of arg-name → schema");
+      } else {
+        for (const [argName, argSchema] of Object.entries(props)) {
+          declaredArgs.add(argName);
+          if (!isObject(argSchema)) {
+            err(`${path}.args.properties.${argName}`, "must be an object");
+            continue;
+          }
+          const t = (argSchema as Record<string, unknown>).type;
+          if (t !== "string" && t !== "number" && t !== "boolean") {
+            err(`${path}.args.properties.${argName}.type`, "must be 'string' | 'number' | 'boolean'");
+          }
+        }
+      }
+      if (a.required !== undefined) {
+        if (!Array.isArray(a.required)) {
+          err(`${path}.args.required`, "must be an array of arg names");
+        } else {
+          for (const name of a.required) {
+            if (typeof name !== "string" || !declaredArgs.has(name)) {
+              err(`${path}.args.required`, `unknown arg name "${String(name)}" — must appear in args.properties`);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (raw.handler !== undefined) {
+    if (!isObject(raw.handler)) {
+      err(`${path}.handler`, "must be an object");
+      return;
+    }
+    const h = raw.handler as Record<string, unknown>;
+    if (h.preconditions !== undefined) {
+      if (!Array.isArray(h.preconditions)) {
+        err(`${path}.handler.preconditions`, "must be an array");
+      } else {
+        h.preconditions.forEach((pre, i) => {
+          if (!isObject(pre)) {
+            err(`${path}.handler.preconditions[${i}]`, "must be an object");
+            return;
+          }
+          if (pre.when === undefined) {
+            err(`${path}.handler.preconditions[${i}].when`, "missing condition");
+          } else {
+            validateCondition(pre.when, `${path}.handler.preconditions[${i}].when`, roomIds, itemIds, triggerIds, err);
+          }
+          if (typeof pre.failedNarration !== "string") {
+            err(`${path}.handler.preconditions[${i}].failedNarration`, "must be a string");
+          }
+          // fromArg refs inside the precondition's `when` should reference
+          // declared args. Cheap check: stringify and look for unknown names.
+          const text = JSON.stringify(pre.when);
+          const refMatches = text.match(/"fromArg"\s*:\s*"([^"]+)"/g) ?? [];
+          for (const m of refMatches) {
+            const name = m.match(/"fromArg"\s*:\s*"([^"]+)"/)?.[1];
+            if (name && !declaredArgs.has(name)) {
+              err(`${path}.handler.preconditions[${i}].when`, `fromArg "${name}" is not declared in args.properties`);
+            }
+          }
+        });
+      }
+    }
+    if (h.effects !== undefined) {
+      if (!Array.isArray(h.effects)) {
+        err(`${path}.handler.effects`, "must be an array");
+      } else {
+        h.effects.forEach((eff, i) => {
+          validateEffect(eff, `${path}.handler.effects[${i}]`, roomIds, itemIds, err);
+          // Same fromArg ref check.
+          const text = JSON.stringify(eff);
+          const refMatches = text.match(/"fromArg"\s*:\s*"([^"]+)"/g) ?? [];
+          for (const m of refMatches) {
+            const name = m.match(/"fromArg"\s*:\s*"([^"]+)"/)?.[1];
+            if (name && !declaredArgs.has(name)) {
+              err(`${path}.handler.effects[${i}]`, `fromArg "${name}" is not declared in args.properties`);
+            }
+          }
+        });
+      }
+    }
+    if (h.successNarration !== undefined && typeof h.successNarration !== "string") {
+      err(`${path}.handler.successNarration`, "must be a string");
+    }
+  }
+}
+
 function validateNpc(
   raw: unknown,
   path: string,
@@ -666,6 +786,26 @@ function validateEndCondition(
   requireString(raw, "message", err, path);
   if (raw.when === undefined) err(`${path}.when`, "missing condition");
   else validateCondition(raw.when, `${path}.when`, roomIds, itemIds, triggerIds, err);
+}
+
+// IdRef = string (item id) | { fromArg: string } (substituted at handler
+// dispatch). For the literal-string form, validate it's a known item id.
+// For the {fromArg} form, just check shape — arg-existence is checked when
+// validating the enclosing CustomTool.
+function validateIdRef(
+  raw: unknown,
+  path: string,
+  itemIds: Set<string>,
+  err: (p: string, m: string) => void,
+) {
+  if (typeof raw === "string") {
+    if (itemIds.size && !itemIds.has(raw)) err(path, `unknown item "${raw}"`);
+    return;
+  }
+  if (isObject(raw) && typeof (raw as Record<string, unknown>).fromArg === "string") {
+    return;
+  }
+  err(path, "must be a string item id or { fromArg: <argName> }");
 }
 
 function validateCondition(
@@ -722,10 +862,10 @@ function validateCondition(
       if (!isAtom(raw.equals)) err(`${path}.equals`, "must be string, number, or boolean");
       return;
     case "itemState":
-      // Same soft validation as passageState. Cross-ref skipped; typos become
-      // "never true" at runtime.
-      if (typeof raw.itemId !== "string") err(`${path}.itemId`, "must be a string");
-      else if (itemIds.size && !itemIds.has(raw.itemId)) err(`${path}.itemId`, `unknown item "${raw.itemId}"`);
+      // Soft validation: itemId may be a literal string OR an IdRef
+      // ({fromArg}) when used inside a CustomTool handler. Cross-ref skipped;
+      // typos become "never true" at runtime.
+      validateIdRef(raw.itemId, `${path}.itemId`, itemIds, err);
       if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
       if (!isAtom(raw.equals)) err(`${path}.equals`, "must be string, number, or boolean");
       return;
@@ -775,6 +915,20 @@ function validateCondition(
       // skipped here (intent signals may be declared anywhere in the file
       // ordering), so unknown signalIds become "never matched" at runtime.
       if (typeof raw.signalId !== "string") err(`${path}.signalId`, "must be a string");
+      return;
+    case "intentArg":
+      if (typeof raw.signalId !== "string") err(`${path}.signalId`, "must be a string");
+      if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
+      if (raw.equals === undefined) err(`${path}.equals`, "missing");
+      return;
+    case "itemAccessible":
+      validateIdRef(raw.itemId, `${path}.itemId`, itemIds, err);
+      return;
+    case "itemHasStateKey":
+      validateIdRef(raw.itemId, `${path}.itemId`, itemIds, err);
+      if (typeof raw.key !== "string" || raw.key === "") {
+        err(`${path}.key`, "must be a non-empty string");
+      }
       return;
     case "compare": {
       const validOps = new Set(["==", "!=", "<", "<=", ">", ">="]);
@@ -894,8 +1048,7 @@ function validateEffect(
       if (!isAtom(raw.value)) err(`${path}.value`, "must be string, number, or boolean");
       return;
     case "setItemState":
-      if (typeof raw.itemId !== "string") err(`${path}.itemId`, "must be a string");
-      else if (itemIds.size && !itemIds.has(raw.itemId)) err(`${path}.itemId`, `unknown item "${raw.itemId}"`);
+      validateIdRef(raw.itemId, `${path}.itemId`, itemIds, err);
       if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
       if (!isAtom(raw.value)) err(`${path}.value`, "must be string, number, or boolean");
       return;

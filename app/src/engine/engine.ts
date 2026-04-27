@@ -78,7 +78,15 @@ export class Engine {
     return {
       event: actionResult.event,
       view: buildView(this.state, this.story),
-      narrationCues: [...phase1.cues, ...phase2.cues, ...phase3.cues],
+      // Action cues (e.g. tool handler success/failure text) come first; trigger
+      // cues follow. Order matters: the handler narration sets the scene, then
+      // any cascading triggers add their flavor.
+      narrationCues: [
+        ...(actionResult.cues ?? []),
+        ...phase1.cues,
+        ...phase2.cues,
+        ...phase3.cues,
+      ],
       triggersFired: [...phase1.fired, ...phase2.fired, ...phase3.fired],
       ok: actionResult.ok,
       ended: nextState.finished,

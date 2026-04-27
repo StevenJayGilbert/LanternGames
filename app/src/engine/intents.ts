@@ -17,7 +17,7 @@
 // the AND/OR tree as usual, we never bother the LLM unless the surrounding
 // cheap conditions already pass.
 
-import type { Condition, GameState, IntentSignal, Story } from "../story/schema";
+import type { Condition, CustomTool, GameState, IntentSignal, Story } from "../story/schema";
 import { evaluateCondition } from "./state";
 
 // Every Condition the engine evaluates anywhere in the story.
@@ -114,4 +114,33 @@ export function gatherActiveIntentSignals(
         evaluateAssumingIntent(site, state, story, signal.id),
     );
   });
+}
+
+// ----- CustomTool counterparts (the new intent system) -----
+
+// Always-on tools — exposed every turn regardless of state. Author opts in
+// via alwaysAvailable: true. Cached in the stable tool tier.
+export function alwaysOnCustomTools(story: Story): CustomTool[] {
+  return (story.customTools ?? []).filter((t) => t.alwaysAvailable === true);
+}
+
+// Conditional tools — only exposed when at least one consuming trigger
+// could fire. Same relevance check as gatherActiveIntentSignals, just over
+// the customTools list.
+export function activeConditionalCustomTools(
+  state: GameState,
+  story: Story,
+): CustomTool[] {
+  const tools = (story.customTools ?? []).filter((t) => t.alwaysAvailable !== true);
+  if (tools.length === 0) return [];
+
+  const sites = collectConditionSites(story);
+
+  return tools.filter((tool) =>
+    sites.some(
+      (site) =>
+        conditionReferencesSignal(site, tool.id) &&
+        evaluateAssumingIntent(site, state, story, tool.id),
+    ),
+  );
 }

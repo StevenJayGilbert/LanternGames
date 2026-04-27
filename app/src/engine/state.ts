@@ -314,6 +314,9 @@ export function evaluateCondition(
     case "passageState":
       return state.passageStates[c.passageId]?.[c.key] === c.equals;
     case "itemState":
+      // IdRef should be resolved before reaching the evaluator. Defensive
+      // skip if a {fromArg} slipped through (would always evaluate to false).
+      if (typeof c.itemId !== "string") return false;
       return state.itemStates[c.itemId]?.[c.key] === c.equals;
     case "roomState":
       return state.roomStates[c.roomId]?.[c.key] === c.equals;
@@ -461,6 +464,9 @@ export function applyEffect(state: GameState, e: Effect): GameState {
       };
     }
     case "setItemState": {
+      // IdRef should be resolved before applyEffect. Defensive no-op if a
+      // {fromArg} slipped through.
+      if (typeof e.itemId !== "string") return state;
       const current = state.itemStates[e.itemId] ?? {};
       return {
         ...state,
