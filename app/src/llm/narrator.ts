@@ -29,7 +29,8 @@ import { LLMError } from "./types";
 const TOOLS: Tool[] = [
   {
     name: "look",
-    description: "Look around the current room. Use for 'look', 'l', 'look around'.",
+    description:
+      "Look around the current room — get a fresh description from the engine. Use for 'look', 'l', 'look around', 'where am I', 'describe the room', 'what's here', 'what do I see', 'survey the area', or any other request for a current snapshot of surroundings. ALWAYS call this tool for those requests; never narrate the room from memory — triggers may have fired silently between turns and your prior context could be stale.",
     input_schema: { type: "object", properties: {}, required: [] },
   },
   {
@@ -143,7 +144,9 @@ Your two jobs:
 Rules:
 - The engine owns the world. You cannot describe events the engine hasn't computed. Always call a tool first if the player is requesting an action.
 - **Be charitable about player input.** Players type fast, abbreviate, make typos, drop words, and use partial names. Infer their intent and act on it — don't make them re-type. Examples that should ALL just work without asking for clarification: "examime sword" / "x sword" / "look at sword" → \`examine(sword)\`; "n" / "go n" / "head north" / "walk north" → \`go(north)\`; "i" / "inv" / "what am I carrying" → \`inventory\`; "platinum" when the only platinum-anything in the view is the platinum bar → that bar; "yes" right after you offered an action → execute that action; "kill troll" → \`attack(troll, sword)\` if the player carries a sword. Only ask for clarification when the input is GENUINELY ambiguous (e.g. "take the key" when the view actually has two distinct keys). Never refuse for spelling or grammar; never demand the player retype to "spell correctly". The strict rules below are about validating tool ARGUMENTS — they are NOT permission to reject a player who didn't type a perfect string.
-- **Where to find the current world view.** The view JSON lives in the most recent \`tool_result\` in your conversation history — that's the engine's snapshot of the room, items, exits, and inventory. The user message gives you only the player's command (and the [Active intent signals] line). When you need to know what's around the player right now, scroll back to the latest tool_result. State-mutating tools (look, take, drop, put, go, attack, wait) include a fresh \`view\` field in their result; non-mutating tools (examine, read, inventory, recordIntent) omit it because nothing changed — for those, the previous tool_result's view is still accurate. **Exception:** the very first user message of a session DOES include a \`[Current view]\` block since there's no prior tool_result yet.
+- **Engine identifiers are internal — NEVER speak them to the player.** Anything inside \`<active_intents>...</active_intents>\` in the user message, any \`id\` field in the view JSON, any tool argument like \`push-yellow-button\`, \`talk-to-troll\`, \`coffin-cure\`, \`pot-of-gold\` — these are machine-readable identifiers for the engine, NOT names the player should see. The player sees the \`name\` field ("yellow button", "troll", "pot of gold"). When you need to disambiguate between options, describe them in plain prose ("the yellow button or the brown one?", "the troll or the cyclops?") — never list the underlying IDs. **If you find yourself about to type an id-shaped string (lowercase-hyphenated, like \`push-yellow-button\` or \`pot-of-gold\`), rewrite it as natural English first.** Same goes for engine internals like "active intent signals", "trigger fired", "tool_result" — these belong to the system, not the story.
+- **Always call \`look\` for orientation requests.** When the player asks where they are, what's around them, what they see, or for a description of the room ("look", "look around", "where am I", "describe the room", "what's here", "what do I see", "survey the area"), CALL the \`look\` tool — even if you described the room in an earlier turn. Triggers may have fired silently between turns (state changes that didn't generate a narration cue), and your prior narration could be stale. The \`look\` tool returns the current view from the engine; trust it over your memory. Don't paraphrase the room from earlier in the conversation; query fresh.
+- **Where to find the current world view.** The view JSON lives in the most recent \`tool_result\` in your conversation history — that's the engine's snapshot of the room, items, exits, and inventory. The user message gives you only the player's command (and any \`<active_intents>\` line). When you need to know what's around the player right now, scroll back to the latest tool_result. State-mutating tools (look, take, drop, put, go, attack, wait) include a fresh \`view\` field in their result; non-mutating tools (examine, read, inventory, recordIntent) omit it because nothing changed — for those, the previous tool_result's view is still accurate. **Exception:** the very first user message of a session DOES include a \`[Current view]\` block since there's no prior tool_result yet.
 - Pass IDs (not display names) to tools. Find them in the view's \`itemsHere\` (items in the room), \`passagesHere\` (doors, windows, archways), or \`inventory\`.
 - Items and passages share one ID namespace. \`examine\` accepts either kind. \`take\`, \`drop\`, \`put\`, and \`read\` work on items only.
 - Items and passages both carry a typed \`state\` map (e.g. \`{ isOpen: true }\`, \`{ broken: false }\`). The engine has NO built-in open/close/break verbs — state mutates only through triggers. When the player tries to mutate state ("open the box", "close the door", "smash the vase", "shut the window"), look at the [Active intent signals] block in the user message. If one matches the player's intent, call \`recordIntent(signalId)\` BEFORE narrating. The matching trigger will fire and update the state; the next view will reflect the change. Then narrate the result.
@@ -427,7 +430,7 @@ function buildSystemPrompt(story: Story): string {
     parts.push(
       "",
       "## Intent signals (reference)",
-      "When the player's input semantically matches one of the prompts below AND the matching id appears in [Active intent signals: ...] in the user message, call recordIntent(signalId=\"<id>\") BEFORE any other tool. Matches persist for the rest of the game. If an id is NOT in the active list, do not call recordIntent for it — the precondition isn't satisfied.",
+      "When the player's input semantically matches one of the prompts below AND the matching id appears in <active_intents>...</active_intents> in the user message, call recordIntent(signalId=\"<id>\") BEFORE any other tool. Matches persist for the rest of the game. If an id is NOT in the active list, do not call recordIntent for it — the precondition isn't satisfied. The IDs are internal — never quote them in your reply to the player.",
       "",
       ...intentSignals.map((s) => `- ${s.id}: ${s.prompt}`),
     );
@@ -438,8 +441,10 @@ function buildSystemPrompt(story: Story): string {
 
 function formatIntentBlock(signals: IntentSignal[]): string {
   if (signals.length === 0) return "";
-  // Per-turn: just IDs. Full prompts are in the system prompt's reference table.
-  return `\n\n[Active intent signals: ${signals.map((s) => s.id).join(", ")}]`;
+  // Per-turn: just IDs, wrapped in XML-style markup that signals "internal
+  // directive, not prose". Full prompts live in the system prompt's reference
+  // table. STYLE_INSTRUCTIONS forbids speaking these IDs to the player.
+  return `\n\n<active_intents>${signals.map((s) => s.id).join(", ")}</active_intents>`;
 }
 
 // Reshape the WorldView into the JSON-shaped structure we serialize for the
