@@ -700,77 +700,300 @@
     }
   ],
   "items": [
-    { "$comment": "Authored descriptions for items the mechanical extractor left as placeholders. Voice: terse, atmospheric, faintly dry — Infocom house style.", "id": "forest", "description": "Dense pine and hemlock surround the clearing on every side, the canopy filtering daylight to a green twilight." },
-    { "id": "tree", "description": "A large, leaf-bearing tree whose lower branches look climbable." },
-    { "id": "mountain-range", "description": "The Flathead Mountains rear up to the south — a wall of impassable peaks against the horizon." },
-    { "id": "river", "description": "The Frigid River slides past with quiet, steady force. The current is swift, the water cold, the rocks below half-hidden." },
-    { "id": "white-cliff", "description": "Tall white cliffs rise sheer from the riverbank, scoured by centuries of water and quite unscalable." },
-    { "id": "climbable-cliff", "description": "A rough cliff face, weathered into ledges and handholds. Climbing it would be possible — and perilous." },
-    { "id": "rainbow", "description": "A perfect rainbow arcs across the falls, shimmering with a strange and almost solid presence." },
-    { "id": "sand", "description": "Fine pale sand, soft underfoot. It would respond to digging." },
-    { "id": "crack", "description": "A narrow vertical crack in the cave wall — far too thin for anyone to slip through." },
-    { "id": "global-water", "description": "Cold, dark water — drinkable, you suppose, though the thought isn't appetizing." },
-    { "id": "water", "description": "A measure of clear water, presently held inside the bottle." },
-
-    { "id": "ghosts", "description": "Translucent figures drift through the chamber, faces blank with ancient grief. They take no notice of you." },
-    { "id": "bodies", "description": "A heap of corpses, far too long-dead to identify. Disturbing them feels like a very poor idea." },
-    { "id": "bat", "description": "A vampire bat, sleek and quick, hangs from the ceiling watching you with bright unblinking eyes." },
-    { "id": "prayer", "description": "Words in an ancient script are inscribed around the altar — a prayer of safe passage, you somehow understand." },
-
-    { "id": "front-door", "description": "The front door is solid wood, banded with iron. There is no handle on this side and no obvious way to open it." },
-    { "id": "wooden-door", "description": "A heavy wooden door set into the western wall." },
-    { "id": "boarded-window", "description": "The window has been securely boarded over from the inside. There's no entering the house this way." },
-    { "id": "barrow", "description": "A great mound of weathered stone, ancient beyond reckoning. A massive door is set into one face." },
-    { "id": "barrow-door", "description": "The stone door is enormous and impossibly heavy. It would take more than human strength to budge it." },
-
-    { "id": "stairs", "description": "A narrow flight of stairs ascending into shadow." },
-    { "id": "ladder", "description": "A sturdy wooden ladder, bolted to the wall, descending into darkness." },
-    { "id": "railing", "description": "A worn wooden railing rings the edge of the dome, polished smooth by countless hands." },
-
-    { "id": "dam", "description": "Flood Control Dam #3, a vast concrete structure holding back the reservoir to the north. A control panel is set into one wall." },
-    { "id": "control-panel", "description": "A bank of indicator lights, buttons, and a single bolt — clearly a maintenance station for the dam." },
-    { "id": "bolt", "description": "A heavy iron bolt set into the dam's control panel. The slot accepts a wrench." },
-    { "id": "bubble", "description": "A small green bubble of glass embedded in the panel, currently dark." },
-    { "id": "yellow-button", "description": "A worn yellow button set into the maintenance panel." },
-    { "id": "brown-button", "description": "A brown button beside the yellow one, slightly recessed." },
-    { "id": "red-button", "description": "A red button marked with a faded warning symbol." },
-    { "id": "blue-button", "description": "A blue button set into the panel." },
-    { "id": "leak", "description": "Water trickles steadily from a small leak in the wall — for now, a nuisance rather than a disaster." },
-    { "id": "machine", "description": "A complicated piece of machinery, all gears and curious nozzles, with a hinged lid on top and a small switch on its flank." },
-    { "id": "machine-switch", "description": "A small switch set into the machine's flank, with a slot evidently sized for a screwdriver." },
-
-    { "id": "slide", "description": "A long metal chute angling downward into darkness. Once you commit, there is no climbing back." },
-    { "id": "timbers", "description": "A length of broken timber, splintered at one end and surprisingly heavy." },
-
-    { "id": "bell", "description": "A small brass bell with a worn handle. Polished smooth by use." },
-    { "id": "bones", "description": "A weathered skeleton sprawled against the wall, long picked clean. A small leather bag lies beside it." },
-    { "id": "garlic", "description": "A pungent clove of garlic, its papery skin crackling at the slightest touch." },
-    { "id": "pump", "description": "A small hand-held pump, the sort you'd use for a bicycle tire — or a folded raft." },
-    { "id": "putty", "description": "A small lump of viscous greyish material, useful for sealing a puncture or two." },
-    { "id": "screwdriver", "description": "A standard flat-head screwdriver, well-worn but serviceable." },
-    { "id": "shovel", "description": "A long-handled shovel, balanced for digging." },
-    { "id": "wrench", "description": "A solid iron wrench, sized for a familiar bolt." },
-
-    { "id": "coal", "description": "A small heap of dusty black coal — surprisingly heavy, and very dirty." },
-    { "id": "emerald", "description": "A flawless emerald the size of a small egg, its green depths catching every gleam of light. A treasure." },
-    { "id": "scarab", "description": "An exquisite scarab beetle carved from a single piece of jade and chased with gold. A treasure." },
-    { "id": "bracelet", "description": "A delicate bracelet set with sapphires, glittering even in dim light. A treasure." },
-
+    {
+      "$comment": "Authored descriptions — strictly item-focused (no positional language). Voice: terse, concrete, faintly dry — Infocom house style. Describe what the THING looks/feels like, never where it sits.",
+      "id": "forest",
+      "description": "Dense pine and hemlock, the canopy filtering daylight to a green twilight."
+    },
+    {
+      "id": "tree",
+      "description": "A large leaf-bearing tree, lower branches at climbing height."
+    },
+    {
+      "id": "mountain-range",
+      "description": "An impassable wall of high peaks — the Flatheads, named (legend has it) for their first king."
+    },
+    {
+      "id": "river",
+      "description": "Cold dark water moving with quiet, steady force. The current is swift; rocks lie half-hidden below."
+    },
+    {
+      "id": "white-cliff",
+      "description": "Sheer chalk-white cliffs, scoured smooth and quite unscalable."
+    },
+    {
+      "id": "climbable-cliff",
+      "description": "A rough cliff face, weathered into ledges and handholds. Climbing it is possible — and perilous."
+    },
+    {
+      "id": "rainbow",
+      "description": "A perfect arc of color, shimmering with a strange and almost solid presence."
+    },
+    {
+      "id": "sand",
+      "description": "Fine pale sand, soft underfoot — the sort that responds well to a shovel."
+    },
+    {
+      "id": "crack",
+      "description": "A narrow vertical crack — far too thin for anyone to slip through."
+    },
+    {
+      "id": "global-water",
+      "description": "Cold dark water — drinkable, you suppose, though the thought isn't appetizing."
+    },
+    {
+      "id": "water",
+      "description": "A measure of clear water, transparent and quite ordinary."
+    },
+    {
+      "id": "ghosts",
+      "description": "Translucent figures drifting through the air, faces blank with ancient grief. They take no notice of you."
+    },
+    {
+      "id": "bodies",
+      "description": "A heap of corpses, far too long-dead to identify. Disturbing them feels like a very poor idea."
+    },
+    {
+      "id": "bat",
+      "description": "A sleek vampire bat, watching with bright unblinking eyes — and a mouth full of small sharp teeth."
+    },
+    {
+      "id": "prayer",
+      "description": "An inscription in an ancient script — a prayer of safe passage, you somehow understand."
+    },
+    {
+      "id": "front-door",
+      "description": "Solid wood banded with iron. There is no handle on this side and no obvious way to open it."
+    },
+    {
+      "id": "wooden-door",
+      "description": "A heavy wooden door, banded with iron."
+    },
+    {
+      "id": "boarded-window",
+      "description": "A window securely boarded over from within. There's no entering this way."
+    },
+    {
+      "id": "barrow",
+      "description": "A great mound of weathered stone, ancient beyond reckoning, with a single massive door."
+    },
+    {
+      "id": "barrow-door",
+      "description": "An enormous stone door, impossibly heavy. It would take more than human strength to budge."
+    },
+    {
+      "id": "stairs",
+      "description": "A narrow flight of stone steps ascending into shadow."
+    },
+    {
+      "id": "ladder",
+      "description": "A sturdy wooden ladder, rungs worn smooth by use."
+    },
+    {
+      "id": "railing",
+      "description": "A worn wooden railing, polished smooth by countless hands."
+    },
+    {
+      "id": "dam",
+      "description": "Flood Control Dam #3 — a vast concrete structure of evident bureaucratic origin, holding back an enormous body of water."
+    },
+    {
+      "id": "control-panel",
+      "description": "A bank of indicator lights, four colored buttons, and a single iron bolt — clearly some kind of maintenance station."
+    },
+    {
+      "id": "bolt",
+      "description": "A heavy iron bolt with a slot evidently sized for a wrench."
+    },
+    {
+      "id": "bubble",
+      "description": "A small green glass bubble — currently dark, evidently waiting for something."
+    },
+    {
+      "id": "yellow-button",
+      "description": "A worn yellow button, slightly recessed. Yellow paint flakes around the edges."
+    },
+    {
+      "id": "brown-button",
+      "description": "A small brown button, smooth and unmarked."
+    },
+    {
+      "id": "red-button",
+      "description": "A red button marked with a faded warning symbol."
+    },
+    {
+      "id": "blue-button",
+      "description": "A small blue button, smooth and unmarked."
+    },
+    {
+      "id": "leak",
+      "description": "Water trickles from a small leak — for now a nuisance rather than a disaster."
+    },
+    {
+      "id": "machine",
+      "description": "A complicated piece of machinery: gears, curious nozzles, a hinged lid, and a small switch on one flank."
+    },
+    {
+      "id": "machine-switch",
+      "description": "A small switch with a slot evidently sized for a screwdriver."
+    },
+    {
+      "id": "slide",
+      "description": "A long metal chute angling steeply downward into darkness. Once you commit, climbing back out looks impossible."
+    },
+    {
+      "id": "timbers",
+      "description": "A length of broken timber, splintered at one end and surprisingly heavy."
+    },
+    {
+      "id": "bell",
+      "description": "A small brass bell with a worn handle, polished smooth by use."
+    },
+    {
+      "id": "bones",
+      "description": "A weathered skeleton, long picked clean. A small leather bag lies near one outstretched hand."
+    },
+    {
+      "id": "garlic",
+      "description": "A pungent clove of garlic, its papery skin crackling at the slightest touch."
+    },
+    {
+      "id": "pump",
+      "description": "A small hand-held pump — the sort you'd use for a bicycle tire, or perhaps a folded raft."
+    },
+    {
+      "id": "putty",
+      "description": "A lump of viscous greyish material, evidently good for sealing a puncture or two."
+    },
+    {
+      "id": "screwdriver",
+      "description": "A standard flat-head screwdriver, well-worn but serviceable."
+    },
+    {
+      "id": "shovel",
+      "description": "A long-handled shovel, well-balanced for digging."
+    },
+    {
+      "id": "wrench",
+      "description": "A solid iron wrench, sized for a familiar bolt."
+    },
+    {
+      "id": "coal",
+      "description": "A small heap of dusty black coal — surprisingly heavy, and very dirty."
+    },
+    {
+      "id": "emerald",
+      "description": "A flawless emerald the size of a small egg, its green depths catching every gleam of light. A treasure."
+    },
+    {
+      "id": "scarab",
+      "description": "An exquisite scarab beetle carved from a single piece of jade and chased with gold. A treasure."
+    },
+    {
+      "id": "bracelet",
+      "description": "A delicate bracelet set with sapphires, glittering even in dim light. A treasure."
+    },
+    {
+      "id": "lowered-basket",
+      "description": "A large wicker basket suspended from a chain, currently lowered."
+    },
+    {
+      "id": "raised-basket",
+      "description": "A large wicker basket suspended from a chain, currently raised."
+    },
+    {
+      "id": "book",
+      "description": "A large black book bound in cracked leather, held open to page 569."
+    },
+    {
+      "id": "sandwich-bag",
+      "description": "An elongated brown paper sack, smelling powerfully of hot peppers."
+    },
+    {
+      "id": "chalice",
+      "description": "A silver chalice, intricately engraved with looping vines. A treasure."
+    },
+    {
+      "id": "trident",
+      "description": "Poseidon's own trident, carved from a single piece of crystal. A treasure."
+    },
+    {
+      "id": "coffin",
+      "description": "The solid-gold coffin used for the burial of Ramses II — heavy, ornate, and worth a king's ransom. A treasure."
+    },
+    {
+      "id": "jade",
+      "description": "An exquisite jade figurine, carved with delicate features. A treasure."
+    },
+    {
+      "id": "burned-out-lantern",
+      "description": "A battered brass lantern, its battery long since drained dry."
+    },
+    {
+      "id": "match",
+      "description": "A matchbook whose cover advertises FCD#3 in chipper bureaucratic prose."
+    },
+    {
+      "id": "candles",
+      "description": "A pair of long burning candles, dripping wax steadily."
+    },
+    {
+      "id": "leaves",
+      "description": "A pile of dry leaves, gathered as if by wind."
+    },
+    {
+      "id": "buoy",
+      "description": "A red metal buoy, weathered by long exposure — evidently a warning."
+    },
+    {
+      "id": "trunk",
+      "description": "An old wooden trunk, mud-caked and bulging with jewels. A treasure."
+    },
+    {
+      "id": "tube",
+      "description": "A small metal tube of the sort that holds toothpaste — but its contents are something else entirely."
+    },
+    {
+      "id": "engravings",
+      "description": "Old engravings worked deep into stone — ancient writing, half worn away."
+    },
+    {
+      "id": "nest",
+      "description": "A small bird's nest, woven of twigs and grass."
+    },
+    {
+      "id": "canary",
+      "description": "A golden clockwork canary with ruby eyes and a silver beak. A crystal window below its left wing reveals intricate machinery; the mechanism appears to have wound down. A treasure."
+    },
+    {
+      "id": "mirror-1",
+      "description": "An enormous wall-sized mirror, polished to a perfect reflection."
+    },
+    {
+      "id": "mirror-2",
+      "description": "An enormous wall-sized mirror, polished to a perfect reflection."
+    },
     {
       "$comment": "SURFACE: kitchen-table is canonically a flat surface (CONTBIT in ZIL so the parser handles 'put X on table', no OPENBIT). state.isOpen + accessibleWhen are nulled out so the close handler refuses ('isn't something you can close'). Real description + narratorNote tell the LLM how to handle the on-vs-in mismatch.",
       "id": "kitchen-table",
       "description": "A long wooden kitchen table, scarred by years of food preparation.",
       "narratorNote": "This is a flat work surface, not a closeable container. Items located 'in' the kitchen-table (sandwich-bag, bottle) are actually resting ON its surface — narrate them as such. Never refer to the table as 'open' or 'closed'.",
       "state": null,
-      "container": { "accessibleWhen": null, "accessBlockedMessage": null }
+      "container": {
+        "accessibleWhen": null,
+        "accessBlockedMessage": null
+      }
     },
     {
       "$comment": "SURFACE: attic-table — same shape as kitchen-table.",
       "id": "attic-table",
-      "description": "An old wooden table standing in the dusty attic.",
+      "description": "A heavy old wooden table, varnish worn through in patches.",
       "narratorNote": "Flat surface, not a closeable container. Items located 'in' this table are resting ON its surface. Never refer to the table as 'open' or 'closed'.",
       "state": null,
-      "container": { "accessibleWhen": null, "accessBlockedMessage": null }
+      "container": {
+        "accessibleWhen": null,
+        "accessBlockedMessage": null
+      }
     },
     {
       "$comment": "SURFACE: altar in south-temple. A flat stone surface for offerings.",
@@ -778,7 +1001,10 @@
       "description": "A massive stone altar, carved with worn ritual figures and stained dark by centuries of offerings.",
       "narratorNote": "The altar is a flat ritual surface, not a closeable container. Items located 'in' the altar (candles, the black book) are actually resting ON top of it. Never refer to the altar as 'open' or 'closed'.",
       "state": null,
-      "container": { "accessibleWhen": null, "accessBlockedMessage": null }
+      "container": {
+        "accessibleWhen": null,
+        "accessBlockedMessage": null
+      }
     },
     {
       "$comment": "SURFACE: pedestal in torch-room. A stone column with a torch on top.",
@@ -786,7 +1012,10 @@
       "description": "A polished stone pedestal, waist-high.",
       "narratorNote": "A short column, not a container. Items located 'in' the pedestal (the torch) are resting ON its top. Never refer to the pedestal as 'open' or 'closed'.",
       "state": null,
-      "container": { "accessibleWhen": null, "accessBlockedMessage": null }
+      "container": {
+        "accessibleWhen": null,
+        "accessBlockedMessage": null
+      }
     },
     {
       "$comment": "Egg puzzle: the clasp is too delicate for direct opening. Suppress the auto-gen 'open egg' intent (openWhen: never) and let the give-egg-to-songbird intent + trigger handle opening. Force-opening (smashing) destroys the canary inside — that's a future trigger.",
@@ -840,6 +1069,7 @@
     {
       "$comment": "Elvish sword. fromTemplate('bladed-weapon') gives it the weapon/bladed/carryable tags + base weapon state (weapon-stuck, attack-bonus-*). Tags 'sword' and 'magical' are unioned in. damage:5 layered on per-instance. variants pulse the description to 'glowing' when a hostile is perceivable.",
       "id": "sword",
+      "description": "An elvish sword of great antiquity, the blade etched with fine runes.",
       "fromTemplate": "bladed-weapon",
       "tags": [
         "sword",
@@ -864,7 +1094,7 @@
               }
             ]
           },
-          "text": "Above the trophy case hangs an elvish sword of great antiquity. The sword is glowing with a faint blue glow."
+          "text": "An elvish sword of great antiquity, the blade etched with fine runes — and presently glowing with a faint blue light."
         }
       ]
     },
@@ -877,7 +1107,8 @@
       ],
       "state": {
         "damage": 2
-      }
+      },
+      "description": "A rusty knife, the blade pitted but still serviceable."
     },
     {
       "$comment": "Troll's axe. After the troll drops it (disarm outcome OR death), the player can pick it up and either swing it or throw it — different mode triggers, different outcome tables. fromTemplate gives shared bladed-weapon state; tags 'axe' and 'throwable' unioned in.",
@@ -899,7 +1130,8 @@
         "readable",
         "paper",
         "carryable"
-      ]
+      ],
+      "description": "A small printed leaflet, the paper a little crumpled."
     },
     {
       "$comment": "Nasty knife — the thief's weapon. Tag it as bladed so the class trigger covers it too if the player ever wields it.",
@@ -910,7 +1142,8 @@
       ],
       "state": {
         "damage": 2
-      }
+      },
+      "description": "A nasty-looking knife, the blade dull but evidently well-used."
     },
     {
       "id": "lunch",
@@ -918,7 +1151,8 @@
         "consumable",
         "food",
         "carryable"
-      ]
+      ],
+      "description": "A hot pepper sandwich wrapped tightly in waxed paper. Smells fierce."
     },
     {
       "id": "bottle",
@@ -928,7 +1162,8 @@
         "fragile",
         "drink",
         "carryable"
-      ]
+      ],
+      "description": "A clear glass bottle, sealed at the neck."
     },
     {
       "id": "mailbox",
@@ -940,7 +1175,7 @@
     },
     {
       "id": "trophy-case",
-      "description": "A handsome glass-fronted case mounted on the wall — clearly meant to display a collector's prizes.",
+      "description": "A handsome glass-fronted display case — clearly meant to hold a collector's prizes.",
       "tags": [
         "container",
         "scenery",
@@ -985,6 +1220,7 @@
         "thief"
       ],
       "personality": "A suave, mustachioed gentleman thief in a black cloak. Speaks in clipped, ironic phrases ('How droll.', 'A trifle, surely?'). Will steal valuables on sight; pockets things and vanishes. Treats every encounter as an aesthetic event — never crude, always theatrical.",
+      "description": "A suspicious-looking gentleman in a black cloak, holding a large bag and armed with a deadly stiletto.",
       "openWhen": {
         "type": "not",
         "condition": {
@@ -1010,7 +1246,8 @@
       "tags": [
         "tool",
         "carryable"
-      ]
+      ],
+      "description": "A long coil of strong rope."
     },
     {
       "id": "rug",
@@ -1035,7 +1272,8 @@
         "treasure",
         "carryable",
         "valuable"
-      ]
+      ],
+      "description": "A flaming torch, the haft carved from ivory and the head wreathed in clean flame. A treasure."
     },
     {
       "$comment": "Maze treasure. Listed in win condition; tagging it 'treasure' lets future score-counter triggers walk all treasure-tagged items rather than enumerate by id.",
@@ -1044,7 +1282,8 @@
         "treasure",
         "valuable",
         "carryable"
-      ]
+      ],
+      "description": "An old leather bag, bulging with coins. A treasure."
     },
     {
       "$comment": "Land of the Living Dead treasure. The crystal skull of an ancient adventurer.",
@@ -1054,7 +1293,8 @@
         "valuable",
         "carryable",
         "fragile"
-      ]
+      ],
+      "description": "A beautifully carved crystal skull, grinning at you rather nastily. A treasure."
     },
     {
       "$comment": "Echo-room treasure. Hidden by SACREDBIT in canonical Zork until ECHO is spoken in loud-room. We adapt via visibleWhen on echo-spoken — bar isn't perceivable until the echo trigger fires.",
@@ -1068,7 +1308,8 @@
         "type": "flag",
         "key": "echo-spoken",
         "equals": true
-      }
+      },
+      "description": "A heavy platinum bar, dense and gleaming dully. A treasure."
     },
     {
       "$comment": "Rainbow treasure. INVISIBLE in canonical Zork until the player waves the sceptre at end-of-rainbow. We adapt via visibleWhen on rainbow-flag.",
@@ -1082,7 +1323,8 @@
         "type": "flag",
         "key": "rainbow-flag",
         "equals": true
-      }
+      },
+      "description": "A heavy iron pot brimming with gold coins. A treasure."
     },
     {
       "$comment": "NEW item appended via mergeItems — diamond produced by the coal-machine puzzle. Starts at 'nowhere'; the machine-trigger moves it to the machine on success.",
@@ -1136,7 +1378,8 @@
           "equals": "inflated"
         },
         "enterBlockedMessage": "The boat is a flat pile of plastic — it'd need to be inflated first."
-      }
+      },
+      "description": "A folded square of yellow plastic with a small valve attached — clearly intended to be inflated."
     }
   ],
   "$customToolsComment": "Custom tools are author-defined LLM tools. Each becomes a tool the narrator can call directly with typed args. Handlers do the generic state mutation (open sets isOpen=true on any item with that state key); per-puzzle special cases are layered on as triggers that match on intentMatched + intentArg. open/close/break here replace the dozens of per-item intents that the auto-gen used to emit.",
@@ -1164,8 +1407,18 @@
             "when": {
               "type": "or",
               "any": [
-                { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } },
-                { "type": "passagePerceivable", "passageId": { "fromArg": "itemId" } }
+                {
+                  "type": "itemAccessible",
+                  "itemId": {
+                    "fromArg": "itemId"
+                  }
+                },
+                {
+                  "type": "passagePerceivable",
+                  "passageId": {
+                    "fromArg": "itemId"
+                  }
+                }
               ]
             },
             "failedNarration": "You don't see {arg.itemId.name} here."
@@ -1174,8 +1427,20 @@
             "when": {
               "type": "or",
               "any": [
-                { "type": "itemHasStateKey", "itemId": { "fromArg": "itemId" }, "key": "isOpen" },
-                { "type": "passageHasStateKey", "passageId": { "fromArg": "itemId" }, "key": "isOpen" }
+                {
+                  "type": "itemHasStateKey",
+                  "itemId": {
+                    "fromArg": "itemId"
+                  },
+                  "key": "isOpen"
+                },
+                {
+                  "type": "passageHasStateKey",
+                  "passageId": {
+                    "fromArg": "itemId"
+                  },
+                  "key": "isOpen"
+                }
               ]
             },
             "failedNarration": "{arg.itemId.name} isn't something you can open."
@@ -1184,16 +1449,44 @@
             "when": {
               "type": "or",
               "any": [
-                { "type": "itemState", "itemId": { "fromArg": "itemId" }, "key": "isOpen", "equals": false },
-                { "type": "passageState", "passageId": { "fromArg": "itemId" }, "key": "isOpen", "equals": false }
+                {
+                  "type": "itemState",
+                  "itemId": {
+                    "fromArg": "itemId"
+                  },
+                  "key": "isOpen",
+                  "equals": false
+                },
+                {
+                  "type": "passageState",
+                  "passageId": {
+                    "fromArg": "itemId"
+                  },
+                  "key": "isOpen",
+                  "equals": false
+                }
               ]
             },
             "failedNarration": "{arg.itemId.name} is already open."
           }
         ],
         "effects": [
-          { "type": "setItemState", "itemId": { "fromArg": "itemId" }, "key": "isOpen", "value": true },
-          { "type": "setPassageState", "passageId": { "fromArg": "itemId" }, "key": "isOpen", "value": true }
+          {
+            "type": "setItemState",
+            "itemId": {
+              "fromArg": "itemId"
+            },
+            "key": "isOpen",
+            "value": true
+          },
+          {
+            "type": "setPassageState",
+            "passageId": {
+              "fromArg": "itemId"
+            },
+            "key": "isOpen",
+            "value": true
+          }
         ],
         "successNarration": "You open the {arg.itemId.name}."
       }
@@ -1221,8 +1514,18 @@
             "when": {
               "type": "or",
               "any": [
-                { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } },
-                { "type": "passagePerceivable", "passageId": { "fromArg": "itemId" } }
+                {
+                  "type": "itemAccessible",
+                  "itemId": {
+                    "fromArg": "itemId"
+                  }
+                },
+                {
+                  "type": "passagePerceivable",
+                  "passageId": {
+                    "fromArg": "itemId"
+                  }
+                }
               ]
             },
             "failedNarration": "You don't see {arg.itemId.name} here."
@@ -1231,8 +1534,20 @@
             "when": {
               "type": "or",
               "any": [
-                { "type": "itemHasStateKey", "itemId": { "fromArg": "itemId" }, "key": "isOpen" },
-                { "type": "passageHasStateKey", "passageId": { "fromArg": "itemId" }, "key": "isOpen" }
+                {
+                  "type": "itemHasStateKey",
+                  "itemId": {
+                    "fromArg": "itemId"
+                  },
+                  "key": "isOpen"
+                },
+                {
+                  "type": "passageHasStateKey",
+                  "passageId": {
+                    "fromArg": "itemId"
+                  },
+                  "key": "isOpen"
+                }
               ]
             },
             "failedNarration": "{arg.itemId.name} isn't something you can close."
@@ -1241,16 +1556,44 @@
             "when": {
               "type": "or",
               "any": [
-                { "type": "itemState", "itemId": { "fromArg": "itemId" }, "key": "isOpen", "equals": true },
-                { "type": "passageState", "passageId": { "fromArg": "itemId" }, "key": "isOpen", "equals": true }
+                {
+                  "type": "itemState",
+                  "itemId": {
+                    "fromArg": "itemId"
+                  },
+                  "key": "isOpen",
+                  "equals": true
+                },
+                {
+                  "type": "passageState",
+                  "passageId": {
+                    "fromArg": "itemId"
+                  },
+                  "key": "isOpen",
+                  "equals": true
+                }
               ]
             },
             "failedNarration": "{arg.itemId.name} is already closed."
           }
         ],
         "effects": [
-          { "type": "setItemState", "itemId": { "fromArg": "itemId" }, "key": "isOpen", "value": false },
-          { "type": "setPassageState", "passageId": { "fromArg": "itemId" }, "key": "isOpen", "value": false }
+          {
+            "type": "setItemState",
+            "itemId": {
+              "fromArg": "itemId"
+            },
+            "key": "isOpen",
+            "value": false
+          },
+          {
+            "type": "setPassageState",
+            "passageId": {
+              "fromArg": "itemId"
+            },
+            "key": "isOpen",
+            "value": false
+          }
         ],
         "successNarration": "You close the {arg.itemId.name}."
       }

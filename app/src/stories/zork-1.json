@@ -2076,7 +2076,7 @@
     {
       "id": "forest",
       "name": "forest",
-      "description": "Dense pine and hemlock surround the clearing on every side, the canopy filtering daylight to a green twilight.",
+      "description": "Dense pine and hemlock, the canopy filtering daylight to a green twilight.",
       "location": "west-of-house",
       "appearsIn": [
         "north-of-house",
@@ -2094,7 +2094,7 @@
     {
       "id": "tree",
       "name": "tree",
-      "description": "A large, leaf-bearing tree whose lower branches look climbable.",
+      "description": "A large leaf-bearing tree, lower branches at climbing height.",
       "location": "forest-1",
       "appearsIn": [
         "forest-2",
@@ -2109,14 +2109,14 @@
     {
       "id": "mountain-range",
       "name": "mountain range",
-      "description": "The Flathead Mountains rear up to the south — a wall of impassable peaks against the horizon.",
+      "description": "An impassable wall of high peaks — the Flatheads, named (legend has it) for their first king.",
       "location": "mountains",
       "fixed": true
     },
     {
       "id": "global-water",
       "name": "water",
-      "description": "Cold, dark water — drinkable, you suppose, though the thought isn't appetizing.",
+      "description": "Cold dark water — drinkable, you suppose, though the thought isn't appetizing.",
       "location": "reservoir-south",
       "appearsIn": [
         "reservoir",
@@ -2142,21 +2142,21 @@
     {
       "id": "water",
       "name": "quantity of water",
-      "description": "A measure of clear water, presently held inside the bottle.",
+      "description": "A measure of clear water, transparent and quite ordinary.",
       "location": "bottle",
       "takeable": true
     },
     {
       "id": "ghosts",
       "name": "number of ghosts",
-      "description": "Translucent figures drift through the chamber, faces blank with ancient grief. They take no notice of you.",
+      "description": "Translucent figures drifting through the air, faces blank with ancient grief. They take no notice of you.",
       "location": "entrance-to-hades",
       "fixed": true
     },
     {
       "id": "skull",
       "name": "crystal skull",
-      "description": "Lying in one corner of the room is a beautifully carved crystal skull. It appears to be grinning at you rather nastily.",
+      "description": "A beautifully carved crystal skull, grinning at you rather nastily. A treasure.",
       "location": "land-of-living-dead",
       "takeable": true,
       "tags": [
@@ -2169,13 +2169,13 @@
     {
       "id": "lowered-basket",
       "name": "basket",
-      "description": "From the chain is suspended a basket.",
+      "description": "A large wicker basket suspended from a chain, currently lowered.",
       "location": "lower-shaft"
     },
     {
       "id": "raised-basket",
       "name": "basket",
-      "description": "At the end of the chain is a basket.",
+      "description": "A large wicker basket suspended from a chain, currently raised.",
       "location": "shaft-room",
       "state": {
         "isOpen": true
@@ -2194,7 +2194,7 @@
     {
       "id": "lunch",
       "name": "lunch",
-      "description": "A hot pepper sandwich is here.",
+      "description": "A hot pepper sandwich wrapped tightly in waxed paper. Smells fierce.",
       "location": "sandwich-bag",
       "takeable": true,
       "tags": [
@@ -2206,13 +2206,13 @@
     {
       "id": "bat",
       "name": "bat",
-      "description": "A vampire bat, sleek and quick, hangs from the ceiling watching you with bright unblinking eyes.",
+      "description": "A sleek vampire bat, watching with bright unblinking eyes — and a mouth full of small sharp teeth.",
       "location": "bat-room"
     },
     {
       "id": "bell",
       "name": "brass bell",
-      "description": "A small brass bell with a worn handle. Polished smooth by use.",
+      "description": "A small brass bell with a worn handle, polished smooth by use.",
       "location": "north-temple",
       "takeable": true
     },
@@ -2239,14 +2239,14 @@
     {
       "id": "bolt",
       "name": "bolt",
-      "description": "A heavy iron bolt set into the dam's control panel. The slot accepts a wrench.",
+      "description": "A heavy iron bolt with a slot evidently sized for a wrench.",
       "location": "dam-room",
       "fixed": true
     },
     {
       "id": "bubble",
       "name": "green bubble",
-      "description": "A small green bubble of glass embedded in the panel, currently dark.",
+      "description": "A small green glass bubble — currently dark, evidently waiting for something.",
       "location": "dam-room",
       "fixed": true
     },
@@ -2264,7 +2264,7 @@
     {
       "id": "book",
       "name": "black book",
-      "description": "On the altar is a large black book, open to page 569.",
+      "description": "A large black book bound in cracked leather, held open to page 569.",
       "location": "altar",
       "takeable": true,
       "state": {
@@ -2306,7 +2306,7 @@
     {
       "id": "slide",
       "name": "chute",
-      "description": "A long metal chute angling downward into darkness. Once you commit, there is no climbing back.",
+      "description": "A long metal chute angling steeply downward into darkness. Once you commit, climbing back out looks impossible.",
       "location": "cellar",
       "appearsIn": [
         "slide-room"
@@ -2326,7 +2326,7 @@
     {
       "id": "attic-table",
       "name": "table",
-      "description": "An old wooden table standing in the dusty attic.",
+      "description": "A heavy old wooden table, varnish worn through in patches.",
       "location": "attic",
       "fixed": true,
       "container": {
@@ -2337,7 +2337,7 @@
     {
       "id": "sandwich-bag",
       "name": "brown sack",
-      "description": "On the table is an elongated brown sack, smelling of hot peppers.",
+      "description": "An elongated brown paper sack, smelling powerfully of hot peppers.",
       "location": "kitchen-table",
       "takeable": true,
       "state": {
@@ -2375,14 +2375,14 @@
     {
       "id": "yellow-button",
       "name": "yellow button",
-      "description": "A worn yellow button set into the maintenance panel.",
+      "description": "A worn yellow button, slightly recessed. Yellow paint flakes around the edges.",
       "location": "maintenance-room",
       "fixed": true
     },
     {
       "id": "brown-button",
       "name": "brown button",
-      "description": "A brown button beside the yellow one, slightly recessed.",
+      "description": "A small brown button, smooth and unmarked.",
       "location": "maintenance-room",
       "fixed": true
     },
@@ -2396,14 +2396,14 @@
     {
       "id": "blue-button",
       "name": "blue button",
-      "description": "A blue button set into the panel.",
+      "description": "A small blue button, smooth and unmarked.",
       "location": "maintenance-room",
       "fixed": true
     },
     {
       "id": "trophy-case",
       "name": "trophy case",
-      "description": "A handsome glass-fronted case mounted on the wall — clearly meant to display a collector's prizes.",
+      "description": "A handsome glass-fronted display case — clearly meant to hold a collector's prizes.",
       "location": "living-room",
       "fixed": true,
       "state": {
@@ -2439,7 +2439,7 @@
     {
       "id": "chalice",
       "name": "chalice",
-      "description": "There is a silver chalice, intricately engraved, here.",
+      "description": "A silver chalice, intricately engraved with looping vines. A treasure.",
       "location": "treasure-room",
       "takeable": true,
       "state": {
@@ -2466,7 +2466,7 @@
     {
       "id": "trident",
       "name": "crystal trident",
-      "description": "On the shore lies Poseidon's own crystal trident.",
+      "description": "Poseidon's own trident, carved from a single piece of crystal. A treasure.",
       "location": "atlantis-room",
       "takeable": true
     },
@@ -2494,14 +2494,14 @@
     {
       "id": "dam",
       "name": "dam",
-      "description": "Flood Control Dam #3, a vast concrete structure holding back the reservoir to the north. A control panel is set into one wall.",
+      "description": "Flood Control Dam #3 — a vast concrete structure of evident bureaucratic origin, holding back an enormous body of water.",
       "location": "dam-room",
       "fixed": true
     },
     {
       "id": "boarded-window",
       "name": "boarded window",
-      "description": "The window has been securely boarded over from the inside. There's no entering the house this way.",
+      "description": "A window securely boarded over from within. There's no entering this way.",
       "location": "north-of-house",
       "appearsIn": [
         "south-of-house"
@@ -2511,28 +2511,28 @@
     {
       "id": "front-door",
       "name": "door",
-      "description": "The front door is solid wood, banded with iron. There is no handle on this side and no obvious way to open it.",
+      "description": "Solid wood banded with iron. There is no handle on this side and no obvious way to open it.",
       "location": "west-of-house",
       "fixed": true
     },
     {
       "id": "barrow-door",
       "name": "stone door",
-      "description": "The stone door is enormous and impossibly heavy. It would take more than human strength to budge it.",
+      "description": "An enormous stone door, impossibly heavy. It would take more than human strength to budge.",
       "location": "stone-barrow",
       "fixed": true
     },
     {
       "id": "barrow",
       "name": "stone barrow",
-      "description": "A great mound of weathered stone, ancient beyond reckoning. A massive door is set into one face.",
+      "description": "A great mound of weathered stone, ancient beyond reckoning, with a single massive door.",
       "location": "stone-barrow",
       "fixed": true
     },
     {
       "id": "bottle",
       "name": "glass bottle",
-      "description": "A bottle is sitting on the table.",
+      "description": "A clear glass bottle, sealed at the neck.",
       "location": "kitchen-table",
       "takeable": true,
       "state": {
@@ -2559,7 +2559,7 @@
     {
       "id": "crack",
       "name": "crack",
-      "description": "A narrow vertical crack in the cave wall — far too thin for anyone to slip through.",
+      "description": "A narrow vertical crack — far too thin for anyone to slip through.",
       "location": "damp-cave",
       "appearsIn": [
         "chasm-room"
@@ -2569,7 +2569,7 @@
     {
       "id": "coffin",
       "name": "gold coffin",
-      "description": "The solid-gold coffin used for the burial of Ramses II is here.",
+      "description": "The solid-gold coffin used for the burial of Ramses II — heavy, ornate, and worth a king's ransom. A treasure.",
       "location": "egypt-room",
       "takeable": true,
       "state": {
@@ -2589,21 +2589,21 @@
     {
       "id": "pump",
       "name": "hand-held air pump",
-      "description": "A small hand-held pump, the sort you'd use for a bicycle tire — or a folded raft.",
+      "description": "A small hand-held pump — the sort you'd use for a bicycle tire, or perhaps a folded raft.",
       "location": "reservoir-north",
       "takeable": true
     },
     {
       "id": "jade",
       "name": "jade figurine",
-      "description": "There is an exquisite jade figurine here.",
+      "description": "An exquisite jade figurine, carved with delicate features. A treasure.",
       "location": "bat-room",
       "takeable": true
     },
     {
       "id": "knife",
       "name": "nasty knife",
-      "description": "On a table is a nasty-looking knife.",
+      "description": "A nasty-looking knife, the blade dull but evidently well-used.",
       "location": "attic-table",
       "takeable": true,
       "tags": [
@@ -2622,21 +2622,21 @@
     {
       "id": "bones",
       "name": "skeleton",
-      "description": "A weathered skeleton sprawled against the wall, long picked clean. A small leather bag lies beside it.",
+      "description": "A weathered skeleton, long picked clean. A small leather bag lies near one outstretched hand.",
       "location": "maze-5",
       "fixed": true
     },
     {
       "id": "burned-out-lantern",
       "name": "burned-out lantern",
-      "description": "The deceased adventurer's useless lantern is here.",
+      "description": "A battered brass lantern, its battery long since drained dry.",
       "location": "maze-5",
       "takeable": true
     },
     {
       "id": "bag-of-coins",
       "name": "leather bag of coins",
-      "description": "An old leather bag, bulging with coins, is here.",
+      "description": "An old leather bag, bulging with coins. A treasure.",
       "location": "maze-5",
       "takeable": true,
       "tags": [
@@ -2672,7 +2672,7 @@
     {
       "id": "advertisement",
       "name": "leaflet",
-      "description": "A small leaflet is on the ground.",
+      "description": "A small printed leaflet, the paper a little crumpled.",
       "location": "mailbox",
       "takeable": true,
       "readable": {
@@ -2687,14 +2687,14 @@
     {
       "id": "leak",
       "name": "leak",
-      "description": "Water trickles steadily from a small leak in the wall — for now, a nuisance rather than a disaster.",
+      "description": "Water trickles from a small leak — for now a nuisance rather than a disaster.",
       "location": "maintenance-room",
       "fixed": true
     },
     {
       "id": "machine",
       "name": "machine",
-      "description": "A complicated piece of machinery, all gears and curious nozzles, with a hinged lid on top and a small switch on its flank.",
+      "description": "A complicated piece of machinery: gears, curious nozzles, a hinged lid, and a small switch on one flank.",
       "location": "machine-room",
       "fixed": true,
       "state": {
@@ -2737,7 +2737,7 @@
     {
       "id": "match",
       "name": "matchbook",
-      "description": "There is a matchbook whose cover says \"Visit Beautiful FCD#3\" here.",
+      "description": "A matchbook whose cover advertises FCD#3 in chipper bureaucratic prose.",
       "location": "dam-lobby",
       "takeable": true,
       "readable": {
@@ -2747,7 +2747,7 @@
     {
       "id": "mirror-2",
       "name": "mirror",
-      "description": "There is an ugly person staring back at you.",
+      "description": "An enormous wall-sized mirror, polished to a perfect reflection.",
       "location": "mirror-room-2",
       "variants": [
         {
@@ -2764,7 +2764,7 @@
     {
       "id": "mirror-1",
       "name": "mirror",
-      "description": "There is an ugly person staring back at you.",
+      "description": "An enormous wall-sized mirror, polished to a perfect reflection.",
       "location": "mirror-room-1",
       "variants": [
         {
@@ -2788,7 +2788,7 @@
     {
       "id": "candles",
       "name": "pair of candles",
-      "description": "On the two ends of the altar are burning candles.",
+      "description": "A pair of long burning candles, dripping wax steadily.",
       "location": "south-temple",
       "takeable": true,
       "lightSource": {},
@@ -2809,14 +2809,14 @@
     {
       "id": "leaves",
       "name": "pile of leaves",
-      "description": "On the ground is a pile of leaves.",
+      "description": "A pile of dry leaves, gathered as if by wind.",
       "location": "grating-clearing",
       "takeable": true
     },
     {
       "id": "inflatable-boat",
       "name": "pile of plastic",
-      "description": "There is a folded pile of plastic here which has a small valve attached.",
+      "description": "A folded square of yellow plastic with a small valve attached — clearly intended to be inflated.",
       "location": "dam-base",
       "takeable": true,
       "tags": [
@@ -2840,7 +2840,7 @@
     {
       "id": "bar",
       "name": "platinum bar",
-      "description": "On the ground is a large platinum bar.",
+      "description": "A heavy platinum bar, dense and gleaming dully. A treasure.",
       "location": "loud-room",
       "takeable": true,
       "tags": [
@@ -2857,7 +2857,7 @@
     {
       "id": "pot-of-gold",
       "name": "pot of gold",
-      "description": "At the end of the rainbow is a pot of gold.",
+      "description": "A heavy iron pot brimming with gold coins. A treasure.",
       "location": "end-of-rainbow",
       "takeable": true,
       "tags": [
@@ -2874,7 +2874,7 @@
     {
       "id": "prayer",
       "name": "prayer",
-      "description": "Words in an ancient script are inscribed around the altar — a prayer of safe passage, you somehow understand.",
+      "description": "An inscription in an ancient script — a prayer of safe passage, you somehow understand.",
       "location": "north-temple",
       "fixed": true,
       "readable": {
@@ -2884,14 +2884,14 @@
     {
       "id": "railing",
       "name": "wooden railing",
-      "description": "A worn wooden railing rings the edge of the dome, polished smooth by countless hands.",
+      "description": "A worn wooden railing, polished smooth by countless hands.",
       "location": "dome-room",
       "fixed": true
     },
     {
       "id": "rainbow",
       "name": "rainbow",
-      "description": "A perfect rainbow arcs across the falls, shimmering with a strange and almost solid presence.",
+      "description": "A perfect arc of color, shimmering with a strange and almost solid presence.",
       "location": "aragain-falls",
       "appearsIn": [
         "on-rainbow",
@@ -2903,7 +2903,7 @@
     {
       "id": "river",
       "name": "river",
-      "description": "The Frigid River slides past with quiet, steady force. The current is swift, the water cold, the rocks below half-hidden.",
+      "description": "Cold dark water moving with quiet, steady force. The current is swift; rocks lie half-hidden below.",
       "location": "dam-base",
       "appearsIn": [
         "river-1",
@@ -2926,7 +2926,7 @@
     {
       "id": "buoy",
       "name": "red buoy",
-      "description": "There is a red buoy here (probably a warning).",
+      "description": "A red metal buoy, weathered by long exposure — evidently a warning.",
       "location": "river-4",
       "takeable": true,
       "state": {
@@ -2946,7 +2946,7 @@
     {
       "id": "rope",
       "name": "rope",
-      "description": "A large coil of rope is lying in the corner.",
+      "description": "A long coil of strong rope.",
       "location": "attic",
       "takeable": true,
       "tags": [
@@ -2957,7 +2957,7 @@
     {
       "id": "rusty-knife",
       "name": "rusty knife",
-      "description": "Beside the skeleton is a rusty knife.",
+      "description": "A rusty knife, the blade pitted but still serviceable.",
       "location": "maze-5",
       "takeable": true,
       "tags": [
@@ -2976,7 +2976,7 @@
     {
       "id": "sand",
       "name": "sand",
-      "description": "Fine pale sand, soft underfoot. It would respond to digging.",
+      "description": "Fine pale sand, soft underfoot — the sort that responds well to a shovel.",
       "location": "sandy-cave",
       "fixed": true
     },
@@ -3008,7 +3008,7 @@
     {
       "id": "shovel",
       "name": "shovel",
-      "description": "A long-handled shovel, balanced for digging.",
+      "description": "A long-handled shovel, well-balanced for digging.",
       "location": "sandy-beach",
       "takeable": true
     },
@@ -3022,7 +3022,7 @@
     {
       "id": "ladder",
       "name": "wooden ladder",
-      "description": "A sturdy wooden ladder, bolted to the wall, descending into darkness.",
+      "description": "A sturdy wooden ladder, rungs worn smooth by use.",
       "location": "ladder-top",
       "appearsIn": [
         "ladder-bottom"
@@ -3058,14 +3058,14 @@
     {
       "id": "machine-switch",
       "name": "switch",
-      "description": "A small switch set into the machine's flank, with a slot evidently sized for a screwdriver.",
+      "description": "A small switch with a slot evidently sized for a screwdriver.",
       "location": "machine-room",
       "fixed": true
     },
     {
       "id": "wooden-door",
       "name": "wooden door",
-      "description": "A heavy wooden door set into the western wall.",
+      "description": "A heavy wooden door, banded with iron.",
       "location": "living-room",
       "fixed": true,
       "readable": {
@@ -3075,7 +3075,7 @@
     {
       "id": "sword",
       "name": "sword",
-      "description": "Above the trophy case hangs an elvish sword of great antiquity.",
+      "description": "An elvish sword of great antiquity, the blade etched with fine runes.",
       "location": "living-room",
       "takeable": true,
       "tags": [
@@ -3107,7 +3107,7 @@
               }
             ]
           },
-          "text": "Above the trophy case hangs an elvish sword of great antiquity. The sword is glowing with a faint blue glow."
+          "text": "An elvish sword of great antiquity, the blade etched with fine runes — and presently glowing with a faint blue light."
         }
       ]
     },
@@ -3124,7 +3124,7 @@
     {
       "id": "thief",
       "name": "thief",
-      "description": "There is a suspicious-looking individual, holding a large bag, leaning against one wall. He is armed with a deadly stiletto.",
+      "description": "A suspicious-looking gentleman in a black cloak, holding a large bag and armed with a deadly stiletto.",
       "location": "round-room",
       "state": {
         "isOpen": true,
@@ -3176,7 +3176,7 @@
     {
       "id": "torch",
       "name": "torch",
-      "description": "Sitting on the pedestal is a flaming torch, made of ivory.",
+      "description": "A flaming torch, the haft carved from ivory and the head wreathed in clean flame. A treasure.",
       "location": "pedestal",
       "takeable": true,
       "lightSource": {},
@@ -3225,14 +3225,14 @@
     {
       "id": "trunk",
       "name": "trunk of jewels",
-      "description": "Lying half buried in the mud is an old trunk, bulging with jewels.",
+      "description": "An old wooden trunk, mud-caked and bulging with jewels. A treasure.",
       "location": "reservoir",
       "takeable": true
     },
     {
       "id": "tube",
       "name": "tube",
-      "description": "There is an object which looks like a tube of toothpaste here.",
+      "description": "A small metal tube of the sort that holds toothpaste — but its contents are something else entirely.",
       "location": "maintenance-room",
       "takeable": true,
       "state": {
@@ -3255,14 +3255,14 @@
     {
       "id": "putty",
       "name": "viscous material",
-      "description": "A small lump of viscous greyish material, useful for sealing a puncture or two.",
+      "description": "A lump of viscous greyish material, evidently good for sealing a puncture or two.",
       "location": "tube",
       "takeable": true
     },
     {
       "id": "engravings",
       "name": "wall with engravings",
-      "description": "There are old engravings on the walls here.",
+      "description": "Old engravings worked deep into stone — ancient writing, half worn away.",
       "location": "engravings-cave",
       "readable": {
         "text": "The engravings were incised in the living rock of the cave wall by an unknown hand. They depict, in symbolic form, the beliefs of the ancient Zorkers. Skillfully interwoven with the bas reliefs are excerpts illustrating the major religious tenets of that time. Unfortunately, a later age seems to have considered them blasphemous and just as skillfully excised them."
@@ -3281,7 +3281,7 @@
     {
       "id": "climbable-cliff",
       "name": "cliff",
-      "description": "A rough cliff face, weathered into ledges and handholds. Climbing it would be possible — and perilous.",
+      "description": "A rough cliff face, weathered into ledges and handholds. Climbing it is possible — and perilous.",
       "location": "canyon-bottom",
       "appearsIn": [
         "cliff-middle",
@@ -3292,7 +3292,7 @@
     {
       "id": "white-cliff",
       "name": "white cliffs",
-      "description": "Tall white cliffs rise sheer from the riverbank, scoured by centuries of water and quite unscalable.",
+      "description": "Sheer chalk-white cliffs, scoured smooth and quite unscalable.",
       "location": "white-cliffs-north",
       "appearsIn": [
         "white-cliffs-south"
@@ -3309,14 +3309,14 @@
     {
       "id": "control-panel",
       "name": "control panel",
-      "description": "A bank of indicator lights, buttons, and a single bolt — clearly a maintenance station for the dam.",
+      "description": "A bank of indicator lights, four colored buttons, and a single iron bolt — clearly some kind of maintenance station.",
       "location": "dam-room",
       "fixed": true
     },
     {
       "id": "nest",
       "name": "bird's nest",
-      "description": "Beside you on the branch is a small bird's nest.",
+      "description": "A small bird's nest, woven of twigs and grass.",
       "location": "up-a-tree",
       "takeable": true,
       "state": {
@@ -3368,14 +3368,14 @@
     {
       "id": "canary",
       "name": "golden clockwork canary",
-      "description": "There is a golden clockwork canary nestled in the egg. It has ruby eyes and a silver beak. Through a crystal window below its left wing you can see intricate machinery inside. It appears to have wound down.",
+      "description": "A golden clockwork canary with ruby eyes and a silver beak. A crystal window below its left wing reveals intricate machinery; the mechanism appears to have wound down. A treasure.",
       "location": "egg",
       "takeable": true
     },
     {
       "id": "stairs",
       "name": "stairs",
-      "description": "A narrow flight of stairs ascending into shadow.",
+      "description": "A narrow flight of stone steps ascending into shadow.",
       "location": "kitchen",
       "appearsIn": [
         "attic",
