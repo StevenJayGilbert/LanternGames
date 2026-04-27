@@ -2025,7 +2025,7 @@
     {
       "id": "board",
       "name": "board",
-      "description": "(board)",
+      "description": "The boards are securely fastened.",
       "location": "west-of-house",
       "appearsIn": [
         "north-of-house",
@@ -2056,7 +2056,7 @@
     {
       "id": "white-house",
       "name": "white house",
-      "description": "(white house)",
+      "description": "The house is a beautiful colonial house which is painted white. It is clear that the owners must have been extremely wealthy.",
       "location": "west-of-house",
       "appearsIn": [
         "north-of-house",
@@ -2384,7 +2384,7 @@
     {
       "id": "tool-chest",
       "name": "group of tool chests",
-      "description": "(group of tool chests)",
+      "description": "The chests are all empty.",
       "location": "maintenance-room",
       "state": {
         "isOpen": true
@@ -2500,7 +2500,7 @@
     {
       "id": "cyclops",
       "name": "cyclops",
-      "description": "(cyclops)",
+      "description": "A hungry cyclops is standing at the foot of the stairs.",
       "location": "cyclops-room",
       "fixed": true,
       "tags": [
@@ -2774,15 +2774,35 @@
     {
       "id": "mirror-2",
       "name": "mirror",
-      "description": "(mirror)",
+      "description": "There is an ugly person staring back at you.",
       "location": "mirror-room-2",
+      "variants": [
+        {
+          "when": {
+            "type": "flag",
+            "key": "mirror-mung",
+            "equals": true
+          },
+          "text": "The mirror is broken into many pieces."
+        }
+      ],
       "fixed": true
     },
     {
       "id": "mirror-1",
       "name": "mirror",
-      "description": "(mirror)",
+      "description": "There is an ugly person staring back at you.",
       "location": "mirror-room-1",
+      "variants": [
+        {
+          "when": {
+            "type": "flag",
+            "key": "mirror-mung",
+            "equals": true
+          },
+          "text": "The mirror is broken into many pieces."
+        }
+      ],
       "fixed": true
     },
     {
@@ -3046,7 +3066,7 @@
     {
       "id": "large-bag",
       "name": "large bag",
-      "description": "(large bag)",
+      "description": "The bag is underneath the thief, so one can't say what, if anything, is inside.",
       "location": "thief",
       "fixed": true
     },

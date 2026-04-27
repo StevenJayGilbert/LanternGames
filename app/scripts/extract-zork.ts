@@ -268,6 +268,38 @@ function topLevelTellString(node: ZilNode): string | undefined {
   return undefined;
 }
 
+// Item examines use TELLs that interleave strings with dynamic atoms like
+// D ,PRSO ("describe parsed object") — extracting only the first string drops
+// content. Concatenate every string arg; if the result contains an obvious
+// fragment from a stripped interpolation (e.g. "like a ." or "the  here"),
+// drop the whole TELL — the LLM will narrate around the placeholder
+// description anyway.
+function concatTellStrings(node: ZilNode): string | undefined {
+  if (!isCall(node, "TELL")) return undefined;
+  const parts: string[] = [];
+  let hasInterpolation = false;
+  for (let i = 1; i < node.F.length; i++) {
+    const arg = node.F[i];
+    if (typeof arg === "string") {
+      parts.push(arg);
+    } else if (arg && typeof arg === "object") {
+      // Atom or call between strings — flag as interpolated; we'll filter
+      // out the result if it looks like a sentence fragment.
+      hasInterpolation = true;
+    }
+  }
+  if (parts.length === 0) return undefined;
+  const joined = parts.join("");
+  if (hasInterpolation && looksLikeInterpolationFragment(joined)) return undefined;
+  return joined;
+}
+
+// Heuristic: a string with adjacent " ." " ," " ;" or "  " (multi-space) was
+// almost certainly built around a runtime object reference we can't fill.
+function looksLikeInterpolationFragment(s: string): boolean {
+  return / [.,;]/.test(s) || /  /.test(s);
+}
+
 function buildExit(
   zilExit: ZilExit,
   roomIds: Set<string>,
@@ -470,6 +502,206 @@ function walkForExamineBranch(node: ZilNode): string | undefined {
   return undefined;
 }
 
+// Walk every (VERB? EXAMINE) branch in an item routine. Returns:
+//   - description: text from the unconditional EXAMINE branch (predicate is
+//     just a verb check, no state guards), if one exists
+//   - variants: state-conditional EXAMINE branches whose guards we could
+//     translate into the project's Condition schema
+// Branches whose guards we can't translate are dropped — better to omit a
+// variant than emit one with a wrong condition.
+function extractItemExamines(
+  routine: ZilRoutine,
+  knownItemIds: Set<string>,
+): { description?: string; variants: TextVariant[] } {
+  const variants: TextVariant[] = [];
+  let description: string | undefined;
+
+  for (const stmt of routine.Body ?? []) {
+    if (!isCall(stmt, "COND")) continue;
+    const branches = stmt.F.slice(1);
+    for (const branch of branches) {
+      if (!Array.isArray(branch) || branch.length < 1) continue;
+      const predicate = branch[0];
+      if (!mentionsAtom(predicate, "VERB?") || !mentionsAtom(predicate, "EXAMINE")) continue;
+
+      // Outer-branch state guards alongside the verb check.
+      const outerGuards = extractNonVerbGuards(predicate);
+      const outerConds: Condition[] = [];
+      let outerTranslatable = true;
+      for (const g of outerGuards) {
+        const c = translateGuardToCondition(g, knownItemIds);
+        if (!c) { outerTranslatable = false; break; }
+        outerConds.push(c);
+      }
+      // If outer guards exist but don't translate, skip the whole branch —
+      // emitting unconditional text for a conditional ZIL branch would lie.
+      if (outerGuards.length > 0 && !outerTranslatable) continue;
+
+      // Walk the branch body. Top-level TELLs build a "preface" that's
+      // common to every sub-COND path. Sub-CONDs branch the description
+      // by state (e.g. mirror's broken vs. intact text).
+      const preface: string[] = [];
+      const subCondTells: { guards: ZilNode[]; text: string; isElse: boolean }[] = [];
+
+      for (let j = 1; j < branch.length; j++) {
+        const node = branch[j];
+        const tellText = concatTellStrings(node);
+        if (tellText) { preface.push(tellText); continue; }
+        if (isCall(node, "COND")) {
+          for (let k = 1; k < node.F.length; k++) {
+            const sub = node.F[k];
+            if (!Array.isArray(sub) || sub.length < 1) continue;
+            const subPred = sub[0];
+            const subTells: string[] = [];
+            for (let m = 1; m < sub.length; m++) {
+              const t = concatTellStrings(sub[m]);
+              if (t) subTells.push(t);
+            }
+            if (subTells.length === 0) continue;
+            // (T) or (ELSE) is the else-branch — unconditional path.
+            const isElse = isCall(subPred, "T") ||
+              (subPred && typeof subPred === "object" && "A" in subPred &&
+                ((subPred as ZilAtom).A === "T" || (subPred as ZilAtom).A === "ELSE"));
+            subCondTells.push({
+              guards: isElse ? [] : [subPred],
+              text: subTells.join(""),
+              isElse,
+            });
+          }
+        }
+      }
+
+      const prefaceText = cleanWhitespace(preface.join(""));
+
+      // Case A: no sub-COND, just top-level TELLs in the branch body.
+      if (subCondTells.length === 0) {
+        if (preface.length === 0) continue;
+        emitBranch(prefaceText, outerConds);
+        continue;
+      }
+
+      // Case B: sub-COND with branches. Each sub-branch combines preface +
+      // its own text, gated by AND(outerConds, subGuards).
+      for (const sb of subCondTells) {
+        const combined = cleanWhitespace(prefaceText + (prefaceText && sb.text ? " " : "") + sb.text);
+        if (sb.isElse) {
+          emitBranch(combined, outerConds);
+          continue;
+        }
+        const subConds: Condition[] = [];
+        let subOk = true;
+        for (const g of sb.guards) {
+          const c = translateGuardToCondition(g, knownItemIds);
+          if (!c) { subOk = false; break; }
+          subConds.push(c);
+        }
+        if (!subOk) continue;
+        emitBranch(combined, [...outerConds, ...subConds]);
+      }
+    }
+  }
+
+  function emitBranch(text: string, conds: Condition[]) {
+    if (!text) return;
+    if (conds.length === 0) {
+      if (description === undefined) description = text;
+      return;
+    }
+    const when: Condition = conds.length === 1 ? conds[0] : { type: "and", all: conds };
+    variants.push({ when, text });
+  }
+
+  return { description, variants };
+}
+
+// Pull the state-guard sub-expressions out of an EXAMINE branch's predicate.
+// Examples:
+//   (VERB? EXAMINE)                              -> []                    (no guards)
+//   (VERB? EXAMINE LOOK-INSIDE)                  -> []                    (verb-only)
+//   (AND (VERB? EXAMINE) (GVAL FOO))             -> [(GVAL FOO)]
+//   (AND (VERB? EXAMINE) (NOT (GVAL FOO)))       -> [(NOT (GVAL FOO))]
+//   (AND (NOT (GVAL FLAG)) (VERB? EXAMINE))      -> [(NOT (GVAL FLAG))]
+function extractNonVerbGuards(predicate: ZilNode): ZilNode[] {
+  if (isCall(predicate, "VERB?")) return [];
+  if (isCall(predicate, "AND")) {
+    const guards: ZilNode[] = [];
+    for (let i = 1; i < predicate.F.length; i++) {
+      const sub = predicate.F[i];
+      if (isCall(sub, "VERB?")) continue;
+      guards.push(sub);
+    }
+    return guards;
+  }
+  // Unknown predicate shape — give up; caller will skip the variant.
+  return [predicate];
+}
+
+// Translate a ZIL guard expression to the project's Condition schema.
+// Handles the common shapes seen in Zork I item routines:
+//   (GVAL FOO)              -> flag("foo", true)
+//   (NOT (GVAL FOO))        -> flag("foo", false)
+//   (FSET? OBJ OPENBIT)     -> itemState(obj, "isOpen", true)
+//   (FSET? OBJ MUNGBIT)     -> itemState(obj, "broken", true)
+//   (NOT (FSET? OBJ XBIT))  -> negation of the above
+// Returns null for anything we don't recognize so the caller can drop the
+// variant entirely.
+const FLAG_BIT_TO_STATE_KEY: Record<string, string> = {
+  OPENBIT: "isOpen",
+  MUNGBIT: "broken",
+};
+
+function translateGuardToCondition(
+  node: ZilNode,
+  knownItemIds: Set<string>,
+): Condition | null {
+  if (isCall(node, "NOT")) {
+    if (node.F.length < 2) return null;
+    const inner = translateGuardToCondition(node.F[1], knownItemIds);
+    if (!inner) return null;
+    // Invert by flipping `equals` for atomic conditions; otherwise wrap in not.
+    if (inner.type === "flag" || inner.type === "itemState") {
+      return { ...inner, equals: !inner.equals } as Condition;
+    }
+    return { type: "not", condition: inner };
+  }
+  if (isCall(node, "GVAL")) {
+    const flagName = firstAtomNameInArgs(node);
+    if (!flagName) return null;
+    return { type: "flag", key: id(flagName), equals: true };
+  }
+  if (isCall(node, "FSET?")) {
+    const objName = firstAtomNameInArgs(node);
+    const bitName = secondAtomNameInArgs(node);
+    if (!objName || !bitName) return null;
+    const itemId = id(objName);
+    if (!knownItemIds.has(itemId)) return null;
+    const stateKey = FLAG_BIT_TO_STATE_KEY[bitName];
+    if (!stateKey) return null;
+    return { type: "itemState", itemId, key: stateKey, equals: true };
+  }
+  return null;
+}
+
+function firstAtomNameInArgs(node: ZilCall): string | undefined {
+  for (let i = 1; i < node.F.length; i++) {
+    const arg = node.F[i];
+    if (arg && typeof arg === "object" && "A" in arg) return (arg as ZilAtom).A;
+  }
+  return undefined;
+}
+
+function secondAtomNameInArgs(node: ZilCall): string | undefined {
+  let count = 0;
+  for (let i = 1; i < node.F.length; i++) {
+    const arg = node.F[i];
+    if (arg && typeof arg === "object" && "A" in arg) {
+      count++;
+      if (count === 2) return (arg as ZilAtom).A;
+    }
+  }
+  return undefined;
+}
+
 // ---------- item extraction ----------
 
 const SKIP_LOCATIONS = new Set(["ROOMS", "GLOBAL-OBJECTS"]);
@@ -503,6 +735,7 @@ function extractItems(
   roomIds: Set<string>,
   skippedPassageObjects: Set<string>,
   sharedSceneryRooms: Map<string, string[]>,
+  routinesByName: Map<string, ZilRoutine>,
 ): Item[] {
   // ---- Step 1: iteratively determine which non-room objects to include.
   // Containers can hold items, so we do a fixpoint: an object is in if its #IN
@@ -543,6 +776,11 @@ function extractItems(
 
   const items: Item[] = [];
   const seenIds = new Set<string>();
+  const knownItemIds = new Set<string>();
+  for (const raw of rawObjects) {
+    if (raw.IsRoom) continue;
+    knownItemIds.add(id(raw.Name));
+  }
 
   for (const raw of rawObjects) {
     if (raw.IsRoom) continue;
@@ -573,10 +811,20 @@ function extractItems(
     const name = firstString(props.DESC) ?? raw.Name.toLowerCase();
     const fdesc = firstString(props.FDESC);
     const ldesc = firstString(props.LDESC);
+
+    // ACTION-routine examines: walk the (VERB? EXAMINE) branches. Unconditional
+    // text becomes the base description; state-conditional branches become
+    // variants when their guards translate to our Condition schema.
+    const routineName = firstAtomName(props.ACTION);
+    const routine = routineName ? routinesByName.get(routineName) : undefined;
+    const examines = routine ? extractItemExamines(routine, knownItemIds) : { variants: [] };
+
     const description = fdesc
       ? cleanWhitespace(fdesc)
       : ldesc
       ? cleanWhitespace(ldesc)
+      : examines.description
+      ? examines.description
       : `(${name})`;
 
     const flags = arrayOfStrings(props.FLAGS).map((f) => f.toUpperCase());
@@ -587,6 +835,7 @@ function extractItems(
       description,
       location: primaryLocation,
       ...(appearsIn && { appearsIn }),
+      ...(examines.variants.length > 0 && { variants: examines.variants }),
       ...(flags.includes("TAKEBIT") && { takeable: true }),
       ...(!flags.includes("TAKEBIT") && flags.includes("NDESCBIT") && { fixed: true }),
     };
@@ -1051,7 +1300,7 @@ function main() {
 
   const extractedRooms = extractRooms(rawRooms, roomIds, allPassageIds, routinesByName);
   const rooms = mergeRooms(extractedRooms, overrides.rooms);
-  const extractedItems = extractItems(rawObjects, roomIds, itemSkipSet, sharedSceneryRooms);
+  const extractedItems = extractItems(rawObjects, roomIds, itemSkipSet, sharedSceneryRooms, routinesByName);
   const items = mergeItems(extractedItems, overrides.items);
   const passages = mergePassages(passageResult.passages, overrides.passages);
 
