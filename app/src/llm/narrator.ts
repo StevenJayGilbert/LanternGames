@@ -29,6 +29,7 @@ import type {
   Tool,
 } from "./types";
 import { LLMError } from "./types";
+import { debugLog } from "../debug";
 
 const TOOLS: Tool[] = [
   {
@@ -258,13 +259,15 @@ export class Narrator {
       !BUILT_IN_TOOL_NAMES.has(t.name) && !alwaysOnCustomTools(story).some((a) => a.id === t.name),
     );
     if (conditionalCustoms.length > 0) {
-      console.log(
+      debugLog(
+        "tools",
         `[tools] ${conditionalCustoms.length} dynamic intent tool(s) injected:`,
         conditionalCustoms.map((t) => t.name).join(", "),
       );
     }
     if (activeIntents.length > 0) {
-      console.log(
+      debugLog(
+        "intents",
         `[intents-legacy] ${activeIntents.length} legacy IntentSignal(s) still present (migrate to CustomTools):`,
         activeIntents.map((s) => s.id).join(", "),
       );

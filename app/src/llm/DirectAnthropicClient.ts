@@ -15,6 +15,7 @@ import type {
   Tool,
 } from "./types";
 import { LLMError } from "./types";
+import { debugLog } from "../debug";
 
 const DEFAULT_MODEL = "claude-haiku-4-5-20251001";
 const DEFAULT_MAX_TOKENS = 1024;
@@ -64,10 +65,11 @@ export class DirectAnthropicClient implements LLMClient {
       throw toLLMError(err);
     }
 
-    // DEBUG: surface cache hit/miss so the player can verify caching is working.
-    // Remove once verified. cache_read = cheap reads, cache_creation = first-write
-    // (1.25× cost), input_tokens = uncached remainder (full price).
-    console.log(
+    // Surface cache hit/miss so we can verify caching is working. cache_read =
+    // cheap reads, cache_creation = first-write (1.25× cost), input_tokens =
+    // uncached remainder (full price). Gated by debug.config.json → anthropic.
+    debugLog(
+      "anthropic",
       "[Anthropic usage]",
       JSON.stringify({
         in: response.usage.input_tokens,

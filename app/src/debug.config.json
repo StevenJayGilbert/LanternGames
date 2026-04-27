@@ -1,0 +1,9 @@
+{
+  "$comment": "Per-category debug log toggles. Edit and rebuild to flip. Categories are: tools (per-turn dynamic intent tools injected), intents (legacy IntentSignal block, while still in use), rooms (room moves), anthropic (cache hit/miss + token usage from the LLM client). Set to false to silence that category. Independent of the Debug header button (which controls slash-command intercepts, not logs).",
+  "logs": {
+    "tools": false,
+    "intents": false,
+    "rooms": true,
+    "anthropic": false
+  }
+}

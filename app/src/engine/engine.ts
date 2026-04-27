@@ -10,10 +10,11 @@
 // (or render.ts for dev/test).
 
 import type { GameState, Story, Trigger } from "../story/schema";
-import { applyEffects, evaluateCondition, initialState, resolveEffects } from "./state";
+import { applyEffects, evaluateCondition, initialState, resolveEffects, roomById } from "./state";
 import { performAction, type ActionRequest } from "./actions";
 import type { ActionEvent } from "./events";
 import { buildView, type WorldView } from "./view";
+import { debugLog } from "../debug";
 
 export interface EngineResult {
   event: ActionEvent;        // what happened (or why the action was rejected)
@@ -50,6 +51,7 @@ export class Engine {
       };
     }
 
+    const previousLocation = this.state.playerLocation;
     const actionResult = performAction(this.state, this.story, req);
 
     // Phase 1: regular trigger fixed-point loop. Skipped on rejection because
@@ -73,6 +75,15 @@ export class Engine {
     let nextState = phase3.state;
     const ended = checkEndConditions(nextState, this.story);
     if (ended) nextState = { ...nextState, finished: ended };
+
+    if (nextState.playerLocation !== previousLocation) {
+      const room = roomById(this.story, nextState.playerLocation);
+      debugLog(
+        "rooms",
+        `[room] ${previousLocation} → ${nextState.playerLocation}` +
+          (room ? ` (${room.name})` : ""),
+      );
+    }
 
     this.state = nextState;
     return {
