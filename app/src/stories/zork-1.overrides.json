@@ -1041,14 +1041,15 @@
   "$customToolsComment": "Custom tools are author-defined LLM tools. Each becomes a tool the narrator can call directly with typed args. Handlers do the generic state mutation (open sets isOpen=true on any item with that state key); per-puzzle special cases are layered on as triggers that match on intentMatched + intentArg. open/close/break here replace the dozens of per-item intents that the auto-gen used to emit.",
   "customTools": [
     {
+      "$comment": "Open handler — works for both items (mailbox, trophy case) AND passages (kitchen window, trap door). The arg is named itemId for backward compat, but the value can be either an item id or a passage id from the view. Each precondition is an OR over item+passage variants; effects emit BOTH setItemState and setPassageState — the one matching the id mutates, the other defensively no-ops.",
       "id": "open",
-      "description": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens an item. Use the item id from the current view. The engine's handler reports failure when the item isn't accessible, isn't openable, or is already open — the LLM should narrate from those cues.",
+      "description": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens an item or passage (door, window, lid, etc.). Pass the id from the current view's itemsHere or passagesHere. The engine's handler reports failure when the target isn't accessible, isn't openable, or is already open — narrate from those cues.",
       "args": {
         "type": "object",
         "properties": {
           "itemId": {
             "type": "string",
-            "description": "the item to open (use the id from the current view)"
+            "description": "the id of the item or passage to open (from itemsHere or passagesHere in the current view)"
           }
         },
         "required": [
@@ -1060,57 +1061,52 @@
         "preconditions": [
           {
             "when": {
-              "type": "itemAccessible",
-              "itemId": {
-                "fromArg": "itemId"
-              }
+              "type": "or",
+              "any": [
+                { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } },
+                { "type": "passagePerceivable", "passageId": { "fromArg": "itemId" } }
+              ]
             },
             "failedNarration": "You don't see {arg.itemId.name} here."
           },
           {
             "when": {
-              "type": "itemHasStateKey",
-              "itemId": {
-                "fromArg": "itemId"
-              },
-              "key": "isOpen"
+              "type": "or",
+              "any": [
+                { "type": "itemHasStateKey", "itemId": { "fromArg": "itemId" }, "key": "isOpen" },
+                { "type": "passageHasStateKey", "passageId": { "fromArg": "itemId" }, "key": "isOpen" }
+              ]
             },
             "failedNarration": "{arg.itemId.name} isn't something you can open."
           },
           {
             "when": {
-              "type": "itemState",
-              "itemId": {
-                "fromArg": "itemId"
-              },
-              "key": "isOpen",
-              "equals": false
+              "type": "or",
+              "any": [
+                { "type": "itemState", "itemId": { "fromArg": "itemId" }, "key": "isOpen", "equals": false },
+                { "type": "passageState", "passageId": { "fromArg": "itemId" }, "key": "isOpen", "equals": false }
+              ]
             },
             "failedNarration": "{arg.itemId.name} is already open."
           }
         ],
         "effects": [
-          {
-            "type": "setItemState",
-            "itemId": {
-              "fromArg": "itemId"
-            },
-            "key": "isOpen",
-            "value": true
-          }
+          { "type": "setItemState", "itemId": { "fromArg": "itemId" }, "key": "isOpen", "value": true },
+          { "type": "setPassageState", "passageId": { "fromArg": "itemId" }, "key": "isOpen", "value": true }
         ],
         "successNarration": "You open the {arg.itemId.name}."
       }
     },
     {
+      "$comment": "Close handler — symmetric to open. Same item-or-passage polymorphism.",
       "id": "close",
-      "description": "Player closes, shuts, latches, lids, or otherwise closes an item.",
+      "description": "Player closes, shuts, latches, lids, or otherwise closes an item or passage (door, window, lid, etc.).",
       "args": {
         "type": "object",
         "properties": {
           "itemId": {
             "type": "string",
-            "description": "the item to close (use the id from the current view)"
+            "description": "the id of the item or passage to close (from itemsHere or passagesHere in the current view)"
           }
         },
         "required": [
@@ -1122,44 +1118,38 @@
         "preconditions": [
           {
             "when": {
-              "type": "itemAccessible",
-              "itemId": {
-                "fromArg": "itemId"
-              }
+              "type": "or",
+              "any": [
+                { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } },
+                { "type": "passagePerceivable", "passageId": { "fromArg": "itemId" } }
+              ]
             },
             "failedNarration": "You don't see {arg.itemId.name} here."
           },
           {
             "when": {
-              "type": "itemHasStateKey",
-              "itemId": {
-                "fromArg": "itemId"
-              },
-              "key": "isOpen"
+              "type": "or",
+              "any": [
+                { "type": "itemHasStateKey", "itemId": { "fromArg": "itemId" }, "key": "isOpen" },
+                { "type": "passageHasStateKey", "passageId": { "fromArg": "itemId" }, "key": "isOpen" }
+              ]
             },
             "failedNarration": "{arg.itemId.name} isn't something you can close."
           },
           {
             "when": {
-              "type": "itemState",
-              "itemId": {
-                "fromArg": "itemId"
-              },
-              "key": "isOpen",
-              "equals": true
+              "type": "or",
+              "any": [
+                { "type": "itemState", "itemId": { "fromArg": "itemId" }, "key": "isOpen", "equals": true },
+                { "type": "passageState", "passageId": { "fromArg": "itemId" }, "key": "isOpen", "equals": true }
+              ]
             },
             "failedNarration": "{arg.itemId.name} is already closed."
           }
         ],
         "effects": [
-          {
-            "type": "setItemState",
-            "itemId": {
-              "fromArg": "itemId"
-            },
-            "key": "isOpen",
-            "value": false
-          }
+          { "type": "setItemState", "itemId": { "fromArg": "itemId" }, "key": "isOpen", "value": false },
+          { "type": "setPassageState", "passageId": { "fromArg": "itemId" }, "key": "isOpen", "value": false }
         ],
         "successNarration": "You close the {arg.itemId.name}."
       }

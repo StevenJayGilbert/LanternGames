@@ -1129,6 +1129,16 @@ function mergeItems(
 // that flip the state when the LLM matches the player's intent. This is how
 // players "open the window" / "open the mailbox" without engine open/close
 // verbs — one uniform mutation path for both kinds.
+// Per-passage and per-item open/close intents and triggers are NO LONGER
+// auto-generated. The author-declared `open` / `close` CustomTools in
+// zork-1.overrides.json handle both via their polymorphic handlers — any
+// item OR passage with state.isOpen gets toggled with the same handler,
+// preconditions, and narration. Story-specific consequences (gain points
+// on first open, reveal contents, etc.) become author-written triggers
+// keyed on intentMatched("open") + intentArg("open", "itemId", "<id>").
+//
+// This stub stays so callers don't have to change shape; it just returns
+// empty arrays. Delete once no other code path depends on it.
 function generateOpenCloseScaffolding(
   passages: Passage[],
   items: Item[],
@@ -1136,70 +1146,9 @@ function generateOpenCloseScaffolding(
   intentSignals: IntentSignal[];
   triggers: Trigger[];
 } {
-  const intentSignals: IntentSignal[] = [];
-  const triggers: Trigger[] = [];
-
-  for (const p of passages) {
-    if (typeof p.state?.isOpen !== "boolean") continue;
-    const openId = `${p.id}-open-intent`;
-    const closeId = `${p.id}-close-intent`;
-    const baseOpen: Condition = { type: "passageState", passageId: p.id, key: "isOpen", equals: false };
-    const baseClose: Condition = { type: "passageState", passageId: p.id, key: "isOpen", equals: true };
-    intentSignals.push({
-      id: openId,
-      prompt: `Player opens, pushes open, swings open, lifts, climbs in through, or otherwise opens the ${p.name}.`,
-      active: andWith(baseOpen, p.openWhen),
-    });
-    intentSignals.push({
-      id: closeId,
-      prompt: `Player closes, shuts, slams, lowers, or otherwise closes the ${p.name}.`,
-      active: andWith(baseClose, p.closeWhen),
-    });
-    triggers.push({
-      id: `${p.id}-opens`,
-      when: { type: "intentMatched", signalId: openId },
-      effects: [
-        { type: "setPassageState", passageId: p.id, key: "isOpen", value: true },
-        // Consume the matched intent so the trigger doesn't auto-re-fire
-        // every turn (matchedIntents otherwise persists forever, and the
-        // trigger would undo any later state change like a slam).
-        { type: "removeMatchedIntent", signalId: openId },
-      ],
-      narration: `You open the ${p.name}.`,
-      once: false,
-    });
-    triggers.push({
-      id: `${p.id}-closes`,
-      when: { type: "intentMatched", signalId: closeId },
-      effects: [
-        { type: "setPassageState", passageId: p.id, key: "isOpen", value: false },
-        { type: "removeMatchedIntent", signalId: closeId },
-      ],
-      narration: `You close the ${p.name}.`,
-      once: false,
-    });
-  }
-
-  // Per-item open/close intents/triggers no longer auto-genned. The author-
-  // declared `open`/`close` CustomTools (in zork-1.overrides.json) handle
-  // the generic case via their handlers — any item with state.isOpen gets
-  // toggled by the open/close handler, with proper preconditions and
-  // narration. Story-specific consequences (gain points on first open, etc.)
-  // are author-written triggers that match on intentMatched("open") +
-  // intentArg("open", "itemId", "<the-item>"). Items used as items here
-  // is a no-op intentionally; the parameter is left for symmetry with
-  // passages.
+  void passages;
   void items;
-
-  return { intentSignals, triggers };
-}
-
-// Compose `base AND extra` when extra is set, else return base alone. Keeps
-// auto-gen output flat for the common case (no override) while supporting
-// per-item/per-passage `openWhen` / `closeWhen` extra gates.
-function andWith(base: Condition, extra: Condition | undefined): Condition {
-  if (!extra) return base;
-  return { type: "and", all: [base, extra] };
+  return { intentSignals: [], triggers: [] };
 }
 
 // For every item with a boolean `state.broken: false`, generate a break

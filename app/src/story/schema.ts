@@ -63,7 +63,9 @@ export type Condition =
   | { type: "visited"; roomId: string }                    // player has entered room at least once
   | { type: "examined"; itemId: string }                   // player has examined item at least once
   | { type: "triggerFired"; triggerId: string }
-  | { type: "passageState"; passageId: string; key: string; equals: Atom } // per-passage typed state equality
+  | { type: "passageState"; passageId: IdRef; key: string; equals: Atom }  // per-passage typed state equality (passageId may be {fromArg: "..."} inside a tool handler)
+  | { type: "passagePerceivable"; passageId: IdRef }                       // passage is currently visible/reachable to the player (analog of itemAccessible for passages)
+  | { type: "passageHasStateKey"; passageId: IdRef; key: string }          // the named passage has a defined state[key] (handler precondition for "this verb doesn't apply here")
   | { type: "itemState"; itemId: IdRef; key: string; equals: Atom }        // per-item typed state equality (itemId may be {fromArg: "..."} inside a tool handler)
   | { type: "roomState"; roomId: string; key: string; equals: Atom }       // per-room typed state equality
   | { type: "currentRoomState"; key: string; equals: Atom }                // shortcut: roomState on the player's current room
@@ -94,7 +96,7 @@ export type Effect =
   | { type: "setFlag"; key: string; value: Atom }
   | { type: "moveItem"; itemId: string; to: string }       // roomId | "inventory" | "nowhere"
   | { type: "movePlayer"; to: string }                     // teleport (rare; usually exits handle movement)
-  | { type: "setPassageState"; passageId: string; key: string; value: Atom }  // mutate passage state
+  | { type: "setPassageState"; passageId: IdRef; key: string; value: Atom }  // mutate passage state (passageId may be {fromArg: "..."} inside a tool handler)
   | { type: "setItemState"; itemId: IdRef; key: string; value: Atom }         // mutate item state (itemId may be {fromArg: "..."} inside a tool handler)
   | { type: "setRoomState"; roomId: string; key: string; value: Atom }        // mutate room state
   | { type: "adjustFlag"; key: string; by: number }                           // signed delta on a numeric flag (treats unset as 0)

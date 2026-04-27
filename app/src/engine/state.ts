@@ -312,6 +312,8 @@ export function evaluateCondition(
     case "triggerFired":
       return state.firedTriggers.includes(c.triggerId);
     case "passageState":
+      // IdRef-aware. Defensive false on unresolved {fromArg} or missing passage.
+      if (typeof c.passageId !== "string") return false;
       return state.passageStates[c.passageId]?.[c.key] === c.equals;
     case "itemState":
       // IdRef should be resolved before reaching the evaluator. Defensive
@@ -354,6 +356,21 @@ export function evaluateCondition(
       const item = itemById(story, c.itemId);
       if (!item) return false;
       return item.state?.[c.key] !== undefined;
+    }
+    case "passagePerceivable": {
+      if (typeof c.passageId !== "string") return false;
+      const passage = passageById(story, c.passageId);
+      if (!passage) return false;
+      // Visible AND one of its sides is the player's current room (otherwise
+      // the player isn't standing where they could interact with it).
+      if (!isVisible(passage, state, story)) return false;
+      return passage.sides.some((s) => s.roomId === state.playerLocation);
+    }
+    case "passageHasStateKey": {
+      if (typeof c.passageId !== "string") return false;
+      const passage = passageById(story, c.passageId);
+      if (!passage) return false;
+      return passage.state?.[c.key] !== undefined;
     }
     case "inventoryHasTag":
       // Walk all items; first match wins. O(n) but n is small (~100 for Zork).
@@ -438,7 +455,7 @@ function countItemsAt(state: GameState, location: string): number {
 
 // ---------- Effect application ----------
 
-export function applyEffect(state: GameState, e: Effect): GameState {
+export function applyEffect(state: GameState, e: Effect, story?: Story): GameState {
   switch (e.type) {
     case "setFlag":
       return { ...state, flags: { ...state.flags, [e.key]: e.value } };
@@ -454,6 +471,12 @@ export function applyEffect(state: GameState, e: Effect): GameState {
       return { ...state, playerLocation: e.to, visitedRooms: visited };
     }
     case "setPassageState": {
+      // Defensive: skip if {fromArg} unresolved OR id doesn't reference a
+      // known passage. The latter case is intentional — handlers that target
+      // either items OR passages emit BOTH setItemState and setPassageState
+      // with the same id; only the matching one mutates.
+      if (typeof e.passageId !== "string") return state;
+      if (story && !passageById(story, e.passageId)) return state;
       const current = state.passageStates[e.passageId] ?? {};
       return {
         ...state,
@@ -464,9 +487,10 @@ export function applyEffect(state: GameState, e: Effect): GameState {
       };
     }
     case "setItemState": {
-      // IdRef should be resolved before applyEffect. Defensive no-op if a
-      // {fromArg} slipped through.
+      // Defensive: skip if {fromArg} unresolved OR id doesn't reference a
+      // known item. Same dual-effect pattern as setPassageState.
       if (typeof e.itemId !== "string") return state;
+      if (story && !itemById(story, e.itemId)) return state;
       const current = state.itemStates[e.itemId] ?? {};
       return {
         ...state,

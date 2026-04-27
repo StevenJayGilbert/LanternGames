@@ -192,6 +192,57 @@ console.log("\n=== alwaysOn / conditional split ===");
     : fail(`conditional=${conditional.map((t) => t.id).join(", ")}`);
 }
 
+// ----- Handler also handles passages -----
+console.log("\n=== handler: passage open/close ===");
+{
+  // Use the real customTools from zork-1.json (open/close are alwaysAvailable
+  // and operate on items OR passages thanks to the polymorphic preconditions).
+  const e = new Engine(zork as unknown as Story);
+  // kitchen-window is a passage between east-of-house and kitchen, starts closed.
+  e.state = { ...e.state, playerLocation: "east-of-house" };
+  const before = e.state.passageStates["kitchen-window"]?.isOpen;
+  before === false ? pass("kitchen-window starts closed") : fail(`isOpen=${before}`);
+
+  const r = e.execute({
+    type: "recordIntent",
+    signalId: "open",
+    args: { itemId: "kitchen-window" },
+  });
+  r.ok ? pass("recordIntent open(kitchen-window) ok=true") : fail("ok=false");
+  e.state.passageStates["kitchen-window"]?.isOpen === true
+    ? pass("kitchen-window.isOpen=true after handler effect")
+    : fail(`isOpen=${e.state.passageStates["kitchen-window"]?.isOpen}`);
+  r.narrationCues.some((c) => c.includes("open the kitchen window"))
+    ? pass("success narration with substituted passage name")
+    : fail(`cues=${JSON.stringify(r.narrationCues)}`);
+
+  // Close it
+  const r2 = e.execute({
+    type: "recordIntent",
+    signalId: "close",
+    args: { itemId: "kitchen-window" },
+  });
+  e.state.passageStates["kitchen-window"]?.isOpen === false
+    ? pass("close handler toggles kitchen-window back to closed")
+    : fail(`isOpen=${e.state.passageStates["kitchen-window"]?.isOpen}`);
+  void r2;
+
+  // Open from a far-away room → precondition fails
+  const e2 = new Engine(zork as unknown as Story);
+  e2.state = { ...e2.state, playerLocation: "west-of-house" };
+  const r3 = e2.execute({
+    type: "recordIntent",
+    signalId: "open",
+    args: { itemId: "kitchen-window" },
+  });
+  r3.narrationCues.some((c) => c.includes("You don't see"))
+    ? pass("open(kitchen-window) from far room → 'don't see' cue")
+    : fail(`cues=${JSON.stringify(r3.narrationCues)}`);
+  e2.state.passageStates["kitchen-window"]?.isOpen === false
+    ? pass("kitchen-window stays closed when not perceivable")
+    : fail("isOpen mutated unexpectedly");
+}
+
 // ----- removeMatchedIntent clears args -----
 console.log("\n=== removeMatchedIntent clears args ===");
 {

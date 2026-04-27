@@ -42,6 +42,21 @@ export function substituteCondition(c: Condition, args: Args): Condition | null 
       if (id === null) return null;
       return { ...c, itemId: id };
     }
+    case "passageState": {
+      const id = resolveIdRef(c.passageId, args);
+      if (id === null) return null;
+      return { ...c, passageId: id };
+    }
+    case "passagePerceivable": {
+      const id = resolveIdRef(c.passageId, args);
+      if (id === null) return null;
+      return { ...c, passageId: id };
+    }
+    case "passageHasStateKey": {
+      const id = resolveIdRef(c.passageId, args);
+      if (id === null) return null;
+      return { ...c, passageId: id };
+    }
     case "and": {
       const subs: Condition[] = [];
       for (const sub of c.all) {
@@ -78,6 +93,11 @@ export function substituteEffect(e: Effect, args: Args): Effect | null {
       const id = resolveIdRef(e.itemId, args);
       if (id === null) return null;
       return { ...e, itemId: id };
+    }
+    case "setPassageState": {
+      const id = resolveIdRef(e.passageId, args);
+      if (id === null) return null;
+      return { ...e, passageId: id };
     }
     case "random": {
       const branches: typeof e.branches = [];

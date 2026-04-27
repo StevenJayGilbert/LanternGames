@@ -444,7 +444,10 @@ function runHandler(
   for (const eff of handler.effects ?? []) {
     const sub = substituteEffect(eff, args);
     if (sub === null) continue;
-    nextState = applyEffect(nextState, sub);
+    // Pass story so setItemState/setPassageState can defensively skip when
+    // the resolved id doesn't reference an item/passage (the dual-effect
+    // pattern handlers use to target either kind).
+    nextState = applyEffect(nextState, sub, story);
   }
 
   const cues: string[] = [];
@@ -465,9 +468,13 @@ function renderHandlerTemplate(
     const value = args[argName];
     if (typeof value !== "string") return String(value ?? "");
     if (field === "id") return value;
-    // field === "name": resolve item by id
+    // field === "name": resolve item OR passage by id (handlers may target
+    // either kind, e.g. open(itemId="kitchen-window") for a passage).
     const item = itemById(story, value);
-    return item?.name ?? value;
+    if (item) return item.name;
+    const passage = passageById(story, value);
+    if (passage) return passage.name;
+    return value;
   });
 }
 

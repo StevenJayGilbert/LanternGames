@@ -808,6 +808,19 @@ function validateIdRef(
   err(path, "must be a string item id or { fromArg: <argName> }");
 }
 
+// Sibling of validateIdRef for passage ids. Cross-ref to passages array is
+// not threaded through validateCondition today — accept any string and let
+// runtime "missing passage" become a no-op (parallels item validation).
+function validatePassageIdRef(
+  raw: unknown,
+  path: string,
+  err: (p: string, m: string) => void,
+) {
+  if (typeof raw === "string") return;
+  if (isObject(raw) && typeof (raw as Record<string, unknown>).fromArg === "string") return;
+  err(path, "must be a string passage id or { fromArg: <argName> }");
+}
+
 function validateCondition(
   raw: unknown,
   path: string,
@@ -853,13 +866,21 @@ function validateCondition(
       else if (triggerIds.size && !triggerIds.has(raw.triggerId)) err(`${path}.triggerId`, `unknown trigger "${raw.triggerId}"`);
       return;
     case "passageState":
-      // Soft validation: passageId and key must be strings; equals must be an
-      // atom. Cross-reference (passage exists, key declared) is skipped — the
-      // validator doesn't thread passage state schemas through every site.
-      // Typos become "never true" at runtime.
-      if (typeof raw.passageId !== "string") err(`${path}.passageId`, "must be a string");
+      // Soft validation. passageId may be literal OR {fromArg} inside a
+      // CustomTool handler. Cross-ref to passage existence is skipped —
+      // passage ids aren't threaded into the validator's id sets.
+      validatePassageIdRef(raw.passageId, `${path}.passageId`, err);
       if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
       if (!isAtom(raw.equals)) err(`${path}.equals`, "must be string, number, or boolean");
+      return;
+    case "passagePerceivable":
+      validatePassageIdRef(raw.passageId, `${path}.passageId`, err);
+      return;
+    case "passageHasStateKey":
+      validatePassageIdRef(raw.passageId, `${path}.passageId`, err);
+      if (typeof raw.key !== "string" || raw.key === "") {
+        err(`${path}.key`, "must be a non-empty string");
+      }
       return;
     case "itemState":
       // Soft validation: itemId may be a literal string OR an IdRef
@@ -1040,10 +1061,8 @@ function validateEffect(
       else if (!roomIds.has(raw.to)) err(`${path}.to`, `unknown room "${raw.to}"`);
       return;
     case "setPassageState":
-      // Soft validation: passageId/key are strings, value is an Atom. Cross-
-      // reference (passage exists, key declared) is skipped here for the same
-      // reason as Condition.passageState — typos become silent at runtime.
-      if (typeof raw.passageId !== "string") err(`${path}.passageId`, "must be a string");
+      // passageId may be literal OR {fromArg} inside a CustomTool handler.
+      validatePassageIdRef(raw.passageId, `${path}.passageId`, err);
       if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
       if (!isAtom(raw.value)) err(`${path}.value`, "must be string, number, or boolean");
       return;

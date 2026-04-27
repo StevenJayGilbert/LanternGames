@@ -3608,109 +3608,16 @@
       ]
     }
   ],
-  "intentSignals": [
-    {
-      "id": "kitchen-window-open-intent",
-      "prompt": "Player opens, pushes open, swings open, lifts, climbs in through, or otherwise opens the kitchen window.",
-      "active": {
-        "type": "passageState",
-        "passageId": "kitchen-window",
-        "key": "isOpen",
-        "equals": false
-      }
-    },
-    {
-      "id": "kitchen-window-close-intent",
-      "prompt": "Player closes, shuts, slams, lowers, or otherwise closes the kitchen window.",
-      "active": {
-        "type": "passageState",
-        "passageId": "kitchen-window",
-        "key": "isOpen",
-        "equals": true
-      }
-    },
-    {
-      "id": "trap-door-open-intent",
-      "prompt": "Player opens, pushes open, swings open, lifts, climbs in through, or otherwise opens the trap door.",
-      "active": {
-        "type": "and",
-        "all": [
-          {
-            "type": "passageState",
-            "passageId": "trap-door",
-            "key": "isOpen",
-            "equals": false
-          },
-          {
-            "type": "and",
-            "all": [
-              {
-                "type": "flag",
-                "key": "rug-moved-flag",
-                "equals": true
-              },
-              {
-                "type": "not",
-                "condition": {
-                  "type": "playerAt",
-                  "roomId": "cellar"
-                }
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "id": "trap-door-close-intent",
-      "prompt": "Player closes, shuts, slams, lowers, or otherwise closes the trap door.",
-      "active": {
-        "type": "passageState",
-        "passageId": "trap-door",
-        "key": "isOpen",
-        "equals": true
-      }
-    },
-    {
-      "id": "grate-open-intent",
-      "prompt": "Player opens, pushes open, swings open, lifts, climbs in through, or otherwise opens the grating.",
-      "active": {
-        "type": "and",
-        "all": [
-          {
-            "type": "passageState",
-            "passageId": "grate",
-            "key": "isOpen",
-            "equals": false
-          },
-          {
-            "type": "hasItem",
-            "itemId": "keys"
-          }
-        ]
-      }
-    },
-    {
-      "id": "grate-close-intent",
-      "prompt": "Player closes, shuts, slams, lowers, or otherwise closes the grating.",
-      "active": {
-        "type": "passageState",
-        "passageId": "grate",
-        "key": "isOpen",
-        "equals": true
-      }
-    }
-  ],
   "customTools": [
     {
       "id": "open",
-      "description": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens an item. Use the item id from the current view. The engine's handler reports failure when the item isn't accessible, isn't openable, or is already open — the LLM should narrate from those cues.",
+      "description": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens an item or passage (door, window, lid, etc.). Pass the id from the current view's itemsHere or passagesHere. The engine's handler reports failure when the target isn't accessible, isn't openable, or is already open — narrate from those cues.",
       "args": {
         "type": "object",
         "properties": {
           "itemId": {
             "type": "string",
-            "description": "the item to open (use the id from the current view)"
+            "description": "the id of the item or passage to open (from itemsHere or passagesHere in the current view)"
           }
         },
         "required": [
@@ -3722,31 +3629,67 @@
         "preconditions": [
           {
             "when": {
-              "type": "itemAccessible",
-              "itemId": {
-                "fromArg": "itemId"
-              }
+              "type": "or",
+              "any": [
+                {
+                  "type": "itemAccessible",
+                  "itemId": {
+                    "fromArg": "itemId"
+                  }
+                },
+                {
+                  "type": "passagePerceivable",
+                  "passageId": {
+                    "fromArg": "itemId"
+                  }
+                }
+              ]
             },
             "failedNarration": "You don't see {arg.itemId.name} here."
           },
           {
             "when": {
-              "type": "itemHasStateKey",
-              "itemId": {
-                "fromArg": "itemId"
-              },
-              "key": "isOpen"
+              "type": "or",
+              "any": [
+                {
+                  "type": "itemHasStateKey",
+                  "itemId": {
+                    "fromArg": "itemId"
+                  },
+                  "key": "isOpen"
+                },
+                {
+                  "type": "passageHasStateKey",
+                  "passageId": {
+                    "fromArg": "itemId"
+                  },
+                  "key": "isOpen"
+                }
+              ]
             },
             "failedNarration": "{arg.itemId.name} isn't something you can open."
           },
           {
             "when": {
-              "type": "itemState",
-              "itemId": {
-                "fromArg": "itemId"
-              },
-              "key": "isOpen",
-              "equals": false
+              "type": "or",
+              "any": [
+                {
+                  "type": "itemState",
+                  "itemId": {
+                    "fromArg": "itemId"
+                  },
+                  "key": "isOpen",
+                  "equals": false
+                },
+                {
+                  "type": "passageState",
+                  "passageId": {
+                    "fromArg": "itemId"
+                  },
+                  "key": "isOpen",
+                  "equals": false
+                }
+              ]
             },
             "failedNarration": "{arg.itemId.name} is already open."
           }
@@ -3759,6 +3702,14 @@
             },
             "key": "isOpen",
             "value": true
+          },
+          {
+            "type": "setPassageState",
+            "passageId": {
+              "fromArg": "itemId"
+            },
+            "key": "isOpen",
+            "value": true
           }
         ],
         "successNarration": "You open the {arg.itemId.name}."
@@ -3766,13 +3717,13 @@
     },
     {
       "id": "close",
-      "description": "Player closes, shuts, latches, lids, or otherwise closes an item.",
+      "description": "Player closes, shuts, latches, lids, or otherwise closes an item or passage (door, window, lid, etc.).",
       "args": {
         "type": "object",
         "properties": {
           "itemId": {
             "type": "string",
-            "description": "the item to close (use the id from the current view)"
+            "description": "the id of the item or passage to close (from itemsHere or passagesHere in the current view)"
           }
         },
         "required": [
@@ -3784,31 +3735,67 @@
         "preconditions": [
           {
             "when": {
-              "type": "itemAccessible",
-              "itemId": {
-                "fromArg": "itemId"
-              }
+              "type": "or",
+              "any": [
+                {
+                  "type": "itemAccessible",
+                  "itemId": {
+                    "fromArg": "itemId"
+                  }
+                },
+                {
+                  "type": "passagePerceivable",
+                  "passageId": {
+                    "fromArg": "itemId"
+                  }
+                }
+              ]
             },
             "failedNarration": "You don't see {arg.itemId.name} here."
           },
           {
             "when": {
-              "type": "itemHasStateKey",
-              "itemId": {
-                "fromArg": "itemId"
-              },
-              "key": "isOpen"
+              "type": "or",
+              "any": [
+                {
+                  "type": "itemHasStateKey",
+                  "itemId": {
+                    "fromArg": "itemId"
+                  },
+                  "key": "isOpen"
+                },
+                {
+                  "type": "passageHasStateKey",
+                  "passageId": {
+                    "fromArg": "itemId"
+                  },
+                  "key": "isOpen"
+                }
+              ]
             },
             "failedNarration": "{arg.itemId.name} isn't something you can close."
           },
           {
             "when": {
-              "type": "itemState",
-              "itemId": {
-                "fromArg": "itemId"
-              },
-              "key": "isOpen",
-              "equals": true
+              "type": "or",
+              "any": [
+                {
+                  "type": "itemState",
+                  "itemId": {
+                    "fromArg": "itemId"
+                  },
+                  "key": "isOpen",
+                  "equals": true
+                },
+                {
+                  "type": "passageState",
+                  "passageId": {
+                    "fromArg": "itemId"
+                  },
+                  "key": "isOpen",
+                  "equals": true
+                }
+              ]
             },
             "failedNarration": "{arg.itemId.name} is already closed."
           }
@@ -3817,6 +3804,14 @@
           {
             "type": "setItemState",
             "itemId": {
+              "fromArg": "itemId"
+            },
+            "key": "isOpen",
+            "value": false
+          },
+          {
+            "type": "setPassageState",
+            "passageId": {
               "fromArg": "itemId"
             },
             "key": "isOpen",
@@ -3978,132 +3973,6 @@
     }
   ],
   "triggers": [
-    {
-      "id": "kitchen-window-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "kitchen-window-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setPassageState",
-          "passageId": "kitchen-window",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "kitchen-window-open-intent"
-        }
-      ],
-      "narration": "You open the kitchen window.",
-      "once": false
-    },
-    {
-      "id": "kitchen-window-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "kitchen-window-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setPassageState",
-          "passageId": "kitchen-window",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "kitchen-window-close-intent"
-        }
-      ],
-      "narration": "You close the kitchen window.",
-      "once": false
-    },
-    {
-      "id": "trap-door-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "trap-door-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setPassageState",
-          "passageId": "trap-door",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "trap-door-open-intent"
-        }
-      ],
-      "narration": "You open the trap door.",
-      "once": false
-    },
-    {
-      "id": "trap-door-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "trap-door-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setPassageState",
-          "passageId": "trap-door",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "trap-door-close-intent"
-        }
-      ],
-      "narration": "You close the trap door.",
-      "once": false
-    },
-    {
-      "id": "grate-opens",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "grate-open-intent"
-      },
-      "effects": [
-        {
-          "type": "setPassageState",
-          "passageId": "grate",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "grate-open-intent"
-        }
-      ],
-      "narration": "You open the grating.",
-      "once": false
-    },
-    {
-      "id": "grate-closes",
-      "when": {
-        "type": "intentMatched",
-        "signalId": "grate-close-intent"
-      },
-      "effects": [
-        {
-          "type": "setPassageState",
-          "passageId": "grate",
-          "key": "isOpen",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "grate-close-intent"
-        }
-      ],
-      "narration": "You close the grating.",
-      "once": false
-    },
     {
       "id": "tie-rope",
       "when": {
