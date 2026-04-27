@@ -374,6 +374,13 @@ export class Narrator {
     this.history = [];
   }
 
+  // Replace the entire conversation history wholesale. Used when loading a
+  // save slot mid-session. Sanitized to drop orphan tool_uses for the same
+  // reason the constructor does — a snapshot might end mid tool round-trip.
+  replaceHistory(messages: Message[]): void {
+    this.history = sanitizeHistory([...messages]);
+  }
+
   // Trim only when SIGNIFICANTLY over the cap, and trim a BIG CHUNK at once.
   // Why: Anthropic's prompt cache is keyed by exact byte prefix. Dropping any
   // message off the front of the history shifts all subsequent byte offsets,

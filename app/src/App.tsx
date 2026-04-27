@@ -8,9 +8,12 @@ import { Narrator } from "./llm/narrator";
 import {
   clearSession,
   loadSession,
+  migrateLegacySaveToSlots,
   saveSession,
+  type SaveSlot,
   type TranscriptEntry,
 } from "./persistence/localSave";
+import { SaveLoadDialog } from "./SaveLoadDialog";
 import { DEFAULT_STORY_ID, STORIES, findStory } from "./stories";
 import "./App.css";
 
@@ -30,6 +33,10 @@ function loadProvider(): Provider {
   const stored = localStorage.getItem(PROVIDER_STORAGE);
   return stored === "ollama" ? "ollama" : "anthropic";
 }
+
+// One-time legacy-save migration. Runs before the App component mounts so
+// every loadSession/loadSlot call below sees the new key layout. Idempotent.
+for (const s of STORIES) migrateLegacySaveToSlots(s.id);
 
 // TranscriptEntry + EntryKind types are imported from localSave so the save
 // shape and the in-memory shape stay aligned automatically.
@@ -64,22 +71,22 @@ function App() {
   const [ollamaReady, setOllamaReady] = useState<boolean>(
     () => localStorage.getItem(OLLAMA_READY_STORAGE) === "true",
   );
-  // Initial engine: restore saved state if any. Otherwise fresh.
+  // Initial engine: restore quick-save if any. Otherwise fresh.
   const [engine, setEngine] = useState(() => {
-    const saved = loadSession(story.id);
+    const saved = loadSession(story.id, "quick");
     return new Engine(story, saved?.engineState);
   });
   const [narrator, setNarrator] = useState<Narrator | null>(null);
 
   const [transcript, setTranscript] = useState<TranscriptEntry[]>(() => {
-    const saved = loadSession(story.id);
+    const saved = loadSession(story.id, "quick");
     if (saved && saved.transcript.length > 0) return saved.transcript;
     return buildIntro(engine, !!saved);
   });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<string[]>(
-    () => loadSession(story.id)?.inputHistory ?? [],
+    () => loadSession(story.id, "quick")?.inputHistory ?? [],
   );
   const [historyIndex, setHistoryIndex] = useState(-1);
   // Dev debug mode: when on, slash commands (/tp, /give, /help) are intercepted
@@ -95,10 +102,10 @@ function App() {
     localStorage.setItem(STORY_STORAGE, storyId);
   }, [storyId]);
 
-  // Recreate engine + transcript when the story changes. Restore saved state
+  // Recreate engine + transcript when the story changes. Restore quick-save
   // for that story if available — including transcript and input history.
   useEffect(() => {
-    const saved = loadSession(story.id);
+    const saved = loadSession(story.id, "quick");
     const fresh = new Engine(story, saved?.engineState);
     setEngine(fresh);
     setTranscript(
@@ -126,7 +133,7 @@ function App() {
       setNarrator(null);
       return;
     }
-    const saved = loadSession(engine.story.id);
+    const saved = loadSession(engine.story.id, "quick");
     const client: LLMClient =
       provider === "ollama"
         ? new OllamaClient({ baseUrl: ollamaUrl, model: ollamaModel })
@@ -221,6 +228,7 @@ function App() {
       setTranscript(transcriptAfterDebug);
       saveSession({
         storyId: engine.story.id,
+        slot: "quick",
         engineState: engine.state,
         narratorHistory: narrator.getHistory(),
         transcript: transcriptAfterDebug,
@@ -245,6 +253,7 @@ function App() {
       if (!turn.error) {
         saveSession({
           storyId: engine.story.id,
+          slot: "quick",
           engineState: engine.state,
           narratorHistory: narrator.getHistory(),
           transcript: transcriptAfterTurn,
@@ -280,15 +289,69 @@ function App() {
     }
   };
 
+  // Quick-save is the only slot wiped on "New game" — manual slots are
+  // milestone snapshots the user opted to preserve, so leave them alone.
   const restart = () => {
-    clearSession(story.id);
+    clearSession(story.id, "quick");
     const fresh = new Engine(story);
     setEngine(fresh);
     setTranscript(buildIntro(fresh, false));
     setHistory([]);
     setHistoryIndex(-1);
     setInput("");
+    narrator?.reset();
     inputRef.current?.focus();
+  };
+
+  // ----- Save / Load dialog state + slot handlers -----
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  // Bumped after each save/load/clear so the dialog re-reads slot summaries
+  // without coupling persistence details to the dialog's render.
+  const [slotsRefreshKey, setSlotsRefreshKey] = useState(0);
+  const refreshSlots = () => setSlotsRefreshKey((n) => n + 1);
+
+  const handleSaveSlot = (slot: SaveSlot) => {
+    if (!narrator) return;
+    saveSession({
+      storyId: story.id,
+      slot,
+      engineState: engine.state,
+      narratorHistory: narrator.getHistory(),
+      transcript,
+      inputHistory: history,
+    });
+    refreshSlots();
+  };
+
+  // Loading a slot replaces engine state + transcript + input history + the
+  // narrator's conversation history. Quick-save is unchanged here — the next
+  // turn will overwrite it from the loaded state. This intentionally forks
+  // play: the manual slot stays pinned, quick-save tracks the new branch.
+  const handleLoadSlot = (slot: SaveSlot) => {
+    const saved = loadSession(story.id, slot);
+    if (!saved) return;
+    const fresh = new Engine(story, saved.engineState);
+    setEngine(fresh);
+    setTranscript(
+      saved.transcript.length > 0 ? saved.transcript : buildIntro(fresh, true),
+    );
+    setHistory(saved.inputHistory);
+    setHistoryIndex(-1);
+    setInput("");
+    narrator?.replaceHistory(saved.narratorHistory);
+    setSaveDialogOpen(false);
+    refreshSlots();
+  };
+
+  const handleClearSlot = (slot: SaveSlot) => {
+    clearSession(story.id, slot);
+    refreshSlots();
+  };
+
+  const handleNewGame = () => {
+    restart();
+    setSaveDialogOpen(false);
+    refreshSlots();
   };
 
   const handleStoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -450,8 +513,13 @@ function App() {
               ))}
             </select>
           </label>
-          <button type="button" className="restart" onClick={restart} disabled={loading}>
-            Restart
+          <button
+            type="button"
+            className="restart"
+            onClick={() => setSaveDialogOpen(true)}
+            disabled={loading}
+          >
+            Save / Load
           </button>
           <button
             type="button"
@@ -512,6 +580,18 @@ function App() {
           disabled={!!finished || loading}
         />
       </form>
+
+      {saveDialogOpen && (
+        <SaveLoadDialog
+          story={story}
+          refreshKey={slotsRefreshKey}
+          onClose={() => setSaveDialogOpen(false)}
+          onSaveSlot={handleSaveSlot}
+          onLoadSlot={handleLoadSlot}
+          onClearSlot={handleClearSlot}
+          onNewGame={handleNewGame}
+        />
+      )}
     </main>
   );
 }
