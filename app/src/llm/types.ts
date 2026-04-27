@@ -33,6 +33,11 @@ export interface Tool {
     properties: Record<string, unknown>;
     required?: string[];
   };
+  // If set, the LLM client adds a cache breakpoint at this tool. Used to
+  // partition the tools[] array into cache-stable vs. cache-volatile tiers
+  // (built-ins + always-on customs cache permanently; conditional per-turn
+  // customs only cache while their set is byte-stable).
+  cacheBreakpoint?: boolean;
 }
 
 export type StopReason =

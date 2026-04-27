@@ -15,8 +15,12 @@
 import type { Engine, EngineResult } from "../engine/engine";
 import type { ActionRequest } from "../engine/actions";
 import type { WorldView } from "../engine/view";
-import type { IntentSignal, Story } from "../story/schema";
-import { gatherActiveIntentSignals } from "../engine/intents";
+import type { CustomTool, IntentSignal, Story } from "../story/schema";
+import {
+  alwaysOnCustomTools,
+  activeConditionalCustomTools,
+  gatherActiveIntentSignals,
+} from "../engine/intents";
 import type {
   AssistantMessage,
   ContentBlock,
@@ -136,22 +140,17 @@ const TOOLS: Tool[] = [
       required: ["itemId", "targetId"],
     },
   },
-  {
-    name: "recordIntent",
-    description:
-      "Record that the player's input semantically matches an active intent signal (listed in the user message under [Active intents], with prompt text for each). Call this BEFORE the action tool when there's a match. The match persists for the rest of the game.",
-    input_schema: {
-      type: "object",
-      properties: {
-        signalId: {
-          type: "string",
-          description: "The id of the matched intent signal (from the [Active intents] block)",
-        },
-      },
-      required: ["signalId"],
-    },
-  },
 ];
+
+// Set of built-in tool names — used by toolToAction to distinguish built-in
+// dispatches from author-defined custom tool calls.
+const BUILT_IN_TOOL_NAMES = new Set(TOOLS.map((t) => t.name));
+
+// Mark the cache breakpoint at the end of the built-ins. The DirectAnthropic
+// client converts this to cache_control on the corresponding tool. This stays
+// frozen across turns (built-ins never change), so the prefix up to here
+// caches permanently for the session.
+TOOLS[TOOLS.length - 1].cacheBreakpoint = true;
 
 const STYLE_INSTRUCTIONS = `You are the narrator of an interactive text adventure.
 
@@ -167,7 +166,7 @@ Rules:
 - **Where to find the current world view.** The view JSON lives in the most recent \`tool_result\` in your conversation history — that's the engine's snapshot of the room, items, exits, and inventory. The user message gives you only the player's command (and any [Active intents] block). When you need to know what's around the player right now, scroll back to the latest tool_result. State-mutating tools (look, take, drop, put, go, attack, wait) include a fresh \`view\` field in their result; non-mutating tools (examine, read, inventory, recordIntent) omit it because nothing changed — for those, the previous tool_result's view is still accurate. **Exception:** the very first user message of a session DOES include a \`[Current view]\` block since there's no prior tool_result yet.
 - Pass IDs (not display names) to tools. Find them in the view's \`itemsHere\` (items in the room), \`passagesHere\` (doors, windows, archways), or \`inventory\`.
 - Items and passages share one ID namespace. \`examine\` accepts either kind. \`take\`, \`drop\`, \`put\`, and \`read\` work on items only.
-- Items and passages both carry a typed \`state\` map (e.g. \`{ isOpen: true }\`, \`{ broken: false }\`). The engine has NO built-in open/close/break/operate verbs — state mutates only through triggers. When the player tries to mutate or operate something ("open the box", "close the door", "smash the vase", "shut the window", "turn the bolt", "push the button", "pull the lever", "ring the bell", "flip the switch", "press the panel", "light the candle", "blow the horn"), look at the [Active intents] block in the user message — it lists each currently-selectable intent's full prompt. If one matches the player's intent, call \`recordIntent(signalId)\` BEFORE narrating. The matching trigger will fire and update the state; the next view will reflect the change. Then narrate the result. **Critical:** if you narrate that something turned, opened, broke, lit, rang, etc. without first calling recordIntent for an active intent that authorizes that change, the engine state stays the same and your prose becomes a lie the next view will contradict. When in doubt, call recordIntent first.
+- Items and passages both carry a typed \`state\` map (e.g. \`{ isOpen: true }\`, \`{ broken: false }\`). State mutates only through triggers and through author-defined custom tools. Author-defined verbs (open, close, push, turn, give, light, ring, etc.) appear as **named tools** in your tools list — call them like any built-in tool, passing the relevant item id from the current view. The engine reports failure for impossible cases (item not perceivable, item doesn't support that verb, item already in the target state) by returning narration cues — weave those into your prose. **Critical:** if you narrate that something turned, opened, broke, lit, rang, etc. without first calling the corresponding tool, the engine state stays the same and your prose becomes a lie the next view will contradict. When in doubt, call the tool first.
 - Passages connect two rooms. Each PassageView shows the passage's name, description, current \`state\`, and what room it connects to. Some passages are gated by traversableWhen — when the player tries to traverse and it's blocked, the engine returns event.type === "rejected" with reason "traverse-blocked" and a custom message. Narrate around it.
 - Containers (items with a \`container\` field) gate access to their contents via \`accessibleWhen\`. The view's container info shows \`accessible: true|false\`. When the player tries to \`put\` something into an inaccessible container, the engine returns event.type === "rejected" with reason "container-inaccessible" and the author's accessBlockedMessage. Narrate around it.
 - An exit may carry a "passage" id — meaning traversal is gated by that passage's traversableWhen. The view's exit object will surface "blocked" + "blockedMessage" when this is the case.
@@ -243,18 +242,31 @@ export class Narrator {
     // tool_use blocks don't poison future turns or get persisted to save.
     const historyLengthBeforeTurn = this.history.length;
 
+    // Legacy IntentSignal block — only includes intents that haven't yet
+    // migrated to CustomTools. Once all hand-authored intents migrate,
+    // gatherActiveIntentSignals returns [] and intentBlock is empty.
     const activeIntents = gatherActiveIntentSignals(this.engine.state, story);
     const intentBlock = formatIntentBlock(activeIntents);
 
-    // Debug visibility: print exactly which intents are about to be shown to
-    // the LLM. Lets us spot at play time when an expected intent is absent
-    // (active condition failed) vs. present-but-skipped (LLM compliance miss).
-    if (activeIntents.length === 0) {
-      console.log("[intents] none active");
-    } else {
+    // Per-turn tool list: built-ins (cache-stable) + always-on customs
+    // (cache-stable for this story) + conditional customs (cache while set
+    // is byte-stable across turns).
+    const tools = buildPerTurnTools(this.engine.state, story);
+
+    // Debug: log the dynamic part each turn so it's visible at play time.
+    const conditionalCustoms = tools.filter((t) =>
+      !BUILT_IN_TOOL_NAMES.has(t.name) && !alwaysOnCustomTools(story).some((a) => a.id === t.name),
+    );
+    if (conditionalCustoms.length > 0) {
       console.log(
-        `[intents] ${activeIntents.length} active:\n  ` +
-          activeIntents.map((s) => `${s.id}: ${s.prompt}`).join("\n  "),
+        `[tools] ${conditionalCustoms.length} dynamic intent tool(s) injected:`,
+        conditionalCustoms.map((t) => t.name).join(", "),
+      );
+    }
+    if (activeIntents.length > 0) {
+      console.log(
+        `[intents-legacy] ${activeIntents.length} legacy IntentSignal(s) still present (migrate to CustomTools):`,
+        activeIntents.map((s) => s.id).join(", "),
       );
     }
 
@@ -286,7 +298,7 @@ export class Narrator {
         const response = await this.client.send({
           system,
           messages: this.history,
-          tools: TOOLS,
+          tools,
           maxTokens: 1024,
         });
 
@@ -459,16 +471,15 @@ function buildSystemPrompt(story: Story): string {
   if (story.description) parts.push("", story.description);
   if (story.systemPromptOverride) parts.push("", story.systemPromptOverride);
 
-  // Intent signals — meta-rule only. Active prompts (and their IDs) are
-  // inlined into each user message by formatIntentBlock, so the LLM matches
-  // player text against adjacent prompts rather than cross-referencing a
-  // table 1500 tokens earlier. Cuts the cached system prompt by ~1-1.5k
-  // tokens and removes cache invalidation when intent prompts are edited.
+  // Story-defined verbs are surfaced as named tools alongside the engine
+  // built-ins. Just call the tool whose description matches the player's
+  // input. Legacy IntentSignals (still using recordIntent) get a backward-
+  // compat note while migration is in progress.
   if ((story.intentSignals ?? []).length > 0) {
     parts.push(
       "",
-      "## Intent signals",
-      "Each user message includes an [Active intents — ...] block listing the intents currently selectable, with their full prompt text. When the player's input semantically matches one of those prompts, call recordIntent(signalId=\"<id>\") BEFORE any other tool. Matches persist for the rest of the game. The IDs are engine internals — never speak them to the player.",
+      "## Legacy intent signals",
+      "Some author-defined verbs are still surfaced via the [Active intents] block in each user message AND the recordIntent tool. When the player's input matches one of those prompts, call recordIntent(signalId=\"<id>\") BEFORE any other tool. (New verbs appear directly as named tools — call them by name; this legacy block is being phased out.)",
     );
   }
 
@@ -477,11 +488,57 @@ function buildSystemPrompt(story: Story): string {
 
 function formatIntentBlock(signals: IntentSignal[]): string {
   if (signals.length === 0) return "";
-  // Full prompts adjacent to player input — direct match, no cross-reference
-  // to a system-prompt table. The LLM sees player text + matchable prompts
-  // side-by-side, so it can't forget to look one up.
+  // Legacy IntentSignal block, surfaced for hand-authored intents that
+  // haven't yet been migrated to CustomTools. After migration, this returns
+  // empty and the block is omitted entirely.
   const lines = signals.map((s) => `- ${s.id}: ${s.prompt}`).join("\n");
   return `\n\n[Active intents — if the player's input matches one, call recordIntent(signalId) BEFORE any other tool. Don't speak the IDs to the player.]\n${lines}`;
+}
+
+// Build the per-turn tools[] array. Layout:
+//   [...built-ins (cache marker on last), ...always-on customs (cache marker
+//    on last when present), ...sorted conditional customs (cache marker on
+//    last when present)]
+//
+// Cache prefix matching is byte-exact, so we sort the conditional customs
+// alphabetically to keep the same set producing the same byte sequence
+// across turns.
+function buildPerTurnTools(state: import("../engine/engine").Engine["state"], story: Story): Tool[] {
+  const out: Tool[] = TOOLS.map((t, i) => ({
+    ...t,
+    // The TOOLS const carries cacheBreakpoint=true on the last entry. Strip
+    // it from non-last entries when always-on customs are present (the
+    // breakpoint moves to the end of THAT block instead).
+    cacheBreakpoint: undefined,
+    ...(i === TOOLS.length - 1 && { cacheBreakpoint: true }),
+  }));
+
+  const alwaysOn = alwaysOnCustomTools(story);
+  if (alwaysOn.length > 0) {
+    // Move the breakpoint to the end of the always-on block.
+    out[out.length - 1].cacheBreakpoint = undefined;
+    const alwaysOnTools = alwaysOn.map(customToTool);
+    alwaysOnTools[alwaysOnTools.length - 1].cacheBreakpoint = true;
+    out.push(...alwaysOnTools);
+  }
+
+  const conditional = activeConditionalCustomTools(state, story);
+  if (conditional.length > 0) {
+    const sorted = [...conditional].sort((a, b) => a.id.localeCompare(b.id));
+    const conditionalTools = sorted.map(customToTool);
+    conditionalTools[conditionalTools.length - 1].cacheBreakpoint = true;
+    out.push(...conditionalTools);
+  }
+
+  return out;
+}
+
+function customToTool(c: CustomTool): Tool {
+  return {
+    name: c.id,
+    description: c.description,
+    input_schema: c.args ?? { type: "object", properties: {}, required: [] },
+  };
 }
 
 // Reshape the WorldView into the JSON-shaped structure we serialize for the
@@ -580,8 +637,26 @@ function toolToAction(
     case "disembark":
       return { type: "disembark" };
     default:
-      return null;
+      // Unknown tool name → assume it's an author-defined CustomTool. Dispatch
+      // as a recordIntent with the call args. The engine validates that the
+      // signalId references a known custom tool and runs its handler. Any
+      // Atom-typed args are passed through; the rest are dropped.
+      return {
+        type: "recordIntent",
+        signalId: tu.name,
+        args: extractAtomArgs(input),
+      };
   }
+}
+
+function extractAtomArgs(input: Record<string, unknown>): Record<string, import("../story/schema").Atom> {
+  const out: Record<string, import("../story/schema").Atom> = {};
+  for (const [k, v] of Object.entries(input)) {
+    if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") {
+      out[k] = v;
+    }
+  }
+  return out;
 }
 
 function inputId(input: Record<string, unknown>): string | null {

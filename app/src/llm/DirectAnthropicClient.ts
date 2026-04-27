@@ -133,6 +133,7 @@ function toAnthropicTool(t: Tool): Anthropic.Tool {
     name: t.name,
     description: t.description,
     input_schema: t.input_schema as Anthropic.Tool["input_schema"],
+    ...(t.cacheBreakpoint && { cache_control: { type: "ephemeral" } }),
   };
 }
 
