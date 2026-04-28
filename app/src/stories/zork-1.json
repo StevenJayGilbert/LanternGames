@@ -3889,11 +3889,13 @@
     },
     {
       "id": "light-lamp",
-      "description": "Player turns on, lights, switches on, fires up, or activates the brass lantern."
+      "description": "Player turns on, lights, switches on, fires up, or activates the brass lantern.",
+      "alwaysAvailable": true
     },
     {
       "id": "extinguish-lamp",
-      "description": "Player turns off, douses, switches off, or extinguishes the brass lantern."
+      "description": "Player turns off, douses, switches off, or extinguishes the brass lantern.",
+      "alwaysAvailable": true
     },
     {
       "id": "free-stuck-weapon",
@@ -3921,7 +3923,8 @@
     },
     {
       "id": "ring-bell",
-      "description": "Player rings, tolls, peals, sounds, or otherwise activates the bell."
+      "description": "Player rings, tolls, peals, sounds, or otherwise activates the bell.",
+      "alwaysAvailable": true
     },
     {
       "id": "read-book-at-hades",

@@ -1727,14 +1727,16 @@
       "description": "Player prays, kneels, makes an offering, or performs a ritual at the altar."
     },
     {
-      "$comment": "Light the brass lantern. Active when carrying it, currently unlit, and battery has charge remaining.",
+      "$comment": "Light the brass lantern. alwaysAvailable so the tool stays in the cache-stable tier — the consuming trigger gates on hasItem(lamp), isLit=false, and battery>0; the LLM tries the verb anytime, the trigger handles it (or silently no-ops if the conditions don't hold).",
       "id": "light-lamp",
-      "description": "Player turns on, lights, switches on, fires up, or activates the brass lantern."
+      "description": "Player turns on, lights, switches on, fires up, or activates the brass lantern.",
+      "alwaysAvailable": true
     },
     {
-      "$comment": "Extinguish the brass lantern. Active whenever it's lit (regardless of who's holding it).",
+      "$comment": "Extinguish the brass lantern. alwaysAvailable for cache stability — see light-lamp comment above.",
       "id": "extinguish-lamp",
-      "description": "Player turns off, douses, switches off, or extinguishes the brass lantern."
+      "description": "Player turns off, douses, switches off, or extinguishes the brass lantern.",
+      "alwaysAvailable": true
     },
     {
       "$comment": "Player tries to free a stuck weapon (sword/axe/knife). Active whenever any of the bladed weapons is in the weapon-stuck state. The trigger picks the right weapon by checking each individually.",
@@ -1767,9 +1769,10 @@
       "description": "Player rubs, touches, presses, leans against, steps into, or otherwise interacts physically with the mirror."
     },
     {
-      "$comment": "RING the bell. Canonical: bell must be in inventory; bell becomes hot-bell and drops to floor. Adapted: just track that it was rung. Active when player has bell.",
+      "$comment": "RING the bell. alwaysAvailable for cache stability. The consuming trigger gates on hasItem(bell) AND not-yet-rung; if the player isn't carrying the bell, the trigger silently no-ops.",
       "id": "ring-bell",
-      "description": "Player rings, tolls, peals, sounds, or otherwise activates the bell."
+      "description": "Player rings, tolls, peals, sounds, or otherwise activates the bell.",
+      "alwaysAvailable": true
     },
     {
       "$comment": "READ the book — canonical capstone of the bell+candles+book ritual. Active at entrance-to-hades with book + bell already rung + candles still lit.",
