@@ -536,7 +536,15 @@
       }
     },
     {
+      "$comment": "Loud Room: canonical extraction grabbed only the LDESC ('large room... narrow passage east to west... stone stairway leading upward'). The deafening-noise clue — which is what tips the player toward saying 'echo' — lives in a ZIL routine the walker doesn't yet handle. Restored here as the canonical description text. Variant flips after echo-spoken to the silent post-puzzle state.",
       "id": "loud-room",
+      "description": "This is a large room with a ceiling which cannot be detected from the ground. There is a narrow passage from east to west and a stone stairway leading upward. The room is deafeningly loud with an undetermined rushing sound. The sound seems to be reverberating from all of the walls, making it difficult even to think.",
+      "variants": [
+        {
+          "when": { "type": "flag", "key": "echo-spoken", "equals": true },
+          "text": "This is a large room with a ceiling which cannot be detected from the ground. There is a narrow passage from east to west and a stone stairway leading upward. The room is unnaturally quiet now, the rushing sound silenced as if it had never been."
+        }
+      ],
       "state": {
         "dark": true
       }
