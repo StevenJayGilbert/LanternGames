@@ -22,6 +22,7 @@ import {
   visibleExits,
 } from "./state";
 import { substituteCondition, substituteEffect } from "./substituteArgs";
+import { renderNarration } from "./renderNarration";
 import type { ActionEvent } from "./events";
 
 export type ActionRequest =
@@ -434,7 +435,8 @@ function runHandler(
       continue;
     }
     if (!evaluateCondition(sub, state, story)) {
-      return { state, cues: [renderHandlerTemplate(pre.failedNarration, args, story)] };
+      // Failure narration reads pre-effect state (no effects applied yet).
+      return { state, cues: [renderHandlerTemplate(pre.failedNarration, args, story, state)] };
     }
   }
 
@@ -450,30 +452,24 @@ function runHandler(
 
   const cues: string[] = [];
   if (handler.successNarration) {
-    cues.push(renderHandlerTemplate(handler.successNarration, args, story));
+    // Success narration reads post-effect state, so {flag.score} reflects
+    // the change just applied (e.g. +N after adjustFlag).
+    cues.push(renderHandlerTemplate(handler.successNarration, args, story, nextState));
   }
   return { state: nextState, cues };
 }
 
 // Replace {arg.<name>.<field>} in handler templates. Supported fields for
 // item args: name, id. Falls back to the raw arg value if the lookup fails.
+// Local wrapper kept for the recordIntent handler call site. Just delegates
+// to the shared renderer.
 function renderHandlerTemplate(
   template: string,
   args: Record<string, Atom>,
   story: Story,
+  state: GameState,
 ): string {
-  return template.replace(/\{arg\.([a-zA-Z0-9_-]+)\.(name|id)\}/g, (_match, argName, field) => {
-    const value = args[argName];
-    if (typeof value !== "string") return String(value ?? "");
-    if (field === "id") return value;
-    // field === "name": resolve item OR passage by id (handlers may target
-    // either kind, e.g. open(itemId="kitchen-window") for a passage).
-    const item = itemById(story, value);
-    if (item) return item.name;
-    const passage = passageById(story, value);
-    if (passage) return passage.name;
-    return value;
-  });
+  return renderNarration(template, args, story, state);
 }
 
 // ---------- read ----------

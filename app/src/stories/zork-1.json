@@ -5,7 +5,7 @@
   "author": "Marc Blanc, Dave Lebling, et al. (Infocom, 1980)",
   "description": "The original underground adventure. Source code released under MIT by Microsoft (Nov 2025). This is an LLM-narrated port — the engine is ours, the world is Infocom's.",
   "intro": "ZORK I: The Great Underground Empire\nInfocom interactive fiction — a fantasy story.\nCopyright (c) 1981 Infocom, Inc. Source code released under MIT license, Microsoft 2025.",
-  "systemPromptOverride": "This is Zork I, the original 1980 Infocom underground adventure. Narrate in the spirit of the canonical Infocom prose:\n\nVoice\n- Terse, dry, slightly archaic. Direct without flourish.\n- Atmospheric for dark caves, ancient ruins, and moments of dread; matter-of-fact for routine actions.\n- Occasionally wry, never breaking the fourth wall.\n\nStyle\n- Short concrete sentences. Two or three is usually enough; a single sentence is often better.\n- Second person, present tense (\"You see…\"). Never \"I\" or \"we\".\n- Plain language. No modern slang, no emoji, no exclamation marks except for genuine peril or surprise.\n- The player is \"you,\" sometimes \"the adventurer.\"\n\nEchoes of the original\n- Don't paraphrase canonical text — when the engine returns the canonical room or item description, prefer it as-is unless the situation demands flourish.\n- Routine action confirmations should be brief and flat: \"Taken.\" / \"Dropped.\" / \"The lamp is now on.\" Don't pad them.\n- The world is the Great Underground Empire. Treasures, trolls, thieves, and grues live here. If the player wanders into total darkness without a light source, channel the famous warning: it is pitch black; you are likely to be eaten by a grue.\n\nDiscipline\n- Never invent items, rooms, exits, or events the engine hasn't surfaced.\n- If the engine rejects an action, refuse in character — don't pretend it succeeded.\n- Treat trademarked references gently: this port runs on the MIT-licensed source; the \"ZORK\" brand isn't ours, so don't lean on the trademark in narration.",
+  "systemPromptOverride": "This is Zork I, the original 1980 Infocom underground adventure. Narrate in the spirit of the canonical Infocom prose:\n\nVoice\n- Terse, dry, slightly archaic. Direct without flourish.\n- Atmospheric for dark caves, ancient ruins, and moments of dread; matter-of-fact for routine actions.\n- Occasionally wry, never breaking the fourth wall.\n\nStyle\n- Short concrete sentences. Two or three is usually enough; a single sentence is often better.\n- Second person, present tense (\"You see…\"). Never \"I\" or \"we\".\n- Plain language. No modern slang, no emoji, no exclamation marks except for genuine peril or surprise.\n- The player is \"you,\" sometimes \"the adventurer.\"\n\nEchoes of the original\n- Don't paraphrase canonical text — when the engine returns the canonical room or item description, prefer it as-is unless the situation demands flourish.\n- Routine action confirmations should be brief and flat: \"Taken.\" / \"Dropped.\" / \"The lamp is now on.\" Don't pad them.\n- The world is the Great Underground Empire. Treasures, trolls, thieves, and grues live here. If the player wanders into total darkness without a light source, channel the famous warning: it is pitch black; you are likely to be eaten by a grue.\n\nDiscipline\n- Never invent items, rooms, exits, or events the engine hasn't surfaced.\n- If the engine rejects an action, refuse in character — don't pretend it succeeded.\n- Treat trademarked references gently: this port runs on the MIT-licensed source; the \"ZORK\" brand isn't ours, so don't lean on the trademark in narration.\n\nNPC interaction (story-specific tools)\n- This story exposes NPC verb tools like `talk-to-troll`, `talk-to-cyclops`, `feed-cyclops`, `cyclops-magic-word`. When the player engages an NPC conversationally (\"insult the troll\", \"shout at the cyclops\", \"bargain with the thief\"), call the matching tool BEFORE narrating the dialogue. The tool call lets author triggers fire (aggravation, befriending, mood shifts). Then narrate the NPC's response in character using its `personality` field.\n- Examples of player phrasing → tool: \"kill troll\" → `attack(troll, sword)` if armed; \"say ulysses\" / \"shout odysseus\" at the cyclops → `cyclops-magic-word()`; \"give the lunch and water to the cyclops\" → `feed-cyclops()`.\n\nScore\n- The view includes a `score` field (current / max / moves / rank). Don't volunteer it unless the player asks (\"score\", \"how am I doing?\", etc.) — when they do, call the `score` tool. The engine emits the canonical \"Your score is N (total of M), in K moves. This gives you the rank of RANK.\" sentence; pass it through verbatim.\n- When narration cues mention \"+N points\" or \"-N points\", weave them naturally into your prose — they're already authored.",
   "startRoom": "west-of-house",
   "rooms": [
     {
@@ -3574,6 +3574,14 @@
   ],
   "customTools": [
     {
+      "id": "score",
+      "description": "Player asks about their current score, rank, moves, or progress (e.g. 'score', 'how am I doing?', 'what's my score?'). Always available.",
+      "alwaysAvailable": true,
+      "handler": {
+        "successNarration": "Your score is {flag.score} (total of {flag.max-score}), in {flag.global-turn-count} moves. This gives you the rank of {rank}."
+      }
+    },
+    {
       "id": "open",
       "description": "Player opens, pulls open, lifts the lid of, unlatches, or otherwise opens an item or passage (door, window, lid, etc.). Pass the id from the current view's itemsHere or passagesHere. The engine's handler reports failure when the target isn't accessible, isn't openable, or is already open — narrate from those cues.",
       "args": {
@@ -3937,6 +3945,1724 @@
     }
   ],
   "triggers": [
+    {
+      "id": "score-solve-dam",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "gates-open",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 15
+        }
+      ],
+      "narration": "(Solving the dam puzzle. +15 points; your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-complete-hades-ritual",
+      "when": {
+        "type": "flag",
+        "key": "lld-flag",
+        "equals": true
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 5
+        }
+      ],
+      "narration": "(Completing the bell-book-candle ritual at Hades. +5 points; your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-ring-bell-at-hades",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "bell-rung",
+            "equals": true
+          },
+          {
+            "type": "playerAt",
+            "roomId": "entrance-to-hades"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 10
+        }
+      ],
+      "narration": "(Ringing the bell at this threshold. +10 points; your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-defeat-troll",
+      "when": {
+        "type": "compare",
+        "left": {
+          "kind": "itemState",
+          "itemId": "troll",
+          "key": "health"
+        },
+        "op": "<=",
+        "right": {
+          "kind": "literal",
+          "value": 0
+        }
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 10
+        }
+      ],
+      "narration": "(The troll defeated. +10 points; your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-defeat-cyclops",
+      "when": {
+        "type": "flag",
+        "key": "cyclops-flag",
+        "equals": true
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 10
+        }
+      ],
+      "narration": "(The cyclops dealt with. +10 points; your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-rainbow-solid",
+      "when": {
+        "type": "flag",
+        "key": "rainbow-flag",
+        "equals": true
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 5
+        }
+      ],
+      "narration": "(The rainbow solidifies — passable now. +5 points; your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-mirror-discovered",
+      "when": {
+        "type": "flag",
+        "key": "magic-flag",
+        "equals": true
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 5
+        }
+      ],
+      "narration": "(A new passage opens. +5 points; your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-find-egg",
+      "when": {
+        "type": "itemAt",
+        "itemId": "egg",
+        "location": "inventory"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 5
+        }
+      ],
+      "narration": "(You found the egg. +5 points; your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-visit-living-room",
+      "when": {
+        "type": "playerAt",
+        "roomId": "living-room"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 5
+        }
+      ],
+      "narration": "(Discovering the living room. +5 points; your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-visit-troll-room",
+      "when": {
+        "type": "playerAt",
+        "roomId": "troll-room"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 5
+        }
+      ],
+      "narration": "(Reaching the troll's lair. +5 points; your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-visit-cyclops-room",
+      "when": {
+        "type": "playerAt",
+        "roomId": "cyclops-room"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 5
+        }
+      ],
+      "narration": "(Discovering the cyclops's chamber. +5 points; your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-take-skull",
+      "when": {
+        "type": "itemAt",
+        "itemId": "skull",
+        "location": "inventory"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 10
+        }
+      ],
+      "narration": "(You note the crystal skull's worth — +10 points. Your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-take-sceptre",
+      "when": {
+        "type": "itemAt",
+        "itemId": "sceptre",
+        "location": "inventory"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 4
+        }
+      ],
+      "narration": "(You note the sceptre's worth — +4 points. Your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-take-chalice",
+      "when": {
+        "type": "itemAt",
+        "itemId": "chalice",
+        "location": "inventory"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 10
+        }
+      ],
+      "narration": "(You note the chalice's worth — +10 points. Your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-take-trident",
+      "when": {
+        "type": "itemAt",
+        "itemId": "trident",
+        "location": "inventory"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 4
+        }
+      ],
+      "narration": "(You note the crystal trident's worth — +4 points. Your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-take-coffin",
+      "when": {
+        "type": "itemAt",
+        "itemId": "coffin",
+        "location": "inventory"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 10
+        }
+      ],
+      "narration": "(You note the gold coffin's worth — +10 points. Your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-take-diamond",
+      "when": {
+        "type": "itemAt",
+        "itemId": "diamond",
+        "location": "inventory"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 10
+        }
+      ],
+      "narration": "(You note the huge diamond's worth — +10 points. Your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-take-jade",
+      "when": {
+        "type": "itemAt",
+        "itemId": "jade",
+        "location": "inventory"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 5
+        }
+      ],
+      "narration": "(You note the jade figurine's worth — +5 points. Your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-take-bag-of-coins",
+      "when": {
+        "type": "itemAt",
+        "itemId": "bag-of-coins",
+        "location": "inventory"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 10
+        }
+      ],
+      "narration": "(You note the leather bag of coins's worth — +10 points. Your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-take-emerald",
+      "when": {
+        "type": "itemAt",
+        "itemId": "emerald",
+        "location": "inventory"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 5
+        }
+      ],
+      "narration": "(You note the large emerald's worth — +5 points. Your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-take-painting",
+      "when": {
+        "type": "itemAt",
+        "itemId": "painting",
+        "location": "inventory"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 4
+        }
+      ],
+      "narration": "(You note the painting's worth — +4 points. Your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-take-bar",
+      "when": {
+        "type": "itemAt",
+        "itemId": "bar",
+        "location": "inventory"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 10
+        }
+      ],
+      "narration": "(You note the platinum bar's worth — +10 points. Your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-take-pot-of-gold",
+      "when": {
+        "type": "itemAt",
+        "itemId": "pot-of-gold",
+        "location": "inventory"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 10
+        }
+      ],
+      "narration": "(You note the pot of gold's worth — +10 points. Your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-take-bracelet",
+      "when": {
+        "type": "itemAt",
+        "itemId": "bracelet",
+        "location": "inventory"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 5
+        }
+      ],
+      "narration": "(You note the sapphire-encrusted bracelet's worth — +5 points. Your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-take-scarab",
+      "when": {
+        "type": "itemAt",
+        "itemId": "scarab",
+        "location": "inventory"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 5
+        }
+      ],
+      "narration": "(You note the beautiful jeweled scarab's worth — +5 points. Your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-take-torch",
+      "when": {
+        "type": "itemAt",
+        "itemId": "torch",
+        "location": "inventory"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 14
+        }
+      ],
+      "narration": "(You note the torch's worth — +14 points. Your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-take-trunk",
+      "when": {
+        "type": "itemAt",
+        "itemId": "trunk",
+        "location": "inventory"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 15
+        }
+      ],
+      "narration": "(You note the trunk of jewels's worth — +15 points. Your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-take-egg",
+      "when": {
+        "type": "itemAt",
+        "itemId": "egg",
+        "location": "inventory"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 5
+        }
+      ],
+      "narration": "(You note the jewel-encrusted egg's worth — +5 points. Your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-take-canary",
+      "when": {
+        "type": "itemAt",
+        "itemId": "canary",
+        "location": "inventory"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 6
+        }
+      ],
+      "narration": "(You note the golden clockwork canary's worth — +6 points. Your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-credit-skull",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "skull",
+            "location": "trophy-case"
+          },
+          {
+            "type": "flag",
+            "key": "skull-deposited",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 10
+        },
+        {
+          "type": "setFlag",
+          "key": "skull-deposited",
+          "value": true
+        }
+      ],
+      "narration": "The crystal skull joins the trophy case's collection. (+10 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-debit-skull",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemAt",
+              "itemId": "skull",
+              "location": "trophy-case"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "skull-deposited",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": -10
+        },
+        {
+          "type": "setFlag",
+          "key": "skull-deposited",
+          "value": false
+        }
+      ],
+      "narration": "(The crystal skull leaves the trophy case. -10 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-credit-sceptre",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "sceptre",
+            "location": "trophy-case"
+          },
+          {
+            "type": "flag",
+            "key": "sceptre-deposited",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 6
+        },
+        {
+          "type": "setFlag",
+          "key": "sceptre-deposited",
+          "value": true
+        }
+      ],
+      "narration": "The sceptre joins the trophy case's collection. (+6 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-debit-sceptre",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemAt",
+              "itemId": "sceptre",
+              "location": "trophy-case"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "sceptre-deposited",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": -6
+        },
+        {
+          "type": "setFlag",
+          "key": "sceptre-deposited",
+          "value": false
+        }
+      ],
+      "narration": "(The sceptre leaves the trophy case. -6 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-credit-chalice",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "chalice",
+            "location": "trophy-case"
+          },
+          {
+            "type": "flag",
+            "key": "chalice-deposited",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 5
+        },
+        {
+          "type": "setFlag",
+          "key": "chalice-deposited",
+          "value": true
+        }
+      ],
+      "narration": "The chalice joins the trophy case's collection. (+5 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-debit-chalice",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemAt",
+              "itemId": "chalice",
+              "location": "trophy-case"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "chalice-deposited",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": -5
+        },
+        {
+          "type": "setFlag",
+          "key": "chalice-deposited",
+          "value": false
+        }
+      ],
+      "narration": "(The chalice leaves the trophy case. -5 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-credit-trident",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "trident",
+            "location": "trophy-case"
+          },
+          {
+            "type": "flag",
+            "key": "trident-deposited",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 11
+        },
+        {
+          "type": "setFlag",
+          "key": "trident-deposited",
+          "value": true
+        }
+      ],
+      "narration": "The crystal trident joins the trophy case's collection. (+11 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-debit-trident",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemAt",
+              "itemId": "trident",
+              "location": "trophy-case"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "trident-deposited",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": -11
+        },
+        {
+          "type": "setFlag",
+          "key": "trident-deposited",
+          "value": false
+        }
+      ],
+      "narration": "(The crystal trident leaves the trophy case. -11 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-credit-coffin",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "coffin",
+            "location": "trophy-case"
+          },
+          {
+            "type": "flag",
+            "key": "coffin-deposited",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 15
+        },
+        {
+          "type": "setFlag",
+          "key": "coffin-deposited",
+          "value": true
+        }
+      ],
+      "narration": "The gold coffin joins the trophy case's collection. (+15 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-debit-coffin",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemAt",
+              "itemId": "coffin",
+              "location": "trophy-case"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "coffin-deposited",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": -15
+        },
+        {
+          "type": "setFlag",
+          "key": "coffin-deposited",
+          "value": false
+        }
+      ],
+      "narration": "(The gold coffin leaves the trophy case. -15 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-credit-diamond",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "diamond",
+            "location": "trophy-case"
+          },
+          {
+            "type": "flag",
+            "key": "diamond-deposited",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 10
+        },
+        {
+          "type": "setFlag",
+          "key": "diamond-deposited",
+          "value": true
+        }
+      ],
+      "narration": "The huge diamond joins the trophy case's collection. (+10 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-debit-diamond",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemAt",
+              "itemId": "diamond",
+              "location": "trophy-case"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "diamond-deposited",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": -10
+        },
+        {
+          "type": "setFlag",
+          "key": "diamond-deposited",
+          "value": false
+        }
+      ],
+      "narration": "(The huge diamond leaves the trophy case. -10 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-credit-jade",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "jade",
+            "location": "trophy-case"
+          },
+          {
+            "type": "flag",
+            "key": "jade-deposited",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 5
+        },
+        {
+          "type": "setFlag",
+          "key": "jade-deposited",
+          "value": true
+        }
+      ],
+      "narration": "The jade figurine joins the trophy case's collection. (+5 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-debit-jade",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemAt",
+              "itemId": "jade",
+              "location": "trophy-case"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "jade-deposited",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": -5
+        },
+        {
+          "type": "setFlag",
+          "key": "jade-deposited",
+          "value": false
+        }
+      ],
+      "narration": "(The jade figurine leaves the trophy case. -5 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-credit-bag-of-coins",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "bag-of-coins",
+            "location": "trophy-case"
+          },
+          {
+            "type": "flag",
+            "key": "bag-of-coins-deposited",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 5
+        },
+        {
+          "type": "setFlag",
+          "key": "bag-of-coins-deposited",
+          "value": true
+        }
+      ],
+      "narration": "The leather bag of coins joins the trophy case's collection. (+5 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-debit-bag-of-coins",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemAt",
+              "itemId": "bag-of-coins",
+              "location": "trophy-case"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "bag-of-coins-deposited",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": -5
+        },
+        {
+          "type": "setFlag",
+          "key": "bag-of-coins-deposited",
+          "value": false
+        }
+      ],
+      "narration": "(The leather bag of coins leaves the trophy case. -5 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-credit-emerald",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "emerald",
+            "location": "trophy-case"
+          },
+          {
+            "type": "flag",
+            "key": "emerald-deposited",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 10
+        },
+        {
+          "type": "setFlag",
+          "key": "emerald-deposited",
+          "value": true
+        }
+      ],
+      "narration": "The large emerald joins the trophy case's collection. (+10 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-debit-emerald",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemAt",
+              "itemId": "emerald",
+              "location": "trophy-case"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "emerald-deposited",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": -10
+        },
+        {
+          "type": "setFlag",
+          "key": "emerald-deposited",
+          "value": false
+        }
+      ],
+      "narration": "(The large emerald leaves the trophy case. -10 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-credit-painting",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "painting",
+            "location": "trophy-case"
+          },
+          {
+            "type": "flag",
+            "key": "painting-deposited",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 6
+        },
+        {
+          "type": "setFlag",
+          "key": "painting-deposited",
+          "value": true
+        }
+      ],
+      "narration": "The painting joins the trophy case's collection. (+6 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-debit-painting",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemAt",
+              "itemId": "painting",
+              "location": "trophy-case"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "painting-deposited",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": -6
+        },
+        {
+          "type": "setFlag",
+          "key": "painting-deposited",
+          "value": false
+        }
+      ],
+      "narration": "(The painting leaves the trophy case. -6 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-credit-bar",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "bar",
+            "location": "trophy-case"
+          },
+          {
+            "type": "flag",
+            "key": "bar-deposited",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 5
+        },
+        {
+          "type": "setFlag",
+          "key": "bar-deposited",
+          "value": true
+        }
+      ],
+      "narration": "The platinum bar joins the trophy case's collection. (+5 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-debit-bar",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemAt",
+              "itemId": "bar",
+              "location": "trophy-case"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "bar-deposited",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": -5
+        },
+        {
+          "type": "setFlag",
+          "key": "bar-deposited",
+          "value": false
+        }
+      ],
+      "narration": "(The platinum bar leaves the trophy case. -5 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-credit-pot-of-gold",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "pot-of-gold",
+            "location": "trophy-case"
+          },
+          {
+            "type": "flag",
+            "key": "pot-of-gold-deposited",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 10
+        },
+        {
+          "type": "setFlag",
+          "key": "pot-of-gold-deposited",
+          "value": true
+        }
+      ],
+      "narration": "The pot of gold joins the trophy case's collection. (+10 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-debit-pot-of-gold",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemAt",
+              "itemId": "pot-of-gold",
+              "location": "trophy-case"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "pot-of-gold-deposited",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": -10
+        },
+        {
+          "type": "setFlag",
+          "key": "pot-of-gold-deposited",
+          "value": false
+        }
+      ],
+      "narration": "(The pot of gold leaves the trophy case. -10 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-credit-bracelet",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "bracelet",
+            "location": "trophy-case"
+          },
+          {
+            "type": "flag",
+            "key": "bracelet-deposited",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 5
+        },
+        {
+          "type": "setFlag",
+          "key": "bracelet-deposited",
+          "value": true
+        }
+      ],
+      "narration": "The sapphire-encrusted bracelet joins the trophy case's collection. (+5 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-debit-bracelet",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemAt",
+              "itemId": "bracelet",
+              "location": "trophy-case"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "bracelet-deposited",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": -5
+        },
+        {
+          "type": "setFlag",
+          "key": "bracelet-deposited",
+          "value": false
+        }
+      ],
+      "narration": "(The sapphire-encrusted bracelet leaves the trophy case. -5 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-credit-scarab",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "scarab",
+            "location": "trophy-case"
+          },
+          {
+            "type": "flag",
+            "key": "scarab-deposited",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 5
+        },
+        {
+          "type": "setFlag",
+          "key": "scarab-deposited",
+          "value": true
+        }
+      ],
+      "narration": "The beautiful jeweled scarab joins the trophy case's collection. (+5 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-debit-scarab",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemAt",
+              "itemId": "scarab",
+              "location": "trophy-case"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "scarab-deposited",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": -5
+        },
+        {
+          "type": "setFlag",
+          "key": "scarab-deposited",
+          "value": false
+        }
+      ],
+      "narration": "(The beautiful jeweled scarab leaves the trophy case. -5 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-credit-torch",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "torch",
+            "location": "trophy-case"
+          },
+          {
+            "type": "flag",
+            "key": "torch-deposited",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 6
+        },
+        {
+          "type": "setFlag",
+          "key": "torch-deposited",
+          "value": true
+        }
+      ],
+      "narration": "The torch joins the trophy case's collection. (+6 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-debit-torch",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemAt",
+              "itemId": "torch",
+              "location": "trophy-case"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "torch-deposited",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": -6
+        },
+        {
+          "type": "setFlag",
+          "key": "torch-deposited",
+          "value": false
+        }
+      ],
+      "narration": "(The torch leaves the trophy case. -6 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-credit-trunk",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "trunk",
+            "location": "trophy-case"
+          },
+          {
+            "type": "flag",
+            "key": "trunk-deposited",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 5
+        },
+        {
+          "type": "setFlag",
+          "key": "trunk-deposited",
+          "value": true
+        }
+      ],
+      "narration": "The trunk of jewels joins the trophy case's collection. (+5 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-debit-trunk",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemAt",
+              "itemId": "trunk",
+              "location": "trophy-case"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "trunk-deposited",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": -5
+        },
+        {
+          "type": "setFlag",
+          "key": "trunk-deposited",
+          "value": false
+        }
+      ],
+      "narration": "(The trunk of jewels leaves the trophy case. -5 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-credit-egg",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "egg",
+            "location": "trophy-case"
+          },
+          {
+            "type": "flag",
+            "key": "egg-deposited",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 5
+        },
+        {
+          "type": "setFlag",
+          "key": "egg-deposited",
+          "value": true
+        }
+      ],
+      "narration": "The jewel-encrusted egg joins the trophy case's collection. (+5 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-debit-egg",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemAt",
+              "itemId": "egg",
+              "location": "trophy-case"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "egg-deposited",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": -5
+        },
+        {
+          "type": "setFlag",
+          "key": "egg-deposited",
+          "value": false
+        }
+      ],
+      "narration": "(The jewel-encrusted egg leaves the trophy case. -5 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-credit-canary",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "canary",
+            "location": "trophy-case"
+          },
+          {
+            "type": "flag",
+            "key": "canary-deposited",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 4
+        },
+        {
+          "type": "setFlag",
+          "key": "canary-deposited",
+          "value": true
+        }
+      ],
+      "narration": "The golden clockwork canary joins the trophy case's collection. (+4 points; your score is now {flag.score}.)",
+      "once": false
+    },
+    {
+      "id": "score-debit-canary",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemAt",
+              "itemId": "canary",
+              "location": "trophy-case"
+            }
+          },
+          {
+            "type": "flag",
+            "key": "canary-deposited",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": -4
+        },
+        {
+          "type": "setFlag",
+          "key": "canary-deposited",
+          "value": false
+        }
+      ],
+      "narration": "(The golden clockwork canary leaves the trophy case. -4 points; your score is now {flag.score}.)",
+      "once": false
+    },
     {
       "id": "tie-rope",
       "when": {
@@ -6880,7 +8606,7 @@
         {
           "type": "endGame",
           "won": true,
-          "message": "**** You have completed the Great Underground Empire ****\n\nA voice calls out from the depths of the barrow: 'Welcome, adventurer. Your name shall be inscribed in the chronicles of those who have braved the Empire and prevailed. The treasures you have gathered, the perils you have overcome, the cunning you have shown — all shall be remembered.'\n\nThe stone slab settles back into place behind you. Your adventure is at an end."
+          "message": "**** You have completed the Great Underground Empire ****\n\nA voice calls out from the depths of the barrow: 'Welcome, adventurer. Your final score: {flag.score} (out of {flag.max-score}), in {flag.global-turn-count} moves. This earns you the rank of {rank}. Your name shall be inscribed in the chronicles of those who have braved the Empire and prevailed.'\n\nThe stone slab settles back into place behind you. Your adventure is at an end."
         }
       ]
     },
@@ -8147,7 +9873,27 @@
     "low-tide-countdown": 0,
     "endgame-narrated": false,
     "empty-handed": true,
-    "river-tick-counter": 0
+    "river-tick-counter": 0,
+    "score": 0,
+    "max-score": 350,
+    "skull-deposited": false,
+    "sceptre-deposited": false,
+    "chalice-deposited": false,
+    "trident-deposited": false,
+    "coffin-deposited": false,
+    "diamond-deposited": false,
+    "jade-deposited": false,
+    "bag-of-coins-deposited": false,
+    "emerald-deposited": false,
+    "painting-deposited": false,
+    "bar-deposited": false,
+    "pot-of-gold-deposited": false,
+    "bracelet-deposited": false,
+    "scarab-deposited": false,
+    "torch-deposited": false,
+    "trunk-deposited": false,
+    "egg-deposited": false,
+    "canary-deposited": false
   },
   "winConditions": [
     {

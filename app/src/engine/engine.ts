@@ -14,6 +14,7 @@ import { applyEffects, evaluateCondition, initialState, resolveEffects, roomById
 import { performAction, type ActionRequest } from "./actions";
 import type { ActionEvent } from "./events";
 import { buildView, type WorldView } from "./view";
+import { renderNarration } from "./renderNarration";
 import { debugLog } from "../debug";
 
 export interface EngineResult {
@@ -142,7 +143,7 @@ export function runTriggers(state: GameState, story: Story): TriggerRunOutcome {
       if (shouldFire(trigger, current, story)) {
         const result = fireTrigger(trigger, current);
         current = result.state;
-        if (trigger.narration) cues.push(trigger.narration);
+        if (trigger.narration) cues.push(renderNarration(trigger.narration, {}, story, current));
         cues.push(...result.cues);
         fired.push(trigger.id);
         changed = true;
@@ -175,7 +176,7 @@ export function runAfterActionTriggers(
     if (shouldFire(trigger, current, story)) {
       const result = fireTrigger(trigger, current);
       current = result.state;
-      if (trigger.narration) cues.push(trigger.narration);
+      if (trigger.narration) cues.push(renderNarration(trigger.narration, {}, story, current));
       cues.push(...result.cues);
       fired.push(trigger.id);
     }

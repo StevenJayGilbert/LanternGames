@@ -7,6 +7,7 @@
 // regardless of which action was taken.
 
 import type { Atom, GameState, Item, Passage, Story } from "../story/schema";
+import { computeRank } from "./rank";
 import {
   currentRoom,
   evaluateCondition,
@@ -92,6 +93,11 @@ export interface WorldView {
     description: string;
     narratorNote?: string;     // engine-side narration guidance — see ItemView.narratorNote
   };
+  // Scoring snapshot. Present only when the story declares `max-score` in its
+  // startState (opt-in per story). Authors who use the scoring convention
+  // (`score`, `max-score`, `global-turn-count` flags) get a tier name +
+  // numbers the LLM can read for the canonical SCORE response.
+  score?: { current: number; max: number; moves: number; rank: string };
   // All items the player can perceive — directly in the room AND inside any
   // open containers in the room. Items inside closed containers are omitted.
   // Each ItemView includes `containedIn` if it's nested inside another item,
@@ -188,6 +194,17 @@ export function buildView(state: GameState, story: Story): WorldView {
     }
   }
 
+  // Score snapshot (opt-in: only present when the story declares max-score).
+  let scoreView: WorldView["score"];
+  const maxScore = state.flags["max-score"];
+  if (typeof maxScore === "number") {
+    const current = typeof state.flags["score"] === "number" ? (state.flags["score"] as number) : 0;
+    const moves = typeof state.flags["global-turn-count"] === "number"
+      ? (state.flags["global-turn-count"] as number)
+      : 0;
+    scoreView = { current, max: maxScore, moves, rank: computeRank(current) };
+  }
+
   return {
     room: {
       id: room.id,
@@ -200,6 +217,7 @@ export function buildView(state: GameState, story: Story): WorldView {
     exits,
     inventory,
     ...(vehicleView && { vehicle: vehicleView }),
+    ...(scoreView && { score: scoreView }),
     finished: state.finished,
   };
 }

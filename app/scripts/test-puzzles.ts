@@ -458,6 +458,103 @@ console.log("\n=== #11 Boat / river travel ===");
     : fail(`finished=${JSON.stringify(e6.state.finished)}`);
 }
 
+// ----- #12: Scoring (canonical Zork I) -----
+console.log("\n=== #12 scoring ===");
+{
+  const e = new Engine(zork);
+  // Gallery is dark — give the player a lit lamp so the painting is perceivable.
+  e.state = {
+    ...e.state,
+    playerLocation: "gallery",
+    itemLocations: { ...e.state.itemLocations, painting: "gallery", lamp: "inventory" },
+    itemStates: {
+      ...e.state.itemStates,
+      lamp: { ...(e.state.itemStates.lamp ?? {}), isLit: true },
+    },
+  };
+  const before = e.state.flags.score as number;
+  e.execute({ type: "take", itemId: "painting" });
+  const afterTake = (e.state.flags.score as number) - before;
+  afterTake === 4
+    ? pass(`take painting → score +4 (got +${afterTake})`)
+    : fail(`expected +4, got +${afterTake}`);
+
+  // Drop + retake → no double pickup credit
+  e.execute({ type: "drop", itemId: "painting" });
+  e.execute({ type: "take", itemId: "painting" });
+  const afterRetake = (e.state.flags.score as number) - before;
+  afterRetake === 4
+    ? pass("retake painting → no double-credit (still +4 total)")
+    : fail(`expected +4, got +${afterRetake}`);
+
+  // Teleport to living-room, force trophy-case open, deposit painting → +TV (canonical TV=6).
+  // Fire a no-op `look` first so the visit-living-room trigger settles BEFORE
+  // we measure the deposit delta (state mutations don't fire triggers — only
+  // execute() does).
+  e.state = {
+    ...e.state,
+    playerLocation: "living-room",
+    itemStates: {
+      ...e.state.itemStates,
+      "trophy-case": { ...(e.state.itemStates["trophy-case"] ?? {}), isOpen: true },
+    },
+  };
+  e.execute({ type: "look" }); // settle the visit-living-room +5 trigger
+  const beforeDeposit = e.state.flags.score as number;
+  e.execute({ type: "put", itemId: "painting", targetId: "trophy-case" });
+  const afterDeposit = (e.state.flags.score as number) - beforeDeposit;
+  afterDeposit === 6
+    ? pass(`deposit painting → score +6 TV (got +${afterDeposit})`)
+    : fail(`expected +6, got +${afterDeposit}`);
+  e.state.flags["painting-deposited"] === true
+    ? pass("painting-deposited flag flipped true")
+    : fail(`flag = ${e.state.flags["painting-deposited"]}`);
+
+  // Take painting back out → -TV (canonical refund)
+  const beforeDebit = e.state.flags.score as number;
+  e.execute({ type: "take", itemId: "painting" });
+  const afterDebit = (e.state.flags.score as number) - beforeDebit;
+  afterDebit === -6
+    ? pass(`removing painting from case → score -6 (got ${afterDebit})`)
+    : fail(`expected -6, got ${afterDebit}`);
+  e.state.flags["painting-deposited"] === false
+    ? pass("painting-deposited flag flipped back false")
+    : fail(`flag = ${e.state.flags["painting-deposited"]}`);
+
+  // Put back in → re-credit. Final breakdown: take +4, visit-living-room +5,
+  // deposit +6, debit -6, re-credit +6 = 15.
+  e.execute({ type: "put", itemId: "painting", targetId: "trophy-case" });
+  const finalScore = e.state.flags.score as number;
+  finalScore === 15
+    ? pass(`re-deposit nets back: take(+4) + visit-living-room(+5) + deposit(+6) - debit(-6) + redeposit(+6) = 15 (got ${finalScore})`)
+    : fail(`expected 15, got ${finalScore}`);
+}
+
+// ----- #13: Score view + rank tier table -----
+console.log("\n=== #13 score view + rank tier ===");
+{
+  const e = new Engine(zork);
+  for (const [score, expected] of [
+    [0, "Beginner"],
+    [25, "Amateur Adventurer"],
+    [110, "Novice Adventurer"],
+    [200, "Junior Adventurer"],
+    [300, "Adventurer"],
+    [340, "Wizard"],
+    [350, "Master Adventurer"],
+  ] as Array<[number, string]>) {
+    e.state = { ...e.state, flags: { ...e.state.flags, score } };
+    const v = e.getView();
+    v.score?.rank === expected
+      ? pass(`score=${score} → rank "${expected}"`)
+      : fail(`score=${score} expected "${expected}" got "${v.score?.rank}"`);
+  }
+  const v = e.getView();
+  v.score?.max === 350
+    ? pass(`view.score.max = 350`)
+    : fail(`view.score.max = ${v.score?.max}`);
+}
+
 // ----- Done -----
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

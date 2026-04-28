@@ -16,6 +16,7 @@ import type {
   Room,
   Story,
 } from "../story/schema";
+import { renderNarration } from "./renderNarration";
 
 // ---------- Initial state ----------
 
@@ -559,8 +560,14 @@ export function applyEffect(state: GameState, e: Effect, story?: Story): GameSta
       }
       return state;
     }
-    case "endGame":
-      return { ...state, finished: { won: e.won, message: e.message } };
+    case "endGame": {
+      // Render the message template now so {flag.score}, {rank}, etc.
+      // capture the live state at the moment endGame fires. If story isn't
+      // passed (defensive — applyEffect's story param is optional for legacy
+      // callers), the message is stored verbatim.
+      const message = story ? renderNarration(e.message, {}, story, state) : e.message;
+      return { ...state, finished: { won: e.won, message } };
+    }
   }
 }
 

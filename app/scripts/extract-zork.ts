@@ -71,7 +71,15 @@ Echoes of the original
 Discipline
 - Never invent items, rooms, exits, or events the engine hasn't surfaced.
 - If the engine rejects an action, refuse in character — don't pretend it succeeded.
-- Treat trademarked references gently: this port runs on the MIT-licensed source; the "ZORK" brand isn't ours, so don't lean on the trademark in narration.`;
+- Treat trademarked references gently: this port runs on the MIT-licensed source; the "ZORK" brand isn't ours, so don't lean on the trademark in narration.
+
+NPC interaction (story-specific tools)
+- This story exposes NPC verb tools like \`talk-to-troll\`, \`talk-to-cyclops\`, \`feed-cyclops\`, \`cyclops-magic-word\`. When the player engages an NPC conversationally ("insult the troll", "shout at the cyclops", "bargain with the thief"), call the matching tool BEFORE narrating the dialogue. The tool call lets author triggers fire (aggravation, befriending, mood shifts). Then narrate the NPC's response in character using its \`personality\` field.
+- Examples of player phrasing → tool: "kill troll" → \`attack(troll, sword)\` if armed; "say ulysses" / "shout odysseus" at the cyclops → \`cyclops-magic-word()\`; "give the lunch and water to the cyclops" → \`feed-cyclops()\`.
+
+Score
+- The view includes a \`score\` field (current / max / moves / rank). Don't volunteer it unless the player asks ("score", "how am I doing?", etc.) — when they do, call the \`score\` tool. The engine emits the canonical "Your score is N (total of M), in K moves. This gives you the rank of RANK." sentence; pass it through verbatim.
+- When narration cues mention "+N points" or "-N points", weave them naturally into your prose — they're already authored.`;
 
 // ---------- raw shapes from zil-to-json ----------
 
