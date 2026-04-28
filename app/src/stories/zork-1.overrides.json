@@ -1,7 +1,9 @@
 {
   "$comment": "Hand-authored content layered over the mechanical ZIL extraction. Merged by app/scripts/extract-zork.ts after the ZIL pass. Per-id deep merge for passages/rooms/items (sides matched by roomId, exits shallow-merged); customTools and triggers are appended.",
   "skipItemObjects": [
-    "CHIMNEY"
+    "CHIMNEY",
+    "FRONT-DOOR",
+    "WOODEN-DOOR"
   ],
   "$startStateComment": "Initial flag values. player-health drives the player's HP for combat (drained by combat triggers; player-killed trigger ends the game when it hits zero). Boolean flags are pre-initialized to false so that `flag(key, false)` Conditions evaluate correctly — without this, an unset flag is `undefined` and `undefined === false` is false (strict equality in evaluateCondition), so 'not yet flipped' gates would silently never activate.",
   "startState": {
@@ -113,6 +115,19 @@
     }
   },
   "passages": [
+    {
+      "$comment": "FRONT-DOOR. Connects west-of-house (outside) to living-room (inside). Solid oak banded with iron, barred from the inside — there's no handle on the inner face. Permanently sealed; the player must use the kitchen-window to enter the house. traversableWhen always false; per-side names so the inside view reads 'wooden door' and the outside reads 'front door'.",
+      "id": "front-door",
+      "name": "front door",
+      "description": "Solid oak crossed with thick iron bands. There is no handle on this side and no obvious way to open it.",
+      "narratorNote": "This door is sealed from within — the player cannot open it from either side. It is the canonical 'barred front door'. When the player tries to open it or go through it, narrate the door's solid construction (heavy oak, iron bands, no handle, no keyhole on this side). Direct them to find another way in (the kitchen window) or out (likewise).",
+      "sides": [
+        { "roomId": "west-of-house", "name": "front door", "description": "The handsome front door of the white house — solid oak, iron-banded, evidently barred from within." },
+        { "roomId": "living-room", "name": "wooden door", "description": "A heavy oak door crossed with thick iron bands — the front door, barred shut from this side. No handle, no keyhole." }
+      ],
+      "traversableWhen": { "type": "not", "condition": { "type": "always" } },
+      "traverseBlockedMessage": "The door is barred shut from the inside — solid oak, iron-banded, no handle on this side. You'll need to find another way through."
+    },
     {
       "id": "kitchen-window",
       "description": "A small kitchen window. It appears to be slightly ajar.",
@@ -780,14 +795,6 @@
     {
       "id": "prayer",
       "description": "An inscription in an ancient script — a prayer of safe passage, you somehow understand."
-    },
-    {
-      "id": "front-door",
-      "description": "Solid wood banded with iron. There is no handle on this side and no obvious way to open it."
-    },
-    {
-      "id": "wooden-door",
-      "description": "A heavy wooden door, banded with iron."
     },
     {
       "id": "boarded-window",

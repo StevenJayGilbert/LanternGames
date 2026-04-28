@@ -2509,13 +2509,6 @@
       "fixed": true
     },
     {
-      "id": "front-door",
-      "name": "door",
-      "description": "Solid wood banded with iron. There is no handle on this side and no obvious way to open it.",
-      "location": "west-of-house",
-      "fixed": true
-    },
-    {
       "id": "barrow-door",
       "name": "stone door",
       "description": "An enormous stone door, impossibly heavy. It would take more than human strength to budge.",
@@ -3063,16 +3056,6 @@
       "fixed": true
     },
     {
-      "id": "wooden-door",
-      "name": "wooden door",
-      "description": "A heavy wooden door, banded with iron.",
-      "location": "living-room",
-      "fixed": true,
-      "readable": {
-        "text": "The engravings translate to \"This space intentionally left blank.\""
-      }
-    },
-    {
       "id": "sword",
       "name": "sword",
       "description": "An elvish sword of great antiquity, the blade etched with fine runes.",
@@ -3528,6 +3511,31 @@
         "equals": true
       },
       "traverseBlockedMessage": "The grating is closed."
+    },
+    {
+      "id": "front-door",
+      "name": "front door",
+      "description": "Solid oak crossed with thick iron bands. There is no handle on this side and no obvious way to open it.",
+      "narratorNote": "This door is sealed from within — the player cannot open it from either side. It is the canonical 'barred front door'. When the player tries to open it or go through it, narrate the door's solid construction (heavy oak, iron bands, no handle, no keyhole on this side). Direct them to find another way in (the kitchen window) or out (likewise).",
+      "sides": [
+        {
+          "roomId": "west-of-house",
+          "name": "front door",
+          "description": "The handsome front door of the white house — solid oak, iron-banded, evidently barred from within."
+        },
+        {
+          "roomId": "living-room",
+          "name": "wooden door",
+          "description": "A heavy oak door crossed with thick iron bands — the front door, barred shut from this side. No handle, no keyhole."
+        }
+      ],
+      "traversableWhen": {
+        "type": "not",
+        "condition": {
+          "type": "always"
+        }
+      },
+      "traverseBlockedMessage": "The door is barred shut from the inside — solid oak, iron-banded, no handle on this side. You'll need to find another way through."
     },
     {
       "kind": "simple",
