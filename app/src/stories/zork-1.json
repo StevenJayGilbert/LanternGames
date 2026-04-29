@@ -13744,6 +13744,162 @@
           ]
         }
       ]
+    },
+    {
+      "id": "loud-room-tick",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "playerAt",
+            "roomId": "loud-room"
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "key": "echo-spoken",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "if",
+          "if": {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "loud-room-ticks"
+            },
+            "op": "==",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          "then": [
+            {
+              "type": "setFlag",
+              "key": "loud-room-ticks",
+              "value": 1
+            },
+            {
+              "type": "narrate",
+              "text": "The roar is unbearable — your head is already pounding. You won't last another moment in here unless you can silence the noise."
+            }
+          ],
+          "else": [
+            {
+              "type": "setFlagRandom",
+              "key": "_loud-eject-roll",
+              "min": 0,
+              "max": 2
+            },
+            {
+              "type": "if",
+              "if": {
+                "type": "compare",
+                "left": {
+                  "kind": "flag",
+                  "key": "_loud-eject-roll"
+                },
+                "op": "==",
+                "right": {
+                  "kind": "literal",
+                  "value": 0
+                }
+              },
+              "then": [
+                {
+                  "type": "moveItem",
+                  "itemId": "player",
+                  "to": "damp-cave"
+                }
+              ],
+              "else": [
+                {
+                  "type": "if",
+                  "if": {
+                    "type": "compare",
+                    "left": {
+                      "kind": "flag",
+                      "key": "_loud-eject-roll"
+                    },
+                    "op": "==",
+                    "right": {
+                      "kind": "literal",
+                      "value": 1
+                    }
+                  },
+                  "then": [
+                    {
+                      "type": "moveItem",
+                      "itemId": "player",
+                      "to": "round-room"
+                    }
+                  ],
+                  "else": [
+                    {
+                      "type": "moveItem",
+                      "itemId": "player",
+                      "to": "deep-canyon"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "setFlag",
+              "key": "loud-room-ticks",
+              "value": 0
+            },
+            {
+              "type": "narrate",
+              "text": "It is unbearably loud here, with an ear-splitting roar seeming to come from all around you. There is a pounding in your head which won't stop. With a tremendous effort, you scramble out of the room."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "loud-room-tick-reset",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "not",
+            "condition": {
+              "type": "playerAt",
+              "roomId": "loud-room"
+            }
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "loud-room-ticks"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "loud-room-ticks",
+          "value": 0
+        }
+      ]
     }
   ],
   "defaultVisibility": {
@@ -13806,6 +13962,7 @@
     "rainbow-flag": false,
     "won-flag": false,
     "echo-spoken": false,
+    "loud-room-ticks": 0,
     "bell-rung": false,
     "candles-ready": false,
     "lld-flag": false,
