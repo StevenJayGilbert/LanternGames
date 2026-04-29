@@ -5887,6 +5887,15 @@
           "type": "setFlag",
           "key": "dome-flag",
           "value": true
+        },
+        {
+          "type": "moveItem",
+          "itemId": "rope",
+          "to": "dome-room"
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "rope-tied-to-railing"
         }
       ],
       "narration": "You tie the rope securely to the railing. It hangs down into the room below.",
