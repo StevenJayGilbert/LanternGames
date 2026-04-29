@@ -11,7 +11,7 @@
 // (what the player can perceive now). Player-facing prose is the LLM's job
 // (or render.ts for dev/test).
 
-import type { GameState, Story, Trigger } from "../story/schema";
+import type { Atom, GameState, Story, Trigger } from "../story/schema";
 import { currentRoomId, evaluateCondition, initialState, resolveEffects, roomById } from "./state";
 import { performAction, type ActionRequest } from "./actions";
 import type { ActionEvent } from "./events";
@@ -38,7 +38,24 @@ export class Engine {
 
   constructor(story: Story, savedState?: GameState) {
     this.story = story;
-    this.state = savedState ?? initialState(story);
+    if (savedState) {
+      // Re-snapshot roomStates from the current story. Saved roomStates are
+      // a frozen copy of room.state taken at game-start; if the story is
+      // edited between sessions (e.g., a room loses its `dark` flag after
+      // a content fix), the player's save still holds the old value and the
+      // fix never reaches them. zork-1 has no triggers that mutate room
+      // state via setRoomState, so a fresh re-snapshot loses nothing. If a
+      // future story uses setRoomState for runtime mutations, this would
+      // need to merge story-as-baseline + saved-as-overlay — for now the
+      // simple re-snapshot is correct.
+      const refreshedRoomStates: Record<string, Record<string, Atom>> = {};
+      for (const r of story.rooms) {
+        if (r.state) refreshedRoomStates[r.id] = { ...r.state };
+      }
+      this.state = { ...savedState, roomStates: refreshedRoomStates };
+    } else {
+      this.state = initialState(story);
+    }
   }
 
   // Execute a single action request and return the per-turn result.
