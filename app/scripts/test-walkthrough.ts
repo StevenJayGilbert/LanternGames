@@ -539,7 +539,7 @@ if (!e.state.finished && !aborted()) {
   go(e, "south", "dam-lobby", "P8");
   go(e, "south", "dam-room", "P8");
   // TURN BOLT WITH WRENCH
-  intent(e, "turn-dam-bolt", undefined, "P8 bolt");
+  intent(e, "turn-dam-bolt", { withItemId: "wrench" }, "P8 bolt");
   assertFlag(e, "gates-open", true, "P8 gates-open");
 
   // Wait for low-tide: countdown decrements each turn. Cap at ~12 ticks.

@@ -2278,7 +2278,8 @@
       "name": "bolt",
       "description": "A heavy iron bolt with a slot evidently sized for a wrench.",
       "location": "dam-room",
-      "fixed": true
+      "fixed": true,
+      "narratorNote": "When the player wants to turn this bolt, the turn-dam-bolt tool requires a withItemId arg naming the tool. If the player did not name a tool in their input, ASK 'With what?' (or similar) and wait for their reply — do not call the tool with a guessed withItemId. Even if the wrench is in inventory, the player has to say so. This applies to both opening and closing the gates."
     },
     {
       "id": "bubble",
@@ -4120,7 +4121,19 @@
     },
     {
       "id": "turn-dam-bolt",
-      "description": "Player turns, twists, rotates, or otherwise operates the bolt on the dam control panel using the wrench."
+      "description": "Player turns, twists, rotates, or otherwise operates the bolt on the dam control panel using a tool the player has named. The player MUST specify the tool (e.g. 'turn bolt with wrench'); if they don't, ask 'with what?' before calling this — never assume the tool from inventory.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "withItemId": {
+            "type": "string",
+            "description": "the id of the tool the player used (must come from the player's stated input — do not assume)"
+          }
+        },
+        "required": [
+          "withItemId"
+        ]
+      }
     },
     {
       "id": "inflate-boat",
@@ -12017,6 +12030,12 @@
             "signalId": "turn-dam-bolt"
           },
           {
+            "type": "intentArg",
+            "signalId": "turn-dam-bolt",
+            "key": "withItemId",
+            "equals": "wrench"
+          },
+          {
             "type": "flag",
             "key": "gates-open",
             "equals": false
@@ -12065,6 +12084,12 @@
             "signalId": "turn-dam-bolt"
           },
           {
+            "type": "intentArg",
+            "signalId": "turn-dam-bolt",
+            "key": "withItemId",
+            "equals": "wrench"
+          },
+          {
             "type": "flag",
             "key": "gates-open",
             "equals": true
@@ -12106,6 +12131,27 @@
         }
       ],
       "narration": "The bolt turns the other way. Below, the sluice gates rumble shut, and water begins to back up behind the dam once again."
+    },
+    {
+      "id": "bolt-fails-to-turn",
+      "once": false,
+      "priority": -10,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "turn-dam-bolt"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "turn-dam-bolt"
+        }
+      ],
+      "narration": "The bolt doesn't budge — you'll need the right tool, in the right place, with the right control surface enabled."
     },
     {
       "id": "low-tide-tick",

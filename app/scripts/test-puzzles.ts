@@ -235,7 +235,7 @@ console.log("\n=== #9 Dam control panel ===");
 
   // Step 2: walk to dam-room, turn bolt
   e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "dam-room" } };
-  e.execute({ type: "recordIntent", signalId: "turn-dam-bolt" });
+  e.execute({ type: "recordIntent", signalId: "turn-dam-bolt", args: { withItemId: "wrench" } });
   e.state.flags["gates-open"] === true
     ? pass("gates-open set by bolt turn")
     : fail("gates-open not set");

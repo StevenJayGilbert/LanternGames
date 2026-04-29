@@ -884,8 +884,10 @@
       "description": "A bank of indicator lights, four colored buttons, and a single iron bolt — clearly some kind of maintenance station."
     },
     {
+      "$comment": "Dam control bolt. Requires the wrench to turn — but the player must EXPLICITLY say which tool. Never auto-fill the wrench from inventory; if the player says 'turn bolt' alone, ask them what to use.",
       "id": "bolt",
-      "description": "A heavy iron bolt with a slot evidently sized for a wrench."
+      "description": "A heavy iron bolt with a slot evidently sized for a wrench.",
+      "narratorNote": "When the player wants to turn this bolt, the turn-dam-bolt tool requires a withItemId arg naming the tool. If the player did not name a tool in their input, ASK 'With what?' (or similar) and wait for their reply — do not call the tool with a guessed withItemId. Even if the wrench is in inventory, the player has to say so. This applies to both opening and closing the gates."
     },
     {
       "id": "bubble",
@@ -1968,9 +1970,19 @@
       "description": "Player pushes, presses, depresses, or activates the brown button."
     },
     {
-      "$comment": "TURN the dam bolt with wrench — toggles the gates. Requires gate-flag (yellow pressed) + wrench in inventory.",
+      "$comment": "TURN the dam bolt — requires the player to explicitly name the tool. withItemId is a required arg; the success trigger gates on it equalling 'wrench'. If the player says just 'turn bolt' the LLM should ASK what to use, NOT auto-fill from inventory (see bolt narratorNote).",
       "id": "turn-dam-bolt",
-      "description": "Player turns, twists, rotates, or otherwise operates the bolt on the dam control panel using the wrench."
+      "description": "Player turns, twists, rotates, or otherwise operates the bolt on the dam control panel using a tool the player has named. The player MUST specify the tool (e.g. 'turn bolt with wrench'); if they don't, ask 'with what?' before calling this — never assume the tool from inventory.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "withItemId": {
+            "type": "string",
+            "description": "the id of the tool the player used (must come from the player's stated input — do not assume)"
+          }
+        },
+        "required": ["withItemId"]
+      }
     },
     {
       "$comment": "BOAT INFLATE: pump the deflated raft. Requires hasItem(pump) and the boat in the same room (or carryable in inventory while deflated). Active only while deflated. Boarding/disembarking are engine actions (not intents) — the LLM calls board(itemId) directly.",
@@ -9894,7 +9906,7 @@
       "narration": "Click. The green bubble dims and goes dark."
     },
     {
-      "$comment": "Bolt toggles the gates open (when currently closed). Starts the 8-turn drain countdown.",
+      "$comment": "Bolt toggles the gates open (when currently closed). Starts the 8-turn drain countdown. Gates on intentArg withItemId='wrench' so the player must explicitly name the wrench, not just have it in inventory.",
       "id": "bolt-opens-gates",
       "once": false,
       "when": {
@@ -9903,6 +9915,12 @@
           {
             "type": "intentMatched",
             "signalId": "turn-dam-bolt"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn-dam-bolt",
+            "key": "withItemId",
+            "equals": "wrench"
           },
           {
             "type": "flag",
@@ -9943,7 +9961,7 @@
       "narration": "The bolt turns slowly. Somewhere below, the sluice gates open and water pours through the dam with a sustained roar. The reservoir will take some time to drain."
     },
     {
-      "$comment": "Bolt toggles the gates closed (when currently open). Cancels the drain.",
+      "$comment": "Bolt toggles the gates closed (when currently open). Cancels the drain. Same intentArg withItemId='wrench' gate as bolt-opens-gates.",
       "id": "bolt-closes-gates",
       "once": false,
       "when": {
@@ -9952,6 +9970,12 @@
           {
             "type": "intentMatched",
             "signalId": "turn-dam-bolt"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn-dam-bolt",
+            "key": "withItemId",
+            "equals": "wrench"
           },
           {
             "type": "flag",
@@ -9995,6 +10019,22 @@
         }
       ],
       "narration": "The bolt turns the other way. Below, the sluice gates rumble shut, and water begins to back up behind the dam once again."
+    },
+    {
+      "$comment": "Bolt-turn fallback. Fires when turn-dam-bolt is matched but neither bolt-opens-gates nor bolt-closes-gates fired (wrong tool, missing wrench, no gate-flag, or wrong room). Always consumes the intent so it doesn't carry across turns. Lower priority than the success triggers so they win when their conditions hold.",
+      "id": "bolt-fails-to-turn",
+      "once": false,
+      "priority": -10,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "turn-dam-bolt" }
+        ]
+      },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "turn-dam-bolt" }
+      ],
+      "narration": "The bolt doesn't budge — you'll need the right tool, in the right place, with the right control surface enabled."
     },
     {
       "$comment": "Tick the drain countdown each turn while gates are open and countdown > 0. Mirrors the lamp battery / grue tick patterns.",
