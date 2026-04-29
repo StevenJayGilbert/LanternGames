@@ -880,8 +880,12 @@
       "description": "A heap of corpses, far too long-dead to identify. Disturbing them feels like a very poor idea."
     },
     {
+      "$comment": "Bat is ACTORBIT in canonical Zork ZIL — it triggers the sword's I-SWORD glow daemon. Mark hostile=true so anyPerceivableItemWith / anyAdjacentRoomItemWith pick it up.",
       "id": "bat",
-      "description": "A sleek vampire bat, watching with bright unblinking eyes — and a mouth full of small sharp teeth."
+      "description": "A sleek vampire bat, watching with bright unblinking eyes — and a mouth full of small sharp teeth.",
+      "state": {
+        "hostile": true
+      }
     },
     {
       "id": "prayer",
@@ -1223,7 +1227,7 @@
       }
     },
     {
-      "$comment": "Elvish sword. fromTemplate('bladed-weapon') gives it the weapon/bladed/carryable tags + base weapon state (weapon-stuck, attack-bonus-*). Tags 'sword' and 'magical' are unioned in. damage:5 layered on per-instance. variants pulse the description to 'glowing' when a hostile is perceivable.",
+      "$comment": "Elvish sword. fromTemplate('bladed-weapon') gives it the weapon/bladed/carryable tags + base weapon state (weapon-stuck, attack-bonus-*). Tags 'sword' and 'magical' are unioned in. damage:5 layered on per-instance. Two glow tiers per canonical Zork I I-SWORD daemon: bright when a hostile is in the same room (anyPerceivableItemWith), faint when a hostile is in any directly-adjacent room (anyAdjacentRoomItemWith — walks exits regardless of door state, like ZIL UEXIT/CEXIT/DEXIT). Variants are first-match, so the bright tier wins when both would trigger.",
       "id": "sword",
       "description": "An elvish sword of great antiquity, the blade etched with fine runes.",
       "fromTemplate": "bladed-weapon",
@@ -1239,15 +1243,18 @@
           "when": {
             "type": "and",
             "all": [
-              {
-                "type": "hasItem",
-                "itemId": "sword"
-              },
-              {
-                "type": "anyPerceivableItemWith",
-                "key": "hostile",
-                "equals": true
-              }
+              { "type": "hasItem", "itemId": "sword" },
+              { "type": "anyPerceivableItemWith", "key": "hostile", "equals": true }
+            ]
+          },
+          "text": "An elvish sword of great antiquity, the blade etched with fine runes — and presently glowing very brightly."
+        },
+        {
+          "when": {
+            "type": "and",
+            "all": [
+              { "type": "hasItem", "itemId": "sword" },
+              { "type": "anyAdjacentRoomItemWith", "key": "hostile", "equals": true }
             ]
           },
           "text": "An elvish sword of great antiquity, the blade etched with fine runes — and presently glowing with a faint blue light."

@@ -2262,7 +2262,10 @@
       "id": "bat",
       "name": "bat",
       "description": "A sleek vampire bat, watching with bright unblinking eyes — and a mouth full of small sharp teeth.",
-      "location": "bat-room"
+      "location": "bat-room",
+      "state": {
+        "hostile": true
+      }
     },
     {
       "id": "bell",
@@ -3140,6 +3143,23 @@
               },
               {
                 "type": "anyPerceivableItemWith",
+                "key": "hostile",
+                "equals": true
+              }
+            ]
+          },
+          "text": "An elvish sword of great antiquity, the blade etched with fine runes — and presently glowing very brightly."
+        },
+        {
+          "when": {
+            "type": "and",
+            "all": [
+              {
+                "type": "hasItem",
+                "itemId": "sword"
+              },
+              {
+                "type": "anyAdjacentRoomItemWith",
                 "key": "hostile",
                 "equals": true
               }

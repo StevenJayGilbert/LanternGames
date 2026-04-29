@@ -213,6 +213,33 @@ export function anyPerceivableItemWith(
   return false;
 }
 
+// Walks the player's current room's exits and returns true if any item is
+// directly located in any of those neighbor rooms with state[key] === equals.
+//
+// Intentionally ignores `visibleWhen` and `traversableWhen` on exits and
+// passages — matches canonical Zork I "danger one room away" sword-glow
+// detection (the I-SWORD daemon walks UEXIT/CEXIT/DEXIT regardless of
+// whether the door is open). One-hop only; no transitive search.
+export function anyAdjacentRoomItemWith(
+  state: GameState,
+  story: Story,
+  key: string,
+  equals: Atom,
+): boolean {
+  const room = currentRoom(state, story);
+  if (!room?.exits) return false;
+  const neighbors = new Set<string>();
+  for (const ex of Object.values(room.exits)) {
+    if (typeof ex.to === "string") neighbors.add(ex.to);
+  }
+  if (neighbors.size === 0) return false;
+  for (const [itemId, loc] of Object.entries(state.itemLocations)) {
+    if (!neighbors.has(loc)) continue;
+    if (state.itemStates[itemId]?.[key] === equals) return true;
+  }
+  return false;
+}
+
 // Story-driven view+accessibility filter. An object is "visible" when both:
 //   - its own visibleWhen (if set) evaluates true, AND
 //   - story.defaultVisibility (if set) evaluates true
@@ -444,6 +471,8 @@ export function evaluateCondition(
     }
     case "anyPerceivableItemWith":
       return anyPerceivableItemWith(state, story, c.key, c.equals);
+    case "anyAdjacentRoomItemWith":
+      return anyAdjacentRoomItemWith(state, story, c.key, c.equals);
     case "itemHasTag": {
       const item = itemById(story, c.itemId);
       return !!item?.tags?.includes(c.tag);

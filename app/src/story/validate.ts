@@ -869,6 +869,10 @@ function validateCondition(
       if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
       if (!isAtom(raw.equals)) err(`${path}.equals`, "must be string, number, or boolean");
       return;
+    case "anyAdjacentRoomItemWith":
+      if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
+      if (!isAtom(raw.equals)) err(`${path}.equals`, "must be string, number, or boolean");
+      return;
     case "itemHasTag":
       if (typeof raw.itemId !== "string") err(`${path}.itemId`, "must be a string");
       else if (itemIds.size && !itemIds.has(raw.itemId)) err(`${path}.itemId`, `unknown item "${raw.itemId}"`);

@@ -70,6 +70,7 @@ export type Condition =
   | { type: "roomState"; roomId: string; key: string; equals: Atom }       // per-room typed state equality
   | { type: "currentRoomState"; key: string; equals: Atom }                // shortcut: roomState on the player's current room
   | { type: "anyPerceivableItemWith"; key: string; equals: Atom }          // any item perceivable to the player has state[key] === equals
+  | { type: "anyAdjacentRoomItemWith"; key: string; equals: Atom }         // any item directly located in a room reachable via the current room's exits has state[key] === equals (walks all exits regardless of visibleWhen / traversableWhen — matches canonical Zork "danger one room away" sword-glow detection through closed doors)
   | { type: "itemHasTag"; itemId: string; tag: string }                    // does the named item carry this tag?
   | { type: "flagItemHasTag"; flagKey: string; tag: string }               // look up itemId from a flag, then check its tags — load-bearing for class-based combat
   | { type: "intentMatched"; signalId: string }            // LLM has matched this intent at least once
