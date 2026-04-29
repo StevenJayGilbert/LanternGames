@@ -220,7 +220,7 @@ function App() {
       // in the BEFORE-view block of the user message. Pure read commands
       // (/help, /room, /find) leave history alone.
       const cmd = text.trim().split(/\s+/)[0].toLowerCase();
-      const mutating = cmd === "/tp" || cmd === "/give" || cmd === "/flag";
+      const mutating = cmd === "/tp" || cmd === "/give" || cmd === "/flag" || cmd === "/put";
       if (mutating) narrator.reset();
       const transcriptAfterDebug: TranscriptEntry[] = [
         ...transcriptAfterInput,
@@ -627,13 +627,14 @@ function handleDebugCommand(text: string, engine: Engine): string {
         "[DEBUG] Available commands:",
         "  /tp <roomId>         — teleport to a room",
         "  /give <itemId>       — add an item to your inventory",
+        "  /put <itemId> <to>   — move an item to a room id, item id, or player/nowhere",
         "  /flag <key> <val>    — set a flag (val: true/false/<number>/<string>)",
         "  /room                — show your current room id",
         "  /find <substr>       — search for room/item ids matching the substring",
         "  /help                — this help",
         "",
-        "Note: /tp /give /flag reset the narrator's conversation history so the",
-        "LLM doesn't keep narrating from stale views. The transcript stays;",
+        "Note: /tp /give /put /flag reset the narrator's conversation history so",
+        "the LLM doesn't keep narrating from stale views. The transcript stays;",
         "only the LLM's internal context is cleared. /room /find /help are",
         "read-only and leave history alone.",
       ].join("\n");
@@ -663,6 +664,38 @@ function handleDebugCommand(text: string, engine: Engine): string {
         itemLocations: { ...engine.state.itemLocations, [itemId]: PLAYER_ITEM_ID },
       };
       return `[DEBUG] Added ${itemId} (${item.name}) to inventory.`;
+    }
+
+    case "/put": {
+      const itemId = args[0];
+      const to = args[1];
+      if (!itemId || !to) return "[DEBUG] Usage: /put <itemId> <to>  (to: roomId, itemId, player, nowhere)";
+      const item = engine.story.items.find((i) => i.id === itemId);
+      if (!item) return `[DEBUG] No such item: "${itemId}". Try /find ${itemId}`;
+      // Resolve destination: special locations, room id, or item id (container).
+      let resolvedTo = to;
+      let label = to;
+      if (to === "inventory" || to === "player") {
+        resolvedTo = PLAYER_ITEM_ID;
+        label = "player inventory";
+      } else if (to === "nowhere") {
+        // valid as-is
+      } else {
+        const room = engine.story.rooms.find((r) => r.id === to);
+        const target = engine.story.items.find((i) => i.id === to);
+        if (room) {
+          label = `${to} (${room.name})`;
+        } else if (target) {
+          label = `${to} (${target.name})`;
+        } else {
+          return `[DEBUG] No such room or item: "${to}". Try /find ${to}`;
+        }
+      }
+      engine.state = {
+        ...engine.state,
+        itemLocations: { ...engine.state.itemLocations, [itemId]: resolvedTo },
+      };
+      return `[DEBUG] Moved ${itemId} (${item.name}) → ${label}.`;
     }
 
     case "/flag": {
