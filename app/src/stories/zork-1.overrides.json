@@ -37,6 +37,10 @@
     "gates-open": false,
     "low-tide": false,
     "low-tide-countdown": 0,
+    "reservoir-refill-countdown": 0,
+    "maintenance-lights": true,
+    "leak-active": false,
+    "leak-flood-counter": 0,
     "endgame-narrated": false,
     "empty-handed": true,
     "river-tick-counter": 0,
@@ -567,17 +571,37 @@
       }
     },
     {
-      "$comment": "Loud Room: canonical extraction grabbed only the LDESC ('large room... narrow passage east to west... stone stairway leading upward'). The deafening-noise clue — which is what tips the player toward saying 'echo' — lives in a ZIL routine the walker doesn't yet handle. Restored here as the canonical description text. Variant flips after echo-spoken to the silent post-puzzle state.",
+      "$comment": "Loud Room. Three states: default loud (water flowing over the dam top, base description); unbearably loud (gates open, water rushing through); eerily silent (echo OR drain+close). Variants are first-match — silent checked before unbearably-loud; default falls through to base.",
       "id": "loud-room",
       "description": "This is a large room with a ceiling which cannot be detected from the ground. There is a narrow passage from east to west and a stone stairway leading upward. The room is deafeningly loud with an undetermined rushing sound. The sound seems to be reverberating from all of the walls, making it difficult even to think.",
       "variants": [
         {
+          "$comment": "Eerily silent — puzzle solved (echo-spoken OR drained-and-closed-gates).",
           "when": {
-            "type": "flag",
-            "key": "echo-spoken",
-            "equals": true
+            "type": "or",
+            "any": [
+              { "type": "flag", "key": "echo-spoken", "equals": true },
+              {
+                "type": "and",
+                "all": [
+                  { "type": "flag", "key": "low-tide", "equals": true },
+                  { "type": "flag", "key": "gates-open", "equals": false }
+                ]
+              }
+            ]
           },
           "text": "This is a large room with a ceiling which cannot be detected from the ground. There is a narrow passage from east to west and a stone stairway leading upward. The room is unnaturally quiet now, the rushing sound silenced as if it had never been."
+        },
+        {
+          "$comment": "Unbearably loud — gates wide open, water rushing through the sluice. Even louder than the default 'over the top' state.",
+          "when": {
+            "type": "and",
+            "all": [
+              { "type": "flag", "key": "gates-open", "equals": true },
+              { "type": "flag", "key": "low-tide", "equals": false }
+            ]
+          },
+          "text": "This is a large room with a ceiling which cannot be detected from the ground. There is a narrow passage from east to west and a stone stairway leading upward. The room is unbearably loud — an ear-splitting torrent of water roars from somewhere unseen, drowning every other sense."
         }
       ],
       "state": {
@@ -1424,7 +1448,7 @@
       "description": "A beautifully carved crystal skull, grinning at you rather nastily. A treasure."
     },
     {
-      "$comment": "Echo-room treasure. Hidden by SACREDBIT in canonical Zork until ECHO is spoken in loud-room. We adapt via visibleWhen on echo-spoken — bar isn't perceivable until the echo trigger fires.",
+      "$comment": "Echo-room treasure. Hidden in canonical Zork until the loud-room is silent. Two silencing paths: (a) say 'echo' (easter egg, sets echo-spoken=true), or (b) drain reservoir via dam controls and close gates (low-tide AND NOT gates-open). Visible in EITHER state.",
       "id": "bar",
       "tags": [
         "treasure",
@@ -1432,9 +1456,17 @@
         "carryable"
       ],
       "visibleWhen": {
-        "type": "flag",
-        "key": "echo-spoken",
-        "equals": true
+        "type": "or",
+        "any": [
+          { "type": "flag", "key": "echo-spoken", "equals": true },
+          {
+            "type": "and",
+            "all": [
+              { "type": "flag", "key": "low-tide", "equals": true },
+              { "type": "flag", "key": "gates-open", "equals": false }
+            ]
+          }
+        ]
       },
       "description": "A heavy platinum bar, dense and gleaming dully. A treasure."
     },
@@ -1974,6 +2006,21 @@
       "$comment": "PUSH the BROWN button — disables the bolt control. Active in maintenance-room.",
       "id": "push-brown-button",
       "description": "Player pushes, presses, depresses, or activates the brown button."
+    },
+    {
+      "$comment": "PUSH the RED button — toggles maintenance-room lights (cosmetic only; canonical Zork doesn't use this for any puzzle).",
+      "id": "push-red-button",
+      "description": "Player pushes, presses, depresses, or activates the red button."
+    },
+    {
+      "$comment": "PUSH the BLUE button — triggers a leak in the maintenance-room ceiling pipe. Canonical: water rises over several turns; player must plug the leak with the viscous material (putty) before drowning.",
+      "id": "push-blue-button",
+      "description": "Player pushes, presses, depresses, or activates the blue button."
+    },
+    {
+      "$comment": "PLUG the leak with the viscous material (putty). Canonical fix for the blue-button leak puzzle.",
+      "id": "plug-leak-with-putty",
+      "description": "Player plugs, seals, stops, or fills the leak using the viscous material (putty)."
     },
     {
       "$comment": "TURN the dam bolt — requires the player to explicitly name the tool. withItemId is a required arg; the success trigger gates on it equalling 'wrench'. If the player says just 'turn bolt' the LLM should ASK what to use, NOT auto-fill from inventory (see bolt narratorNote).",
@@ -9912,6 +9959,111 @@
       "narration": "Click. The green bubble dims and goes dark."
     },
     {
+      "$comment": "RED button — cosmetic only. Toggles the maintenance-lights flag (no engine effect — maintenance-room is already lit per canon). The LLM gets a tool to call when the player pushes red, instead of standing there confused.",
+      "id": "red-button-toggles-lights",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "push-red-button" },
+          { "type": "playerAt", "roomId": "maintenance-room" }
+        ]
+      },
+      "effects": [
+        {
+          "type": "if",
+          "if": { "type": "flag", "key": "maintenance-lights", "equals": true },
+          "then": [
+            { "type": "setFlag", "key": "maintenance-lights", "value": false },
+            { "type": "narrate", "text": "Click. The maintenance-room lights flicker out. After a moment they flicker back on — a self-resetting safety circuit, evidently." }
+          ],
+          "else": [
+            { "type": "setFlag", "key": "maintenance-lights", "value": true },
+            { "type": "narrate", "text": "Click. The maintenance-room lights flicker." }
+          ]
+        },
+        { "type": "removeMatchedIntent", "signalId": "push-red-button" }
+      ]
+    },
+    {
+      "$comment": "BLUE button — starts the leak-and-flood puzzle. leak-active flips to true, leak-flood-counter starts at 5 turns. Per canonical Zork, water rises over several turns until the player either drowns OR plugs the leak with the viscous material (putty). Once active, the leak runs every turn regardless of player location.",
+      "id": "blue-button-starts-leak",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "push-blue-button" },
+          { "type": "playerAt", "roomId": "maintenance-room" },
+          { "type": "flag", "key": "leak-active", "equals": false }
+        ]
+      },
+      "effects": [
+        { "type": "setFlag", "key": "leak-active", "value": true },
+        { "type": "setFlag", "key": "leak-flood-counter", "value": 5 },
+        { "type": "removeMatchedIntent", "signalId": "push-blue-button" }
+      ],
+      "narration": "There is a rumbling sound and a stream of water appears to burst from the east wall of the room (apparently, a leak has occurred in a pipe). The water level begins to rise."
+    },
+    {
+      "$comment": "Leak flood tick. Decrements leak-flood-counter each turn while the leak is active and the player is at maintenance-room (canonical: water only rises while you're standing in it — leaving the room buys you time, but doesn't stop the leak).",
+      "id": "leak-tick",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "flag", "key": "leak-active", "equals": true },
+          { "type": "playerAt", "roomId": "maintenance-room" },
+          { "type": "compare", "left": { "kind": "flag", "key": "leak-flood-counter" }, "op": ">", "right": { "kind": "literal", "value": 0 } }
+        ]
+      },
+      "effects": [
+        { "type": "adjustFlag", "key": "leak-flood-counter", "by": -1 }
+      ]
+    },
+    {
+      "$comment": "Leak flood drowning death. When counter hits 0 with leak still active and player still at maintenance-room → endGame(won=false).",
+      "id": "leak-flood-kills",
+      "afterAction": true,
+      "once": true,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "flag", "key": "leak-active", "equals": true },
+          { "type": "playerAt", "roomId": "maintenance-room" },
+          { "type": "compare", "left": { "kind": "flag", "key": "leak-flood-counter" }, "op": "<=", "right": { "kind": "literal", "value": 0 } }
+        ]
+      },
+      "effects": [
+        {
+          "type": "endGame",
+          "won": false,
+          "message": "**** You have died ****\n\nThe water reaches the ceiling and drowns you in the small space. You should have plugged that leak."
+        }
+      ]
+    },
+    {
+      "$comment": "Plug the leak with putty. Consumes the putty (moveItem to nowhere — viscous material is now in the pipe), clears leak-active and the counter, narrates success.",
+      "id": "plug-leak-success",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "plug-leak-with-putty" },
+          { "type": "playerAt", "roomId": "maintenance-room" },
+          { "type": "hasItem", "itemId": "putty" },
+          { "type": "flag", "key": "leak-active", "equals": true }
+        ]
+      },
+      "effects": [
+        { "type": "setFlag", "key": "leak-active", "value": false },
+        { "type": "setFlag", "key": "leak-flood-counter", "value": 0 },
+        { "type": "moveItem", "itemId": "putty", "to": "nowhere" },
+        { "type": "removeMatchedIntent", "signalId": "plug-leak-with-putty" }
+      ],
+      "narration": "You press the viscous material against the pipe; it spreads and seals the leak with a satisfying squelch. The flow stops. The water level slowly recedes."
+    },
+    {
       "$comment": "Bolt toggles the gates open (when currently closed). Starts the 8-turn drain countdown. Gates on intentArg withItemId='wrench' so the player must explicitly name the wrench, not just have it in inventory.",
       "id": "bolt-opens-gates",
       "once": false,
@@ -10015,9 +10167,10 @@
           "value": 0
         },
         {
+          "$comment": "DO NOT reset low-tide on close. Per canonical Zork (puzzles.txt:43-47), the loud-room becomes 'eerily silent' for a brief window after closing gates BECAUSE the reservoir is drained and water no longer flows through OR over the dam. low-tide persists until the reservoir-refill counter expires (reservoir-refills trigger).",
           "type": "setFlag",
-          "key": "low-tide",
-          "value": false
+          "key": "reservoir-refill-countdown",
+          "value": 8
         },
         {
           "type": "removeMatchedIntent",
@@ -10118,6 +10271,41 @@
         }
       ],
       "narration": "Far below, the reservoir empties at last. What was deep water is now mud and silt — passable, if unpleasant."
+    },
+    {
+      "$comment": "Reservoir refill tick. Once gates are closed and we're in the silent window (low-tide=true AND gates-open=false), counts down each turn. When the counter hits 0 the next trigger flips low-tide back to false (reservoir has refilled and water flows over the dam top again). Mirrors low-tide-tick on the open path.",
+      "id": "reservoir-refill-tick",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "flag", "key": "low-tide", "equals": true },
+          { "type": "flag", "key": "gates-open", "equals": false },
+          { "type": "compare", "left": { "kind": "flag", "key": "reservoir-refill-countdown" }, "op": ">", "right": { "kind": "literal", "value": 0 } }
+        ]
+      },
+      "effects": [
+        { "type": "adjustFlag", "key": "reservoir-refill-countdown", "by": -1 }
+      ]
+    },
+    {
+      "$comment": "Reservoir refilled — water level rises back above the dam top, water cascades over again. low-tide → false. The loud-room becomes loud once more. Closes the canonical silent window the player exploits to take the platinum bar.",
+      "id": "reservoir-refills",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "flag", "key": "low-tide", "equals": true },
+          { "type": "flag", "key": "gates-open", "equals": false },
+          { "type": "compare", "left": { "kind": "flag", "key": "reservoir-refill-countdown" }, "op": "<=", "right": { "kind": "literal", "value": 0 } }
+        ]
+      },
+      "effects": [
+        { "type": "setFlag", "key": "low-tide", "value": false }
+      ],
+      "narration": "Far below, the reservoir has refilled. Water once again pours over the top of the dam in a steady cascade."
     },
     {
       "$comment": "PUZZLE #10 (bonus) EMPTY-HANDED COAL MINE — canonical: timber-room ↔ lower-shaft is a narrow squeeze that requires the player to carry NOTHING. Tracks inventoryCount in real time via two symmetric triggers; flag flips automatically on take/drop. The flag-gated exits (timber-room.west and lower-shaft's two return exits) open/close as a side effect. Player must drop the lit lamp before squeezing through; the lamp glows on the floor of the room they leave.",
@@ -11290,7 +11478,7 @@
       ]
     },
     {
-      "$comment": "Loud Room tick. Approximates the canonical LOUD-ROOM-FCN M-END eject (1actions.zil:1660) using a single afterAction trigger with an if/then/else over loud-room-ticks. Turn 1 (ticks=0): bump to 1 + emit warning. Turn 2+ (ticks>=1): pick one of the canonical LOUD-RUNS destinations (damp-cave / round-room / deep-canyon) via setFlagRandom + nested if, eject, reset ticks to 0 so a re-entry restarts the cycle. The single-trigger design avoids the cross-trigger race where a warning-set flag would be visible to a sibling eject trigger within the same afterAction pass.",
+      "$comment": "Loud Room tick. Approximates the canonical LOUD-ROOM-FCN M-END eject (1actions.zil:1660) using a single afterAction trigger with an if/then/else over loud-room-ticks. Turn 1 (ticks=0): bump to 1 + emit warning. Turn 2+ (ticks>=1): pick one of the canonical LOUD-RUNS destinations (damp-cave / round-room / deep-canyon) via setFlagRandom + nested if, eject, reset ticks to 0 so a re-entry restarts the cycle. The single-trigger design avoids the cross-trigger race where a warning-set flag would be visible to a sibling eject trigger within the same afterAction pass. Gated on NOT (echo-spoken OR (low-tide AND gates-closed)) — the canonical silent state. Both paths (easter-egg echo AND dam-controls drain+close) silence the room.",
       "id": "loud-room-tick",
       "afterAction": true,
       "once": false,
@@ -11298,7 +11486,22 @@
         "type": "and",
         "all": [
           { "type": "playerAt", "roomId": "loud-room" },
-          { "type": "not", "condition": { "type": "flag", "key": "echo-spoken", "equals": true } }
+          {
+            "type": "not",
+            "condition": {
+              "type": "or",
+              "any": [
+                { "type": "flag", "key": "echo-spoken", "equals": true },
+                {
+                  "type": "and",
+                  "all": [
+                    { "type": "flag", "key": "low-tide", "equals": true },
+                    { "type": "flag", "key": "gates-open", "equals": false }
+                  ]
+                }
+              ]
+            }
+          }
         ]
       },
       "effects": [

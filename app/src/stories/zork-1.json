@@ -1238,11 +1238,49 @@
       "variants": [
         {
           "when": {
-            "type": "flag",
-            "key": "echo-spoken",
-            "equals": true
+            "type": "or",
+            "any": [
+              {
+                "type": "flag",
+                "key": "echo-spoken",
+                "equals": true
+              },
+              {
+                "type": "and",
+                "all": [
+                  {
+                    "type": "flag",
+                    "key": "low-tide",
+                    "equals": true
+                  },
+                  {
+                    "type": "flag",
+                    "key": "gates-open",
+                    "equals": false
+                  }
+                ]
+              }
+            ]
           },
           "text": "This is a large room with a ceiling which cannot be detected from the ground. There is a narrow passage from east to west and a stone stairway leading upward. The room is unnaturally quiet now, the rushing sound silenced as if it had never been."
+        },
+        {
+          "when": {
+            "type": "and",
+            "all": [
+              {
+                "type": "flag",
+                "key": "gates-open",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "low-tide",
+                "equals": false
+              }
+            ]
+          },
+          "text": "This is a large room with a ceiling which cannot be detected from the ground. There is a narrow passage from east to west and a stone stairway leading upward. The room is unbearably loud — an ear-splitting torrent of water roars from somewhere unseen, drowning every other sense."
         }
       ],
       "state": {
@@ -2880,9 +2918,29 @@
         "carryable"
       ],
       "visibleWhen": {
-        "type": "flag",
-        "key": "echo-spoken",
-        "equals": true
+        "type": "or",
+        "any": [
+          {
+            "type": "flag",
+            "key": "echo-spoken",
+            "equals": true
+          },
+          {
+            "type": "and",
+            "all": [
+              {
+                "type": "flag",
+                "key": "low-tide",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "gates-open",
+                "equals": false
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -4120,6 +4178,18 @@
     {
       "id": "push-brown-button",
       "description": "Player pushes, presses, depresses, or activates the brown button."
+    },
+    {
+      "id": "push-red-button",
+      "description": "Player pushes, presses, depresses, or activates the red button."
+    },
+    {
+      "id": "push-blue-button",
+      "description": "Player pushes, presses, depresses, or activates the blue button."
+    },
+    {
+      "id": "plug-leak-with-putty",
+      "description": "Player plugs, seals, stops, or fills the leak using the viscous material (putty)."
     },
     {
       "id": "turn-dam-bolt",
@@ -12022,6 +12092,222 @@
       "narration": "Click. The green bubble dims and goes dark."
     },
     {
+      "id": "red-button-toggles-lights",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "push-red-button"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "maintenance-room"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "if",
+          "if": {
+            "type": "flag",
+            "key": "maintenance-lights",
+            "equals": true
+          },
+          "then": [
+            {
+              "type": "setFlag",
+              "key": "maintenance-lights",
+              "value": false
+            },
+            {
+              "type": "narrate",
+              "text": "Click. The maintenance-room lights flicker out. After a moment they flicker back on — a self-resetting safety circuit, evidently."
+            }
+          ],
+          "else": [
+            {
+              "type": "setFlag",
+              "key": "maintenance-lights",
+              "value": true
+            },
+            {
+              "type": "narrate",
+              "text": "Click. The maintenance-room lights flicker."
+            }
+          ]
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "push-red-button"
+        }
+      ]
+    },
+    {
+      "id": "blue-button-starts-leak",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "push-blue-button"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "maintenance-room"
+          },
+          {
+            "type": "flag",
+            "key": "leak-active",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "leak-active",
+          "value": true
+        },
+        {
+          "type": "setFlag",
+          "key": "leak-flood-counter",
+          "value": 5
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "push-blue-button"
+        }
+      ],
+      "narration": "There is a rumbling sound and a stream of water appears to burst from the east wall of the room (apparently, a leak has occurred in a pipe). The water level begins to rise."
+    },
+    {
+      "id": "leak-tick",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "leak-active",
+            "equals": true
+          },
+          {
+            "type": "playerAt",
+            "roomId": "maintenance-room"
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "leak-flood-counter"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "leak-flood-counter",
+          "by": -1
+        }
+      ]
+    },
+    {
+      "id": "leak-flood-kills",
+      "afterAction": true,
+      "once": true,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "leak-active",
+            "equals": true
+          },
+          {
+            "type": "playerAt",
+            "roomId": "maintenance-room"
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "leak-flood-counter"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "endGame",
+          "won": false,
+          "message": "**** You have died ****\n\nThe water reaches the ceiling and drowns you in the small space. You should have plugged that leak."
+        }
+      ]
+    },
+    {
+      "id": "plug-leak-success",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "plug-leak-with-putty"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "maintenance-room"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "putty"
+          },
+          {
+            "type": "flag",
+            "key": "leak-active",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "leak-active",
+          "value": false
+        },
+        {
+          "type": "setFlag",
+          "key": "leak-flood-counter",
+          "value": 0
+        },
+        {
+          "type": "moveItem",
+          "itemId": "putty",
+          "to": "nowhere"
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "plug-leak-with-putty"
+        }
+      ],
+      "narration": "You press the viscous material against the pipe; it spreads and seals the leak with a satisfying squelch. The flow stops. The water level slowly recedes."
+    },
+    {
       "id": "bolt-opens-gates",
       "once": false,
       "when": {
@@ -12124,8 +12410,8 @@
         },
         {
           "type": "setFlag",
-          "key": "low-tide",
-          "value": false
+          "key": "reservoir-refill-countdown",
+          "value": 8
         },
         {
           "type": "removeMatchedIntent",
@@ -12232,6 +12518,85 @@
         }
       ],
       "narration": "Far below, the reservoir empties at last. What was deep water is now mud and silt — passable, if unpleasant."
+    },
+    {
+      "id": "reservoir-refill-tick",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "low-tide",
+            "equals": true
+          },
+          {
+            "type": "flag",
+            "key": "gates-open",
+            "equals": false
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "reservoir-refill-countdown"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "reservoir-refill-countdown",
+          "by": -1
+        }
+      ]
+    },
+    {
+      "id": "reservoir-refills",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "low-tide",
+            "equals": true
+          },
+          {
+            "type": "flag",
+            "key": "gates-open",
+            "equals": false
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "reservoir-refill-countdown"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "low-tide",
+          "value": false
+        }
+      ],
+      "narration": "Far below, the reservoir has refilled. Water once again pours over the top of the dam in a steady cascade."
     },
     {
       "id": "empty-handed-on",
@@ -13774,9 +14139,29 @@
           {
             "type": "not",
             "condition": {
-              "type": "flag",
-              "key": "echo-spoken",
-              "equals": true
+              "type": "or",
+              "any": [
+                {
+                  "type": "flag",
+                  "key": "echo-spoken",
+                  "equals": true
+                },
+                {
+                  "type": "and",
+                  "all": [
+                    {
+                      "type": "flag",
+                      "key": "low-tide",
+                      "equals": true
+                    },
+                    {
+                      "type": "flag",
+                      "key": "gates-open",
+                      "equals": false
+                    }
+                  ]
+                }
+              ]
             }
           }
         ]
@@ -13986,6 +14371,10 @@
     "gates-open": false,
     "low-tide": false,
     "low-tide-countdown": 0,
+    "reservoir-refill-countdown": 0,
+    "maintenance-lights": true,
+    "leak-active": false,
+    "leak-flood-counter": 0,
     "endgame-narrated": false,
     "empty-handed": true,
     "river-tick-counter": 0,

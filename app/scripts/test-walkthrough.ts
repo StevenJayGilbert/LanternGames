@@ -1960,6 +1960,175 @@ console.log("\n--- F32: Throw object at self ---");
   }
 }
 
+// F37: Dam-controls path silences loud-room (canonical solve)
+console.log("\n--- F37: Dam-controls path silences loud-room ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "maintenance-room", wrench: "player" },
+  };
+  // Yellow → enable bolt
+  f.execute({ type: "recordIntent", signalId: "push-yellow-button" });
+  if (f.state.flags["gate-flag"] !== true) fail("F37 yellow button didn't enable bolt", `flags=${JSON.stringify(f.state.flags["gate-flag"])}`);
+  // Walk to dam-room (or just /tp)
+  f.state = { ...f.state, itemLocations: { ...f.state.itemLocations, player: "dam-room" } };
+  // Open gates
+  f.execute({ type: "recordIntent", signalId: "turn-dam-bolt", args: { withItemId: "wrench" } });
+  if (f.state.flags["gates-open"] !== true) fail("F37 gates didn't open", `gates-open=${f.state.flags["gates-open"]}`);
+  // Wait 8 turns for the drain
+  for (let i = 0; i < 8; i++) f.execute({ type: "wait" });
+  if (f.state.flags["low-tide"] !== true) {
+    fail("F37 low-tide didn't fire after 8 turns", `low-tide=${f.state.flags["low-tide"]} countdown=${f.state.flags["low-tide-countdown"]}`);
+  }
+  // Close gates — low-tide should STAY true (the bug-fix)
+  f.execute({ type: "recordIntent", signalId: "turn-dam-bolt", args: { withItemId: "wrench" } });
+  if (f.state.flags["gates-open"] !== false) fail("F37 gates didn't close", `gates-open=${f.state.flags["gates-open"]}`);
+  if (f.state.flags["low-tide"] !== true) {
+    fail("F37 low-tide reset on close (regression)", `low-tide=${f.state.flags["low-tide"]}`);
+  } else {
+    pass("F37 low-tide persists through gate close (silent window open)");
+  }
+  // /tp loud-room — should be silent, no warning, no eject
+  f.state = { ...f.state, itemLocations: { ...f.state.itemLocations, player: "loud-room" } };
+  const r = f.execute({ type: "wait" });
+  const hasNoiseyCue = r.narrationCues.some((c) => /pounding|unbearably/i.test(c));
+  if (!hasNoiseyCue && f.state.itemLocations.player === "loud-room") {
+    pass("F37 dam-path silenced loud-room: no warning, no eject");
+  } else {
+    fail("F37 loud-room not silent via dam path",
+         `cues=${JSON.stringify(r.narrationCues)} loc=${f.state.itemLocations.player}`);
+  }
+}
+
+// F38: Reservoir refills, loud-room becomes loud again
+console.log("\n--- F38: Reservoir refills, loud-room becomes loud again ---");
+{
+  const f = new Engine(story);
+  // Skip the dam-puzzle setup; force the post-close-silent state directly.
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "dam-room" },
+    flags: {
+      ...f.state.flags,
+      "gate-flag": true,
+      "gates-open": false,
+      "low-tide": true,
+      "reservoir-refill-countdown": 8,
+    },
+  };
+  // Tick the refill counter down to 0
+  for (let i = 0; i < 8; i++) f.execute({ type: "wait" });
+  if (f.state.flags["low-tide"] !== false) {
+    fail("F38 low-tide didn't reset after refill window", `low-tide=${f.state.flags["low-tide"]} refill=${f.state.flags["reservoir-refill-countdown"]}`);
+  } else {
+    pass("F38 reservoir refilled → low-tide=false");
+  }
+  // /tp loud-room — should be loud again (warning fires)
+  f.state = { ...f.state, itemLocations: { ...f.state.itemLocations, player: "loud-room" } };
+  const r = f.execute({ type: "wait" });
+  if (r.narrationCues.some((c) => /pounding|silence the noise/i.test(c))) {
+    pass("F38 after refill, loud-room re-engages eject mechanic");
+  } else {
+    fail("F38 expected warning cue after refill", JSON.stringify(r.narrationCues));
+  }
+}
+
+// F39: gates-open + not-low-tide is unbearably-loud
+console.log("\n--- F39: Gates-open is unbearably loud ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "loud-room" },
+    flags: {
+      ...f.state.flags,
+      "gate-flag": true,
+      "gates-open": true,
+      "low-tide": false,
+    },
+  };
+  // The unbearably-loud variant should NOT silence — eject should still fire
+  // since (gates-open AND not-low-tide) ≠ silent. The variant is only a
+  // description override; the tick mechanic still ejects.
+  const r1 = f.execute({ type: "wait" });
+  const r2 = f.execute({ type: "wait" });
+  if (f.state.itemLocations.player !== "loud-room") {
+    pass(`F39 unbearably-loud → ejected to ${f.state.itemLocations.player}`);
+  } else {
+    fail("F39 expected eject in unbearably-loud state",
+         `loc=${f.state.itemLocations.player} cues=${JSON.stringify([...r1.narrationCues, ...r2.narrationCues])}`);
+  }
+}
+
+// F40: Red button is a cosmetic no-op
+console.log("\n--- F40: Red button is cosmetic ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "maintenance-room" },
+  };
+  const before = JSON.stringify({
+    gate: f.state.flags["gate-flag"],
+    gates: f.state.flags["gates-open"],
+    leak: f.state.flags["leak-active"],
+  });
+  const r = f.execute({ type: "recordIntent", signalId: "push-red-button" });
+  const after = JSON.stringify({
+    gate: f.state.flags["gate-flag"],
+    gates: f.state.flags["gates-open"],
+    leak: f.state.flags["leak-active"],
+  });
+  if (before === after && r.narrationCues.some((c) => /flicker|lights/i.test(c))) {
+    pass("F40 red button → flavor cue, no puzzle-state mutation");
+  } else {
+    fail("F40 red button changed puzzle state or didn't narrate",
+         `before=${before} after=${after} cues=${JSON.stringify(r.narrationCues)}`);
+  }
+}
+
+// F41: Blue button starts leak; putty plugs it
+console.log("\n--- F41: Blue button + putty plug ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "maintenance-room", putty: "player" },
+  };
+  f.execute({ type: "recordIntent", signalId: "push-blue-button" });
+  if (f.state.flags["leak-active"] !== true) {
+    fail("F41 leak didn't activate", `leak-active=${f.state.flags["leak-active"]}`);
+  }
+  f.execute({ type: "recordIntent", signalId: "plug-leak-with-putty" });
+  if (f.state.flags["leak-active"] === false && f.state.itemLocations["putty"] === "nowhere") {
+    pass("F41 putty plugged the leak; viscous material consumed");
+  } else {
+    fail("F41 plug failed",
+         `leak-active=${f.state.flags["leak-active"]} putty=${f.state.itemLocations["putty"]}`);
+  }
+}
+
+// F42: Blue button without putty drowns the player
+console.log("\n--- F42: Blue button drowning ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "maintenance-room" },
+  };
+  f.execute({ type: "recordIntent", signalId: "push-blue-button" });
+  for (let i = 0; i < 6; i++) {
+    if (f.state.finished) break;
+    f.execute({ type: "wait" });
+  }
+  if (f.state.finished?.won === false && f.state.finished.message?.includes("drowns")) {
+    pass("F42 leak flooded → drowning death");
+  } else {
+    fail("F42 expected drowning death", `finished=${JSON.stringify(f.state.finished)}`);
+  }
+}
+
 // -------------------- Summary --------------------
 
 console.log(`\n\n========== SUMMARY ==========`);
