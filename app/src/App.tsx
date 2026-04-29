@@ -325,12 +325,28 @@ function App() {
   };
 
   // Loading a slot replaces engine state + transcript + input history + the
-  // narrator's conversation history. Quick-save is unchanged here — the next
-  // turn will overwrite it from the loaded state. This intentionally forks
-  // play: the manual slot stays pinned, quick-save tracks the new branch.
+  // narrator's conversation history. The slot's data is also mirrored into
+  // quick-save BEFORE setEngine is called, because setEngine triggers the
+  // narrator-creation useEffect which loads narratorHistory from quick.
+  // Without this mirror, a load would alive-engine the player but resurrect
+  // the narrator with whatever stale history (often a dead-state run) was
+  // last in quick, so the LLM keeps narrating the previous outcome.
+  // Mirroring also matches the documented "loading a manual slot forks play;
+  // quick tracks the new branch from the next turn onward" semantic — the
+  // branch starts now, with the slot's data as turn-zero.
   const handleLoadSlot = (slot: SaveSlot) => {
     const saved = loadSession(story.id, slot);
     if (!saved) return;
+    if (slot !== "quick") {
+      saveSession({
+        storyId: story.id,
+        slot: "quick",
+        engineState: saved.engineState,
+        narratorHistory: saved.narratorHistory,
+        transcript: saved.transcript,
+        inputHistory: saved.inputHistory,
+      });
+    }
     const fresh = new Engine(story, saved.engineState);
     setEngine(fresh);
     setTranscript(
