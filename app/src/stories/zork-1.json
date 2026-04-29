@@ -892,7 +892,7 @@
     {
       "id": "reservoir-south",
       "name": "Reservoir South",
-      "description": "There is a path along the stream to the east or west, a steep pathway climbing southwest along the edge of a chasm, and a path leading into a canyon to the southeast.",
+      "description": "You are in a long room on the south shore of a large lake, far too deep and wide for crossing. There is a path along the stream to the east or west, a steep pathway climbing southwest along the edge of a chasm, and a path leading into a canyon to the southeast.",
       "exits": {
         "southeast": {
           "to": "deep-canyon"
@@ -914,12 +914,22 @@
             "equals": true
           }
         }
-      }
+      },
+      "variants": [
+        {
+          "when": {
+            "type": "flag",
+            "key": "low-tide",
+            "equals": true
+          },
+          "text": "You are at the south end of what was once a large lake. With the reservoir drained, the lake bed lies exposed — a stretch of dark mud, silt, and the occasional rusted relic. A path runs east and west; a steep pathway climbs southwest along the edge of a chasm; a canyon opens to the southeast. To the north, the dry bed leads into the reservoir proper."
+        }
+      ]
     },
     {
       "id": "reservoir",
       "name": "Reservoir",
-      "description": "You are in a vast underground chamber, half-filled with cold dark water. The reservoir stretches north and south, fed from the north and drained by the dam to the south. Boats might cross when the water is high; at low tide, mud and silt stretch where the water once stood.",
+      "description": "You are in a vast underground chamber, half-filled with cold dark water. The reservoir stretches north and south, fed from the north and drained by the dam to the south. The water laps gently at the walls.",
       "exits": {
         "north": {
           "to": "reservoir-north"
@@ -933,12 +943,22 @@
         "west": {
           "to": "in-stream"
         }
-      }
+      },
+      "variants": [
+        {
+          "when": {
+            "type": "flag",
+            "key": "low-tide",
+            "equals": true
+          },
+          "text": "You are in a vast underground chamber. With the reservoir drained, the floor is a flat expanse of dark mud and silt — passable, if unpleasant. The chamber stretches north and south, fed from the north and drained by the dam to the south. Half-buried in the mud, an old wooden trunk gleams with what might be jewels."
+        }
+      ]
     },
     {
       "id": "reservoir-north",
       "name": "Reservoir North",
-      "description": "There is a slimy stairway leaving the room to the north.",
+      "description": "You are in a large cavernous room, the south of which is a wide, deep stream — the head of the reservoir. There is a slimy stairway leaving the room to the north.",
       "exits": {
         "north": {
           "to": "atlantis-room"
@@ -951,7 +971,17 @@
             "equals": true
           }
         }
-      }
+      },
+      "variants": [
+        {
+          "when": {
+            "type": "flag",
+            "key": "low-tide",
+            "equals": true
+          },
+          "text": "You are in a large cavernous room. The southern half, formerly a wide, deep stream feeding the reservoir, is now reduced to a sluggish trickle through mud. A slimy stairway leaves the room to the north."
+        }
+      ]
     },
     {
       "id": "stream-view",
@@ -2324,7 +2354,17 @@
       "name": "green bubble",
       "description": "A small green glass bubble — currently dark, evidently waiting for something.",
       "location": "dam-room",
-      "fixed": true
+      "fixed": true,
+      "variants": [
+        {
+          "when": {
+            "type": "flag",
+            "key": "gate-flag",
+            "equals": true
+          },
+          "text": "A small green glass bubble, glowing steadily — the bolt control is live."
+        }
+      ]
     },
     {
       "id": "altar",
@@ -2570,9 +2610,65 @@
     {
       "id": "dam",
       "name": "dam",
-      "description": "Flood Control Dam #3 — a vast concrete structure of evident bureaucratic origin, holding back an enormous body of water.",
+      "description": "Flood Control Dam #3 — a vast concrete structure of evident bureaucratic origin. Water cascades over its top in a steady, thunderous fall.",
       "location": "dam-room",
-      "fixed": true
+      "fixed": true,
+      "variants": [
+        {
+          "when": {
+            "type": "and",
+            "all": [
+              {
+                "type": "flag",
+                "key": "gates-open",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "low-tide",
+                "equals": false
+              }
+            ]
+          },
+          "text": "Flood Control Dam #3 — a vast concrete structure. The sluice gates are wide open; water roars through in a savage torrent. The reservoir level is visibly falling."
+        },
+        {
+          "when": {
+            "type": "and",
+            "all": [
+              {
+                "type": "flag",
+                "key": "low-tide",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "gates-open",
+                "equals": false
+              }
+            ]
+          },
+          "text": "Flood Control Dam #3 — a vast concrete structure. The reservoir behind it is drained to a mud-flat; with the sluice gates closed and the water gone, the dam stands eerily still."
+        },
+        {
+          "when": {
+            "type": "and",
+            "all": [
+              {
+                "type": "flag",
+                "key": "gates-open",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "low-tide",
+                "equals": true
+              }
+            ]
+          },
+          "text": "Flood Control Dam #3 — a vast concrete structure. The sluice gates are wide open and the reservoir is drained; only a thin trickle still passes through."
+        }
+      ]
     },
     {
       "id": "boarded-window",
@@ -3324,7 +3420,12 @@
       "name": "trunk of jewels",
       "description": "An old wooden trunk, mud-caked and bulging with jewels. A treasure.",
       "location": "reservoir",
-      "takeable": true
+      "takeable": true,
+      "visibleWhen": {
+        "type": "flag",
+        "key": "low-tide",
+        "equals": true
+      }
     },
     {
       "id": "tube",

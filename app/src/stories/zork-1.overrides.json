@@ -287,9 +287,37 @@
   ],
   "rooms": [
     {
-      "$comment": "Reservoir is the canonical missing room description — the ZIL routine walker didn't catch its M-LOOK branch. Authored prose here matches Infocom voice.",
+      "$comment": "Reservoir is the canonical missing room description — the ZIL routine walker didn't catch its M-LOOK branch. Default reads as the high-water state (player's first visit); low-tide variant reads as the drained mud-flat (post-dam-puzzle) and calls out the trunk treasure half-buried in the mud.",
       "id": "reservoir",
-      "description": "You are in a vast underground chamber, half-filled with cold dark water. The reservoir stretches north and south, fed from the north and drained by the dam to the south. Boats might cross when the water is high; at low tide, mud and silt stretch where the water once stood."
+      "description": "You are in a vast underground chamber, half-filled with cold dark water. The reservoir stretches north and south, fed from the north and drained by the dam to the south. The water laps gently at the walls.",
+      "variants": [
+        {
+          "when": { "type": "flag", "key": "low-tide", "equals": true },
+          "text": "You are in a vast underground chamber. With the reservoir drained, the floor is a flat expanse of dark mud and silt — passable, if unpleasant. The chamber stretches north and south, fed from the north and drained by the dam to the south. Half-buried in the mud, an old wooden trunk gleams with what might be jewels."
+        }
+      ]
+    },
+    {
+      "$comment": "Reservoir-south: the lake's south shore. Default = full lake (impassable to the north); low-tide variant = exposed mud-flat (north traversal opens via the existing low-tide-gated exit).",
+      "id": "reservoir-south",
+      "description": "You are in a long room on the south shore of a large lake, far too deep and wide for crossing. There is a path along the stream to the east or west, a steep pathway climbing southwest along the edge of a chasm, and a path leading into a canyon to the southeast.",
+      "variants": [
+        {
+          "when": { "type": "flag", "key": "low-tide", "equals": true },
+          "text": "You are at the south end of what was once a large lake. With the reservoir drained, the lake bed lies exposed — a stretch of dark mud, silt, and the occasional rusted relic. A path runs east and west; a steep pathway climbs southwest along the edge of a chasm; a canyon opens to the southeast. To the north, the dry bed leads into the reservoir proper."
+        }
+      ]
+    },
+    {
+      "$comment": "Reservoir-north: the head of the reservoir, fed by a stream from the north. Default = wide deep stream feeding the lake; low-tide variant = sluggish trickle through mud.",
+      "id": "reservoir-north",
+      "description": "You are in a large cavernous room, the south of which is a wide, deep stream — the head of the reservoir. There is a slimy stairway leaving the room to the north.",
+      "variants": [
+        {
+          "when": { "type": "flag", "key": "low-tide", "equals": true },
+          "text": "You are in a large cavernous room. The southern half, formerly a wide, deep stream feeding the reservoir, is now reduced to a sluggish trickle through mud. A slimy stairway leaves the room to the north."
+        }
+      ]
     },
     {
       "$comment": "kitchen.down: ZIL has CEXIT against FALSE-FLAG (a never-true sentinel) — mechanical extraction produces an unreachable flag-gated exit. Replace with a passage exit so the chimney passage's traversableWhen drives it. Description: state-neutral base; variants append the canonical window state.",
@@ -901,8 +929,44 @@
       "description": "A worn wooden railing, polished smooth by countless hands."
     },
     {
+      "$comment": "Dam water-flow indicator. Three variants over the (gates-open, low-tide) state pair. First-match: torrent-through-gates checked first, then drained-and-closed silent window, then drained-and-still-open trickle. Default base is the initial cascading-over-the-top state.",
       "id": "dam",
-      "description": "Flood Control Dam #3 — a vast concrete structure of evident bureaucratic origin, holding back an enormous body of water."
+      "description": "Flood Control Dam #3 — a vast concrete structure of evident bureaucratic origin. Water cascades over its top in a steady, thunderous fall.",
+      "variants": [
+        {
+          "$comment": "Gates wide open, reservoir not yet drained — water roars through.",
+          "when": {
+            "type": "and",
+            "all": [
+              { "type": "flag", "key": "gates-open", "equals": true },
+              { "type": "flag", "key": "low-tide", "equals": false }
+            ]
+          },
+          "text": "Flood Control Dam #3 — a vast concrete structure. The sluice gates are wide open; water roars through in a savage torrent. The reservoir level is visibly falling."
+        },
+        {
+          "$comment": "Silent window — gates closed AND reservoir drained.",
+          "when": {
+            "type": "and",
+            "all": [
+              { "type": "flag", "key": "low-tide", "equals": true },
+              { "type": "flag", "key": "gates-open", "equals": false }
+            ]
+          },
+          "text": "Flood Control Dam #3 — a vast concrete structure. The reservoir behind it is drained to a mud-flat; with the sluice gates closed and the water gone, the dam stands eerily still."
+        },
+        {
+          "$comment": "Gates re-opened after drain — only a trickle remains.",
+          "when": {
+            "type": "and",
+            "all": [
+              { "type": "flag", "key": "gates-open", "equals": true },
+              { "type": "flag", "key": "low-tide", "equals": true }
+            ]
+          },
+          "text": "Flood Control Dam #3 — a vast concrete structure. The sluice gates are wide open and the reservoir is drained; only a thin trickle still passes through."
+        }
+      ]
     },
     {
       "id": "control-panel",
@@ -915,8 +979,15 @@
       "narratorNote": "When the player wants to turn this bolt, the turn-dam-bolt tool requires a withItemId arg naming the tool. If the player did not name a tool in their input, ASK 'With what?' (or similar) and wait for their reply — do not call the tool with a guessed withItemId. Even if the wrench is in inventory, the player has to say so. This applies to both opening and closing the gates."
     },
     {
+      "$comment": "Dam-panel indicator. Glows when gate-flag=true (yellow button pressed) — the bolt control is live. yellow-button-enables-bolt narrates the flicker once; this variant makes the state persistently readable on examine bubble.",
       "id": "bubble",
-      "description": "A small green glass bubble — currently dark, evidently waiting for something."
+      "description": "A small green glass bubble — currently dark, evidently waiting for something.",
+      "variants": [
+        {
+          "when": { "type": "flag", "key": "gate-flag", "equals": true },
+          "text": "A small green glass bubble, glowing steadily — the bolt control is live."
+        }
+      ]
     },
     {
       "id": "yellow-button",
@@ -1086,8 +1157,10 @@
       "description": "A red metal buoy, weathered by long exposure — evidently a warning."
     },
     {
+      "$comment": "Reservoir treasure. Half-buried in the mud at the bottom of the reservoir — only visible at low-tide (when the reservoir is drained).",
       "id": "trunk",
-      "description": "An old wooden trunk, mud-caked and bulging with jewels. A treasure."
+      "description": "An old wooden trunk, mud-caked and bulging with jewels. A treasure.",
+      "visibleWhen": { "type": "flag", "key": "low-tide", "equals": true }
     },
     {
       "id": "tube",
