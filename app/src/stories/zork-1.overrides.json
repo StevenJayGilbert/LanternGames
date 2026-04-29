@@ -810,8 +810,10 @@
       "description": "A rough cliff face, weathered into ledges and handholds. Climbing it is possible — and perilous."
     },
     {
+      "$comment": "Rainbow scenery. Suppress the LLM's tendency to editorialize about walkability — canonical Zork describes the rainbow purely visually until the player solidifies it with the sceptre. Adding 'you cannot walk upon it' (or its inverse) is engine-side state inference the LLM shouldn't surface. Engine exits gate on rainbow-flag and reject traversal if not set; that's the only authority on whether you can step onto it.",
       "id": "rainbow",
-      "description": "A perfect arc of color, shimmering with a strange and almost solid presence."
+      "description": "A perfect arc of color, shimmering with a strange and almost solid presence.",
+      "narratorNote": "Describe the rainbow strictly as a visual phenomenon — colors arcing over the falls. Never volunteer claims about its walkability or solidity in either direction (do NOT say 'you cannot walk on it' or 'it looks solid enough to walk on'). The engine controls traversal via the rainbow-flag-gated exits; if the player attempts to walk onto the rainbow, the engine will either accept or reject and you narrate the actual outcome — but never preemptively comment on its walkability in the room or item description."
     },
     {
       "id": "sand",

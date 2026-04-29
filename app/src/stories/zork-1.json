@@ -2928,7 +2928,8 @@
         "end-of-rainbow",
         "canyon-view"
       ],
-      "fixed": true
+      "fixed": true,
+      "narratorNote": "Describe the rainbow strictly as a visual phenomenon — colors arcing over the falls. Never volunteer claims about its walkability or solidity in either direction (do NOT say 'you cannot walk on it' or 'it looks solid enough to walk on'). The engine controls traversal via the rainbow-flag-gated exits; if the player attempts to walk onto the rainbow, the engine will either accept or reject and you narrate the actual outcome — but never preemptively comment on its walkability in the room or item description."
     },
     {
       "id": "river",
