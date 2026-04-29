@@ -5902,6 +5902,32 @@
       "once": true
     },
     {
+      "id": "untie-rope-on-take",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "hasItem",
+            "itemId": "rope"
+          },
+          {
+            "type": "flag",
+            "key": "dome-flag",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "dome-flag",
+          "value": false
+        }
+      ],
+      "narration": "As you take the rope, it slips free of the railing."
+    },
+    {
       "id": "songbird-opens-egg",
       "when": {
         "type": "and",

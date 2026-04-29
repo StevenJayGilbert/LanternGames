@@ -3752,6 +3752,22 @@
       "once": true
     },
     {
+      "$comment": "Auto-untie when player retakes the tied rope. After tie-rope sets dome-flag=true and parks the rope at dome-room, the player can climb back up via dome.up from torch-room and `take rope` to retrieve it. Without this trigger, dome-flag would stay true while the rope is back in inventory — leaving the dome.down exit open with nothing actually anchoring it. This trigger watches for rope re-entering inventory while dome-flag is true and clears the flag (re-blocking the descent until the rope is tied again). once: false so the player can tie/untie repeatedly.",
+      "id": "untie-rope-on-take",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "hasItem", "itemId": "rope" },
+          { "type": "flag", "key": "dome-flag", "equals": true }
+        ]
+      },
+      "effects": [
+        { "type": "setFlag", "key": "dome-flag", "value": false }
+      ],
+      "narration": "As you take the rope, it slips free of the railing."
+    },
+    {
       "id": "songbird-opens-egg",
       "when": {
         "type": "and",
