@@ -4064,11 +4064,13 @@
     },
     {
       "id": "throw-at-self",
-      "description": "Player throws, hurls, or chucks an object directly at themselves."
+      "description": "Player throws, hurls, or chucks an object directly at themselves.",
+      "alwaysAvailable": true
     },
     {
       "id": "attack-self",
-      "description": "Player attacks, slashes, stabs, or otherwise turns a weapon on themselves."
+      "description": "Player attacks, slashes, stabs, or otherwise turns a weapon on themselves.",
+      "alwaysAvailable": true
     },
     {
       "id": "dig-beach",
@@ -12142,6 +12144,10 @@
           {
             "type": "intentMatched",
             "signalId": "turn-dam-bolt"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "dam-room"
           }
         ]
       },
@@ -13584,9 +13590,18 @@
                 "itemId": "painting"
               },
               {
-                "type": "itemAt",
-                "itemId": "painting",
-                "location": "trophy-case"
+                "type": "and",
+                "all": [
+                  {
+                    "type": "playerAt",
+                    "roomId": "living-room"
+                  },
+                  {
+                    "type": "itemAt",
+                    "itemId": "painting",
+                    "location": "trophy-case"
+                  }
+                ]
               }
             ]
           }

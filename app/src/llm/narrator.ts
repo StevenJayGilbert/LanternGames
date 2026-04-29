@@ -339,12 +339,24 @@ export class Narrator {
           continue;
         }
 
-        // No tool call — Claude responded with text only. That's the final text.
-        // Surface this in the console: LLM responding without ever calling a tool
-        // when the player asked for an action is the smoking gun for moralizing
-        // / hallucination (e.g. "you cannot bring yourself to attack the troll").
-        console.log(`[tool] (no tool call — text-only response)`);
+        // No tool call — Claude responded with text only. Two possibilities:
+        //   1. Conversational filler / refusal narration ("you don't see X here")
+        //   2. The LLM chose prose for a time-passing input ("wait", "look around")
+        //      where it should have called a tool.
+        // Either way, the world should still tick — canonical Zork advances the
+        // turn on any player input. Without this fallback, afterAction triggers
+        // (loud-room eject, lantern drain, grue, thief autonomy) silently never
+        // fire on text-only turns. Surface the no-tool-call in the console for
+        // moralizing / hallucination diagnostics, then execute one wait tick
+        // and append any new narrationCues to the displayed prose.
+        console.log(`[tool] (no tool call — text-only response; firing wait fallback)`);
         finalText = collectText(response);
+        const waitResult = this.engine.execute({ type: "wait" });
+        engineResult = waitResult;
+        if (waitResult.narrationCues.length > 0) {
+          const cuesText = waitResult.narrationCues.join("\n");
+          finalText = finalText ? `${finalText}\n\n${cuesText}` : cuesText;
+        }
         break;
       }
 

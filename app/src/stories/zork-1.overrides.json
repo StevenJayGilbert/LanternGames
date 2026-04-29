@@ -1906,12 +1906,16 @@
       "description": "Player desecrates, mutilates, destroys, or otherwise interferes with the pile of corpses at the entrance to Hades."
     },
     {
+      "$comment": "Always available. The throw-at-self-dies trigger has no location/state gate (the player can hurl any inventory item at themselves anywhere) — making this customTool always-on moves it to the cache-stable tier instead of being re-injected as a per-turn dynamic tool.",
       "id": "throw-at-self",
-      "description": "Player throws, hurls, or chucks an object directly at themselves."
+      "description": "Player throws, hurls, or chucks an object directly at themselves.",
+      "alwaysAvailable": true
     },
     {
+      "$comment": "Always available. Same shape as throw-at-self — suicide-attack-self trigger only requires inventoryHasTag('weapon' OR 'bladed'); it can fire anywhere the player has any weapon. alwaysAvailable so it lives in the cache-stable tool tier.",
       "id": "attack-self",
-      "description": "Player attacks, slashes, stabs, or otherwise turns a weapon on themselves."
+      "description": "Player attacks, slashes, stabs, or otherwise turns a weapon on themselves.",
+      "alwaysAvailable": true
     },
     {
       "id": "dig-beach",
@@ -10022,14 +10026,15 @@
       "narration": "The bolt turns the other way. Below, the sluice gates rumble shut, and water begins to back up behind the dam once again."
     },
     {
-      "$comment": "Bolt-turn fallback. Fires when turn-dam-bolt is matched but neither bolt-opens-gates nor bolt-closes-gates fired (wrong tool, missing wrench, no gate-flag, or wrong room). Always consumes the intent so it doesn't carry across turns. Lower priority than the success triggers so they win when their conditions hold.",
+      "$comment": "Bolt-turn fallback. Fires at dam-room when turn-dam-bolt is matched but neither bolt-opens-gates nor bolt-closes-gates fired (wrong tool, missing wrench, or no gate-flag). Always consumes the intent so it doesn't carry across turns. The playerAt(dam-room) gate is also load-bearing for tool surfacing — without it, the relevance check makes turn-dam-bolt a dynamic intent in EVERY room.",
       "id": "bolt-fails-to-turn",
       "once": false,
       "priority": -10,
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "turn-dam-bolt" }
+          { "type": "intentMatched", "signalId": "turn-dam-bolt" },
+          { "type": "playerAt", "roomId": "dam-room" }
         ]
       },
       "effects": [
@@ -11172,7 +11177,7 @@
       ]
     },
     {
-      "$comment": "F34 — Mung the painting. Canonical: TVALUE → 0 (treasure becomes worthless). We mark painting.broken=true; the score-credit-painting trigger gates on not-broken so it never awards points after this.",
+      "$comment": "F34 — Mung the painting. Canonical: TVALUE → 0 (treasure becomes worthless). We mark painting.broken=true; the score-credit-painting trigger gates on not-broken so it never awards points after this. The trophy-case branch requires playerAt(living-room) so the customTool relevance check doesn't surface 'mung-painting' in every dungeon room once the painting is deposited.",
       "id": "mung-painting-destroys-it",
       "once": true,
       "when": {
@@ -11183,7 +11188,13 @@
             "type": "or",
             "any": [
               { "type": "hasItem", "itemId": "painting" },
-              { "type": "itemAt", "itemId": "painting", "location": "trophy-case" }
+              {
+                "type": "and",
+                "all": [
+                  { "type": "playerAt", "roomId": "living-room" },
+                  { "type": "itemAt", "itemId": "painting", "location": "trophy-case" }
+                ]
+              }
             ]
           }
         ]
