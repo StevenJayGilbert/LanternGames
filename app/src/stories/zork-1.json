@@ -13642,6 +13642,47 @@
           "message": "**** You have died ****\n\nThe Frigid River lives up to its name. The currents catch you and drag you under within seconds; you drown before you can struggle to the surface."
         }
       ]
+    },
+    {
+      "id": "sword-glow-tick",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "hasItem",
+        "itemId": "sword"
+      },
+      "effects": [
+        {
+          "type": "if",
+          "if": {
+            "type": "anyPerceivableItemWith",
+            "key": "hostile",
+            "equals": true
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "Your sword is glowing very brightly."
+            }
+          ],
+          "else": [
+            {
+              "type": "if",
+              "if": {
+                "type": "anyAdjacentRoomItemWith",
+                "key": "hostile",
+                "equals": true
+              },
+              "then": [
+                {
+                  "type": "narrate",
+                  "text": "Your sword is glowing with a faint blue glow."
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
   "defaultVisibility": {

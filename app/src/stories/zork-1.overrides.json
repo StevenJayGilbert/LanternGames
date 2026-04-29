@@ -11224,6 +11224,31 @@
           "message": "**** You have died ****\n\nThe Frigid River lives up to its name. The currents catch you and drag you under within seconds; you drown before you can struggle to the surface."
         }
       ]
+    },
+    {
+      "$comment": "Sword glow per canonical Zork I I-SWORD daemon (1actions.zil:3849). Fires every turn the player is carrying the sword and a hostile is in range — emits the bright cue if a hostile shares the room, else the faint cue if one is in any directly-adjacent room. Silent when no hostile is in range. afterAction so it ticks once per turn after action settles. Item.variants on the sword still drive the examine response with the matching tier prose; this trigger surfaces the glow cue passively each turn.",
+      "id": "sword-glow-tick",
+      "afterAction": true,
+      "once": false,
+      "when": { "type": "hasItem", "itemId": "sword" },
+      "effects": [
+        {
+          "type": "if",
+          "if": { "type": "anyPerceivableItemWith", "key": "hostile", "equals": true },
+          "then": [
+            { "type": "narrate", "text": "Your sword is glowing very brightly." }
+          ],
+          "else": [
+            {
+              "type": "if",
+              "if": { "type": "anyAdjacentRoomItemWith", "key": "hostile", "equals": true },
+              "then": [
+                { "type": "narrate", "text": "Your sword is glowing with a faint blue glow." }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

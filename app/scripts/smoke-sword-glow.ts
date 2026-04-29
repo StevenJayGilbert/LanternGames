@@ -156,5 +156,70 @@ console.log("\n=== Bat triggers glow (canonical ACTORBIT) ===");
   }
 }
 
+// ----- Per-turn cue: trigger surfaces glow tier to narrationCues -----
+//
+// The variants drive the on-demand `examine` description. The
+// `sword-glow-tick` afterAction trigger surfaces the glow tier passively
+// each turn via the narrationCues channel — that's the path the LLM
+// actually sees during play. These cases exercise that channel.
+console.log("\n=== Per-turn cue: trigger emits glow narration via cues ===");
+{
+  const e = new Engine(story);
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "cellar", sword: "player" },
+  };
+  const r = e.execute({ type: "wait" });
+  if (r.narrationCues.some((c) => c.includes("faint blue glow"))) {
+    pass("at cellar (one room from troll-room): faint cue in narrationCues");
+  } else {
+    fail("expected faint cue in narrationCues", JSON.stringify(r.narrationCues));
+  }
+}
+
+{
+  const e = new Engine(story);
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "troll-room", sword: "player" },
+  };
+  const r = e.execute({ type: "wait" });
+  if (r.narrationCues.some((c) => c.includes("very brightly"))) {
+    pass("at troll-room: bright cue in narrationCues");
+  } else {
+    fail("expected bright cue in narrationCues", JSON.stringify(r.narrationCues));
+  }
+}
+
+{
+  const e = new Engine(story);
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "west-of-house", sword: "player" },
+  };
+  const r = e.execute({ type: "wait" });
+  if (!r.narrationCues.some((c) => c.includes("glow"))) {
+    pass("at west-of-house (no hostile in range): no glow cue");
+  } else {
+    fail("expected no glow cue", JSON.stringify(r.narrationCues));
+  }
+}
+
+{
+  // Sword not held → trigger gated on hasItem(sword) → no cue even when
+  // standing on a hostile.
+  const e = new Engine(story);
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "troll-room", sword: "troll-room" },
+  };
+  const r = e.execute({ type: "wait" });
+  if (!r.narrationCues.some((c) => c.includes("glow"))) {
+    pass("sword on floor with hostile present: no cue (trigger gated on hasItem)");
+  } else {
+    fail("expected no cue when sword not held", JSON.stringify(r.narrationCues));
+  }
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);
