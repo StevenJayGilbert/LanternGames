@@ -10,6 +10,7 @@ import type { Atom, GameState, Item, Passage, Story } from "../story/schema";
 import { computeRank } from "./rank";
 import {
   currentRoom,
+  currentRoomId,
   evaluateCondition,
   isContainerAccessible,
   itemById,
@@ -18,6 +19,8 @@ import {
   passagePresentation,
   passageSideHere,
   passagesHere,
+  PLAYER_ITEM_ID,
+  playerVehicleId,
   resolveRoomDescription,
   roomById,
   visibleExits,
@@ -126,10 +129,11 @@ export interface WorldView {
 
 export function buildView(state: GameState, story: Story): WorldView {
   const room = currentRoom(state, story);
+  const vehicleId = playerVehicleId(state, story);
   if (!room) {
     return {
       room: {
-        id: state.playerLocation,
+        id: "(unknown)",
         name: "(unknown)",
         description: "(no such room)",
       },
@@ -149,9 +153,9 @@ export function buildView(state: GameState, story: Story): WorldView {
   // If the player is in a vehicle, items located AT the vehicle are also
   // perceivable — the LLM should see what's "in the boat with you".
   const vehicleContents =
-    state.playerVehicle !== null
+    vehicleId !== null
       ? story.items
-          .filter((i) => state.itemLocations[i.id] === state.playerVehicle)
+          .filter((i) => i.id !== PLAYER_ITEM_ID && state.itemLocations[i.id] === vehicleId)
           .map((i) => toItemView(i, state, story))
       : [];
   const itemsHere = [...baseItemsHere, ...vehicleContents];
@@ -179,8 +183,8 @@ export function buildView(state: GameState, story: Story): WorldView {
   // item itself is at some room (state.itemLocations[vehicleId]) — usually the
   // current room since mobile vehicles travel with go(), but we don't enforce.
   let vehicleView: WorldView["vehicle"];
-  if (state.playerVehicle !== null) {
-    const v = itemById(story, state.playerVehicle);
+  if (vehicleId !== null) {
+    const v = itemById(story, vehicleId);
     if (v?.vehicle) {
       vehicleView = {
         id: v.id,
@@ -225,7 +229,8 @@ export function buildView(state: GameState, story: Story): WorldView {
 function toPassageView(passage: Passage, state: GameState, story: Story): PassageView {
   const presentation = passagePresentation(passage, state, story);
   // The other side of the passage — the room you'd reach by going through.
-  const otherSide = passage.sides.find((s) => s.roomId !== state.playerLocation);
+  const playerRoomId = currentRoomId(state, story);
+  const otherSide = passage.sides.find((s) => s.roomId !== playerRoomId);
   const otherRoom = otherSide ? roomById(story, otherSide.roomId) : undefined;
   const view: PassageView = {
     id: passage.id,
@@ -246,7 +251,7 @@ function toPassageView(passage: Passage, state: GameState, story: Story): Passag
   // need state-based gating, authors set `when` explicitly. When satisfied,
   // the engine attaches the other room's name + description alongside any
   // author-provided text/prompt.
-  const here = passageSideHere(passage, state);
+  const here = passageSideHere(passage, state, story);
   const effectiveGlimpse = here?.glimpse ?? passage.glimpse;
   if (effectiveGlimpse && otherRoom) {
     const available = effectiveGlimpse.when

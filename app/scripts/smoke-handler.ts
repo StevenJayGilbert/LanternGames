@@ -148,7 +148,7 @@ console.log("\n=== handler precondition: not openable ===");
   // Leaflet has no state.isOpen.
   e.state = {
     ...e.state,
-    itemLocations: { ...e.state.itemLocations, "advertisement": "inventory" },
+    itemLocations: { ...e.state.itemLocations, "advertisement": "player" },
   };
   const r = e.execute({ type: "recordIntent", signalId: "test-open", args: { itemId: "advertisement" } });
   r.ok ? pass("recordIntent ok=true") : fail("ok=false");
@@ -199,7 +199,7 @@ console.log("\n=== handler: passage open/close ===");
   // and operate on items OR passages thanks to the polymorphic preconditions).
   const e = new Engine(zork as unknown as Story);
   // kitchen-window is a passage between east-of-house and kitchen, starts closed.
-  e.state = { ...e.state, playerLocation: "east-of-house" };
+  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "east-of-house" } };
   const before = e.state.passageStates["kitchen-window"]?.isOpen;
   before === false ? pass("kitchen-window starts closed") : fail(`isOpen=${before}`);
 
@@ -229,7 +229,7 @@ console.log("\n=== handler: passage open/close ===");
 
   // Open from a far-away room → precondition fails
   const e2 = new Engine(zork as unknown as Story);
-  e2.state = { ...e2.state, playerLocation: "west-of-house" };
+  e2.state = { ...e2.state, itemLocations: { ...e2.state.itemLocations, player: "west-of-house" } };
   const r3 = e2.execute({
     type: "recordIntent",
     signalId: "open",
@@ -247,7 +247,7 @@ console.log("\n=== handler: passage open/close ===");
 console.log("\n=== view: narratorNote on surface items ===");
 {
   const e = new Engine(zork as unknown as Story);
-  e.state = { ...e.state, playerLocation: "kitchen" };
+  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "kitchen" } };
   const view = e.getView();
   const kt = view.itemsHere.find((i) => i.id === "kitchen-table");
   kt?.narratorNote?.includes("flat work surface")
@@ -265,7 +265,7 @@ console.log("\n=== view: narratorNote on surface items ===");
 console.log("\n=== handler: close refuses on surface containers ===");
 {
   const e = new Engine(zork as unknown as Story);
-  e.state = { ...e.state, playerLocation: "kitchen" };
+  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "kitchen" } };
   // kitchen-table has no state.isOpen after the surface override → close
   // handler's itemHasStateKey precondition fails with the right narration.
   const r = e.execute({

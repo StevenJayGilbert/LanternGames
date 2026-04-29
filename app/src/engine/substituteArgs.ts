@@ -99,20 +99,26 @@ export function substituteEffect(e: Effect, args: Args): Effect | null {
       if (id === null) return null;
       return { ...e, passageId: id };
     }
-    case "random": {
-      const branches: typeof e.branches = [];
-      for (const b of e.branches) {
-        const subs: Effect[] = [];
-        if (b.effects) {
-          for (const sub of b.effects) {
-            const r = substituteEffect(sub, args);
-            if (r === null) return null;
-            subs.push(r);
-          }
-        }
-        branches.push({ ...b, effects: subs });
+    case "if": {
+      // Substitute inside the condition AND both effect arms.
+      const cond = substituteCondition(e.if, args);
+      if (cond === null) return null;
+      const thens: Effect[] = [];
+      for (const sub of e.then) {
+        const r = substituteEffect(sub, args);
+        if (r === null) return null;
+        thens.push(r);
       }
-      return { ...e, branches };
+      let elses: Effect[] | undefined;
+      if (e.else) {
+        elses = [];
+        for (const sub of e.else) {
+          const r = substituteEffect(sub, args);
+          if (r === null) return null;
+          elses.push(r);
+        }
+      }
+      return { type: "if", if: cond, then: thens, else: elses };
     }
     default:
       return e;

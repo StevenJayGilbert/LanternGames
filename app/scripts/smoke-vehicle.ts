@@ -46,7 +46,7 @@ console.log("\n=== #11 inventoryHasTag condition ===");
   // Give sword (sword has weapon tag in extracted story)
   e.state = {
     ...e.state,
-    itemLocations: { ...e.state.itemLocations, sword: "inventory" },
+    itemLocations: { ...e.state.itemLocations, sword: "player" },
   };
   evaluateCondition({ type: "inventoryHasTag", tag: "weapon" }, e.state, e.story) === true
     ? pass("with sword in inventory → inventoryHasTag(weapon) is true")
@@ -59,7 +59,7 @@ console.log("\n=== #11 inventoryHasTag condition ===");
   // Give a treasure too — bag-of-coins has the treasure tag (added in earlier batch)
   e.state = {
     ...e.state,
-    itemLocations: { ...e.state.itemLocations, "bag-of-coins": "inventory" },
+    itemLocations: { ...e.state.itemLocations, "bag-of-coins": "player" },
   };
   evaluateCondition({ type: "inventoryHasTag", tag: "treasure" }, e.state, e.story) === true
     ? pass("with bag-of-coins → inventoryHasTag(treasure) is true")
@@ -71,28 +71,28 @@ console.log("\n=== #12 board / disembark ===");
 {
   const e = new Engine(storyWithBoatAsVehicle());
   // Place player at dam-base where the boat is
-  e.state = { ...e.state, playerLocation: "dam-base" };
+  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "dam-base" } };
 
-  // Initial state: not in any vehicle
-  e.state.playerVehicle === null
-    ? pass("playerVehicle starts null")
-    : fail(`playerVehicle = ${e.state.playerVehicle}`);
+  // Initial state: not in any vehicle (player parent is a room, not the boat)
+  e.state.itemLocations.player === "dam-base"
+    ? pass("player starts on foot at dam-base")
+    : fail(`player = ${e.state.itemLocations.player}`);
 
   // Board the boat
   const r1 = e.execute({ type: "board", itemId: "inflatable-boat" });
-  r1.event.type === "boarded" && e.state.playerVehicle === "inflatable-boat"
-    ? pass("board sets playerVehicle and emits boarded event")
-    : fail(`event=${r1.event.type} playerVehicle=${e.state.playerVehicle}`);
+  r1.event.type === "boarded" && e.state.itemLocations.player === "inflatable-boat"
+    ? pass("board sets player parent to vehicle and emits boarded event")
+    : fail(`event=${r1.event.type} player=${e.state.itemLocations.player}`);
 
   // Try to board again — should still succeed (re-boarding is idempotent in our impl)
   const r2 = e.execute({ type: "board", itemId: "inflatable-boat" });
   r2.ok ? pass("re-boarding same vehicle succeeds (idempotent)") : fail("re-board rejected");
 
-  // Disembark
+  // Disembark — player parent goes back to the vehicle's room (dam-base)
   const r3 = e.execute({ type: "disembark" });
-  r3.event.type === "disembarked" && e.state.playerVehicle === null
-    ? pass("disembark clears playerVehicle and emits disembarked event")
-    : fail(`event=${r3.event.type} playerVehicle=${e.state.playerVehicle}`);
+  r3.event.type === "disembarked" && e.state.itemLocations.player === "dam-base"
+    ? pass("disembark moves player back to vehicle's room and emits disembarked event")
+    : fail(`event=${r3.event.type} player=${e.state.itemLocations.player}`);
 
   // Disembark while not in vehicle → reject
   const r4 = e.execute({ type: "disembark" });
@@ -125,7 +125,7 @@ console.log("\n=== #13 enterableWhen + mobile go() ===");
   );
   const customStory: Story = { ...story, items };
   const e = new Engine(customStory);
-  e.state = { ...e.state, playerLocation: "dam-base" };
+  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "dam-base" } };
 
   // Board with deflated → reject
   const r1 = e.execute({ type: "board", itemId: "inflatable-boat" });
@@ -145,14 +145,15 @@ console.log("\n=== #13 enterableWhen + mobile go() ===");
   const r2 = e.execute({ type: "board", itemId: "inflatable-boat" });
   r2.ok ? pass("board with enterableWhen=true → succeeds") : fail("board still blocked");
 
-  // Boat at dam-base; player in boat. Now go(north) — boat should follow.
+  // Boat at dam-base; player in boat. Now go(north) — boat should follow,
+  // player rides along via parentage (player.location stays "inflatable-boat").
   const r3 = e.execute({ type: "go", direction: "north" });
   r3.ok &&
-    e.state.playerLocation === "dam-room" &&
+    e.state.itemLocations.player === "inflatable-boat" &&
     e.state.itemLocations["inflatable-boat"] === "dam-room"
-    ? pass("mobile vehicle follows player on go()")
+    ? pass("mobile vehicle follows player on go() — player rides via parentage")
     : fail(
-        `player=${e.state.playerLocation} boat=${e.state.itemLocations["inflatable-boat"]}`,
+        `player=${e.state.itemLocations.player} boat=${e.state.itemLocations["inflatable-boat"]}`,
       );
 }
 
@@ -174,7 +175,7 @@ console.log("\n=== #14 stationary vehicle refuses go() ===");
   );
   const customStory: Story = { ...story, items };
   const e = new Engine(customStory);
-  e.state = { ...e.state, playerLocation: "west-of-house" };
+  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "west-of-house" } };
 
   const r1 = e.execute({ type: "board", itemId: "mailbox" });
   r1.ok ? pass("board stationary 'vehicle' (silly but allowed) succeeds") : fail(`board failed: ${JSON.stringify(r1.event)}`);
@@ -189,7 +190,7 @@ console.log("\n=== #14 stationary vehicle refuses go() ===");
 console.log("\n=== #14b inVehicle condition ===");
 {
   const e = new Engine(storyWithBoatAsVehicle());
-  e.state = { ...e.state, playerLocation: "dam-base" };
+  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "dam-base" } };
 
   evaluateCondition({ type: "inVehicle" }, e.state, e.story) === false
     ? pass("on foot → inVehicle() is false")
@@ -214,7 +215,7 @@ console.log("\n=== #14b inVehicle condition ===");
 console.log("\n=== #14c WorldView.vehicle populated when boarded ===");
 {
   const e = new Engine(storyWithBoatAsVehicle());
-  e.state = { ...e.state, playerLocation: "dam-base" };
+  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "dam-base" } };
 
   let v = e.getView();
   v.vehicle === undefined ? pass("on foot: view.vehicle absent") : fail("expected undefined");

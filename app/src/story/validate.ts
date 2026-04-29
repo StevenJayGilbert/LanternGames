@@ -24,7 +24,10 @@ export type ValidationResult =
   | { ok: true; story: Story }
   | { ok: false; errors: ValidationError[] };
 
-const SPECIAL_LOCATIONS = new Set(["inventory", "nowhere"]);
+// "player" is the canonical id for items in inventory after the player-as-item
+// refactor; "inventory" is kept as a legacy alias the engine normalizes at
+// load-time. Both are valid as `location` / `to` / `from` values.
+const SPECIAL_LOCATIONS = new Set(["inventory", "player", "nowhere"]);
 
 export function validateStory(input: unknown): ValidationResult {
   const errors: ValidationError[] = [];
@@ -54,6 +57,11 @@ export function validateStory(input: unknown): ValidationResult {
 
   const items = expectArray(input, "items", err) ?? [];
   const itemIds = collectIds(items, "items", err);
+  // Reserved item id: the player is a tracked item in state.itemLocations.
+  // Triggers/effects can reference "player" as an itemId (e.g.
+  // moveItem(player, room) for teleports / vehicle eject). Add it to the
+  // known set so validation doesn't reject these.
+  itemIds.add("player");
   items.forEach((item, i) => validateItem(item, `items[${i}]`, roomIds, itemIds, err));
   detectContainerCycles(items, err);
 
@@ -106,15 +114,6 @@ export function validateStory(input: unknown): ValidationResult {
   collectIds(customTools, "customTools", err);
   customTools.forEach((t, i) =>
     validateCustomTool(t, `customTools[${i}]`, roomIds, itemIds, triggerIds, err),
-  );
-
-  const winConds = optionalArray(input, "winConditions", err) ?? [];
-  winConds.forEach((c, i) =>
-    validateEndCondition(c, `winConditions[${i}]`, roomIds, itemIds, triggerIds, err),
-  );
-  const loseConds = optionalArray(input, "loseConditions", err) ?? [];
-  loseConds.forEach((c, i) =>
-    validateEndCondition(c, `loseConditions[${i}]`, roomIds, itemIds, triggerIds, err),
   );
 
   if ("startState" in input && input.startState !== undefined) {
@@ -458,7 +457,7 @@ function validateTrigger(
   else validateCondition(raw.when, `${path}.when`, roomIds, itemIds, triggerIds, err);
   if (raw.effects !== undefined) {
     if (!Array.isArray(raw.effects)) err(`${path}.effects`, "must be an array");
-    else raw.effects.forEach((e, i) => validateEffect(e, `${path}.effects[${i}]`, roomIds, itemIds, err));
+    else raw.effects.forEach((e, i) => validateEffect(e, `${path}.effects[${i}]`, roomIds, itemIds, triggerIds, err));
   }
   if (raw.narration !== undefined && typeof raw.narration !== "string") {
     err(`${path}.narration`, "must be a string");
@@ -719,7 +718,7 @@ function validateCustomTool(
         err(`${path}.handler.effects`, "must be an array");
       } else {
         h.effects.forEach((eff, i) => {
-          validateEffect(eff, `${path}.handler.effects[${i}]`, roomIds, itemIds, err);
+          validateEffect(eff, `${path}.handler.effects[${i}]`, roomIds, itemIds, triggerIds, err);
           // Same fromArg ref check.
           const text = JSON.stringify(eff);
           const refMatches = text.match(/"fromArg"\s*:\s*"([^"]+)"/g) ?? [];
@@ -752,20 +751,6 @@ function validateNpc(
   if (typeof raw.location === "string" && !roomIds.has(raw.location)) {
     err(`${path}.location`, `unknown room "${raw.location}"`);
   }
-}
-
-function validateEndCondition(
-  raw: unknown,
-  path: string,
-  roomIds: Set<string>,
-  itemIds: Set<string>,
-  triggerIds: Set<string>,
-  err: (p: string, m: string) => void,
-) {
-  if (!isObject(raw)) return err(path, "must be an object");
-  requireString(raw, "message", err, path);
-  if (raw.when === undefined) err(`${path}.when`, "missing condition");
-  else validateCondition(raw.when, `${path}.when`, roomIds, itemIds, triggerIds, err);
 }
 
 // IdRef = string (item id) | { fromArg: string } (substituted at handler
@@ -1007,6 +992,7 @@ function validateEffect(
   path: string,
   roomIds: Set<string>,
   itemIds: Set<string>,
+  triggerIds: Set<string>,
   err: (p: string, m: string) => void,
 ) {
   if (!isObject(raw)) return err(path, "must be an object");
@@ -1036,10 +1022,35 @@ function validateEffect(
         err(`${path}.to`, "an item cannot be moved inside itself");
       }
       return;
-    case "movePlayer":
-      if (typeof raw.to !== "string") err(`${path}.to`, "must be a string");
-      else if (!roomIds.has(raw.to)) err(`${path}.to`, `unknown room "${raw.to}"`);
+    case "moveItemsFrom": {
+      const validateLoc = (which: "from" | "to") => {
+        const v = raw[which];
+        if (typeof v !== "string") {
+          err(`${path}.${which}`, "must be a string");
+          return;
+        }
+        if (
+          !SPECIAL_LOCATIONS.has(v) &&
+          !roomIds.has(v) &&
+          !(itemIds.size > 0 && itemIds.has(v))
+        ) {
+          err(
+            `${path}.${which}`,
+            `unknown location "${v}" (must be a roomId, an itemId, "inventory", or "nowhere")`,
+          );
+        }
+      };
+      validateLoc("from");
+      validateLoc("to");
+      if (
+        typeof raw.from === "string" &&
+        typeof raw.to === "string" &&
+        raw.from === raw.to
+      ) {
+        err(`${path}.to`, "from and to are identical — no-op");
+      }
       return;
+    }
     case "setPassageState":
       // passageId may be literal OR {fromArg} inside a CustomTool handler.
       validatePassageIdRef(raw.passageId, `${path}.passageId`, err);
@@ -1074,61 +1085,59 @@ function validateEffect(
     case "removeMatchedIntent":
       if (typeof raw.signalId !== "string") err(`${path}.signalId`, "must be a string");
       return;
-    case "setPlayerVehicle":
-      // null = eject; non-null must reference a known item with a `vehicle` field.
-      // We validate the id exists; the vehicle-field check is soft (not threaded
-      // through here for cycle reasons). Authors typing nonsense get caught by
-      // unknown-item; missing vehicle field is silently a no-op effectively.
-      if (raw.itemId !== null) {
-        if (typeof raw.itemId !== "string") {
-          err(`${path}.itemId`, "must be a string or null");
-        } else if (itemIds.size && !itemIds.has(raw.itemId)) {
-          err(`${path}.itemId`, `unknown item "${raw.itemId}"`);
-        }
+    case "setFlagRandom":
+      if (typeof raw.key !== "string" || raw.key.length === 0) {
+        err(`${path}.key`, "must be a non-empty string");
+      }
+      if (typeof raw.min !== "number" || !Number.isFinite(raw.min)) {
+        err(`${path}.min`, "must be a finite number");
+      }
+      if (typeof raw.max !== "number" || !Number.isFinite(raw.max)) {
+        err(`${path}.max`, "must be a finite number");
+      }
+      if (
+        typeof raw.min === "number" &&
+        typeof raw.max === "number" &&
+        raw.min > raw.max
+      ) {
+        err(`${path}`, `min (${raw.min}) must be ≤ max (${raw.max})`);
       }
       return;
-    case "random": {
-      // branches: non-empty array; each branch has weight (number ≥ 0),
-      // optional effects (Effect[]) and optional narration (string).
-      // Total weight must be > 0 (else trigger would never roll any branch).
-      if (!Array.isArray(raw.branches) || raw.branches.length === 0) {
-        err(`${path}.branches`, "must be a non-empty array");
-        return;
-      }
-      let totalWeight = 0;
-      raw.branches.forEach((b, i) => {
-        const bp = `${path}.branches[${i}]`;
-        if (!isObject(b)) {
-          err(bp, "must be an object");
-          return;
-        }
-        if (typeof b.weight !== "number" || !Number.isFinite(b.weight) || b.weight < 0) {
-          err(`${bp}.weight`, "must be a non-negative finite number");
-        } else {
-          totalWeight += b.weight;
-        }
-        if (b.effects !== undefined) {
-          if (!Array.isArray(b.effects)) {
-            err(`${bp}.effects`, "must be an array of effects");
-          } else {
-            b.effects.forEach((e, j) =>
-              validateEffect(e, `${bp}.effects[${j}]`, roomIds, itemIds, err),
-            );
-          }
-        }
-        if (b.narration !== undefined && typeof b.narration !== "string") {
-          err(`${bp}.narration`, "must be a string");
-        }
-      });
-      if (totalWeight <= 0) {
-        err(`${path}.branches`, "total weight across all branches must be > 0");
+    case "narrate":
+      if (typeof raw.text !== "string" || raw.text.length === 0) {
+        err(`${path}.text`, "must be a non-empty string");
       }
       return;
-    }
     case "endGame":
       if (typeof raw.won !== "boolean") err(`${path}.won`, "must be boolean");
       if (typeof raw.message !== "string") err(`${path}.message`, "must be a string");
       return;
+    case "if": {
+      // Deterministic conditional: requires `if` Condition + `then` Effect[];
+      // optional `else` Effect[].
+      if (raw.if === undefined) {
+        err(`${path}.if`, "missing condition");
+      } else {
+        validateCondition(raw.if, `${path}.if`, roomIds, itemIds, triggerIds, err);
+      }
+      if (!Array.isArray(raw.then)) {
+        err(`${path}.then`, "must be an array of effects");
+      } else {
+        raw.then.forEach((e, i) =>
+          validateEffect(e, `${path}.then[${i}]`, roomIds, itemIds, triggerIds, err),
+        );
+      }
+      if (raw.else !== undefined) {
+        if (!Array.isArray(raw.else)) {
+          err(`${path}.else`, "must be an array of effects");
+        } else {
+          raw.else.forEach((e, i) =>
+            validateEffect(e, `${path}.else[${i}]`, roomIds, itemIds, triggerIds, err),
+          );
+        }
+      }
+      return;
+    }
     default:
       err(`${path}.type`, `unknown effect type "${String((raw as Record<string, unknown>).type)}"`);
   }

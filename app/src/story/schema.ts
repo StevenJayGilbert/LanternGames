@@ -94,29 +94,42 @@ export type Condition =
 // Effects mutate GameState. Triggers fire effects when their `when` becomes true.
 export type Effect =
   | { type: "setFlag"; key: string; value: Atom }
-  | { type: "moveItem"; itemId: string; to: string }       // roomId | "inventory" | "nowhere"
-  | { type: "movePlayer"; to: string }                     // teleport (rare; usually exits handle movement)
+  | { type: "moveItem"; itemId: string; to: string }       // roomId | itemId | "player" | "inventory" (legacy alias for "player") | "nowhere". Moving the "player" item updates currentRoom; if the destination is a room, visitedRooms is updated.
+  | { type: "moveItemsFrom"; from: string; to: string }    // bulk: every item currently at `from` moves to `to`. Generic primitive for "container empties": NPC dies and drops everything; trophy case shatters; bag torn open. `from`/`to` are roomId | itemId | "player" | "inventory" | "nowhere".
   | { type: "setPassageState"; passageId: IdRef; key: string; value: Atom }  // mutate passage state (passageId may be {fromArg: "..."} inside a tool handler)
   | { type: "setItemState"; itemId: IdRef; key: string; value: Atom }         // mutate item state (itemId may be {fromArg: "..."} inside a tool handler)
   | { type: "setRoomState"; roomId: string; key: string; value: Atom }        // mutate room state
   | { type: "adjustFlag"; key: string; by: number }                           // signed delta on a numeric flag (treats unset as 0)
   | { type: "adjustItemState"; itemId: string; key: string; by: number }      // signed delta on a numeric item-state value (treats unset as 0)
   | { type: "removeMatchedIntent"; signalId: string }                          // un-match an intent so its triggers don't re-fire forever
-  | { type: "setPlayerVehicle"; itemId: string | null }                        // put the player in a vehicle (itemId) or eject them (null). Used by triggers like puncture that need to forcibly disembark.
   | {
-      // Weighted random selection. Engine rolls Math.random() * Σweights and
-      // picks the first branch whose cumulative weight covers the roll. The
-      // chosen branch's `effects` are applied and `narration` (if present) is
-      // appended to narrationCues. Each Effect.random invocation rolls fresh
-      // — multiple random effects in one trigger get independent rolls.
-      // Generic primitive: combat outcomes, bat carrying you to a random
-      // room, thief deciding what to steal, dam timer flooding, etc.
-      type: "random";
-      branches: Array<{
-        weight: number;       // ≥ 0; relative to siblings
-        effects?: Effect[];   // applied if this branch wins (empty = no state change)
-        narration?: string;   // appended to narrationCues if this branch wins
-      }>;
+      // Roll a uniform random integer in [min, max] inclusive and write it
+      // to state.flags[key] as a number. Atomic primitive — combine with
+      // `if`/`then`/`else` (or `compare` Conditions) to branch on the rolled
+      // value. Foot-gun avoidance: NumericExpr deliberately has NO `random`
+      // kind because NumericExpr is evaluated lazily (re-rolling on every
+      // condition eval); this Effect materializes the roll into a flag once.
+      type: "setFlagRandom";
+      key: string;
+      min: number;            // inclusive lower bound
+      max: number;            // inclusive upper bound (must be ≥ min)
+    }
+  | {
+      // Append text to narrationCues. No state mutation. Used inside
+      // `if`/`then`/`else` branches so a decomposed conditional can emit
+      // branch-specific prose (analogous to trigger.narration but per-branch).
+      // Goes through renderNarration so {flag.X} template substitution works.
+      type: "narrate";
+      text: string;
+    }
+  | {
+      // Deterministic conditional. Evaluates `if`; runs `then` if true, else
+      // `else` (or no-op if `else` is absent). Use `setFlagRandom` first to
+      // roll a value, then chain `if`/`then`/`else` to branch on the flag.
+      type: "if";
+      if: Condition;
+      then: Effect[];
+      else?: Effect[];
     }
   | { type: "endGame"; won: boolean; message: string };
 
@@ -447,13 +460,6 @@ export interface NPC {
   // Dialogue, scripted reactions, and inventory deferred to v0.2+
 }
 
-// ---------- End conditions ----------
-
-export interface EndCondition {
-  when: Condition;
-  message: string;              // shown to the player when game ends
-}
-
 // ---------- Story (top-level) ----------
 
 export interface Story {
@@ -472,8 +478,6 @@ export interface Story {
   triggers?: Trigger[];
   npcs?: NPC[];
   customTools?: CustomTool[];
-  winConditions?: EndCondition[];
-  loseConditions?: EndCondition[];
   // Build-time templates that items can inherit from via Item.fromTemplate.
   // The extractor merges template fields into items (item fields win, arrays
   // union) and strips fromTemplate before emitting the final JSON. Engine
@@ -498,9 +502,13 @@ export interface Story {
 export interface GameState {
   storyId: string;
   schemaVersion: string;
-  playerLocation: string;
   flags: Record<string, Atom>;
-  itemLocations: Record<string, string>; // itemId -> roomId | "inventory" | "nowhere"
+  // itemId -> location. The player is also tracked here under id "player".
+  // location can be: roomId | itemId (parent container) | "player" (in inventory)
+  // | "nowhere". The legacy magic string "inventory" is normalized to "player"
+  // by initialState; engine code should never compare against "inventory"
+  // directly — use the resolveLocation helper or compare to "player".
+  itemLocations: Record<string, string>;
   // Per-passage typed state. Outer key is passageId; inner map is the
   // passage's state variables (initialized from passage.state).
   passageStates: Record<string, Record<string, Atom>>;
@@ -515,10 +523,5 @@ export interface GameState {
   visitedRooms: string[];
   examinedItems: string[];
   firedTriggers: string[];
-  // itemId of the vehicle the player is currently inside, or null on foot.
-  // Set/cleared by board / disembark actions and the setPlayerVehicle Effect.
-  // The vehicle item is at some room; the player is "inside" it; mobile
-  // vehicles travel with the player when go() is called.
-  playerVehicle: string | null;
   finished?: { won: boolean; message: string };
 }

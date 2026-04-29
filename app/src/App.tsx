@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Engine } from "./engine/engine";
+import { currentRoomId, PLAYER_ITEM_ID } from "./engine/state";
 import { renderRoomView } from "./engine/render";
 import { DirectAnthropicClient } from "./llm/DirectAnthropicClient";
 import { OllamaClient } from "./llm/OllamaClient";
@@ -622,14 +623,17 @@ function handleDebugCommand(text: string, engine: Engine): string {
       ].join("\n");
 
     case "/room":
-      return `[DEBUG] You are at: ${engine.state.playerLocation}`;
+      return `[DEBUG] You are at: ${currentRoomId(engine.state, engine.story) ?? "(unknown)"}`;
 
     case "/tp": {
       const roomId = args[0];
       if (!roomId) return "[DEBUG] Usage: /tp <roomId>";
       const room = engine.story.rooms.find((r) => r.id === roomId);
       if (!room) return `[DEBUG] No such room: "${roomId}". Try /find ${roomId}`;
-      engine.state = { ...engine.state, playerLocation: roomId };
+      engine.state = {
+        ...engine.state,
+        itemLocations: { ...engine.state.itemLocations, [PLAYER_ITEM_ID]: roomId },
+      };
       return `[DEBUG] Teleported to ${roomId} (${room.name}).`;
     }
 
@@ -640,7 +644,7 @@ function handleDebugCommand(text: string, engine: Engine): string {
       if (!item) return `[DEBUG] No such item: "${itemId}". Try /find ${itemId}`;
       engine.state = {
         ...engine.state,
-        itemLocations: { ...engine.state.itemLocations, [itemId]: "inventory" },
+        itemLocations: { ...engine.state.itemLocations, [itemId]: PLAYER_ITEM_ID },
       };
       return `[DEBUG] Added ${itemId} (${item.name}) to inventory.`;
     }

@@ -18,9 +18,15 @@
 
 import type { GameState, Story } from "../story/schema";
 import type { Message } from "../llm/types";
+import { currentRoomId, PLAYER_ITEM_ID } from "../engine/state";
 
-const SAVE_VERSION = 5;
+// v6: GameState shape changed — playerLocation and playerVehicle removed,
+// player tracked as a regular item under itemLocations["player"]. Loader
+// migrates v5 saves on read.
+const SAVE_VERSION = 6;
+const LEGACY_SAVE_VERSION = 5;
 const PREFIX = "lanterngames_save_v" + SAVE_VERSION + "_";
+const LEGACY_PREFIX = "lanterngames_save_v" + LEGACY_SAVE_VERSION + "_";
 
 // Transcript entry types — shared between App.tsx (display) and localSave
 // (persistence) so neither side has to redeclare or guess the shape.
@@ -83,18 +89,91 @@ export function saveSession(opts: SaveOpts): void {
 export function loadSession(storyId: string, slot: SaveSlot): SavedSession | null {
   try {
     const raw = localStorage.getItem(key(storyId, slot));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as unknown;
-    if (!isValidSession(parsed, storyId)) return null;
-    return parsed;
+    if (raw) {
+      const parsed = JSON.parse(raw) as unknown;
+      if (isValidSession(parsed, storyId)) return parsed;
+    }
+    // v5 fallback: try the legacy key. If found, migrate the shape on the
+    // fly, then upgrade-in-place: write the migrated payload to the v6 key
+    // and remove the v5 key so subsequent loads skip the migration step AND
+    // a subsequent clearSession on the v6 key fully clears the slot. (Prior
+    // versions left the v5 key behind, which made delete and "new game"
+    // appear to do nothing — clearSession removed v6 but loadSession would
+    // re-find and re-migrate the v5.)
+    const legacyRaw = localStorage.getItem(legacyKeyForSlot(storyId, slot));
+    if (legacyRaw) {
+      const migrated = migrateV5Session(JSON.parse(legacyRaw) as unknown, storyId);
+      if (migrated) {
+        try {
+          localStorage.setItem(key(storyId, slot), JSON.stringify(migrated));
+          localStorage.removeItem(legacyKeyForSlot(storyId, slot));
+        } catch {
+          // If write fails (quota), still return the migrated session — the
+          // game keeps working, the migration just retries next load.
+        }
+        return migrated;
+      }
+    }
+    return null;
   } catch {
     return null;
   }
 }
 
+// v5 → v6 in-memory migration. Translates legacy GameState shape (with
+// playerLocation + playerVehicle) into the new shape (player as item under
+// itemLocations). Returns null if the input doesn't look like a v5 session.
+function migrateV5Session(v: unknown, storyId: string): SavedSession | null {
+  if (!v || typeof v !== "object") return null;
+  const r = v as Record<string, unknown>;
+  if (r.version !== LEGACY_SAVE_VERSION) return null;
+  if (r.storyId !== storyId) return null;
+  if (!r.engineState || typeof r.engineState !== "object") return null;
+  const es = r.engineState as Record<string, unknown>;
+  const playerLocation = typeof es.playerLocation === "string" ? es.playerLocation : null;
+  const playerVehicle = typeof es.playerVehicle === "string" ? es.playerVehicle : null;
+  const itemLocations = (es.itemLocations as Record<string, string> | undefined) ?? {};
+  // Player is "in" the vehicle if one was set, else at the saved room.
+  const playerLoc = playerVehicle ?? playerLocation;
+  if (!playerLoc) return null;
+  // Strip playerLocation/playerVehicle from the engineState; add the player
+  // item to itemLocations. Old "inventory" magic strings are normalized at
+  // engine load by initialState — but saves snapshot post-init state, so any
+  // items at "inventory" need flipping to "player" too.
+  const nextItemLocations: Record<string, string> = { ...itemLocations };
+  for (const [id, loc] of Object.entries(nextItemLocations)) {
+    if (loc === "inventory") nextItemLocations[id] = PLAYER_ITEM_ID;
+  }
+  nextItemLocations[PLAYER_ITEM_ID] = playerLoc;
+  const { playerLocation: _pl, playerVehicle: _pv, itemLocations: _il, ...rest } = es;
+  const migratedEngineState = {
+    ...rest,
+    itemLocations: nextItemLocations,
+  } as GameState;
+  const out: SavedSession = {
+    version: SAVE_VERSION,
+    storyId,
+    engineState: migratedEngineState,
+    narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
+    transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
+    inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
+    savedAt: typeof r.savedAt === "number" ? r.savedAt : Date.now(),
+  };
+  return out;
+}
+
+function legacyKeyForSlot(storyId: string, slot: SaveSlot): string {
+  return LEGACY_PREFIX + storyId + "_" + (slot === "quick" ? "quick" : "slot" + slot);
+}
+
 export function clearSession(storyId: string, slot: SaveSlot): void {
   try {
     localStorage.removeItem(key(storyId, slot));
+    // Defensive: also remove the v5 legacy key for this slot. If it lingers,
+    // loadSession would migrate-and-restore it on the next read, and the
+    // user would see the slot "uncleared" / the LLM would resurrect old
+    // narration history after a "new game".
+    localStorage.removeItem(legacyKeyForSlot(storyId, slot));
   } catch {
     // ignore
   }
@@ -146,14 +225,14 @@ export interface SlotSummary {
 }
 
 function summarize(session: SavedSession, slot: SaveSlot, story: Story): SlotSummary {
-  const roomId = session.engineState.playerLocation;
-  const room = story.rooms.find((r) => r.id === roomId);
+  const roomId = currentRoomId(session.engineState, story);
+  const room = roomId ? story.rooms.find((r) => r.id === roomId) : undefined;
   const turnRaw = session.engineState.flags["global-turn-count"];
   const turnCount = typeof turnRaw === "number" ? turnRaw : 0;
   return {
     slot,
     savedAt: session.savedAt,
-    roomName: room?.name ?? roomId,
+    roomName: room?.name ?? roomId ?? "(unknown)",
     turnCount,
   };
 }

@@ -22,9 +22,7 @@ This document is the source of truth for the format. The TypeScript types in [`a
   "rooms": [ ... ],
   "items": [ ... ],
   "triggers": [ ... ],
-  "npcs": [ ... ],
-  "winConditions": [ ... ],
-  "loseConditions": [ ... ]
+  "npcs": [ ... ]
 }
 ```
 
@@ -37,7 +35,7 @@ This document is the source of truth for the format. The TypeScript types in [`a
 | `startRoom` | yes | The id of the room where play begins. |
 | `startState` | no | Initial flag values (`{ key: atom }`, where atom is string \| number \| boolean). |
 | `rooms`, `items` | yes | Required arrays. Empty is allowed but unusual. |
-| `triggers`, `npcs`, `winConditions`, `loseConditions` | no | Optional. Stories without win conditions are sandbox-mode. |
+| `triggers`, `npcs` | no | Optional. To end the game, fire an `endGame` effect from a trigger. Stories without an `endGame` trigger are sandbox-mode. |
 
 ---
 
@@ -158,20 +156,27 @@ Triggers are how puzzles progress. After every player action, the engine checks 
 
 ---
 
-## Win and lose conditions
+## Ending the game
 
-After every action and after triggers fire, the engine checks win/lose conditions. The first one whose `when` is true ends the game.
+The game ends when a trigger fires an `endGame` effect. There is no separate top-level "win conditions" array — every ending is just a trigger with the appropriate `when` clause.
 
 ```json
-"winConditions": [
-  {
-    "when": { "type": "playerAt", "roomId": "garden" },
-    "message": "You have escaped into the garden. Adventure complete."
-  }
-]
+{
+  "id": "garden-ends-game",
+  "once": true,
+  "afterAction": true,
+  "when": { "type": "playerAt", "roomId": "garden" },
+  "effects": [
+    {
+      "type": "endGame",
+      "won": true,
+      "message": "You have escaped into the garden. Adventure complete."
+    }
+  ]
+}
 ```
 
-If `winConditions` is absent or empty, the story is sandbox-mode and never ends on its own. The player can still quit.
+A story without any `endGame` trigger is sandbox-mode and never ends on its own. The player can still quit.
 
 ---
 

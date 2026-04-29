@@ -48,8 +48,6 @@ function collectConditionSites(story: Story): Condition[] {
   }
 
   for (const trigger of story.triggers ?? []) out.push(trigger.when);
-  for (const c of story.winConditions ?? []) out.push(c.when);
-  for (const c of story.loseConditions ?? []) out.push(c.when);
 
   return out;
 }

@@ -1,0 +1,337 @@
+Date: August 23, 2001       Version: Final     E-mail: wongd012@hawaii.rr.com
+
+    *********     *******     ********     ***   ***        *************
+    *********    *********    *********    ***  ***         *************
+          ***    ***   ***    ***   ***    *** ***               ***
+         ***     ***   ***    ***   ***    ******                ***
+        ***      ***   ***    *********    *****                 ***
+       ***       ***   ***    ********     *****                 ***
+      ***        ***   ***    *** ***      ******                ***
+     ***         ***   ***    ***  ***     *** ***               ***
+    *********    *********    ***   ***    ***  ***         *************
+    *********     *******     ***    ***   ***   ***        *************
+
+             "Your greatest challenge lies ahead - and downwards."
+
+            Complete walkthrough written by Darrell Wong (DKW 001).
+
+=============================================================================
+
+OBLIGATORY BORING DISCLAIMERS -
+I wrote this walkthrough as a service to fellow gamers who need help with this
+game.  I gave this FAQ to GameFAQs and nowhere else, and everything on their
+site is free for the viewing.  So if anyone tries to sell you this walkthrough,
+don't pay a cent.  And DEFINITELY never never ever try to claim it as your own
+and sell it.  That's plagiarism, you can get into serious trouble for it, and
+the risk of that is definitely not worth whatever laughably small pittance you
+could get for my works.
+
+The Zork trilogy and everything related to it is copyrighted by Infocom.  All
+rights reserved.  You know the drill.
+
+
+WHERE TO GET THIS GAME -
+This game is "abandonware", meaning that it is no longer commercially produced.
+ You can download it freely from www.gamingdepot.com.  (There are other sites,
+but I think this one's the most reliable.)  You'll also want the instructions,
+which are available at Infodoc.plover.net/manuals/index.html.
+
+
+INTRODUCTION -
+Zork I.  The game that started it all for legions of text adventure gamers,
+myself included.  I remember when I first ran into this game.  It was a
+first-generation Apple, monochrome monitor, 128K tops.  I and numerous
+classmates spent hours just moving around, finding things, and running into
+trouble.  Of course, we only had access to the computer for a short time every
+day, and we didn't have a disk to save games on.  And since we didn't have the
+instructions, we didn't really know what to do.  We didn't even know where to
+put the treasures.  Ah well.  Those were the days.
+
+A few years later, after my family got its own computer, I got the entire
+trilogy on a set of floppies.  I was able to get further and explore a lot
+more.  Unfortunately, I still didn't really know what to do, and I still didn't
+have the instructions (a common problem back then...honestly, how did I ever
+cope?) so that's as far as it went.
+
+Now, many, many years later, having downloaded the games and original
+instructions onto my current computer, *and* knowing what to do, I was able to
+finish all three games.  In the process, I gained an appreciation for the text
+adventure.  Indeed, the appeal of a game that doesn't have byzantine graphics
+requirements, mind-blowing memory and disk space requirements, a
+god-freaking-zillion things to remember, and the tendency to crash every four
+minutes was not lost on me.
+
+Of course, it's easy for me to say that now that I've actually *finished* the
+blamed thing.  ;-)
+
+Well, I'm sure there are some of you out there who, like me, were never able to
+get very far into Zork I when it was originally released.  And some of you who
+heard about how cool the game was, downloaded, played it, and now need some
+help.  And at least a few who enjoy reading the stuff I write (hi, Asako!) This
+is for all of you.  Enjoy.
+
+
+OBJECTIVE -
+You're an intrepid adventurer who's been inspired by stories of the legendary
+realm of Quendor, better known as the Great Underground Empire.  This empire,
+once the mightiest in the world, collapsed just a few decades ago, and the
+great caverns lie empty.  Tales abound of the abandoned treasures that still
+remain.  As the game begins, you arrive at an ordinary-looking white house in
+the middle of a forest clearing.  The last known entrance to the empire is
+rumored to be in there.  And so the start of a grand journey begins...
+
+There are a total of nineteen treasures, which you must place in the house's
+trophy case to win the game.  As you complete tasks, you'll earn points and
+advance in rank.  Your score is *not* affected in any way by the number of
+moves you make.  The maximum possible score is 350, which carries with it the
+exalted title of Master Adventurer.
+
+
+GENERAL TIPS -
+Save your game regularly.  I cannot overstate the importance of this.  There
+are just too many ways to screw up, and even one bad blunder can make the game
+impossible to finish.  In particular, anything which ruins a treasure or
+prevents you from obtaining a treasure effectively ends your quest.  *Always*
+save before starting any tedious and/or dangerous task and save again once
+you're successful.
+
+With so many items lying around, it's very easy to get overloaded.  You're
+limited by both weight and number of items (eight is the maximum).  Check your
+inventory once in a while and be sure to drop items which have no further use.
+
+There are a few ways to get killed, all of which are covered in the
+walkthrough.  Good news: If you die, you return to life (exactly where depends
+on how far you've progressed).  Bad news: You have a limited number of second
+chances.  Worse news: When you die, everything you're carrying gets scattered
+to the winds, *and* you lose a fistful of points.  Bottom line, dying stinks,
+so don't ever stand for it; insure yourself with a saved game.
+
+Darkness is your enemy.  Whenever you enter a dark area, a grue (a vicious
+monster which can only survive in darkness) will come along and eat you (which
+kills you, of course) 1-3 moves after you enter the dark area.  The only way to
+protect yourself is to move to a lit area or turn on your lantern (the primary
+light source in the early part of the game).  You can't pick up anything in the
+dark, including the lantern, so don't drop it without a good reason.  The
+lantern has a limited amount of power, so turn it off when you don't need it.
+
+Whenever you're underground, you'll periodically be confronted by a thief
+(who'll be described as a "seedy looking character carrying a sack" or
+somesuch).  He'll either 1) steal any treasures you're carrying and any that
+happen to be in the room, or 2) size you up.  If the former happens, there's
+nothing you can do.  In the latter event, if you leave the room immediately,
+you'll avoid trouble.  Otherwise he'll rob you or, if you don't have any loot,
+either attack you or leave disappointed.  The thief can be a real pain,
+especially if you're carrying a treasure you don't want to lose, so it's a good
+idea to...er, eliminate him as a threat as soon as possible.  The walkthrough
+will show you how.
+
+-----------------------------------------------------------------------------
+
+COMPLETE WALKTHROUGH -
+[Notes: For convenience, I use abbreviations for all directions, including up
+(U) and down (D).  I've included location notes so you know where you're
+supposed to be.  As with most text adventures of the Infocom era, many commands
+have to be typed in precisely to work (one of the main raps against the genre).
+ This is especially true for enter/exit commands and using items.  My
+walkthrough is designed to get the toughest parts of the game done first.  It's
+not the *only* way to finish the game, but definitely the most painless.  As
+with most walkthroughs, I only cover the essentials; feel free to explore on
+your own.  There are all kinds of things to look at, read, and learn in the
+Great Underground Empire that you might find interesting.]
+
+You start off in front of the house.  Don't go in just yet.  N.  N (Forest
+Path).  U.  GET EGG.  Here's the first of your adventure-killing pitfalls,
+i.e., dropping the egg while you're in the tree.  *Don't*!  D.  S.  E (Behind
+House).  OPEN WINDOW.  W.  OPEN SACK.  Neither the water nor the lunch serve
+any purpose, but you will need the garlic later.  Leave it for now.  W.  OPEN
+CASE.  Hold onto the egg; you have to find a way to open it (safely!) first. 
+GET ALL.  MOVE RUG.  Ah, here's your ticket to the GUE.  OPEN TRAPDOOR.  D.  No
+turning back now!  And your adventure begins in earnest...TURN ON LANTERN.  S. 
+E.  GET PAINTING.  The chimney leads to the kitchen, but you can only go up
+with a very light load, far less than what you're carrying right now, so forget
+it.  W.  N.  Save your game and go N to the Troll Room.  A vicious troll lurks
+here and he'll probably attack you the moment you enter.  Respond in kind:
+ATTACK TROLL WITH SWORD.  Repeat until he's dead.  He's a clumsy fighter, so
+you should easily dispatch him without taking any damage.  If not, restore your
+game and try again.  DIAGNOSE after the battle if you're uncertain.  You'll
+want all your strength for your next (and last) fight, which will come up
+shortly.  DROP SWORD.  You don't need it anymore, and you can disregard the
+troll's ax as well.  W.  Hoo boy, a maze, what a delight.  You *did* remember
+to save after beating the troll, right?  Incidentally, the thief will probably
+show up for the first time while you're in the maze.  Don't worry if he robs
+you; in fact, that's exactly what you want.  If he sizes you up, GIVE
+EGG...that's right, let him have it...and leave the area posthaste.  If he
+doesn't show up, restore and go through the maze again, or just wait until he
+appears.  Okay, you're at the start of the maze.  S.  E.  U.  You find the
+remains of an adventurer who foolishly tried to navigate the maze without a
+walkthrough...and what do you know, he's got stuff on him.  GET COINS.  The key
+unlocks a grate in the forest, but it just leads back to the maze, so ignore
+it.  Best leave the skeleton and knife alone, too.  SW.  E.  S.  SE.  Out of
+the fryer and into the broiler; a cyclops bars your way, he's as indestructible
+as the cavern walls, and worse, he looks a little hungry.  Stay calm...SAY
+"ULYSSES".  The monster will tear out of the room, opening up a path back
+to...the Living Room!  Much better than that musty 'ol chimney, eh?  E.  E. 
+PUT TREASURES IN CASE if you still have any.  E.  U.  The attic is dark, which
+is why you need to keep the lantern on.  (Yes, you can get eaten in the attic! 
+Man, those grues are ruthless...) GET ALL.  D.  W.  W.  W.  Save, take a deep
+breath, and take the ladder up.  You're in the thief's Treasure Room, where he
+puts all the treasures that he steals from you, and he's none too pleased about
+you finding it.  ATTACK THIEF WITH KNIFE and repeat.  The thief is *far*
+deadlier than the troll, and there's a very good chance that you'll get killed.
+ If so, restore and retry.  Don't try to take him on with any other weapon; the
+sword is practically useless (you keep hitting him with the flat of the blade
+for some reason), the axe is slow and ineffective, and the dead adventurer's
+knife is cursed and will kill YOU if you use it!  Anyway, once you finally
+dispatch the scoundrel, save.  You can now take all the treasures in the room,
+including the thief's own silver chalice.  And guess what, when he opened the
+egg, he found another treasure inside!  You have no more need for weaponry, so
+DROP KNIFE.  GET ALL TREASURES.  D.  E.  E.  TURN OFF LANTERN.  PUT ALL
+TREASURES IN CASE.  If you're badly wounded (DIAGNOSE if you're curious,
+although you don't really need to since you won't take any more damage for the
+rest of the game), you'll have to make another trip to get everything.  This is
+no big deal.  GET CANARY.  This takes it out of the egg.  E.  E.  N.  N (Forest
+Path).  WIND CANARY.  The songbird appears, responds to the canary's song, and
+in the process drops a brass bauble.  Three treasures from one, amazing...GET
+BAUBLE.  Return to the Kitchen.  GET GARLIC.  W.  PUT CANARY AND BAUBLE IN
+CASE.  Six down, thirteen to go!  OPEN TRAPDOOR.  D.  You'll notice that the
+trapdoor doesn't close this time.  Apparently, whoever closed the door wanted
+to give you the feeling that you were trapped, thus creating tension.  But now
+that you've opened up a different way out, there's no longer any fear of
+entrapment, so barring the trapdoor has lost its purpose.  Or something.  TURN
+ON LANTERN.  N.  E.  N.  NE (Reservoir South).  E.  You're now at the Flood
+Control Dam #3, which created the huge reservoir you just passed.  N.  GET
+MATCHES.  N or E (it doesn't matter).  Here we have the Zork trilogy's first
+"lady or tiger" quandary in the form of the colored buttons.  Okay, the yellow
+button is the one you're after.  The red button just turns the lights on, while
+the brown button reverses what the yellow button does (and is thus useless). 
+Avoid the blue button at all costs.  PUSH YELLOW.  GET ALL EXCEPT TUBE.  You
+get the tools, and the chests simply fall apart.  The Tube 'o Gunk is useless. 
+S or W.  S.  S.  Hmm, what does a green light mean?  TURN BOLT WITH WRENCH. 
+DROP WRENCH.  W.  The reservoir is now draining rapidly and will be crossable
+when you come by here again.  SW.  S.  S (Round Room).  SE.  E (Dome Room).  It
+looks like a dead end.  And isn't, of course.  TIE ROPE TO RAILING.  D.  You
+wind up on a tall pedestal in the middle of a room, atop which rests a new
+light source.  TURN OFF LANTERN.  GET TORCH.  The torch's light is endless, and
+as long as you have it you can leave the lantern off (hang onto it, though;
+you'll need it later).  The torch is also a treasure, by the way, which is why
+it's a good thing you already killed the thief.  D.  GET BELL.  S (Altar).  GET
+ALL.  Before going further, check your inventory and make sure you have all of
+the following: candles, book, bell, torch, screwdriver, matches, garlic,
+lantern.  This is the maximum number of items you can carry, by the way, so if
+you can't pick up something make sure you're not carrying anything extra.  (By
+now any damage done by the thief should have healed, so you can carry a full
+load.) *Save*, go D, and go D again to the entrance to the Land of the Dead. 
+You have to exorcize the spirits to gain passage.  Do the following in
+succession: RING BELL, GET CANDLES, LIGHT MATCH, LIGHT CANDLES, READ BOOK. 
+Don't dally or the exorcism will fail.  Once the spirits disperse, DROP CANDLES
+AND MATCHES AND BOOK, then go S to the Land of the Dead.  Here's a nice reward
+for your efforts!  GET SKULL.  Note: You have a limited time from when you
+first enter the Altar room to perform the exorcism.  If you wait too long, the
+candles will burn down too far to light, and you're sunk.  Also, if you don't
+take the candles, they'll burn down *even if you blow them out*!  Incredible
+but true.  Taking the candles and blowing them out *might* prevent them from
+burning down, but there's really no point in doing this when you already have
+two light sources.  It's best to just do the exorcism right away and get it
+over with.  There's nothing else to do in the Land of the Dead, so leave.  N. 
+U.  You can't go back, so you may as well go forward.  N.  Like the Dome Room,
+this only looks like a dead end.  TOUCH MIRROR.  Although it appears that
+nothing's happened, you've actually been transported to an identical-looking
+room (this one's north of the reservoir; the other's south of it).  N.  Eureka,
+a new area (an old coal mine, to be exact) W.  The slide is your ticket out of
+here; leave it for now.  N.  W.  N.  There's a bat guarding this room, which
+will immediately pick you up and drop you someplace far away...unless you have
+garlic.  Which you do, of course.  DROP GARLIC.  As long as the garlic is in
+this room, the bat will stay put.  GET FIGURINE.  E (Shaft Room).  PUT TORCH
+AND SCREWDRIVER IN BASKET.  You're about to enter a room containing a lot of
+coal gas, and if you're carrying anything with open flames, you'll get blown to
+bits.  N.  TURN ON LANTERN.  D (Gas Room).  GET BRACELET.  Save before going E.
+ You're now in a "non-descript part of a coal mine"...yep, you guessed it,
+another maze!  NE.  SE.  SW.  D.  You should be at the Ladder Top.  If
+not...well, you know what to do.  D.  S.  GET COAL.  N.  U.  You have to get
+back to the Gas Room now, and the path is *not* the same as the one you
+originally took!  "Standard level" my eye...N.  E.  S.  N.  Gas Room, yay.  U. 
+S.  PUT COAL IN BASKET.  LOWER BASKET.  As you've probably guessed by now, that
+shaft leads somewhere important, and now you're going to go there.  Go all the
+way back to the Ladder Bottom, then W.  DROP ALL.  You must be completely
+unburdened to fit through the passageway.  Oh, and *don't* turn off the
+lantern!  W.  You're now at the bottom of the shaft...which is dark, which is
+the other reason you had to put the torch in the basket.  GET TORCH AND COAL
+AND SCREWDRIVER (GET ALL doesn't work because they're inside another object). 
+S.  Bet you were wondering why you made that extra trip just to put the coal in
+the basket.  OPEN LID.  PUT COAL IN MACHINE.  CLOSE LID.  TURN SWITCH WITH
+SCREWDRIVER.  OPEN LID.  GET DIAMOND.  A lot of work, but the payoff was worth
+it, no?  DROP SCREWDRIVER.  N.  PUT DIAMOND AND TORCH IN BASKET.  RAISE BASKET.
+ E.  GET ALL EXCEPT TIMBER (it's useless).  Return to the Gas Room for the last
+time.  U.  S.  GET DIAMOND AND TORCH.  DROP LANTERN.  With the thief dead and
+the Gas Room no longer a threat, you can use the torch without fear for the
+rest of the game.  W.  S.  E.  S (Slide Room).  D.  Remember that ramp you saw
+in the Cellar?  Well, guess where you are now.  U.  PUT ALL TREASURES EXCEPT
+TORCH IN CASE.  Wonderful, you're halfway there and you've already done all the
+hard stuff.  It's nothing but smooth sailing the rest of the way.  D.  N.  E. 
+E (Round Room).  E.  This is the Loud Room, which is pretty weird; anything you
+enter (including LOOK or INVENTORY) will do nothing but cause an echo.  That
+should be a hint...SAY "ECHO".  The room will quiet down, and the platinum bar
+is now free for the taking.  GET BAR.  W.  W.  N.  NE.  Back to the reservoir,
+which is now drained.  N.  So there *was* something hidden under all that
+water!  GET TRUNK.  N.  N.  GET TRIDENT.  You've just hit your weight limit, so
+leave the air pump for now.  S.  S.  S.  SW.  SW (East/West Passage) and back
+to the Living Room.  PUT ALL TREASURES EXCEPT TORCH IN CASE.  Time now for a
+return trip to the Temple.  D.  N.  E.  E.  SE.  E.  D.  D.  This time go E to
+the Egyptian Room.  GET COFFIN.  OPEN COFFIN.  GET SCEPTRE.  Now, instead of
+trudging all the way back to the Living Room, go W and S to the Altar and PRAY.
+ This instantly zips you to a clearing in the forest!  Which happens to be near
+where you want to go next.  E.  E.  S.  E (Top of Canyon).  D.  D.  N (End of
+Rainbow).  WAVE SCEPTRE.  Hot dang, one becomes three again!  GET POT.  You've
+also turned the rainbow into a bridge, which you'll need pretty soon.  You're
+weighed down again, so it's time for another return trip.  SW.  U.  U (Top of
+Canyon).  W.  W.  E to the now-familiar Forest Path, and back to the Living
+Room.  It's very easy to get lost in the forest, which is why you should follow
+these steps exactly.  Thankfully, there are no dangers here, so if you do get
+lost, just keep wandering until you find a familiar landmark.  Again, PUT ALL
+TREASURES EXCEPT TORCH IN CASE.  Almost done!  Return to Reservoir South (you
+know the way by now!).  N.  N.  GET PUMP.  S.  S.  E.  D.  Leave the "folded
+pile of plastic" where it is and INFLATE PLASTIC WITH PUMP.  Not surprisingly,
+it's a boat.  DROP PUMP (or not...it really doesn't matter at this point in the
+game).  ENTER BOAT.  LAUNCH.  Kick back, relax, and wait for the current carry
+you downstream.  Ignore the first landing; it just leads back to the Loud Room.
+ Keep waiting until the buoy shows up, then take it.  OPEN BUOY.  Looks like it
+wasn't just a warning marker after all.  Assume nothing in the GUE!  By now
+you're at the last landing area, and the water's become very treacherous.  LAND
+or E.  You can also land at the second landing area (to the east) before
+opening the buoy, but you *must* land by the third landing area or you'll
+plummet over a waterfall to your death.  GET OUT.  GET EMERALD.  DROP BUOY.  If
+you're at the third landing area, go N to the second landing.  GET SHOVEL.  NE.
+ DIG SAND WITH SHOVEL four times to find the buried scarab.  GET SCARAB.  SW. 
+DROP SHOVEL.  S.  S (Aragain Falls).  Go W twice, crossing the rainbow bridge
+to the End of Rainbow, and go all the way back to the Living Room.  PUT ALL
+TREASURES IN CASE.  What's this, counsel from a benevolent deity?  Or maybe the
+mysterious person who locked the trapdoor?  Whoever it's from, follow it.  L. 
+Hey, that parchment wasn't there before!  L AT MAP.  Southwest, huh?  Return to
+the west of the house, the place where...yes...it all began.  And there it is. 
+SW.  Save your game if you like, then go W into the barrow.
+
+Well done, Master Adventurer!  You've slain the villainous thief, uncovered
+numerous long-forgotten secrets, and recovered all the treasures of the first
+part of the GUE.  But your journey has just begun, and a whole new set of
+tricks and twists, as well as a new enemy, lie ahead.
+
+The adventure continues in (what else?) Zork II.
+
+=============================================================================
+
+END NOTES -
+I would like to thank GameFAQs for being so kind as to put up my walkthroughs. 
+I know text adventures aren't exactly en vogue right now, but I *also* know
+that there are plenty of gamers out there who grew up on them and were sad to
+see them leave the mainstream.  At GameFAQs, there is no such thing as dead,
+obsolete, or out of date; without them, I would not have even considered
+writing walkthroughs in the first place.
+
+Zork is a, well-written, well-programmed, thoroughly entertaining trilogy, and
+it's unfortunate that I'm only now able to appreciate it for what it is.  I
+have Gaming Depot to thank for having the chance to play these classics again
+and the Infocom Documentation Project for reprinting the original instructions.
+ Abandonware is a wonderful development in computer gaming, one which I
+wholeheartedly endorse.
+
+My website is home.hawaii.rr.com/dkwff.

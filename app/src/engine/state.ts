@@ -18,6 +18,70 @@ import type {
 } from "../story/schema";
 import { renderNarration } from "./renderNarration";
 
+// ---------- Player as item ----------
+
+// The player is a tracked item with a reserved id. Their location lives in
+// state.itemLocations["player"], and the player's room is derived by walking
+// the parent chain. This unifies the player with NPCs and removes the need
+// for separate playerLocation / playerVehicle fields on GameState.
+export const PLAYER_ITEM_ID = "player";
+
+// Legacy magic location string. Story authors can still write
+// "location": "inventory" for items the player starts carrying — the
+// initialState normalizer translates it to PLAYER_ITEM_ID. Engine code
+// should prefer PLAYER_ITEM_ID; resolveLocation maps either to the canonical
+// id.
+const LEGACY_INVENTORY_ALIAS = "inventory";
+
+export function resolveLocation(loc: string): string {
+  return loc === LEGACY_INVENTORY_ALIAS ? PLAYER_ITEM_ID : loc;
+}
+
+// Walk the parent chain from the player item to the deepest room ancestor.
+// Returns undefined only if the player's location chain is broken (e.g.
+// dangles into "nowhere" or cycles). With normal state, always returns a
+// Room.
+export function currentRoom(state: GameState, story: Story): Room | undefined {
+  const roomId = currentRoomId(state, story);
+  return roomId ? roomById(story, roomId) : undefined;
+}
+
+// Same as currentRoom, but returns the roomId string. Used by callers that
+// only need the id (saves, debug log, equality checks).
+export function currentRoomId(state: GameState, story: Story): string | undefined {
+  let loc = state.itemLocations[PLAYER_ITEM_ID];
+  const seen = new Set<string>();
+  while (loc !== undefined) {
+    if (seen.has(loc)) return undefined; // cycle
+    seen.add(loc);
+    if (loc === "nowhere") return undefined;
+    if (roomById(story, loc)) return loc;
+    // loc is an itemId — recurse into that item's location.
+    loc = state.itemLocations[loc];
+  }
+  return undefined;
+}
+
+// The player's immediate parent. Returns the itemId if the player is inside
+// a vehicle / NPC / container; returns null if the player is at a room (or
+// the chain is broken).
+export function playerParentItemId(state: GameState, story: Story): string | null {
+  const parent = state.itemLocations[PLAYER_ITEM_ID];
+  if (!parent) return null;
+  const item = itemById(story, parent);
+  return item ? parent : null;
+}
+
+// The vehicle the player is currently inside, or null. Replaces the old
+// state.playerVehicle field. Returns the itemId of the parent only if that
+// parent has a `vehicle` field.
+export function playerVehicleId(state: GameState, story: Story): string | null {
+  const parentId = playerParentItemId(state, story);
+  if (!parentId) return null;
+  const item = itemById(story, parentId);
+  return item?.vehicle ? parentId : null;
+}
+
 // ---------- Initial state ----------
 
 export function initialState(story: Story): GameState {
@@ -27,10 +91,20 @@ export function initialState(story: Story): GameState {
   const roomStates: Record<string, Record<string, Atom>> = {};
 
   for (const item of story.items) {
-    itemLocations[item.id] = item.location;
+    // Normalize legacy "inventory" alias → "player". Stories declared before
+    // the player-as-item refactor used the magic string "inventory".
+    itemLocations[item.id] = resolveLocation(item.location);
     if (item.state) {
       itemStates[item.id] = { ...item.state };
     }
+  }
+
+  // Synthesize the player item if the story didn't declare one. Story authors
+  // can override fields by declaring an item with id "player" in story.items;
+  // that loop above already seeded itemLocations and itemStates from it.
+  // If absent, seed the player's location to startRoom here.
+  if (itemLocations[PLAYER_ITEM_ID] === undefined) {
+    itemLocations[PLAYER_ITEM_ID] = story.startRoom;
   }
 
   for (const p of story.passages ?? []) {
@@ -44,7 +118,6 @@ export function initialState(story: Story): GameState {
   return {
     storyId: story.id,
     schemaVersion: story.schemaVersion,
-    playerLocation: story.startRoom,
     flags: { ...(story.startState ?? {}) },
     itemLocations,
     passageStates,
@@ -55,8 +128,28 @@ export function initialState(story: Story): GameState {
     visitedRooms: [story.startRoom],
     examinedItems: [],
     firedTriggers: [],
-    playerVehicle: null,
   };
+}
+
+// Synthesizes a default player item if a story doesn't declare one. Returns
+// the merged item: synthesized defaults + any overrides from story.items.
+// Used by callers (view, actions) that need to read player.description /
+// player.tags etc. Stories can override these by adding an item with id
+// "player" in story.items.
+export function getPlayerItem(story: Story): Item {
+  const declared = itemById(story, PLAYER_ITEM_ID);
+  const synthesized: Item = {
+    id: PLAYER_ITEM_ID,
+    name: "you",
+    description: "As good-looking as ever.",
+    location: story.startRoom,
+    fixed: true,
+    container: { capacity: 100 },
+    tags: ["actor", "humanoid", "player"],
+  };
+  if (!declared) return synthesized;
+  // Story-declared fields override defaults; merge fields shallowly.
+  return { ...synthesized, ...declared };
 }
 
 // ---------- Lookups ----------
@@ -156,9 +249,11 @@ export function isContainerAccessible(
 // Story.defaultVisibility). Used by the view AND the `examine` action so
 // hidden passages are uniformly filtered out — no leak through examine.
 export function passagesHere(state: GameState, story: Story): Passage[] {
+  const playerRoomId = currentRoomId(state, story);
+  if (!playerRoomId) return [];
   const passages = story.passages ?? [];
   return passages.filter((p) => {
-    const side = p.sides.find((s) => s.roomId === state.playerLocation);
+    const side = p.sides.find((s) => s.roomId === playerRoomId);
     if (!side) return false;
     if (!isVisible(p, state, story)) return false;
     if (!isVisible(side, state, story)) return false;
@@ -169,8 +264,14 @@ export function passagesHere(state: GameState, story: Story): Passage[] {
 // The side metadata facing the player's current room, or undefined if the
 // player isn't on either side. Use this to resolve per-side name/description
 // or to find the per-side traversableWhen.
-export function passageSideHere(passage: Passage, state: GameState) {
-  return passage.sides.find((s) => s.roomId === state.playerLocation);
+export function passageSideHere(
+  passage: Passage,
+  state: GameState,
+  story: Story,
+) {
+  const playerRoomId = currentRoomId(state, story);
+  if (!playerRoomId) return undefined;
+  return passage.sides.find((s) => s.roomId === playerRoomId);
 }
 
 // Resolve a passage's name/description from the player's perspective. Order
@@ -181,7 +282,7 @@ export function passagePresentation(
   state: GameState,
   story: Story,
 ): { name: string; description: string } {
-  const side = passageSideHere(passage, state);
+  const side = passageSideHere(passage, state, story);
   const name = side?.name ?? passage.name;
   const description =
     matchVariant(side?.variants, state, story) ??
@@ -204,13 +305,11 @@ function matchVariant(
   return undefined;
 }
 
-export function currentRoom(state: GameState, story: Story): Room | undefined {
-  return roomById(story, state.playerLocation);
-}
-
 // Walks the location chain to determine whether the player can perceive an
-// item right now. The chain ends at: a roomId (must match player), "inventory"
-// (always accessible), "nowhere" (never), or eventually loops/dangles (never).
+// item right now. The chain ends at: the player's current roomId (must match
+// the room derived via currentRoomId), the player itself ("player" — meaning
+// in inventory), or "nowhere" / cycle (never reachable).
+//
 // Items inside CLOSED containers are not accessible even if the container is
 // in the player's room.
 //
@@ -222,7 +321,8 @@ export function isItemAccessible(
   story: Story,
 ): boolean {
   if (!isVisible(item, state, story)) return false;
-  if (item.appearsIn?.includes(state.playerLocation)) return true;
+  const playerRoomId = currentRoomId(state, story);
+  if (playerRoomId && item.appearsIn?.includes(playerRoomId)) return true;
   return locationReachesPlayer(item, state, story, /*requireOpen=*/ true);
 }
 
@@ -234,7 +334,8 @@ export function isItemPresent(
   state: GameState,
   story: Story,
 ): boolean {
-  if (item.appearsIn?.includes(state.playerLocation)) return true;
+  const playerRoomId = currentRoomId(state, story);
+  if (playerRoomId && item.appearsIn?.includes(playerRoomId)) return true;
   return locationReachesPlayer(item, state, story, /*requireOpen=*/ false);
 }
 
@@ -249,10 +350,16 @@ function locationReachesPlayer(
   visited.add(item.id);
 
   const loc = state.itemLocations[item.id];
-  if (loc === "inventory") return true;
+  if (loc === undefined) return false;
   if (loc === "nowhere") return false;
-  if (loc === state.playerLocation) return true;
+  // Item is in the player's pocket (or transitively, the player is its parent).
+  if (loc === PLAYER_ITEM_ID) return true;
 
+  // Item is directly in the player's current room.
+  const playerRoomId = currentRoomId(state, story);
+  if (playerRoomId && loc === playerRoomId) return true;
+
+  // Item is inside another item — recurse into the parent.
   const parent = itemById(story, loc);
   if (!parent) return false;
   if (requireOpen && parent.container && !isContainerAccessible(parent, state, story)) {
@@ -264,21 +371,26 @@ function locationReachesPlayer(
 // Items at the *immediate* level of the player's current room (location === roomId).
 // Used for the room-description listing of "you see:".
 export function itemsInRoom(state: GameState, story: Story, roomId: string): Item[] {
-  return story.items.filter((i) => state.itemLocations[i.id] === roomId);
+  return story.items.filter(
+    (i) => i.id !== PLAYER_ITEM_ID && state.itemLocations[i.id] === roomId,
+  );
 }
 
 // All items the player can currently perceive in the room — directly placed
 // items plus items inside open containers (recursively). Inventory excluded;
-// fetch that separately.
+// fetch that separately. The player item itself is also excluded.
 export function itemsAccessibleHere(state: GameState, story: Story): Item[] {
   return story.items.filter((i) => {
-    if (state.itemLocations[i.id] === "inventory") return false;
+    if (i.id === PLAYER_ITEM_ID) return false;
+    if (state.itemLocations[i.id] === PLAYER_ITEM_ID) return false; // in inventory
     return isItemAccessible(i, state, story);
   });
 }
 
 export function itemsInInventory(state: GameState, story: Story): Item[] {
-  return story.items.filter((i) => state.itemLocations[i.id] === "inventory");
+  return story.items.filter(
+    (i) => i.id !== PLAYER_ITEM_ID && state.itemLocations[i.id] === PLAYER_ITEM_ID,
+  );
 }
 
 // Items whose immediate location is the given container item.
@@ -301,11 +413,13 @@ export function evaluateCondition(
     case "flag":
       return state.flags[c.key] === c.equals;
     case "hasItem":
-      return state.itemLocations[c.itemId] === "inventory";
+      return state.itemLocations[c.itemId] === PLAYER_ITEM_ID;
     case "itemAt":
-      return state.itemLocations[c.itemId] === c.location;
+      // Resolve the legacy "inventory" alias so authors can still write
+      // itemAt(X, "inventory") and have it match items at the player.
+      return state.itemLocations[c.itemId] === resolveLocation(c.location);
     case "playerAt":
-      return state.playerLocation === c.roomId;
+      return currentRoomId(state, story) === c.roomId;
     case "visited":
       return state.visitedRooms.includes(c.roomId);
     case "examined":
@@ -323,8 +437,11 @@ export function evaluateCondition(
       return state.itemStates[c.itemId]?.[c.key] === c.equals;
     case "roomState":
       return state.roomStates[c.roomId]?.[c.key] === c.equals;
-    case "currentRoomState":
-      return state.roomStates[state.playerLocation]?.[c.key] === c.equals;
+    case "currentRoomState": {
+      const playerRoomId = currentRoomId(state, story);
+      if (!playerRoomId) return false;
+      return state.roomStates[playerRoomId]?.[c.key] === c.equals;
+    }
     case "anyPerceivableItemWith":
       return anyPerceivableItemWith(state, story, c.key, c.equals);
     case "itemHasTag": {
@@ -365,7 +482,9 @@ export function evaluateCondition(
       // Visible AND one of its sides is the player's current room (otherwise
       // the player isn't standing where they could interact with it).
       if (!isVisible(passage, state, story)) return false;
-      return passage.sides.some((s) => s.roomId === state.playerLocation);
+      const playerRoomId = currentRoomId(state, story);
+      if (!playerRoomId) return false;
+      return passage.sides.some((s) => s.roomId === playerRoomId);
     }
     case "passageHasStateKey": {
       if (typeof c.passageId !== "string") return false;
@@ -376,13 +495,18 @@ export function evaluateCondition(
     case "inventoryHasTag":
       // Walk all items; first match wins. O(n) but n is small (~100 for Zork).
       return story.items.some(
-        (it) => state.itemLocations[it.id] === "inventory" && (it.tags ?? []).includes(c.tag),
+        (it) =>
+          it.id !== PLAYER_ITEM_ID &&
+          state.itemLocations[it.id] === PLAYER_ITEM_ID &&
+          (it.tags ?? []).includes(c.tag),
       );
-    case "inVehicle":
+    case "inVehicle": {
       // c.itemId is optional: if given, must be that specific vehicle;
       // otherwise true if player is in any vehicle at all.
-      if (c.itemId !== undefined) return state.playerVehicle === c.itemId;
-      return state.playerVehicle !== null;
+      const vehicleId = playerVehicleId(state, story);
+      if (c.itemId !== undefined) return vehicleId === c.itemId;
+      return vehicleId !== null;
+    }
     case "compare": {
       const left = evaluateNumericExpr(c.left, state);
       const right = evaluateNumericExpr(c.right, state);
@@ -436,9 +560,10 @@ export function evaluateNumericExpr(expr: NumericExpr, state: GameState): number
       return typeof v === "number" ? v : 0;
     }
     case "inventoryCount":
-      return countItemsAt(state, "inventory");
+      return countItemsAt(state, PLAYER_ITEM_ID);
     case "itemCountAt":
-      return countItemsAt(state, expr.location);
+      // Resolve the legacy "inventory" alias.
+      return countItemsAt(state, resolveLocation(expr.location));
     case "matchedIntentsCount":
       return state.matchedIntents.length;
     case "visitedCount":
@@ -448,7 +573,8 @@ export function evaluateNumericExpr(expr: NumericExpr, state: GameState): number
 
 function countItemsAt(state: GameState, location: string): number {
   let n = 0;
-  for (const loc of Object.values(state.itemLocations)) {
+  for (const [id, loc] of Object.entries(state.itemLocations)) {
+    if (id === PLAYER_ITEM_ID) continue; // never count the player itself
     if (loc === location) n++;
   }
   return n;
@@ -460,16 +586,32 @@ export function applyEffect(state: GameState, e: Effect, story?: Story): GameSta
   switch (e.type) {
     case "setFlag":
       return { ...state, flags: { ...state.flags, [e.key]: e.value } };
-    case "moveItem":
-      return {
-        ...state,
-        itemLocations: { ...state.itemLocations, [e.itemId]: e.to },
-      };
-    case "movePlayer": {
-      const visited = state.visitedRooms.includes(e.to)
-        ? state.visitedRooms
-        : [...state.visitedRooms, e.to];
-      return { ...state, playerLocation: e.to, visitedRooms: visited };
+    case "moveItem": {
+      // Resolve the legacy "inventory" alias on the destination.
+      const to = resolveLocation(e.to);
+      const next = { ...state.itemLocations, [e.itemId]: to };
+      // If this is the player moving to a room, update visitedRooms. If
+      // moving the player into a vehicle/NPC/etc., the room they're
+      // transitively in doesn't change, so visitedRooms stays the same.
+      let visitedRooms = state.visitedRooms;
+      if (e.itemId === PLAYER_ITEM_ID && story && roomById(story, to)) {
+        if (!visitedRooms.includes(to)) {
+          visitedRooms = [...visitedRooms, to];
+        }
+      }
+      return { ...state, itemLocations: next, visitedRooms };
+    }
+    case "moveItemsFrom": {
+      // Bulk: every item currently at `from` moves to `to`. No-op for items
+      // not at `from`. Iterates state.itemLocations once. Both `from` and
+      // `to` resolve the legacy "inventory" alias.
+      const from = resolveLocation(e.from);
+      const to = resolveLocation(e.to);
+      const next: Record<string, string> = { ...state.itemLocations };
+      for (const [id, loc] of Object.entries(state.itemLocations)) {
+        if (loc === from) next[id] = to;
+      }
+      return { ...state, itemLocations: next };
     }
     case "setPassageState": {
       // Defensive: skip if {fromArg} unresolved OR id doesn't reference a
@@ -536,29 +678,30 @@ export function applyEffect(state: GameState, e: Effect, story?: Story): GameSta
         matchedIntentArgs: remainingArgs,
       };
     }
-    case "setPlayerVehicle":
-      // Used by triggers that need to forcibly board or eject the player
-      // (puncture path: setPlayerVehicle: null; future "vehicle pulls you in"
-      // mechanic: setPlayerVehicle: <itemId>). The engine's board/disembark
-      // actions run validation; this effect bypasses validation for trigger-
-      // driven state mutations.
-      return { ...state, playerVehicle: e.itemId };
-    case "random": {
-      // Inline expansion: pick a branch by weight, apply its effects. Note:
-      // the chosen branch's narration cue is collected by `resolveEffects`
-      // upstream — applyEffect itself only mutates state. If applyEffect is
-      // called directly (without resolveEffects), the cue is silently lost.
-      const total = e.branches.reduce((s, b) => s + Math.max(0, b.weight), 0);
-      if (total <= 0) return state;
-      let roll = Math.random() * total;
-      for (const branch of e.branches) {
-        const w = Math.max(0, branch.weight);
-        roll -= w;
-        if (roll <= 0) {
-          return applyEffects(state, branch.effects ?? []);
-        }
-      }
+    case "setFlagRandom": {
+      // Roll a uniform random integer in [min, max] inclusive and write it
+      // as a number to state.flags[key]. Defensive against invalid ranges:
+      // if max < min, clamp to min (logged-zero fallback would mask bugs;
+      // the validator should have rejected this story load anyway).
+      const lo = Math.min(e.min, e.max);
+      const hi = Math.max(e.min, e.max);
+      const rolled = Math.floor(Math.random() * (hi - lo + 1)) + lo;
+      return { ...state, flags: { ...state.flags, [e.key]: rolled } };
+    }
+    case "narrate":
+      // No state mutation — cue collection happens in `resolveEffects`.
+      // applyEffect is called directly (without resolveEffects) by the
+      // recordIntent handler dispatch; in that path the cue is silently lost.
+      // That's acceptable: handlers use successNarration for their output.
       return state;
+    case "if": {
+      // Deterministic conditional. Evaluates `if` against current state; runs
+      // `then` if true, else `else` (or no-op when `else` is absent).
+      // Defensive: if story isn't passed (legacy callers), treat condition as
+      // unevaluable and skip — same posture as the prior random filter.
+      if (!story) return state;
+      const branch = evaluateCondition(e.if, state, story) ? e.then : (e.else ?? []);
+      return applyEffects(state, branch);
     }
     case "endGame": {
       // Render the message template now so {flag.score}, {rank}, etc.
@@ -571,45 +714,46 @@ export function applyEffect(state: GameState, e: Effect, story?: Story): GameSta
   }
 }
 
-// Expand any `random` effects in the list by rolling once each, returning the
-// flattened concrete effects + collected narration cues. Trigger runners call
-// this BEFORE applyEffects so the cue from the chosen random branch surfaces
-// to narrationCues. Non-random effects pass through unchanged.
+// Apply a trigger's effects in sequence against rolling state, evaluating
+// `if` against the LIVE state (so a `setFlagRandom` earlier in the list is
+// visible to a later `if(compare(flag, ...))` — the canonical decomposition
+// pattern), and collecting `narrate` cues into the return value.
 //
-// IMPORTANT: this does the random roll. If you call applyEffects on the
-// original (unresolved) list, applyEffect will roll again — different result,
-// no cue capture. Always resolve once, then apply.
+// This is the trigger pipeline's apply path. Handler dispatch (in actions.ts)
+// uses applyEffect directly per-effect; that path doesn't capture narrate
+// cues (handlers use successNarration instead).
+//
+// Returns the final state plus the ordered narrate cues. `effects` in the
+// return is empty (everything was applied here) — the field is kept for
+// caller compatibility; pass it to applyEffects and it'll be a no-op.
 export function resolveEffects(
   effects: Effect[] | undefined,
-): { effects: Effect[]; cues: string[] } {
-  if (!effects || effects.length === 0) return { effects: [], cues: [] };
-  const out: Effect[] = [];
+  state: GameState,
+  story: Story,
+): { state: GameState; effects: Effect[]; cues: string[] } {
+  if (!effects || effects.length === 0) {
+    return { state, effects: [], cues: [] };
+  }
+  let cur = state;
   const cues: string[] = [];
   for (const e of effects) {
-    if (e.type !== "random") {
-      out.push(e);
+    if (e.type === "narrate") {
+      // Pure cue. State unchanged.
+      cues.push(renderNarration(e.text, {}, story, cur));
       continue;
     }
-    const total = e.branches.reduce((s, b) => s + Math.max(0, b.weight), 0);
-    if (total <= 0) continue;
-    let roll = Math.random() * total;
-    let chosen: typeof e.branches[number] | undefined;
-    for (const branch of e.branches) {
-      const w = Math.max(0, branch.weight);
-      roll -= w;
-      if (roll <= 0) {
-        chosen = branch;
-        break;
-      }
+    if (e.type === "if") {
+      // Evaluate against the LIVE rolling state — prior effects (e.g. a
+      // setFlagRandom earlier in the list) are visible. Recurse on chosen branch.
+      const branch = evaluateCondition(e.if, cur, story) ? e.then : (e.else ?? []);
+      const inner = resolveEffects(branch, cur, story);
+      cur = inner.state;
+      cues.push(...inner.cues);
+      continue;
     }
-    if (!chosen) continue;
-    if (chosen.narration) cues.push(chosen.narration);
-    // Recurse: a branch's effects could themselves contain a random effect.
-    const inner = resolveEffects(chosen.effects);
-    out.push(...inner.effects);
-    cues.push(...inner.cues);
+    cur = applyEffect(cur, e, story);
   }
-  return { effects: out, cues };
+  return { state: cur, effects: [], cues };
 }
 
 export function applyEffects(state: GameState, effects: Effect[]): GameState {

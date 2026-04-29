@@ -24,7 +24,6 @@ import type {
   Atom,
   Condition,
   CustomTool,
-  EndCondition,
   Exit,
   Item,
   Passage,
@@ -943,8 +942,6 @@ interface OverrideStory {
   templates?: Record<string, Partial<Item>>;
   // Pass-through Story-level fields. Authors declare these in JSON without
   // touching the extractor.
-  winConditions?: EndCondition[];
-  loseConditions?: EndCondition[];
   defaultVisibility?: Condition;
   sharedVariants?: TextVariant[];
   startState?: Record<string, Atom>;
@@ -1215,12 +1212,6 @@ function main() {
     }),
     ...(overrides.startState && Object.keys(overrides.startState).length > 0 && {
       startState: overrides.startState,
-    }),
-    ...(overrides.winConditions && overrides.winConditions.length > 0 && {
-      winConditions: overrides.winConditions,
-    }),
-    ...(overrides.loseConditions && overrides.loseConditions.length > 0 && {
-      loseConditions: overrides.loseConditions,
     }),
   };
 

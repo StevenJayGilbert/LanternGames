@@ -28,14 +28,14 @@ console.log("\n=== #2 Coffin at altar ===");
 {
   const e = newEngine();
   // Walk to south-temple WITHOUT coffin — flag should set
-  e.state = { ...e.state, playerLocation: "south-temple" };
+  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "south-temple" } };
   e.execute({ type: "wait" }); // tick triggers
   e.state.flags["coffin-cure"] === true
     ? pass("coffin-cure flips true when at south-temple without coffin")
     : fail("coffin-cure false", JSON.stringify(e.state.flags["coffin-cure"]));
 
   // Now pick up coffin (simulate by adding to inventory)
-  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, coffin: "inventory" } };
+  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, coffin: "player" } };
   e.execute({ type: "wait" });
   e.state.flags["coffin-cure"] === false
     ? pass("coffin-cure flips back false when carrying coffin")
@@ -49,8 +49,7 @@ console.log("\n=== #6 Echo → bar ===");
   // loud-room is dark — must have a lit light source for items to be perceivable
   e.state = {
     ...e.state,
-    playerLocation: "loud-room",
-    itemLocations: { ...e.state.itemLocations, lamp: "inventory" },
+    itemLocations: { ...e.state.itemLocations, player: "loud-room", lamp: "player" },
     itemStates: { ...e.state.itemStates, lamp: { ...(e.state.itemStates.lamp ?? {}), isLit: true } },
   };
   // Bar should be HIDDEN at start (visibleWhen: echo-spoken)
@@ -75,8 +74,7 @@ console.log("\n=== #3 Wave scepter at rainbow ===");
   const e = newEngine();
   e.state = {
     ...e.state,
-    playerLocation: "end-of-rainbow",
-    itemLocations: { ...e.state.itemLocations, sceptre: "inventory" },
+    itemLocations: { ...e.state.itemLocations, player: "end-of-rainbow", sceptre: "player" },
   };
   // Pot-of-gold hidden initially
   const v0 = e.getView();
@@ -102,15 +100,15 @@ console.log("\n=== #3 Wave scepter at rainbow ===");
 console.log("\n=== #4 Endgame ===");
 {
   const e = newEngine();
-  // Force all 18 treasures into trophy-case
+  // Force all 19 treasures into trophy-case
   const treasures = [
     "egg", "canary", "bag-of-coins", "painting", "chalice", "torch", "trident",
     "coffin", "sceptre", "jade", "scarab", "skull", "emerald", "bracelet", "trunk",
-    "bar", "pot-of-gold", "diamond",
+    "bar", "pot-of-gold", "diamond", "bauble",
   ];
-  const newLocs = { ...e.state.itemLocations };
+  const newLocs = { ...e.state.itemLocations, player: "west-of-house" };
   for (const t of treasures) newLocs[t] = "trophy-case";
-  e.state = { ...e.state, playerLocation: "west-of-house", itemLocations: newLocs };
+  e.state = { ...e.state, itemLocations: newLocs };
   e.execute({ type: "wait" });
   e.state.flags["won-flag"] === true
     ? pass("won-flag set when all treasures in case")
@@ -127,16 +125,16 @@ console.log("\n=== #4 Endgame ===");
 console.log("\n=== #5 Mirror room rub ===");
 {
   const e = newEngine();
-  e.state = { ...e.state, playerLocation: "mirror-room-1" };
+  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "mirror-room-1" } };
   e.execute({ type: "recordIntent", signalId: "rub-mirror" });
-  e.state.playerLocation === "mirror-room-2"
+  e.state.itemLocations.player === "mirror-room-2"
     ? pass("rub at mirror-room-1 teleports to mirror-room-2")
-    : fail(`location is ${e.state.playerLocation}`);
+    : fail(`location is ${e.state.itemLocations.player}`);
 
   e.execute({ type: "recordIntent", signalId: "rub-mirror" });
-  e.state.playerLocation === "mirror-room-1"
+  e.state.itemLocations.player === "mirror-room-1"
     ? pass("rub at mirror-room-2 teleports back to mirror-room-1")
-    : fail(`location is ${e.state.playerLocation}`);
+    : fail(`location is ${e.state.itemLocations.player}`);
 }
 
 // ----- Puzzle #8: Bat carry -----
@@ -148,15 +146,15 @@ console.log("\n=== #8 Bat carry ===");
   let allInDropList = true;
   for (let trial = 0; trial < 5; trial++) {
     const e = newEngine();
-    e.state = { ...e.state, playerLocation: "bat-room" };
+    e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "bat-room" } };
     e.execute({ type: "wait" });
-    if (e.state.playerLocation === "bat-room") {
+    if (e.state.itemLocations.player === "bat-room") {
       allCarried = false;
       break;
     }
-    if (!drops.includes(e.state.playerLocation)) {
+    if (!drops.includes(e.state.itemLocations.player)) {
       allInDropList = false;
-      console.log(`     unexpected drop: ${e.state.playerLocation}`);
+      console.log(`     unexpected drop: ${e.state.itemLocations.player}`);
     }
   }
   allCarried ? pass("bat carried player out of bat-room (5 trials)") : fail("bat did not carry");
@@ -164,11 +162,11 @@ console.log("\n=== #8 Bat carry ===");
 
   // With garlic in inventory, bat does NOT carry
   const e2 = newEngine();
-  e2.state = { ...e2.state, playerLocation: "bat-room", itemLocations: { ...e2.state.itemLocations, garlic: "inventory" } };
+  e2.state = { ...e2.state, itemLocations: { ...e2.state.itemLocations, player: "bat-room", garlic: "player" } };
   e2.execute({ type: "wait" });
-  e2.state.playerLocation === "bat-room"
+  e2.state.itemLocations.player === "bat-room"
     ? pass("garlic in inventory blocks bat-carry")
-    : fail(`bat carried player anyway to ${e2.state.playerLocation}`);
+    : fail(`bat carried player anyway to ${e2.state.itemLocations.player}`);
 }
 
 // ----- Puzzle #1: Bell + book + candles -----
@@ -178,13 +176,9 @@ console.log("\n=== #1 Bell + book + candles ===");
   // Player at entrance-to-hades with bell + book + lit candles
   e.state = {
     ...e.state,
-    playerLocation: "entrance-to-hades",
-    itemLocations: {
-      ...e.state.itemLocations,
-      bell: "inventory",
-      book: "inventory",
-      candles: "inventory",
-    },
+    itemLocations: { ...e.state.itemLocations, player: "entrance-to-hades", bell: "player",
+      book: "player",
+      candles: "player", },
   };
   // Step 1: ring bell
   e.execute({ type: "recordIntent", signalId: "ring-bell" });
@@ -212,12 +206,8 @@ console.log("\n=== #7 Coal → diamond ===");
   const e = newEngine();
   e.state = {
     ...e.state,
-    playerLocation: "machine-room",
-    itemLocations: {
-      ...e.state.itemLocations,
-      screwdriver: "inventory",
-      coal: "machine",
-    },
+    itemLocations: { ...e.state.itemLocations, player: "machine-room", screwdriver: "player",
+      coal: "machine", },
     itemStates: {
       ...e.state.itemStates,
       machine: { ...(e.state.itemStates.machine ?? {}), isOpen: false },
@@ -237,14 +227,14 @@ console.log("\n=== #9 Dam control panel ===");
 {
   const e = newEngine();
   // Step 1: yellow button at maintenance-room
-  e.state = { ...e.state, playerLocation: "maintenance-room", itemLocations: { ...e.state.itemLocations, wrench: "inventory" } };
+  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "maintenance-room", wrench: "player" } };
   e.execute({ type: "recordIntent", signalId: "push-yellow-button" });
   e.state.flags["gate-flag"] === true
     ? pass("gate-flag set by yellow button")
     : fail("gate-flag not set");
 
   // Step 2: walk to dam-room, turn bolt
-  e.state = { ...e.state, playerLocation: "dam-room" };
+  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "dam-room" } };
   e.execute({ type: "recordIntent", signalId: "turn-dam-bolt" });
   e.state.flags["gates-open"] === true
     ? pass("gates-open set by bolt turn")
@@ -263,7 +253,7 @@ console.log("\n=== #9 Dam control panel ===");
     : fail(`low-tide=${e.state.flags["low-tide"]} countdown=${e.state.flags["low-tide-countdown"]}`);
 
   // Now reservoir.south.north should be unblocked
-  e.state = { ...e.state, playerLocation: "reservoir-south" };
+  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "reservoir-south" } };
   const v = e.getView();
   const n = v.exits.find((x) => x.direction === "north");
   n && !n.blocked
@@ -281,7 +271,7 @@ console.log("\n=== #10 Empty-handed (timber-room squeeze) ===");
     : fail(`empty-handed = ${e.state.flags["empty-handed"]} at start`);
 
   // Pick up an item — flag should flip to false
-  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, lamp: "inventory" } };
+  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, lamp: "player" } };
   e.execute({ type: "wait" });
   e.state.flags["empty-handed"] === false
     ? pass("empty-handed flips false when player carries lamp")
@@ -291,8 +281,7 @@ console.log("\n=== #10 Empty-handed (timber-room squeeze) ===");
   // floor keeps the dark room visible so the exit appears in the view.
   e.state = {
     ...e.state,
-    playerLocation: "timber-room",
-    itemLocations: { ...e.state.itemLocations, lamp: "timber-room" },
+    itemLocations: { ...e.state.itemLocations, player: "timber-room", lamp: "timber-room" },
     itemStates: { ...e.state.itemStates, lamp: { ...(e.state.itemStates.lamp ?? {}), isLit: true } },
   };
   e.execute({ type: "wait" });
@@ -315,8 +304,7 @@ console.log("\n=== #11 Boat / river travel ===");
   const e = newEngine();
   e.state = {
     ...e.state,
-    playerLocation: "dam-base",
-    itemLocations: { ...e.state.itemLocations, pump: "inventory" },
+    itemLocations: { ...e.state.itemLocations, player: "dam-base", pump: "player" },
   };
   // Confirm boat starts deflated and not boardable
   const r0 = e.execute({ type: "board", itemId: "inflatable-boat" });
@@ -334,27 +322,25 @@ console.log("\n=== #11 Boat / river travel ===");
   const e2 = newEngine();
   e2.state = {
     ...e2.state,
-    playerLocation: "dam-base",
-    itemLocations: { ...e2.state.itemLocations, pump: "inventory", sword: "inventory" },
+    itemLocations: { ...e2.state.itemLocations, player: "dam-base", pump: "player", sword: "player" },
   };
   e2.execute({ type: "recordIntent", signalId: "inflate-boat" });
   // Now board — engine boards (no weapon check at engine level), but the
   // puncture trigger fires immediately (priority 100) on inVehicle+weapon.
   e2.execute({ type: "board", itemId: "inflatable-boat" });
+  // Player should be ejected to dam-base (parent is the room, not the boat).
   e2.state.itemStates["inflatable-boat"]?.inflation === "punctured" &&
-    e2.state.playerVehicle === null &&
-    e2.state.playerLocation === "dam-base"
+    e2.state.itemLocations.player === "dam-base"
     ? pass("board with sword → puncture trigger ejects player + sets boat punctured")
     : fail(
-        `inflation=${e2.state.itemStates["inflatable-boat"]?.inflation} vehicle=${e2.state.playerVehicle} loc=${e2.state.playerLocation}`,
+        `inflation=${e2.state.itemStates["inflatable-boat"]?.inflation} player=${e2.state.itemLocations.player}`,
       );
 
   // Repair with putty → boat back to deflated
   const e3 = newEngine();
   e3.state = {
     ...e3.state,
-    playerLocation: "dam-base",
-    itemLocations: { ...e3.state.itemLocations, putty: "inventory" },
+    itemLocations: { ...e3.state.itemLocations, player: "dam-base", putty: "player" },
     itemStates: {
       ...e3.state.itemStates,
       "inflatable-boat": {
@@ -375,80 +361,88 @@ console.log("\n=== #11 Boat / river travel ===");
   const e4 = newEngine();
   e4.state = {
     ...e4.state,
-    playerLocation: "dam-base",
-    itemLocations: { ...e4.state.itemLocations, pump: "inventory" },
+    itemLocations: { ...e4.state.itemLocations, player: "dam-base", pump: "player" },
   };
   e4.execute({ type: "recordIntent", signalId: "inflate-boat" });
   e4.execute({ type: "board", itemId: "inflatable-boat" });
-  e4.state.playerVehicle === "inflatable-boat"
-    ? pass("clean board → playerVehicle set")
-    : fail(`vehicle=${e4.state.playerVehicle}`);
+  e4.state.itemLocations.player === "inflatable-boat"
+    ? pass("clean board → player parent is the vehicle")
+    : fail(`player=${e4.state.itemLocations.player}`);
 
   // go(down) from dam-base → river-1? Actually dam-base has no down exit.
-  // Use movePlayer effect via /tp-style state to start at river-1 with the boat.
+  // Player INSIDE the boat at river-1 (player.location === boat id; boat at river-1).
   e4.state = {
     ...e4.state,
-    playerLocation: "river-1",
-    itemLocations: { ...e4.state.itemLocations, "inflatable-boat": "river-1" },
+    itemLocations: {
+      ...e4.state.itemLocations,
+      player: "inflatable-boat",
+      "inflatable-boat": "river-1",
+    },
   };
 
   // Tick 1 — counter increments to 1, no advance
   e4.execute({ type: "wait" });
-  e4.state.flags["river-tick-counter"] === 1 && e4.state.playerLocation === "river-1"
+  e4.state.flags["river-tick-counter"] === 1 &&
+    e4.state.itemLocations["inflatable-boat"] === "river-1"
     ? pass("river-1 turn 1: counter=1, still at river-1")
-    : fail(`counter=${e4.state.flags["river-tick-counter"]} loc=${e4.state.playerLocation}`);
+    : fail(
+        `counter=${e4.state.flags["river-tick-counter"]} boat=${e4.state.itemLocations["inflatable-boat"]}`,
+      );
 
-  // Tick 2 — counter hits 2, advance fires, player moves to river-2 + counter
-  // resets to 0. River-2-tick was already checked earlier in this Phase 2
-  // pass (when player was still at river-1) so it doesn't fire — player
-  // arrives at river-2 with counter=0, getting the full grace turn at the
-  // new room. Generous-by-design.
+  // Tick 2 — counter hits 2, advance fires, BOAT moves to river-2 (player rides
+  // along via parentage). Counter resets to 0.
   e4.execute({ type: "wait" });
-  e4.state.playerLocation === "river-2" &&
-    e4.state.itemLocations["inflatable-boat"] === "river-2" &&
+  e4.state.itemLocations["inflatable-boat"] === "river-2" &&
+    e4.state.itemLocations.player === "inflatable-boat" &&
     e4.state.flags["river-tick-counter"] === 0
     ? pass("river-1 turn 2: advance to river-2 (boat follows, counter resets, no cascade)")
     : fail(
-        `loc=${e4.state.playerLocation} boat=${e4.state.itemLocations["inflatable-boat"]} counter=${e4.state.flags["river-tick-counter"]}`,
+        `boat=${e4.state.itemLocations["inflatable-boat"]} player=${e4.state.itemLocations.player} counter=${e4.state.flags["river-tick-counter"]}`,
       );
 
-  // Land at river-3 via go(west) → boat travels to white-cliffs-north
+  // Land at river-3 via go(west) → boat travels to white-cliffs-north.
+  // Player is INSIDE the boat: itemLocations[player] === boat id.
   const e5 = newEngine();
   e5.state = {
     ...e5.state,
-    playerLocation: "river-3",
-    itemLocations: { ...e5.state.itemLocations, "inflatable-boat": "river-3" },
+    itemLocations: {
+      ...e5.state.itemLocations,
+      player: "inflatable-boat",
+      "inflatable-boat": "river-3",
+    },
     itemStates: {
       ...e5.state.itemStates,
       "inflatable-boat": { ...(e5.state.itemStates["inflatable-boat"] ?? {}), inflation: "inflated" },
     },
-    playerVehicle: "inflatable-boat",
   };
   e5.execute({ type: "go", direction: "west" });
-  e5.state.playerLocation === "white-cliffs-north" &&
+  // Player still in boat, boat now at white-cliffs-north.
+  e5.state.itemLocations.player === "inflatable-boat" &&
     e5.state.itemLocations["inflatable-boat"] === "white-cliffs-north"
     ? pass("go(west) at river-3 lands player + boat at white-cliffs-north")
     : fail(
-        `player=${e5.state.playerLocation} boat=${e5.state.itemLocations["inflatable-boat"]}`,
+        `player=${e5.state.itemLocations.player} boat=${e5.state.itemLocations["inflatable-boat"]}`,
       );
 
-  // Disembark at landing → playerVehicle clears
+  // Disembark at landing → player parent is the room (not the boat anymore)
   e5.execute({ type: "disembark" });
-  e5.state.playerVehicle === null
-    ? pass("disembark at landing → playerVehicle null")
-    : fail(`vehicle=${e5.state.playerVehicle}`);
+  e5.state.itemLocations.player === "white-cliffs-north"
+    ? pass("disembark at landing → player on foot at white-cliffs-north")
+    : fail(`player=${e5.state.itemLocations.player}`);
 
   // Waterfall death: at river-5, in-boat, after 2 ticks → endGame
   const e6 = newEngine();
   e6.state = {
     ...e6.state,
-    playerLocation: "river-5",
-    itemLocations: { ...e6.state.itemLocations, "inflatable-boat": "river-5" },
+    itemLocations: {
+      ...e6.state.itemLocations,
+      player: "inflatable-boat",
+      "inflatable-boat": "river-5",
+    },
     itemStates: {
       ...e6.state.itemStates,
       "inflatable-boat": { ...(e6.state.itemStates["inflatable-boat"] ?? {}), inflation: "inflated" },
     },
-    playerVehicle: "inflatable-boat",
   };
   e6.execute({ type: "wait" }); // tick 1
   e6.execute({ type: "wait" }); // tick 2 → death
@@ -465,8 +459,7 @@ console.log("\n=== #12 scoring ===");
   // Gallery is dark — give the player a lit lamp so the painting is perceivable.
   e.state = {
     ...e.state,
-    playerLocation: "gallery",
-    itemLocations: { ...e.state.itemLocations, painting: "gallery", lamp: "inventory" },
+    itemLocations: { ...e.state.itemLocations, player: "gallery", painting: "gallery", lamp: "player" },
     itemStates: {
       ...e.state.itemStates,
       lamp: { ...(e.state.itemStates.lamp ?? {}), isLit: true },
@@ -493,7 +486,7 @@ console.log("\n=== #12 scoring ===");
   // execute() does).
   e.state = {
     ...e.state,
-    playerLocation: "living-room",
+    itemLocations: { ...e.state.itemLocations, player: "living-room" },
     itemStates: {
       ...e.state.itemStates,
       "trophy-case": { ...(e.state.itemStates["trophy-case"] ?? {}), isOpen: true },
@@ -550,8 +543,8 @@ console.log("\n=== #13 score view + rank tier ===");
       : fail(`score=${score} expected "${expected}" got "${v.score?.rank}"`);
   }
   const v = e.getView();
-  v.score?.max === 350
-    ? pass(`view.score.max = 350`)
+  v.score?.max === 357
+    ? pass(`view.score.max = 357`)
     : fail(`view.score.max = ${v.score?.max}`);
 }
 

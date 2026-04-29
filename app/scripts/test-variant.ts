@@ -44,8 +44,8 @@ function setupSwordCarried(roomId: string) {
       playerLocation: roomId,
       itemLocations: {
         ...e.state.itemLocations,
-        sword: "inventory",
-        lamp: "inventory",
+        sword: "player",
+        lamp: "player",
       },
       itemStates: {
         ...e.state.itemStates,

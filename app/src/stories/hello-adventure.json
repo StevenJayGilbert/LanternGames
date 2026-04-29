@@ -65,12 +65,19 @@
         { "type": "moveItem", "itemId": "key", "to": "chamber" }
       ],
       "narration": "As you study the painting, you notice it sits just slightly off the wall. Behind it, dangling from a small nail, is a brass key."
-    }
-  ],
-  "winConditions": [
+    },
     {
+      "id": "garden-ends-game",
+      "once": true,
+      "afterAction": true,
       "when": { "type": "playerAt", "roomId": "garden" },
-      "message": "You have escaped into the garden. Adventure complete."
+      "effects": [
+        {
+          "type": "endGame",
+          "won": true,
+          "message": "You have escaped into the garden. Adventure complete."
+        }
+      ]
     }
   ]
 }

@@ -9,6 +9,7 @@ import type { Atom, GameState, Story } from "../story/schema";
 import {
   applyEffect,
   currentRoom,
+  currentRoomId,
   evaluateCondition,
   isContainerAccessible,
   isItemAccessible,
@@ -17,6 +18,8 @@ import {
   passageById,
   passagePresentation,
   passagesHere,
+  PLAYER_ITEM_ID,
+  playerVehicleId,
   resolveItemDescription,
   roomById,
   visibleExits,
@@ -65,7 +68,7 @@ export function performAction(
     case "attack": return attack(state, story, req.itemId, req.targetId, req.mode);
     case "recordIntent": return recordIntent(state, story, req.signalId, req.args);
     case "board": return board(state, story, req.itemId);
-    case "disembark": return disembark(state);
+    case "disembark": return disembark(state, story);
   }
 }
 
@@ -122,11 +125,17 @@ function examine(state: GameState, story: Story, id: string): ActionResult {
 // ---------- take ----------
 
 function take(state: GameState, story: Story, itemId: string): ActionResult {
+  // The player can't pick themselves up. (`fixed: true` on the player item
+  // would also block this via the fixed-item path below, but a clearer
+  // rejection up front avoids the awkward "you can't pick up yourself".)
+  if (itemId === PLAYER_ITEM_ID) {
+    return { state, event: reject("not-takeable", { itemId }), ok: false };
+  }
   const item = itemById(story, itemId);
   if (!item) {
     return { state, event: reject("unknown-item", { itemId }), ok: false };
   }
-  if (state.itemLocations[item.id] === "inventory") {
+  if (state.itemLocations[item.id] === PLAYER_ITEM_ID) {
     return { state, event: reject("already-carrying", { itemId: item.id }), ok: false };
   }
   // Accessibility check covers items directly in the room AND items inside
@@ -143,7 +152,7 @@ function take(state: GameState, story: Story, itemId: string): ActionResult {
   return {
     state: {
       ...state,
-      itemLocations: { ...state.itemLocations, [item.id]: "inventory" },
+      itemLocations: { ...state.itemLocations, [item.id]: PLAYER_ITEM_ID },
     },
     event: { type: "took", itemId: item.id },
     ok: true,
@@ -163,7 +172,7 @@ function put(
     return { state, event: reject("unknown-item", { itemId, targetId }), ok: false };
   }
   // Must be carrying the item.
-  if (state.itemLocations[item.id] !== "inventory") {
+  if (state.itemLocations[item.id] !== PLAYER_ITEM_ID) {
     return { state, event: reject("not-carrying", { itemId: item.id, targetId }), ok: false };
   }
 
@@ -218,13 +227,17 @@ function drop(state: GameState, story: Story, itemId: string): ActionResult {
   if (!item) {
     return { state, event: reject("unknown-item", { itemId }), ok: false };
   }
-  if (state.itemLocations[item.id] !== "inventory") {
+  if (state.itemLocations[item.id] !== PLAYER_ITEM_ID) {
     return { state, event: reject("not-carrying", { itemId: item.id }), ok: false };
+  }
+  const playerRoomId = currentRoomId(state, story);
+  if (!playerRoomId) {
+    return { state, event: reject("no-current-room"), ok: false };
   }
   return {
     state: {
       ...state,
-      itemLocations: { ...state.itemLocations, [item.id]: state.playerLocation },
+      itemLocations: { ...state.itemLocations, [item.id]: playerRoomId },
     },
     event: { type: "dropped", itemId: item.id },
     ok: true,
@@ -268,31 +281,35 @@ function go(state: GameState, story: Story, direction: string): ActionResult {
       ok: false,
     };
   }
-  // Vehicle handling: if the player is inside a vehicle, the vehicle either
-  // travels with them (mobile) or refuses (stationary). Mobile vehicles get
-  // moveItem'd to the new room so the data model stays honest — the boat is
-  // physically at river-3, not stuck at dam-base while the player floats away.
-  let nextItemLocations = state.itemLocations;
-  if (state.playerVehicle !== null) {
-    const vehicle = itemById(story, state.playerVehicle);
-    if (vehicle?.vehicle) {
-      if (!vehicle.vehicle.mobile) {
-        return {
-          state,
-          event: reject("vehicle-stationary", {
-            direction: dir,
-            itemId: vehicle.id,
-            message: vehicle.vehicle.enterBlockedMessage,
-          }),
-          ok: false,
-        };
-      }
-      // Mobile vehicle follows the player.
-      nextItemLocations = {
-        ...state.itemLocations,
-        [vehicle.id]: exit.to,
+  // Vehicle handling: if the player is inside a mobile vehicle, move the
+  // vehicle to the new room — the player rides along via item parentage
+  // (player.location === vehicle.id; vehicle.location moves; currentRoom
+  // walks the chain and finds the new room). Stationary vehicles refuse.
+  // On foot, just move the player.
+  const vehicleId = playerVehicleId(state, story);
+  let nextItemLocations: Record<string, string>;
+  if (vehicleId !== null) {
+    const vehicle = itemById(story, vehicleId);
+    if (vehicle?.vehicle && !vehicle.vehicle.mobile) {
+      return {
+        state,
+        event: reject("vehicle-stationary", {
+          direction: dir,
+          itemId: vehicle.id,
+          message: vehicle.vehicle.enterBlockedMessage,
+        }),
+        ok: false,
       };
     }
+    nextItemLocations = {
+      ...state.itemLocations,
+      [vehicleId]: exit.to,
+    };
+  } else {
+    nextItemLocations = {
+      ...state.itemLocations,
+      [PLAYER_ITEM_ID]: exit.to,
+    };
   }
   const visited = state.visitedRooms.includes(exit.to)
     ? state.visitedRooms
@@ -300,7 +317,6 @@ function go(state: GameState, story: Story, direction: string): ActionResult {
   return {
     state: {
       ...state,
-      playerLocation: exit.to,
       visitedRooms: visited,
       itemLocations: nextItemLocations,
     },
@@ -336,7 +352,7 @@ function attack(
     return { state, event: reject("unknown-item", { itemId: weaponId }), ok: false };
   }
   if (
-    state.itemLocations[weapon.id] !== "inventory" &&
+    state.itemLocations[weapon.id] !== PLAYER_ITEM_ID &&
     !isItemAccessible(weapon, state, story)
   ) {
     return { state, event: reject("not-accessible", { itemId: weapon.id }), ok: false };
@@ -496,8 +512,9 @@ function read(state: GameState, story: Story, itemId: string): ActionResult {
 //
 // Enter a vehicle. The vehicle item must be accessible AND have a `vehicle`
 // field AND its `enterableWhen` must evaluate true (or be absent). On success,
-// state.playerVehicle = itemId. The player's playerLocation doesn't change —
-// they're now inside the vehicle which is at that room.
+// the player item's location is set to the vehicle's id — player is now
+// "inside" the vehicle in the same way contents are inside a container, and
+// currentRoom() walks player → vehicle → room transparently.
 //
 // Note: this engine action validates entry but does NOT prevent boarding with
 // weapons or other story-specific concerns. Authors gate that via post-board
@@ -525,7 +542,10 @@ function board(state: GameState, story: Story, itemId: string): ActionResult {
     };
   }
   return {
-    state: { ...state, playerVehicle: item.id },
+    state: {
+      ...state,
+      itemLocations: { ...state.itemLocations, [PLAYER_ITEM_ID]: item.id },
+    },
     event: { type: "boarded", itemId: item.id },
     ok: true,
   };
@@ -533,17 +553,32 @@ function board(state: GameState, story: Story, itemId: string): ActionResult {
 
 // ---------- disembark ----------
 //
-// Exit the current vehicle. Player remains at the same playerLocation; just
-// no longer inside the vehicle. The vehicle stays where it is.
+// Exit the current vehicle. The player item moves from the vehicle (its
+// parent) to the vehicle's current room — same room they were already
+// transitively in, just one less layer of parentage. The vehicle stays where
+// it is.
 
-function disembark(state: GameState): ActionResult {
-  if (state.playerVehicle === null) {
+function disembark(state: GameState, story: Story): ActionResult {
+  const vehicleId = playerVehicleId(state, story);
+  if (vehicleId === null) {
     return { state, event: reject("not-in-vehicle"), ok: false };
   }
-  const exited = state.playerVehicle;
+  // The vehicle's location should be a roomId. If for some reason it isn't
+  // (e.g. nested vehicles, vehicle-in-NPC, or "nowhere"), bail to the
+  // current room derived via the chain.
+  const vehicleLoc = state.itemLocations[vehicleId];
+  const targetRoom = vehicleLoc && roomById(story, vehicleLoc)
+    ? vehicleLoc
+    : currentRoomId(state, story);
+  if (!targetRoom) {
+    return { state, event: reject("no-current-room"), ok: false };
+  }
   return {
-    state: { ...state, playerVehicle: null },
-    event: { type: "disembarked", itemId: exited },
+    state: {
+      ...state,
+      itemLocations: { ...state.itemLocations, [PLAYER_ITEM_ID]: targetRoom },
+    },
+    event: { type: "disembarked", itemId: vehicleId },
     ok: true,
   };
 }

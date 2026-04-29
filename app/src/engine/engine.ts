@@ -1,16 +1,18 @@
 // The top-level Engine wraps actions with the cross-cutting concerns:
 //   - run triggers after every successful action (with fixed-point iteration so
 //     cascading triggers settle before returning)
-//   - check win/lose conditions
 //   - guard against actions after the game has ended
 //   - build a fresh WorldView snapshot to include in every result
+//
+// Win/lose state is set exclusively by `endGame` effects from triggers — there
+// is no separate winConditions/loseConditions polling step.
 //
 // Every EngineResult carries a structured event (what happened) and a view
 // (what the player can perceive now). Player-facing prose is the LLM's job
 // (or render.ts for dev/test).
 
 import type { GameState, Story, Trigger } from "../story/schema";
-import { applyEffects, evaluateCondition, initialState, resolveEffects, roomById } from "./state";
+import { currentRoomId, evaluateCondition, initialState, resolveEffects, roomById } from "./state";
 import { performAction, type ActionRequest } from "./actions";
 import type { ActionEvent } from "./events";
 import { buildView, type WorldView } from "./view";
@@ -52,7 +54,7 @@ export class Engine {
       };
     }
 
-    const previousLocation = this.state.playerLocation;
+    const previousLocation = currentRoomId(this.state, this.story);
     const actionResult = performAction(this.state, this.story, req);
 
     // Phase 1: regular trigger fixed-point loop. Skipped on rejection because
@@ -73,15 +75,14 @@ export class Engine {
     // fire). Runs whether the action succeeded or not.
     const phase3 = runTriggers(phase2.state, this.story);
 
-    let nextState = phase3.state;
-    const ended = checkEndConditions(nextState, this.story);
-    if (ended) nextState = { ...nextState, finished: ended };
+    const nextState = phase3.state;
 
-    if (nextState.playerLocation !== previousLocation) {
-      const room = roomById(this.story, nextState.playerLocation);
+    const newLocation = currentRoomId(nextState, this.story);
+    if (newLocation !== previousLocation && newLocation) {
+      const room = roomById(this.story, newLocation);
       debugLog(
         "rooms",
-        `[room] ${previousLocation} → ${nextState.playerLocation}` +
+        `[room] ${previousLocation} → ${newLocation}` +
           (room ? ` (${room.name})` : ""),
       );
     }
@@ -141,7 +142,7 @@ export function runTriggers(state: GameState, story: Story): TriggerRunOutcome {
     iterations++;
     for (const trigger of triggers) {
       if (shouldFire(trigger, current, story)) {
-        const result = fireTrigger(trigger, current);
+        const result = fireTrigger(trigger, current, story);
         current = result.state;
         if (trigger.narration) cues.push(renderNarration(trigger.narration, {}, story, current));
         cues.push(...result.cues);
@@ -174,7 +175,7 @@ export function runAfterActionTriggers(
   let current = state;
   for (const trigger of triggers) {
     if (shouldFire(trigger, current, story)) {
-      const result = fireTrigger(trigger, current);
+      const result = fireTrigger(trigger, current, story);
       current = result.state;
       if (trigger.narration) cues.push(renderNarration(trigger.narration, {}, story, current));
       cues.push(...result.cues);
@@ -212,35 +213,21 @@ function shouldFire(trigger: Trigger, state: GameState, story: Story): boolean {
 function fireTrigger(
   trigger: Trigger,
   state: GameState,
+  story: Story,
 ): { state: GameState; cues: string[] } {
-  const resolved = resolveEffects(trigger.effects);
-  const withEffects = applyEffects(state, resolved.effects);
+  // resolveEffects now applies the effects in order against rolling state
+  // (so an `if` later in the list sees a `setFlagRandom` earlier in the
+  // list). The returned `effects` array is always empty; we use the
+  // returned `state` directly.
+  const resolved = resolveEffects(trigger.effects, state, story);
   return {
     state: {
-      ...withEffects,
-      firedTriggers: withEffects.firedTriggers.includes(trigger.id)
-        ? withEffects.firedTriggers
-        : [...withEffects.firedTriggers, trigger.id],
+      ...resolved.state,
+      firedTriggers: resolved.state.firedTriggers.includes(trigger.id)
+        ? resolved.state.firedTriggers
+        : [...resolved.state.firedTriggers, trigger.id],
     },
     cues: resolved.cues,
   };
 }
 
-// ---------- End conditions ----------
-
-export function checkEndConditions(
-  state: GameState,
-  story: Story,
-): { won: boolean; message: string } | undefined {
-  for (const cond of story.winConditions ?? []) {
-    if (evaluateCondition(cond.when, state, story)) {
-      return { won: true, message: cond.message };
-    }
-  }
-  for (const cond of story.loseConditions ?? []) {
-    if (evaluateCondition(cond.when, state, story)) {
-      return { won: false, message: cond.message };
-    }
-  }
-  return undefined;
-}
