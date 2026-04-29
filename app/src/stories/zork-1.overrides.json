@@ -1480,8 +1480,9 @@
       ]
     },
     {
-      "$comment": "Tag scepter as a weapon so the inventoryHasTag(weapon) check on the boat catches it. Canonical Zork includes SCEPTRE in the boat-puncture list because it has WEAPONBIT — the magic boat treats it as sharp.",
+      "$comment": "Tag scepter as a weapon so the inventoryHasTag(weapon) check on the boat catches it. Canonical Zork includes SCEPTRE in the boat-puncture list because it has WEAPONBIT — the magic boat treats it as sharp. Description rewritten state-neutrally (canonical 'is in the coffin' is positional and contradicts the description once taken). 'Every color of the rainbow' is the puzzle hint pointing to the wave-sceptre-at-rainbow solution.",
       "id": "sceptre",
+      "description": "An ancient Egyptian sceptre, ornamented with bands of enamel in every color of the rainbow. The shaft tapers to a sharp point.",
       "tags": [
         "weapon",
         "treasure",
