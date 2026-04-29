@@ -343,7 +343,7 @@
     {
       "id": "living-room",
       "name": "Living Room",
-      "description": "You are in the living room. There is a doorway to the east, a wooden door with strange gothic lettering to the west, which appears to be nailed shut, a trophy case, and a large oriental rug in the center of the room.",
+      "description": "You are in the living room. To the east, a doorway opens into the kitchen. To the west is the front door, nailed shut. A trophy case stands against one wall, and a large oriental rug lies in the center of the room.",
       "exits": {
         "east": {
           "to": "kitchen"

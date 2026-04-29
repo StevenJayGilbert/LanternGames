@@ -329,9 +329,9 @@
       }
     },
     {
-      "$comment": "living-room.down: ZIL declares the trap-door from cellar's side (cellar.up → living-room), but the descent direction from the living room itself is buried in routine logic the mechanical extractor skips. Add it explicitly so the player can actually descend through the open trap door. visibleWhen hides the exit until the rug is moved (so 'down' isn't even listed as a direction). Description override fixes a mangled mechanical-extract that read '…doorway to the easta trophy case,'.",
+      "$comment": "living-room.down: ZIL declares the trap-door from cellar's side (cellar.up → living-room), but the descent direction from the living room itself is buried in routine logic the mechanical extractor skips. Add it explicitly so the player can actually descend through the open trap door. visibleWhen hides the exit until the rug is moved (so 'down' isn't even listed as a direction). Description: author rewrite — drop the gothic-lettering canon (felt out of place), name the kitchen behind the east doorway and the front door behind the west door (permanently nailed shut from west-of-house's side too).",
       "id": "living-room",
-      "description": "You are in the living room. There is a doorway to the east, a wooden door with strange gothic lettering to the west, which appears to be nailed shut, a trophy case, and a large oriental rug in the center of the room.",
+      "description": "You are in the living room. To the east, a doorway opens into the kitchen. To the west is the front door, nailed shut. A trophy case stands against one wall, and a large oriental rug lies in the center of the room.",
       "exits": {
         "down": {
           "to": "cellar",
