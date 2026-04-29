@@ -394,12 +394,6 @@
       }
     },
     {
-      "id": "gallery",
-      "state": {
-        "dark": true
-      }
-    },
-    {
       "id": "studio",
       "state": {
         "dark": true
@@ -644,12 +638,6 @@
       }
     },
     {
-      "id": "mirror-room-2",
-      "state": {
-        "dark": true
-      }
-    },
-    {
       "id": "engravings-cave",
       "state": {
         "dark": true
@@ -657,18 +645,6 @@
     },
     {
       "id": "egypt-room",
-      "state": {
-        "dark": true
-      }
-    },
-    {
-      "id": "entrance-to-hades",
-      "state": {
-        "dark": true
-      }
-    },
-    {
-      "id": "land-of-living-dead",
       "state": {
         "dark": true
       }
@@ -802,24 +778,6 @@
     },
     {
       "id": "mine-4",
-      "state": {
-        "dark": true
-      }
-    },
-    {
-      "id": "slide-room",
-      "state": {
-        "dark": true
-      }
-    },
-    {
-      "id": "canyon-bottom",
-      "state": {
-        "dark": true
-      }
-    },
-    {
-      "id": "cliff-middle",
       "state": {
         "dark": true
       }

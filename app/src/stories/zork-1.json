@@ -443,9 +443,6 @@
         "north": {
           "to": "studio"
         }
-      },
-      "state": {
-        "dark": true
       }
     },
     {
@@ -1015,9 +1012,6 @@
         "east": {
           "to": "tiny-cave"
         }
-      },
-      "state": {
-        "dark": true
       }
     },
     {
@@ -1320,9 +1314,6 @@
             "equals": true
           }
         }
-      },
-      "state": {
-        "dark": true
       }
     },
     {
@@ -1336,9 +1327,6 @@
         "north": {
           "to": "entrance-to-hades"
         }
-      },
-      "state": {
-        "dark": true
       }
     },
     {
@@ -1738,9 +1726,6 @@
         "north": {
           "to": "end-of-rainbow"
         }
-      },
-      "state": {
-        "dark": true
       }
     },
     {
@@ -1754,9 +1739,6 @@
         "down": {
           "to": "canyon-bottom"
         }
-      },
-      "state": {
-        "dark": true
       }
     },
     {
@@ -2095,9 +2077,6 @@
         "down": {
           "to": "cellar"
         }
-      },
-      "state": {
-        "dark": true
       }
     }
   ],
