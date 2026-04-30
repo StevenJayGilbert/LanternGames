@@ -36,11 +36,11 @@ export interface ItemView {
   // when narrating the room's contents; the LLM weaves it into prose.
   appearance?: string;
   // Variant-resolved examine description, surfaced ONLY when the player has
-  // previously examined this item AND the resolved examine text has changed
-  // since the cache. Signals "this item's deeper state has shifted since you
-  // last looked closely." When present alongside `appearance`, the LLM
-  // merges them — leaning on appearance for brief room narration but using
-  // the description text to inform state details.
+  // previously examined this item (i.e. it's in state.examinedItems). Items
+  // the player has never examined remain appearance-only — the LLM doesn't
+  // get spoiler-y examine text in room narration. When the description's
+  // resolved text changes (e.g. state-driven variant flips), the narrator's
+  // view-fingerprint detects it and re-pushes the view to the LLM.
   description?: string;
   fixed?: boolean;          // true = scenery; not enumerated as "you see:"
   // Author-defined classification labels carried through from Item.tags.
@@ -298,14 +298,13 @@ function toItemView(item: Item, state: GameState, story: Story): ItemView {
   const appearance = resolveItemAppearance(item, state, story);
   if (appearance !== undefined) view.appearance = appearance;
 
-  // Examine description diff: surface ONLY when the player has previously
-  // examined this item (cache populated) AND the current resolved examine
-  // text differs from the cached value. Signals "state has shifted since
-  // you last looked closely." LLM merges with appearance for room narration.
-  const cachedExamine = state.lastExamineShown[item.id];
-  if (cachedExamine !== undefined) {
-    const currentExamine = resolveItemDescription(item, state, story);
-    if (currentExamine !== cachedExamine) view.description = currentExamine;
+  // Examine description: surfaced when the player has previously examined
+  // this item. Items the player has never examined remain appearance-only
+  // (don't spoil unexamined puzzle text in room narration). Change detection
+  // moved to the narrator's per-turn view-fingerprint — the engine just
+  // emits the current resolved description for examined items every turn.
+  if (state.examinedItems.includes(item.id)) {
+    view.description = resolveItemDescription(item, state, story);
   }
 
   const itemState = state.itemStates[item.id];

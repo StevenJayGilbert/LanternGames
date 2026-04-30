@@ -128,8 +128,6 @@ export function initialState(story: Story): GameState {
     visitedRooms: [story.startRoom],
     examinedItems: [],
     firedTriggers: [],
-    lastAppearanceShown: {},
-    lastExamineShown: {},
   };
 }
 

@@ -532,19 +532,12 @@ export interface GameState {
   matchedIntents: string[];              // intent signal ids the LLM has matched (persistent)
   matchedIntentArgs: Record<string, Record<string, Atom>>;  // args of the most-recent match per signalId; cleared on removeMatchedIntent
   visitedRooms: string[];
+  // Items the player has examined at least once. Gates inclusion of
+  // `ItemView.description` in the view (so unexamined items remain
+  // appearance-only and the LLM can't spoil puzzle text). The narrator's
+  // per-turn view-fingerprint handles change detection — when the resolved
+  // description text changes, the fingerprint differs and the view re-pushes.
   examinedItems: string[];
   firedTriggers: string[];
-  // Cache of the last appearance text the LLM was sent for each visible item.
-  // The view builder writes the current resolved appearance on every turn an
-  // item is in itemsHere; if it differs from the cache (or cache is empty)
-  // the new text is surfaced and the cache catches up. Pure narration-
-  // optimization state — does not affect gameplay flags / triggers / scoring.
-  lastAppearanceShown: Record<string, string>;
-  // Cache of the last examine description text shown to the LLM. Updated by
-  // the examine action AND by the view builder when state-driven variants
-  // produce a different text since the last surfacing. Surfaced in
-  // ItemView.description ONLY when it differs from the cache (i.e. the player
-  // has previously examined this item AND its examine text has changed since).
-  lastExamineShown: Record<string, string>;
   finished?: { won: boolean; message: string };
 }

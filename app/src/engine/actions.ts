@@ -20,7 +20,6 @@ import {
   passagesHere,
   PLAYER_ITEM_ID,
   playerVehicleId,
-  resolveItemAppearance,
   resolveItemDescription,
   roomById,
   visibleExits,
@@ -96,19 +95,8 @@ function examine(state: GameState, story: Story, id: string): ActionResult {
       ? state.examinedItems
       : [...state.examinedItems, item.id];
     const description = resolveItemDescription(item, state, story);
-    const appearance = resolveItemAppearance(item, state, story);
-    // Populate the per-item caches so the view-builder knows the player has
-    // now "fully seen" this item — subsequent same-state visits stay silent
-    // (no re-surface), and a later state change re-surfaces the diff.
     return {
-      state: {
-        ...state,
-        examinedItems: examined,
-        lastExamineShown: { ...state.lastExamineShown, [item.id]: description },
-        lastAppearanceShown: appearance !== undefined
-          ? { ...state.lastAppearanceShown, [item.id]: appearance }
-          : state.lastAppearanceShown,
-      },
+      state: { ...state, examinedItems: examined },
       event: { type: "examined", itemId: item.id, description },
       ok: true,
     };

@@ -163,7 +163,7 @@ Rules:
 - **Be charitable about player input.** Players type fast, abbreviate, make typos, drop words, and use partial names. Infer their intent and act on it — don't make them re-type. Examples that should ALL just work without asking for clarification: "examime <thing>" / "x <thing>" / "look at <thing>" → \`examine(<thingId>)\`; "n" / "go n" / "head north" / "walk north" → \`go(north)\`; "i" / "inv" / "what am I carrying" → \`inventory\`; a partial name when only one item in the view matches → that item; "yes" right after you offered an action → execute that action. Only ask for clarification when the input is GENUINELY ambiguous (e.g. "take the key" when the view actually has two distinct keys). Never refuse for spelling or grammar; never demand the player retype to "spell correctly". The strict rules below are about validating tool ARGUMENTS — they are NOT permission to reject a player who didn't type a perfect string.
 - **Engine identifiers are internal — NEVER speak them to the player.** Any \`id\` field in the view JSON, any tool name or argument that's a lowercase-hyphenated string — these are machine-readable identifiers for the engine, NOT names the player should see. The player sees the \`name\` field. When you need to disambiguate between options, describe them in plain prose ("the red door or the blue one?") — never list the underlying IDs. **If you find yourself about to type an id-shaped string (lowercase-hyphenated), rewrite it as natural English first.** Same goes for engine internals like "trigger fired", "tool_result" — these belong to the system, not the story.
 - **Always call \`look\` for orientation requests.** When the player asks where they are, what's around them, what they see, or for a description of the room ("look", "look around", "where am I", "describe the room", "what's here", "what do I see", "survey the area"), CALL the \`look\` tool — even if you described the room in an earlier turn. Triggers may have fired silently between turns (state changes that didn't generate a narration cue), and your prior narration could be stale. The \`look\` tool returns the current view from the engine; trust it over your memory. Don't paraphrase the room from earlier in the conversation; query fresh.
-- **Where to find the current world view.** The view JSON lives in the most recent \`tool_result\` in your conversation history — that's the engine's snapshot of the room, items, exits, and inventory. The user message gives you only the player's command. When you need to know what's around the player right now, scroll back to the latest tool_result. State-mutating tools (look, take, drop, put, go, attack, wait, custom verbs like open/close/push) include a fresh \`view\` field in their result; pure-info tools (examine, read, inventory) omit it because nothing changed — for those, the previous tool_result's view is still accurate. **Exception:** the very first user message of a session DOES include a \`[Current view]\` block since there's no prior tool_result yet.
+- **Where to find the current world view.** The view JSON lives in your conversation history — either in a \`[Current view]\` block on the latest user message, or in the most recent state-mutating \`tool_result\` (look, take, drop, put, go, attack, wait, etc. include a fresh \`view\` field; examine, read, inventory and most custom verbs omit it because nothing visible changed). When you need the current state, scroll back to the most recent of these. **A \`[Current view]\` block in the latest user message is authoritative ground truth — the engine is signaling that state has changed since you last saw the view. Reconcile your narration with it.** That block appears whenever the engine has detected a state change you wouldn't otherwise see — a forced move (auto-eject, NPC drag, vehicle drift), a silent flag flip, an off-screen trigger. If the player was moved to a new room, narrate from the new room; do NOT keep refusing actions in the old one. The engine has already moved them.
 - Pass IDs (not display names) to tools. Find them in the view's \`itemsHere\` (items in the room), \`passagesHere\` (doors, windows, archways), or \`inventory\`.
 - Items and passages share one ID namespace. \`examine\` accepts either kind. \`take\`, \`drop\`, \`put\`, and \`read\` work on items only.
 - Items and passages both carry a typed \`state\` map (e.g. \`{ isOpen: true }\`, \`{ broken: false }\`). State mutates only through triggers and through author-defined custom tools. Author-defined verbs (open, close, push, turn, give, light, ring, etc.) appear as **named tools** in your tools list — call them like any built-in tool, passing the relevant item id from the current view. The engine reports failure for impossible cases (item not perceivable, item doesn't support that verb, item already in the target state) by returning narration cues — weave those into your prose. **Critical:** if you narrate that something turned, opened, broke, lit, rang, etc. without first calling the corresponding tool, the engine state stays the same and your prose becomes a lie the next view will contradict. When in doubt, call the tool first.
@@ -182,7 +182,7 @@ Rules:
 - When the engine returns "narrationCues" in a tool_result, weave them naturally into your narration — they are state changes the player should notice.
 - **Always call \`examine\` for look-at-item commands — even if you described that item before.** When the player says "look at <thing>", "examine <thing>", "x <thing>", "inspect <thing>", "describe <thing>" — call \`examine(itemId)\` every single time. Don't reuse a prior description from earlier in the conversation; don't rely on your imagination. Items change state turn over turn (a container opens, a weapon glows when enemies appear, a lantern's battery drains, a door slams shut). The engine returns the CURRENT description — only that text reflects right-now reality.
 - **\`event.description\` / \`event.text\` carries STATE SIGNALS — preserve them when you embellish.** The text the engine returns from \`examine\` and \`read\` is the item in its *current* state, and authors load it with puzzle hints: a sword described as "glowing with a faint blue glow" warns of nearby hostiles; a door described as "slightly ajar" is in a particular open state; a leaflet described as "wet and barely legible" has been dunked. **Embellish freely**, set mood, weave it into a richer scene — that's your job. But don't *drop or rewrite away* the state cues. If the description says glowing, the player must hear glowing. If it says ajar, not just "open". The vivid adjectives ARE the puzzle. Treat the engine's text as facts you must convey, then dress the prose around them however serves the story.
-- **Item \`appearance\` and \`description\` fields in the view.** Each item in \`itemsHere\` may carry an \`appearance\` field — a short room-presence sentence the engine wants you to weave into the room narration. When present, lean on it (don't invent contradicting prose); the engine has resolved any state-aware variants for you. Items may ALSO have a \`description\` field on the view — but ONLY when the player has previously examined this item AND its detailed description has changed since the last time they saw it. \`description\` is a state-shift signal: "the deeper details have moved." When \`description\` appears alongside \`appearance\`, **merge them** — keep the brief room-narration tone of appearance, but adjust your phrasing or add a short clause if the new description reveals state the appearance alone doesn't fully convey. When the player explicitly examines an item (calls \`examine\`), use the full \`event.description\` directly — that's the canonical "look closely" answer.
+- **Item \`appearance\` and \`description\` fields in the view.** Each item in \`itemsHere\` may carry an \`appearance\` field — a short room-presence sentence the engine wants you to weave into the room narration. When present, lean on it (don't invent contradicting prose); the engine has resolved any state-aware variants for you. Items may ALSO have a \`description\` field on the view — that's the detailed examine text, present when the player has previously examined this item. Use it to inform your room narration with what the player already knows about the item; the description is freshly resolved each turn so it reflects current state. When the player explicitly examines an item (calls \`examine\`), use the full \`event.description\` directly — that's the canonical "look closely" answer.
 - **\`narratorNote\` on items, rooms, and passages is engine-side guidance for YOU — NOT flavor.** It tells you HOW to narrate the entity (e.g. "treat anything 'in' this as resting on the surface", "describe in past tense", "this NPC ages between visits"). **Follow the instruction silently — never quote it, never paraphrase it as visible prose, never tell the player it exists.** Different from \`personality\` (NPC voice) and \`description\` (canonical prose to weave in). When you see narratorNote on something the player asks about, internalize the guidance and let it shape your prose without surfacing the note itself.
 - When an item in the view has a \`personality\` field, that's the author's note describing its voice and manner. Use it whenever you narrate the entity's actions and especially when the player tries to talk to, ask, shout at, or otherwise interact with it conversationally. Stay in character. Don't paraphrase the personality field directly to the player — embody it. Free-form dialogue with NPCs that have no matching story tool can be narrated in prose. If the story exposes a verb tool that matches the conversational intent, call it first so author triggers can fire — see the story's own systemPromptOverride for any specific guidance.
 - **Movement with extra nouns:** When the player phrases movement with extra words ("go down the stairs", "go up the chimney", "climb up the ladder", "go through the door", "enter the kitchen", "head out the window", "descend the staircase"), extract just the direction or destination and call \`go(direction)\`. The room's \`exits\` list is the source of truth for movement — even if the player names a scenery item or passage, what matters is which direction it's in. If multiple directions could match the named feature, pick the one whose exit \`target\` or \`passage\` field references it; otherwise pick the direction the room description associates with that feature ("stairway leading down" → \`go(down)\`). **Do NOT refuse a movement command just because the player named a scenery item in it.** Scenery items are just flavor — the exit is what moves the player.
@@ -208,6 +208,15 @@ export class Narrator {
   // Sliding window of past turns kept in `history`. Two messages per turn (user
   // command + assistant reply) plus tool_use/tool_result pairs in between.
   private maxHistoryMessages: number;
+  // Fingerprint of the most recent world view the LLM has actually seen in
+  // its conversation history (via either a [Current view] block in the user
+  // message or a tool_result with view embedded). Per-turn user-message
+  // construction compares the current view's fingerprint to this value;
+  // only includes the [Current view] block when they differ. Keeps the LLM
+  // in sync with state changes that happen without a tool call (wait
+  // fallback ticks, NPC autonomy, drain countdowns, etc.) without re-sending
+  // the view every turn.
+  private lastViewSent: string | null = null;
 
   constructor(opts: {
     engine: Engine;
@@ -235,6 +244,14 @@ export class Narrator {
     return [...this.history];
   }
 
+  // Stable string fingerprint of a view, used as the cache key for
+  // deciding when the LLM needs a fresh [Current view] block. JSON.stringify
+  // on the compactView shape produces deterministic output (object key order
+  // is insertion-order in V8) — same view, same fingerprint.
+  private viewKey(view: WorldView): string {
+    return JSON.stringify(compactView(view));
+  }
+
   async narrate(playerInput: string): Promise<NarrationTurn> {
     const story = this.engine.story;
 
@@ -260,14 +277,24 @@ export class Narrator {
       );
     }
 
-    // The current world view normally lives in the most recent tool_result
-    // (added by previous turns). On the very first turn of the session the LLM
-    // has no tool_result to consult, so embed the initial view in the user
-    // message just this once — STYLE_INSTRUCTIONS calls out this exception.
+    // The view JSON is included in the user message ONLY when state has
+    // changed since the LLM last saw the view. lastViewSent is a fingerprint
+    // of the most recent view that's in the LLM's conversation history (via
+    // either an earlier [Current view] block or a state-mutating tool_result
+    // with view embedded). If the current view's fingerprint matches, the
+    // LLM already has it — skip. If it differs (first turn ever; or off-screen
+    // state change since last response), include the block so the LLM sees
+    // ground truth. STYLE_INSTRUCTIONS tells the LLM to treat a [Current view]
+    // block as authoritative — reconcile narration with it.
+    const currentView = this.engine.getView();
+    const currentViewKey = this.viewKey(currentView);
     const viewBlock =
-      historyLengthBeforeTurn === 0
-        ? `\n\n[Current view]\n${formatView(this.engine.getView())}`
+      currentViewKey !== this.lastViewSent
+        ? `\n\n[Current view]\n${formatView(currentView)}`
         : "";
+    if (viewBlock) {
+      this.lastViewSent = currentViewKey;
+    }
 
     const userMessage: Message = {
       role: "user",
@@ -335,6 +362,19 @@ export class Narrator {
               tool_use_id: toolUse.id,
               content: formatToolResult(engineResult),
             });
+            // formatToolResult embeds the view only for state-changing events
+            // (or when the game ended). When it does, the LLM has now seen the
+            // post-action view — track that. For non-view-emitting tools
+            // (examine/read/inventory and most custom verbs), state may still
+            // have changed but the LLM hasn't seen the new view yet — leave
+            // lastViewSent at its prior value so the next user-msg fingerprint
+            // check detects the divergence and pushes a fresh view.
+            if (
+              STATE_CHANGING_EVENTS.has(engineResult.event.type) ||
+              engineResult.ended !== undefined
+            ) {
+              this.lastViewSent = this.viewKey(engineResult.view);
+            }
           }
           this.history.push({ role: "user", content: toolResults });
           continue;

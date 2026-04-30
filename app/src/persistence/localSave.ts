@@ -23,15 +23,19 @@ import { currentRoomId, PLAYER_ITEM_ID } from "../engine/state";
 // v6: GameState shape changed — playerLocation and playerVehicle removed,
 // player tracked as a regular item under itemLocations["player"].
 // v7: GameState gained two LLM-narration caches (lastAppearanceShown +
-// lastExamineShown) for the per-turn item-description diff system. Purely
-// additive — gameplay state is untouched. v6→v7 migration defaults both
-// caches to {} on load.
-const SAVE_VERSION = 7;
+// lastExamineShown) for the per-turn item-description diff system.
+// v8: Both caches removed — narration-staleness now handled by the
+// Narrator's view-string fingerprint (in-memory, not persisted).
+// examinedItems (which already existed) is now the sole gate for whether
+// ItemView.description is included. Migration just strips the two old fields.
+const SAVE_VERSION = 8;
 const LEGACY_SAVE_VERSION = 5;
 const V6_SAVE_VERSION = 6;
+const V7_SAVE_VERSION = 7;
 const PREFIX = "lanterngames_save_v" + SAVE_VERSION + "_";
 const LEGACY_PREFIX = "lanterngames_save_v" + LEGACY_SAVE_VERSION + "_";
 const V6_PREFIX = "lanterngames_save_v" + V6_SAVE_VERSION + "_";
+const V7_PREFIX = "lanterngames_save_v" + V7_SAVE_VERSION + "_";
 
 // Transcript entry types — shared between App.tsx (display) and localSave
 // (persistence) so neither side has to redeclare or guess the shape.
@@ -98,8 +102,23 @@ export function loadSession(storyId: string, slot: SaveSlot): SavedSession | nul
       const parsed = JSON.parse(raw) as unknown;
       if (isValidSession(parsed, storyId)) return parsed;
     }
-    // v6 fallback: try the v6 key. v6→v7 is purely additive (two new
-    // narration caches) so the migration is just "fill in defaults."
+    // v7 fallback: try the v7 key. v7→v8 just strips two now-removed
+    // narration caches from engineState (gameplay state is untouched).
+    const v7Raw = localStorage.getItem(v7KeyForSlot(storyId, slot));
+    if (v7Raw) {
+      const migrated = migrateV7Session(JSON.parse(v7Raw) as unknown, storyId);
+      if (migrated) {
+        try {
+          localStorage.setItem(key(storyId, slot), JSON.stringify(migrated));
+          localStorage.removeItem(v7KeyForSlot(storyId, slot));
+        } catch {
+          // ignore write failures — migration retries next load
+        }
+        return migrated;
+      }
+    }
+    // v6 fallback: try the v6 key. v6→v8 is purely additive on gameplay
+    // state — just upgrade the version stamp; no field changes needed.
     const v6Raw = localStorage.getItem(v6KeyForSlot(storyId, slot));
     if (v6Raw) {
       const migrated = migrateV6Session(JSON.parse(v6Raw) as unknown, storyId);
@@ -140,26 +159,44 @@ export function loadSession(storyId: string, slot: SaveSlot): SavedSession | nul
   }
 }
 
-// v6 → v7 migration. Purely additive: v7 introduced two new narration
-// caches (lastAppearanceShown, lastExamineShown) on GameState. Defaulting
-// both to {} on load is harmless — the LLM may briefly re-narrate items as
-// "first seen," then converges within a turn or two.
+// v7 → v8 migration. Drops the two now-removed narration caches
+// (lastAppearanceShown, lastExamineShown) from engineState. Gameplay state
+// (rooms, items, flags, examinedItems, scoring, triggers fired, etc.) is
+// untouched. Player consequence: on the first turn after load, the LLM may
+// receive a [Current view] block (because the Narrator's in-memory
+// fingerprint starts null) — that's the new view-fingerprint mechanism
+// catching itself up. No flags reset, no progress lost.
+function migrateV7Session(v: unknown, storyId: string): SavedSession | null {
+  if (!v || typeof v !== "object") return null;
+  const r = v as Record<string, unknown>;
+  if (r.version !== V7_SAVE_VERSION) return null;
+  if (r.storyId !== storyId) return null;
+  if (!r.engineState || typeof r.engineState !== "object") return null;
+  const es = r.engineState as Record<string, unknown>;
+  const { lastAppearanceShown: _la, lastExamineShown: _le, ...stripped } = es;
+  return {
+    version: SAVE_VERSION,
+    storyId,
+    engineState: stripped as unknown as GameState,
+    narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
+    transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
+    inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
+    savedAt: typeof r.savedAt === "number" ? r.savedAt : Date.now(),
+  };
+}
+
+// v6 → v8 migration. v6 didn't have the two narration caches at all, so
+// engineState is shape-compatible with v8 — just bump the version stamp.
 function migrateV6Session(v: unknown, storyId: string): SavedSession | null {
   if (!v || typeof v !== "object") return null;
   const r = v as Record<string, unknown>;
   if (r.version !== V6_SAVE_VERSION) return null;
   if (r.storyId !== storyId) return null;
   if (!r.engineState || typeof r.engineState !== "object") return null;
-  const es = r.engineState as Record<string, unknown>;
-  const migratedEngineState = {
-    ...es,
-    lastAppearanceShown: (es.lastAppearanceShown as Record<string, string> | undefined) ?? {},
-    lastExamineShown: (es.lastExamineShown as Record<string, string> | undefined) ?? {},
-  } as GameState;
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: migratedEngineState,
+    engineState: r.engineState as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -192,14 +229,19 @@ function migrateV5Session(v: unknown, storyId: string): SavedSession | null {
     if (loc === "inventory") nextItemLocations[id] = PLAYER_ITEM_ID;
   }
   nextItemLocations[PLAYER_ITEM_ID] = playerLoc;
-  const { playerLocation: _pl, playerVehicle: _pv, itemLocations: _il, ...rest } = es;
-  // Backfill the v7-era narration caches alongside the v5→v6 player-as-item
-  // shape change. v5 saves jump straight to v7 in one migration step.
+  // Strip player* fields and the v7-era narration caches (now gone in v8).
+  // v5 saves jump straight to v8 in one migration step.
+  const {
+    playerLocation: _pl,
+    playerVehicle: _pv,
+    itemLocations: _il,
+    lastAppearanceShown: _la,
+    lastExamineShown: _le,
+    ...rest
+  } = es;
   const migratedEngineState = {
     ...rest,
     itemLocations: nextItemLocations,
-    lastAppearanceShown: (rest.lastAppearanceShown as Record<string, string> | undefined) ?? {},
-    lastExamineShown: (rest.lastExamineShown as Record<string, string> | undefined) ?? {},
   } as GameState;
   const out: SavedSession = {
     version: SAVE_VERSION,
@@ -221,6 +263,10 @@ function v6KeyForSlot(storyId: string, slot: SaveSlot): string {
   return V6_PREFIX + storyId + "_" + (slot === "quick" ? "quick" : "slot" + slot);
 }
 
+function v7KeyForSlot(storyId: string, slot: SaveSlot): string {
+  return V7_PREFIX + storyId + "_" + (slot === "quick" ? "quick" : "slot" + slot);
+}
+
 export function clearSession(storyId: string, slot: SaveSlot): void {
   try {
     localStorage.removeItem(key(storyId, slot));
@@ -228,6 +274,7 @@ export function clearSession(storyId: string, slot: SaveSlot): void {
     // lingered, loadSession would migrate-and-restore them on the next read,
     // and the user would see the slot "uncleared" / the LLM would resurrect
     // old narration history after a "new game".
+    localStorage.removeItem(v7KeyForSlot(storyId, slot));
     localStorage.removeItem(v6KeyForSlot(storyId, slot));
     localStorage.removeItem(legacyKeyForSlot(storyId, slot));
   } catch {

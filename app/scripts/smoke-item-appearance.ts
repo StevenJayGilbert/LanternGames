@@ -1,11 +1,16 @@
-// Item appearance + description diff-cache smoke tests.
+// Item appearance + description gating smoke tests.
 //
 // Verifies the per-turn item-description model:
 //   - appearance is always surfaced for visible items that have one
-//   - description is surfaced ONLY when the player has previously examined
-//     this item AND its current resolved examine text differs from cache
-//   - examine action populates both caches
-//   - cache updates persist across turns
+//   - description is surfaced ONLY for items in state.examinedItems
+//     (the player has examined them at least once)
+//   - examine action populates examinedItems
+//   - description text reflects current resolved state every turn
+//
+// Per-turn "should we re-show this to the LLM" gating now lives at the
+// narrator level (view-string fingerprint), not the view-builder. This
+// suite covers the engine/view contract; narrator-level fingerprint
+// behavior is exercised by manual playtest.
 //
 // Run: npx tsx scripts/smoke-item-appearance.ts
 
@@ -87,8 +92,8 @@ console.log("\n=== Subsequent visit, same state: no re-surface ===");
   }
 }
 
-// ----- Test 3: Examine populates the cache -----
-console.log("\n=== Examine populates examine cache ===");
+// ----- Test 3: Examine adds item to examinedItems -----
+console.log("\n=== Examine populates examinedItems ===");
 {
   const e = new Engine(story);
   e.state = {
@@ -96,51 +101,41 @@ console.log("\n=== Examine populates examine cache ===");
     itemLocations: { ...e.state.itemLocations, player: "dam-room" },
   };
   e.execute({ type: "examine", itemId: "bubble" });
-  if (e.state.lastExamineShown["bubble"]) {
-    pass(`examine bubble → cache populated (${e.state.lastExamineShown["bubble"].slice(0, 40)}...)`);
+  if (e.state.examinedItems.includes("bubble")) {
+    pass("examine bubble → bubble in examinedItems");
   } else {
-    fail("examine did not populate lastExamineShown cache");
+    fail("examine did not add bubble to examinedItems");
   }
 }
 
-// ----- Test 4: State change after examine surfaces description -----
-console.log("\n=== State change after examine: description re-surfaces ===");
+// ----- Test 4: After examine + state change, view shows new description -----
+console.log("\n=== State change after examine: view reflects current text ===");
 {
   const e = new Engine(story);
   e.state = {
     ...e.state,
     itemLocations: { ...e.state.itemLocations, player: "dam-room" },
   };
-  // Examine bubble at gate-flag=false (cache stores "currently dark…")
+  // Examine bubble at gate-flag=false (description = "currently dark…").
   e.execute({ type: "examine", itemId: "bubble" });
-  const cachedBefore = e.state.lastExamineShown["bubble"];
-  // Flip gate-flag (yellow button equivalent) by setting flag directly
+  // Flip gate-flag so the bubble's variant resolves to "glowing steadily".
   e.state = {
     ...e.state,
     flags: { ...e.state.flags, "gate-flag": true },
   };
-  // Walk away and back so the view is rebuilt
-  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "dam-lobby" } };
-  e.execute({ type: "wait" });
-  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "dam-room" } };
+  // Rebuild the view via a wait (touches buildView).
   const r = e.execute({ type: "wait" });
   const bubble = findItem(r.view, "bubble");
   if (bubble?.description && bubble.description.includes("glowing steadily")) {
-    pass("state changed since cache → bubble.description surfaces in view");
+    pass("examined item: description reflects current variant after state change");
   } else {
-    fail("expected description to surface after state change",
-         `cached=${cachedBefore?.slice(0, 30)} now=${JSON.stringify(bubble)}`);
-  }
-  // After surfacing, cache should be updated to the new text.
-  if (e.state.lastExamineShown["bubble"] === bubble?.description) {
-    pass("cache updated to new description after surface");
-  } else {
-    fail("cache did not catch up to new description");
+    fail("expected description to reflect new variant text",
+         `bubble=${JSON.stringify(bubble)}`);
   }
 }
 
-// ----- Test 5: Same state next turn — silent again -----
-console.log("\n=== Same state next turn: silent again ===");
+// ----- Test 5: Examined items always carry description in subsequent views -----
+console.log("\n=== After examine, description is always present in view ===");
 {
   const e = new Engine(story);
   e.state = {
@@ -148,16 +143,18 @@ console.log("\n=== Same state next turn: silent again ===");
     itemLocations: { ...e.state.itemLocations, player: "dam-room" },
     flags: { ...e.state.flags, "gate-flag": true },
   };
-  // Examine bubble — cache populated with glowing-steadily text.
+  // Examine bubble.
   e.execute({ type: "examine", itemId: "bubble" });
-  // Wait — same state, no diff.
+  // Wait — same state. Description should still be present (gating moved
+  // to the narrator-level fingerprint; view-builder always includes it for
+  // examined items in current resolved form).
   const r = e.execute({ type: "wait" });
   const bubble = findItem(r.view, "bubble");
-  if (bubble?.description === undefined) {
-    pass("same state next turn: description NOT re-surfaced");
+  if (bubble?.description && bubble.description.includes("glowing steadily")) {
+    pass("examined item: description always present in view (re-show gating moved to narrator)");
   } else {
-    fail("description should not re-surface when state unchanged",
-         `description=${bubble.description}`);
+    fail("examined item should always have description in view",
+         `bubble=${JSON.stringify(bubble)}`);
   }
 }
 
