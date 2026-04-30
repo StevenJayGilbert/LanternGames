@@ -131,6 +131,14 @@ export class OllamaClient implements LLMClient {
     if (req.tools && req.tools.length > 0) {
       body.tools = req.tools.map(toOllamaTool);
     }
+    // toolChoice (Anthropic-style "any" / "tool") is not yet plumbed to
+    // Ollama's native API. Ollama's tool support varies by model; some
+    // accept a top-level `tool_choice` and others don't. For now we accept
+    // the field on SendRequest and silently ignore it here. The narrator's
+    // wait-fallback path catches the resulting text-only responses, so
+    // gameplay still works — it just lacks the structural "must call a
+    // tool" guarantee that Anthropic provides.
+    void req.toolChoice;
 
     let response: Response;
     try {

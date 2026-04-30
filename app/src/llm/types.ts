@@ -55,11 +55,24 @@ export interface AssistantMessage {
   stopReason: StopReason;
 }
 
+// Tool selection control. Mirrors Anthropic's `tool_choice`.
+//   - "auto" (default): model decides whether to call a tool.
+//   - "any": model MUST call exactly one tool from the provided set.
+//   - { type: "tool", name }: model MUST call this specific tool.
+// Used by the narrator to force tool calls on Phase 1 of each turn so the
+// engine state always advances (no more text-only "I don't think you can do
+// that" hallucinated refusals from the LLM).
+export type ToolChoice =
+  | { type: "auto" }
+  | { type: "any" }
+  | { type: "tool"; name: string };
+
 export interface SendRequest {
   system?: string;          // single system message (Anthropic-style; OpenAI adapters wrap it)
   messages: Message[];
   tools?: Tool[];
   maxTokens?: number;       // default 1024
+  toolChoice?: ToolChoice;  // default "auto" — see ToolChoice above
 }
 
 export interface LLMClient {

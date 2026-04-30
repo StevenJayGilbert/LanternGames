@@ -174,7 +174,7 @@ Rules:
 - Compound commands: the player may chain actions in one input ("take the key and put it in the bag", "open the box, take the contents, examine them"). Call each tool in sequence. **If any step is rejected (event.type === "rejected"), stop the chain immediately — do not call further tools.** Then narrate what succeeded up to that point plus the failure.
 - "Put X in my inventory" / "stash X" / "pocket X" / "pick up and store X" all mean \`take(X)\`. Inventory is not a container — items live there but you don't \`put\` into it.
 - **"Truly impossible" means "no tool maps to this intent" — NOT "the action might fail."** Most player actions might fail; the engine handles failure cleanly via \`rejected\` events, missing-trigger no-ops, or precondition failures with narration cues. Take, drop, go, examine, open, close, attack, push, ring, light, custom verbs — these all have matching tools, so they're never "truly impossible," even when you suspect they'll fail. **Reserve prose-refusal for cases where no tool exists for the intent at all** (e.g. "fly to the moon", "summon a dragon", "ask the room what time it is" — when there's literally no flying / summoning / time-asking tool). Don't invent a tool that doesn't exist; don't refuse via prose when one does.
-- **Don't call tools for conversational filler.** If the player's input is just "hi", "thanks", "ok", "hmm", "interesting", or similar small talk that doesn't request a world change, respond in prose with no tool call. Tools mutate engine state — only call them when the player wants the world to change or wants information that requires querying the engine.
+- **For conversational filler, call \`wait\`.** If the player's input is just "hi", "thanks", "ok", "hmm", "interesting", or similar small talk that doesn't request a world change, call \`wait\` and then narrate a brief acknowledgment from the engine's response. The engine ticks the world (canonical Zork advances on any input), and \`wait\` is the safe no-op tool when no other action fits. Engine state advancement is non-negotiable on every turn.
 - **Resolve player phrasing to view ids.** When the player names an item ("take the platinum", "examine sword", "open the box"), find the matching id in the view's \`itemsHere\`, \`passagesHere\`, or \`inventory\` — match by partial name, by tag, by description hint, by context, by the player's intent. The player says "platinum" → if the view has \`{id: "platinum-bar", name: "platinum bar"}\`, that's a match. The player says "the door" → match the only door in \`passagesHere\`. ONLY refuse when (a) genuinely nothing in the view could plausibly match, in which case narrate "you don't see X here" in story voice — or (b) two or more distinct items match equally and you genuinely need to disambiguate. Don't pass made-up ids to tools, but DO bridge the gap between the player's casual phrasing and the engine's id namespace.
 - **Stay in NPC voice across long sessions.** When the player is mid-conversation with a named NPC, mentally re-anchor on that NPC's \`personality\` field at the start of each response so their voice doesn't drift over many turns. Different NPCs have different voices — don't blend them.
 - Narration style: second person, present tense ("You see…"). Match the story's tone. Be vivid but concise — usually 1–3 sentences. After a multi-step chain, write ONE coherent narration of the whole sequence, not a paragraph per step.
@@ -323,11 +323,19 @@ export class Narrator {
       // close Z") chaining multiple verb tools.
       const MAX_ROUND_TRIPS = 10;
       for (let i = 0; i < MAX_ROUND_TRIPS; i++) {
+        // Phase 1 = the round-trip immediately after the player's user msg
+        // (before any tool_results are in history for this turn). On Phase 1
+        // we force tool_choice: "any" so the model must call a tool — kills
+        // the "hallucinated text-only refusal" failure mode that was leaving
+        // engine state stuck. Phase 2+ uses default "auto" so the LLM can
+        // finish with text-only narration after seeing tool results.
+        const isPhase1 = this.history.length === historyLengthBeforeTurn + 1;
         const response = await this.client.send({
           system,
           messages: this.history,
           tools,
           maxTokens: 1024,
+          ...(isPhase1 && { toolChoice: { type: "any" } }),
         });
 
         // Append the assistant turn to history.
@@ -383,20 +391,21 @@ export class Narrator {
           continue;
         }
 
-        // No tool_use in this response — text-only. Two cases:
-        //   A. engineResult === null: the LLM never called a tool this turn
-        //      (conversational filler "hi"/"hmm", refusal prose, or it chose
-        //      prose for a time-passing input like "wait"/"look around"). The
-        //      world still needs to tick — canonical Zork advances on any
-        //      player input. Fire one wait tick so afterAction triggers
-        //      (loud-room eject, lantern drain, grue, thief autonomy, dam
-        //      countdowns) still run on text-only turns.
-        //   B. engineResult !== null: a tool already executed earlier this
-        //      round-trip and this is the LLM's trailing narration response
-        //      (the loop sent tool_results back, got prose with no further
-        //      tool calls). Do NOT tick again — the tool action already
-        //      advanced the world. Ticking here would double-count every
-        //      tool-using player input (drain in 4 turns instead of 8, etc.).
+        // No tool_use in this response — text-only. Phase 1 forces
+        // tool_choice: "any", so on Anthropic-backed sessions the LLM cannot
+        // return text-only at i=0 — that path is structurally unreachable.
+        // We still hit this branch for:
+        //   A. engineResult !== null (the common case): a tool ran in an
+        //      earlier round-trip and this is the trailing narration response
+        //      (loop sent tool_results back, got prose, done). Do NOT tick
+        //      again — the tool action already advanced the world.
+        //   B. engineResult === null (defensive): if a non-Anthropic backend
+        //      (e.g. Ollama, which doesn't yet honor tool_choice) returns
+        //      text-only on Phase 1, fire a wait tick so engine state still
+        //      advances. Canonical Zork ticks on any player input; this
+        //      preserves that invariant on backends without forced-tool
+        //      support. With Anthropic this branch should never fire in
+        //      normal play — its presence is a regression signal.
         finalText = collectText(response);
         if (engineResult === null) {
           console.log(`[tool] (no tool call — text-only response; firing wait fallback)`);

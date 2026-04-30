@@ -60,6 +60,10 @@ export class DirectAnthropicClient implements LLMClient {
         ...(systemBlocks && { system: systemBlocks }),
         messages: req.messages.map(toAnthropicMessage),
         ...(req.tools && req.tools.length > 0 && { tools: req.tools.map(toAnthropicTool) }),
+        // tool_choice is a per-request flag (not part of the cached prefix), so
+        // forcing tool calls on Phase 1 has zero token cost. Anthropic's API
+        // accepts {type: "auto" | "any" | "tool"} with the same shape we use.
+        ...(req.toolChoice && { tool_choice: req.toolChoice }),
       });
     } catch (err: unknown) {
       throw toLLMError(err);
