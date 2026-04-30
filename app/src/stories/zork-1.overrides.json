@@ -726,6 +726,30 @@
       ]
     },
     {
+      "$comment": "Entrance to Hades: restore canonical 'barred by evil spirits' text + variant for post-ritual state. Without this sentence (canonical Zork I per docs/zork-canonical-text.md:404), the room description claims 'gate is open' but the engine refuses traversal — the LLM has no textual reason for the refusal and improvises confused prose. Variant flips when the bell+candles+book ritual sets lld-flag. Exits re-declared with blockedMessages so the LLM has canonical refusal text if it tries to enter pre-ritual.",
+      "id": "entrance-to-hades",
+      "description": "You are outside a large gateway, on which is inscribed|| Abandon every hope all ye who enter here!|| The gate is open; through it you can see a desolation, with a pile of mangled bodies in one corner. Thousands of voices, lamenting some hideous fate, can be heard. The way through the gate is barred by evil spirits, who jeer at your attempts to pass.",
+      "variants": [
+        {
+          "$comment": "Post-exorcism (lld-flag=true): the spirits have fled; the gate is now genuinely passable.",
+          "when": { "type": "flag", "key": "lld-flag", "equals": true },
+          "text": "You are outside a large gateway, on which is inscribed|| Abandon every hope all ye who enter here!|| The gate is open; through it you can see a desolation, with a pile of mangled bodies in one corner. The wailing voices have fallen silent — the spirits that barred your passage have fled. The way is clear."
+        }
+      ],
+      "exits": {
+        "in": {
+          "to": "land-of-living-dead",
+          "when": { "type": "flag", "key": "lld-flag", "equals": true },
+          "blockedMessage": "The evil spirits jeer and bar your passage — you cannot enter the Land of the Dead until they have been driven off."
+        },
+        "south": {
+          "to": "land-of-living-dead",
+          "when": { "type": "flag", "key": "lld-flag", "equals": true },
+          "blockedMessage": "The evil spirits jeer and bar your passage — you cannot enter the Land of the Dead until they have been driven off."
+        }
+      }
+    },
+    {
       "id": "gas-room",
       "state": {
         "dark": true

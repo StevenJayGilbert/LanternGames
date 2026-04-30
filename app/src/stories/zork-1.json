@@ -1361,7 +1361,7 @@
     {
       "id": "entrance-to-hades",
       "name": "Entrance to Hades",
-      "description": "You are outside a large gateway, on which is inscribed|| Abandon every hope all ye who enter here!|| The gate is open; through it you can see a desolation, with a pile of mangled bodies in one corner. Thousands of voices, lamenting some hideous fate, can be heard.",
+      "description": "You are outside a large gateway, on which is inscribed|| Abandon every hope all ye who enter here!|| The gate is open; through it you can see a desolation, with a pile of mangled bodies in one corner. Thousands of voices, lamenting some hideous fate, can be heard. The way through the gate is barred by evil spirits, who jeer at your attempts to pass.",
       "exits": {
         "up": {
           "to": "tiny-cave"
@@ -1372,7 +1372,8 @@
             "type": "flag",
             "key": "lld-flag",
             "equals": true
-          }
+          },
+          "blockedMessage": "The evil spirits jeer and bar your passage — you cannot enter the Land of the Dead until they have been driven off."
         },
         "south": {
           "to": "land-of-living-dead",
@@ -1380,9 +1381,20 @@
             "type": "flag",
             "key": "lld-flag",
             "equals": true
-          }
+          },
+          "blockedMessage": "The evil spirits jeer and bar your passage — you cannot enter the Land of the Dead until they have been driven off."
         }
-      }
+      },
+      "variants": [
+        {
+          "when": {
+            "type": "flag",
+            "key": "lld-flag",
+            "equals": true
+          },
+          "text": "You are outside a large gateway, on which is inscribed|| Abandon every hope all ye who enter here!|| The gate is open; through it you can see a desolation, with a pile of mangled bodies in one corner. The wailing voices have fallen silent — the spirits that barred your passage have fled. The way is clear."
+        }
+      ]
     },
     {
       "id": "land-of-living-dead",
