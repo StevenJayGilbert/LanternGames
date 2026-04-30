@@ -709,12 +709,19 @@
       }
     },
     {
-      "$comment": "When dome-flag=true (rope still tied up at the dome), surface a sentence about the rope dangling from above. Atmospheric — torch-room has no up exit (canonical one-way-rope puzzle; the player loops back via the long way through the coal mine + engravings-cave). The rope hint orients the player without offering a climb-up action.",
+      "$comment": "Torch-room override. Adds a permanently-blocked `up` exit so the LLM has canonical refusal text when the player tries to climb back up the rope (canonical Zork I: the rope ends some five feet above the player's head — visible from torch-room but unreachable). Descent is one-way; the player loops back via the coal mine + engravings-cave path. The dome-flag=true variant surfaces the rope hanging from above, with canonical 'ending some five feet above your head' wording so the out-of-reach status is textually explicit.",
       "id": "torch-room",
+      "exits": {
+        "up": {
+          "to": "dome-room",
+          "when": { "type": "not", "condition": { "type": "always" } },
+          "blockedMessage": "The rope dangles overhead, but it ends some five feet above your head — too high to reach. You'll have to find another way back to the Dome Room."
+        }
+      },
       "variants": [
         {
           "when": { "type": "flag", "key": "dome-flag", "equals": true },
-          "text": "This is a large room with a prominent doorway leading to a down staircase. Above you is a large dome, with a rope dangling from a wooden railing 20 feet up — the rope you tied, descending into this very room. In the center of the room sits a white marble pedestal."
+          "text": "This is a large room with a prominent doorway leading to a down staircase. Above you is a large dome, and a piece of rope descends from a wooden railing 20 feet up — the rope you tied, ending some five feet above your head. In the center of the room sits a white marble pedestal."
         }
       ]
     },

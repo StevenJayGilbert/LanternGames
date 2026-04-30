@@ -1460,6 +1460,16 @@
         },
         "down": {
           "to": "north-temple"
+        },
+        "up": {
+          "to": "dome-room",
+          "when": {
+            "type": "not",
+            "condition": {
+              "type": "always"
+            }
+          },
+          "blockedMessage": "The rope dangles overhead, but it ends some five feet above your head — too high to reach. You'll have to find another way back to the Dome Room."
         }
       },
       "variants": [
@@ -1469,7 +1479,7 @@
             "key": "dome-flag",
             "equals": true
           },
-          "text": "This is a large room with a prominent doorway leading to a down staircase. Above you is a large dome, with a rope dangling from a wooden railing 20 feet up — the rope you tied, descending into this very room. In the center of the room sits a white marble pedestal."
+          "text": "This is a large room with a prominent doorway leading to a down staircase. Above you is a large dome, and a piece of rope descends from a wooden railing 20 feet up — the rope you tied, ending some five feet above your head. In the center of the room sits a white marble pedestal."
         }
       ]
     },
