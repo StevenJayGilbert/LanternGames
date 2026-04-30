@@ -1161,8 +1161,12 @@
       "narratorNote": "The basket is a freight elevator on a chain. It can only be moved by 'lower basket' or 'raise basket' (use the lower-basket / raise-basket intents). It cannot be picked up or carried; nor can it be opened or closed (it has no lid). Treat it as a fixed feature whose only state is up vs. down."
     },
     {
+      "$comment": "Book starts open to page 569 (canonical Zork I — see docs/zork-canonical-text.md:235: 'On the altar is a large black book, open to page 569'). Base data has isOpen=false but a description that says 'held open'; that contradiction had the LLM hallucinating a closed-book state and refusing to call read/open. With isOpen=true the data is consistent and the LLM just calls read normally — engine returns the prayer text, exorcism trigger fires at entrance-to-hades.",
       "id": "book",
-      "description": "A large black book bound in cracked leather, held open to page 569."
+      "description": "A large black book bound in cracked leather, held open to page 569.",
+      "state": {
+        "isOpen": true
+      }
     },
     {
       "id": "sandwich-bag",

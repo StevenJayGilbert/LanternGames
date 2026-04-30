@@ -2418,7 +2418,7 @@
       "location": "altar",
       "takeable": true,
       "state": {
-        "isOpen": false
+        "isOpen": true
       },
       "container": {
         "accessibleWhen": {
