@@ -12161,7 +12161,7 @@
           "signalId": "push-yellow-button"
         }
       ],
-      "narration": "Click. A green bubble on the panel flickers and glows steadily."
+      "narration": "Click."
     },
     {
       "id": "brown-button-disables-bolt",
@@ -12190,7 +12190,7 @@
           "signalId": "push-brown-button"
         }
       ],
-      "narration": "Click. The green bubble dims and goes dark."
+      "narration": "Click."
     },
     {
       "id": "red-button-toggles-lights",
