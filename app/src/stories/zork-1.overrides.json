@@ -3866,8 +3866,9 @@
       "once": false
     },
     {
-      "$comment": "Rope-and-dome puzzle. Player ties the rope to the railing in the dome-room → unblocks the dome-room.down → torch-room exit. Rope moves out of inventory and onto the railing (modeled as 'rope at dome-room') so the player no longer carries it. Intent is consumed so retries on subsequent turns don't re-fire (once: true also handles that, but removeMatchedIntent keeps the matchedIntents map clean).",
+      "$comment": "Rope-and-dome puzzle. Player ties the rope to the railing in the dome-room → unblocks the dome-room.down → torch-room exit. Rope moves out of inventory and onto the railing (modeled as 'rope at dome-room'). once: false (paired with untie-rope-on-take) so tie/untie cycles work — the player may descend, climb back up, take the rope, walk around, return, and re-tie. removeMatchedIntent provides per-attempt single-shot: each tie intent fires this trigger exactly once, then clears, ready for the next attempt.",
       "id": "tie-rope",
+      "once": false,
       "when": {
         "type": "and",
         "all": [
@@ -3901,8 +3902,7 @@
           "signalId": "rope-tied-to-railing"
         }
       ],
-      "narration": "You tie the rope securely to the railing. It hangs down into the room below.",
-      "once": true
+      "narration": "You tie the rope securely to the railing. It hangs down into the room below."
     },
     {
       "$comment": "Auto-untie when player retakes the tied rope. After tie-rope sets dome-flag=true and parks the rope at dome-room, the player can climb back up via dome.up from torch-room and `take rope` to retrieve it. Without this trigger, dome-flag would stay true while the rope is back in inventory — leaving the dome.down exit open with nothing actually anchoring it. This trigger watches for rope re-entering inventory while dome-flag is true and clears the flag (re-blocking the descent until the rope is tied again). once: false so the player can tie/untie repeatedly.",

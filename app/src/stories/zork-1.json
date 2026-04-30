@@ -6066,6 +6066,7 @@
     },
     {
       "id": "tie-rope",
+      "once": false,
       "when": {
         "type": "and",
         "all": [
@@ -6099,8 +6100,7 @@
           "signalId": "rope-tied-to-railing"
         }
       ],
-      "narration": "You tie the rope securely to the railing. It hangs down into the room below.",
-      "once": true
+      "narration": "You tie the rope securely to the railing. It hangs down into the room below."
     },
     {
       "id": "untie-rope-on-take",
