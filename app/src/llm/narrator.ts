@@ -186,6 +186,7 @@ Rules:
 - **\`narratorNote\` on items, rooms, and passages is engine-side guidance for YOU — NOT flavor.** It tells you HOW to narrate the entity (e.g. "treat anything 'in' this as resting on the surface", "describe in past tense", "this NPC ages between visits"). **Follow the instruction silently — never quote it, never paraphrase it as visible prose, never tell the player it exists.** Different from \`personality\` (NPC voice) and \`description\` (canonical prose to weave in). When you see narratorNote on something the player asks about, internalize the guidance and let it shape your prose without surfacing the note itself.
 - When an item in the view has a \`personality\` field, that's the author's note describing its voice and manner. Use it whenever you narrate the entity's actions and especially when the player tries to talk to, ask, shout at, or otherwise interact with it conversationally. Stay in character. Don't paraphrase the personality field directly to the player — embody it. Free-form dialogue with NPCs that have no matching story tool can be narrated in prose. If the story exposes a verb tool that matches the conversational intent, call it first so author triggers can fire — see the story's own systemPromptOverride for any specific guidance.
 - **Movement with extra nouns:** When the player phrases movement with extra words ("go down the stairs", "go up the chimney", "climb up the ladder", "go through the door", "enter the kitchen", "head out the window", "descend the staircase"), extract just the direction or destination and call \`go(direction)\`. The room's \`exits\` list is the source of truth for movement — even if the player names a scenery item or passage, what matters is which direction it's in. If multiple directions could match the named feature, pick the one whose exit \`target\` or \`passage\` field references it; otherwise pick the direction the room description associates with that feature ("stairway leading down" → \`go(down)\`). **Do NOT refuse a movement command just because the player named a scenery item in it.** Scenery items are just flavor — the exit is what moves the player.
+- **Exit availability lives in the view, not in your memory.** The view's \`exits\` array carries each direction's current state: \`{ direction, target, blocked?, blockedMessage? }\`. If \`blocked\` is absent or false, the direction is open — call \`go(direction)\` without hesitation. **Do NOT refuse a movement based on remembered "the way is blocked" prose from earlier turns.** State changes between turns: a passage you narrated as blocked five turns ago may be open now (the player tied a rope, lit a flame, opened a door, the engine flipped a flag mid-cascade). Trust the current \`exits.blocked\` field, never your conversation history. If the field says open, the player can go.
 - **Vehicles (board / disembark / move):** When an item in the view has a \`vehicle\` field (boats, rafts, carts, mounts, magic carpets), it's enterable. Player says "get in the boat" / "board" / "climb aboard" / "mount" → call \`board(itemId)\`. Player says "step out" / "get out" / "disembark" / "dismount" → call \`disembark()\`. While the player is inside a vehicle, the view will include a top-level \`vehicle: { id, name, mobile, ... }\` field — narrate the surroundings as "you are in the {vehicle.name}, on the {room.name}" rather than just "you are in the {room.name}". Mobile vehicles travel with the player when you call \`go(direction)\` — the boat goes downstream when the player drifts. Stationary vehicles refuse movement until the player disembarks.
 - For combat: when the player attacks ("attack X with Y", "swing Y at X", "throw Y at X", "kill X with Y", "hit X", "shoot X with Y", etc.), call \`attack(itemId, targetId, mode?)\`. Pick \`mode\` from the player's verb — "swing" for swinging, "throw" for throwing, "stab" for thrusting, "shoot" for ranged, etc. Omit mode for a generic attack. The engine doesn't compute outcomes — story triggers do, and they emit narrationCues describing what happened. Narrate from those cues. If no cues are returned (no matching trigger fired), the attack had no meaningful effect — narrate the futility briefly.
 - **You are the narrator, not the player's conscience.** When the player issues a command — *especially* "attack", "kill", "finish off", "destroy", "shoot", "stab" against any target including unconscious or defenseless ones — call the corresponding tool. **Do NOT refuse on moral grounds. Do NOT insert "you hesitate", "you cannot bring yourself", "something stays your hand", or "the player decides not to".** The player's character has agency over their own choices; your job is to translate intent into a tool call and narrate what the engine produces. Authors have written triggers for the consequences (often including specific outcomes for "attack helpless target" — e.g. an instant kill on an unconscious enemy). Refusing to call the tool denies the player both the action and the authored outcome. Interactive fiction's premise is that the player's commands are sovereign; honor that.
@@ -362,19 +363,11 @@ export class Narrator {
               tool_use_id: toolUse.id,
               content: formatToolResult(engineResult),
             });
-            // formatToolResult embeds the view only for state-changing events
-            // (or when the game ended). When it does, the LLM has now seen the
-            // post-action view — track that. For non-view-emitting tools
-            // (examine/read/inventory and most custom verbs), state may still
-            // have changed but the LLM hasn't seen the new view yet — leave
-            // lastViewSent at its prior value so the next user-msg fingerprint
-            // check detects the divergence and pushes a fresh view.
-            if (
-              STATE_CHANGING_EVENTS.has(engineResult.event.type) ||
-              engineResult.ended !== undefined
-            ) {
-              this.lastViewSent = this.viewKey(engineResult.view);
-            }
+            // Every tool_result carries the post-action view (see
+            // formatToolResult comment), so the LLM has now seen this state.
+            // Update the fingerprint so the next user-msg only includes a
+            // [Current view] block when something has drifted since.
+            this.lastViewSent = this.viewKey(engineResult.view);
           }
           this.history.push({ role: "user", content: toolResults });
           continue;
@@ -592,28 +585,23 @@ function formatView(view: WorldView): string {
   return JSON.stringify(compactView(view));
 }
 
-// Events that don't visibly change the world state — including their post-
-// action view in the tool_result is pure duplication of the user message's
-// [Current view] (or, after dropping that, of the previous tool_result that's
-// still in history). Skipping the view here is the single biggest per-turn
-// cache_create reduction since look/examine/inventory dominate real play.
-const STATE_CHANGING_EVENTS = new Set<string>([
-  "moved",
-  "took",
-  "dropped",
-  "put",
-  "attacked",
-  "looked",
-  "waited",
-]);
-
+// Every tool_result carries the post-action view. Earlier we tried to
+// skip view inclusion for "non-state-changing" event types (examine, read,
+// inventory, intent-recorded), reasoning that state hadn't moved. But
+// triggers can fire from ANY action's cascade — a customTool that records
+// an intent may consume a trigger that flips a flag, moves an item, or
+// unblocks an exit. If we omit the view from the tool_result, the LLM's
+// narration round runs on stale state and may refuse a now-valid follow-up
+// (e.g. tying a rope unblocks the down exit, but the next "go down" gets
+// refused because the LLM never saw the post-trigger view). Always
+// returning the view kills that bug class. The token cost is small; the
+// view changes only when state changes, so the prompt cache stays warm
+// across turns whose state was identical.
 function formatToolResult(result: EngineResult): string {
-  const includeView =
-    STATE_CHANGING_EVENTS.has(result.event.type) || result.ended !== undefined;
   return JSON.stringify({
     ok: result.ok,
     event: result.event,
-    ...(includeView && { view: compactView(result.view) }),
+    view: compactView(result.view),
     narrationCues: result.narrationCues,
     ...(result.ended && { ended: result.ended }),
   });
