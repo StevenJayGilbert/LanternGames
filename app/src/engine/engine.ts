@@ -104,10 +104,17 @@ export class Engine {
       );
     }
 
-    this.state = nextState;
+    // Build the view first; then commit per-item appearance/description
+    // cache deltas back into state so the next turn's view sees the updated
+    // caches. View-building stays read-only of state (idempotent if called
+    // twice — same view, same deltas); cache merge happens here exactly
+    // once per execute().
+    const view = buildView(nextState, this.story);
+    this.state = commitItemDescriptionCaches(nextState, view);
+
     return {
       event: actionResult.event,
-      view: buildView(this.state, this.story),
+      view,
       // Action cues (e.g. tool handler success/failure text) come first; trigger
       // cues follow. Order matters: the handler narration sets the scene, then
       // any cascading triggers add their flavor.
@@ -119,7 +126,7 @@ export class Engine {
       ],
       triggersFired: [...phase1.fired, ...phase2.fired, ...phase3.fired],
       ok: actionResult.ok,
-      ended: nextState.finished,
+      ended: this.state.finished,
     };
   }
 
@@ -132,6 +139,29 @@ export class Engine {
   reset(): void {
     this.state = initialState(this.story);
   }
+}
+
+// Commits per-turn item-description cache updates from the latest view back
+// into state. Called once per execute() after buildView. The view's
+// itemsHere may include `appearance` (always when set) and `description`
+// (only when changed since cache). Each surfaced text means "the LLM has
+// now been told this" — so we update the corresponding cache so subsequent
+// same-state visits stay silent (no re-surfacing).
+function commitItemDescriptionCaches(state: GameState, view: WorldView): GameState {
+  const lastAppearanceShown = { ...state.lastAppearanceShown };
+  const lastExamineShown = { ...state.lastExamineShown };
+  let changed = false;
+  for (const item of view.itemsHere) {
+    if (item.appearance !== undefined && lastAppearanceShown[item.id] !== item.appearance) {
+      lastAppearanceShown[item.id] = item.appearance;
+      changed = true;
+    }
+    if (item.description !== undefined) {
+      lastExamineShown[item.id] = item.description;
+      changed = true;
+    }
+  }
+  return changed ? { ...state, lastAppearanceShown, lastExamineShown } : state;
 }
 
 // ---------- Trigger evaluator ----------

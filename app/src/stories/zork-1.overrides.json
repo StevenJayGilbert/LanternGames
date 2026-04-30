@@ -931,6 +931,7 @@
     {
       "$comment": "Dam water-flow indicator. Three variants over the (gates-open, low-tide) state pair. First-match: torrent-through-gates checked first, then drained-and-closed silent window, then drained-and-still-open trickle. Default base is the initial cascading-over-the-top state.",
       "id": "dam",
+      "appearance": "Flood Control Dam #3 — a vast concrete structure looming above the river.",
       "description": "Flood Control Dam #3 — a vast concrete structure of evident bureaucratic origin. Water cascades over its top in a steady, thunderous fall.",
       "variants": [
         {
@@ -975,12 +976,14 @@
     {
       "$comment": "Dam control bolt. Requires the wrench to turn — but the player must EXPLICITLY say which tool. Never auto-fill the wrench from inventory; if the player says 'turn bolt' alone, ask them what to use.",
       "id": "bolt",
+      "appearance": "A heavy iron bolt protrudes from the dam's control panel.",
       "description": "A heavy iron bolt with a slot evidently sized for a wrench.",
       "narratorNote": "When the player wants to turn this bolt, the turn-dam-bolt tool requires a withItemId arg naming the tool. If the player did not name a tool in their input, ASK 'With what?' (or similar) and wait for their reply — do not call the tool with a guessed withItemId. Even if the wrench is in inventory, the player has to say so. This applies to both opening and closing the gates."
     },
     {
       "$comment": "Dam-panel indicator. Glows when gate-flag=true (yellow button pressed) — the bolt control is live. yellow-button-enables-bolt narrates the flicker once; this variant makes the state persistently readable on examine bubble.",
       "id": "bubble",
+      "appearance": "A small green glass bubble is set into the dam's control panel.",
       "description": "A small green glass bubble — currently dark, evidently waiting for something.",
       "variants": [
         {
@@ -991,18 +994,22 @@
     },
     {
       "id": "yellow-button",
+      "appearance": "A worn yellow button is set into the panel.",
       "description": "A worn yellow button, slightly recessed. Yellow paint flakes around the edges."
     },
     {
       "id": "brown-button",
+      "appearance": "A small brown button sits beside the yellow.",
       "description": "A small brown button, smooth and unmarked."
     },
     {
       "id": "red-button",
+      "appearance": "A red button with a faded warning symbol sits on the panel.",
       "description": "A red button marked with a faded warning symbol."
     },
     {
       "id": "blue-button",
+      "appearance": "A small blue button is set into the panel.",
       "description": "A small blue button, smooth and unmarked."
     },
     {
@@ -1256,6 +1263,7 @@
     {
       "$comment": "Brass lantern with battery. state.isLit governs whether it emits light (per the perceivable-light convention used by defaultVisibility). state.batteryTurns counts down each turn while lit; at 0 the lamp auto-extinguishes (lamp-runs-out tick trigger). Canonical Zork battery is ~330 turns.",
       "id": "lamp",
+      "appearance": "A battery-powered brass lantern.",
       "tags": [
         "light-source",
         "battery-powered",
@@ -1269,6 +1277,7 @@
     {
       "$comment": "Troll for combat. fromTemplate gives him the shared troll personality + status state (unconscious/knocked-down/disarmed/hostile baseline) plus the enemy/troll/humanoid tags. Per-instance fields below: state.health (10) and the description.",
       "id": "troll",
+      "appearance": "A nasty-looking troll, hulking and brutish, brandishes a bloody axe.",
       "tags": [
         "enemy",
         "troll",
@@ -1289,6 +1298,7 @@
     {
       "$comment": "Elvish sword. fromTemplate('bladed-weapon') gives it the weapon/bladed/carryable tags + base weapon state (weapon-stuck, attack-bonus-*). Tags 'sword' and 'magical' are unioned in. damage:5 layered on per-instance. Two glow tiers per canonical Zork I I-SWORD daemon: bright when a hostile is in the same room (anyPerceivableItemWith), faint when a hostile is in any directly-adjacent room (anyAdjacentRoomItemWith — walks exits regardless of door state, like ZIL UEXIT/CEXIT/DEXIT). Variants are first-match, so the bright tier wins when both would trigger.",
       "id": "sword",
+      "appearance": "An elvish sword of great antiquity, blade etched with fine runes.",
       "description": "An elvish sword of great antiquity, the blade etched with fine runes.",
       "fromTemplate": "bladed-weapon",
       "tags": [
@@ -1349,6 +1359,7 @@
     {
       "$comment": "leaflet item id is 'advertisement' in the ZIL extraction (the mailbox leaflet that explains the game).",
       "id": "advertisement",
+      "appearance": "A small printed leaflet.",
       "tags": [
         "readable",
         "paper",
@@ -1390,6 +1401,7 @@
     },
     {
       "id": "mailbox",
+      "appearance": "A small dented mailbox stands here on its post.",
       "description": "A small mailbox of dented metal, fixed firmly to a post outside the front door.",
       "tags": [
         "container",
@@ -1398,6 +1410,7 @@
     },
     {
       "id": "trophy-case",
+      "appearance": "A handsome glass-fronted trophy case stands against one wall.",
       "description": "A handsome glass-fronted display case — clearly meant to hold a collector's prizes.",
       "tags": [
         "container",
@@ -1418,6 +1431,7 @@
     {
       "$comment": "Cyclops gets HP, hunger counter, and combat status state. hunger ticks up while the player lingers in his room; at threshold he attacks. Health is high (huge enemy); class triggers will favor misses over kills. Description matches canonical Infocom — note the 'though he likes people' clue, the canonical hint that points the player toward the ULYSSES solution.",
       "id": "cyclops",
+      "appearance": "A massive cyclops looms in the room, a single hungry eye fixed on you.",
       "description": "A cyclops, who looks prepared to eat horses (much less mere adventurers), blocks the staircase. From his state of health, and the bloodstains on the walls, you gather that he is not very friendly, though he likes people.",
       "tags": [
         "enemy",
@@ -1437,6 +1451,7 @@
     {
       "$comment": "Thief gets HP, autonomy state. appeared:false until the global turn counter reaches the threshold (30 turns). openWhen+closeWhen suppress the auto-gen open/close intents that fire because the extractor saw the thief as a CONTBIT (he carries stolen things). Players opening the thief is silly; the player attacking him for his loot is the path.",
       "id": "thief",
+      "appearance": "A suspicious-looking gentleman in a black cloak watches you, fingering a stiletto.",
       "tags": [
         "npc",
         "humanoid",

@@ -303,6 +303,25 @@ function validateItem(
     }
   }
 
+  // appearance: optional short room-presence line.
+  if ("appearance" in raw && raw.appearance !== undefined) {
+    if (typeof raw.appearance !== "string") err(`${path}.appearance`, "must be a string");
+  }
+
+  // appearanceVariants: state-conditional appearance overrides, parallel to variants.
+  if ("appearanceVariants" in raw && raw.appearanceVariants !== undefined) {
+    if (!Array.isArray(raw.appearanceVariants)) {
+      err(`${path}.appearanceVariants`, "must be an array");
+    } else {
+      raw.appearanceVariants.forEach((v, i) => {
+        if (!isObject(v)) return err(`${path}.appearanceVariants[${i}]`, "must be an object");
+        if (typeof v.text !== "string") err(`${path}.appearanceVariants[${i}].text`, "must be a string");
+        if (v.when === undefined) err(`${path}.appearanceVariants[${i}].when`, "missing condition");
+        else validateCondition(v.when, `${path}.appearanceVariants[${i}].when`, roomIds, itemIds, new Set(), err);
+      });
+    }
+  }
+
   // visibleWhen: per-item visibility gate. Composes with Story.defaultVisibility.
   if ("visibleWhen" in raw && raw.visibleWhen !== undefined) {
     validateCondition(raw.visibleWhen, `${path}.visibleWhen`, roomIds, itemIds, new Set(), err);

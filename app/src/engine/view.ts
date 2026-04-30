@@ -21,6 +21,8 @@ import {
   passagesHere,
   PLAYER_ITEM_ID,
   playerVehicleId,
+  resolveItemAppearance,
+  resolveItemDescription,
   resolveRoomDescription,
   roomById,
   visibleExits,
@@ -29,6 +31,17 @@ import {
 export interface ItemView {
   id: string;
   name: string;
+  // Short room-presence line, variants-resolved. Always populated when the
+  // item has an `appearance` field (or appearanceVariants matches). Use this
+  // when narrating the room's contents; the LLM weaves it into prose.
+  appearance?: string;
+  // Variant-resolved examine description, surfaced ONLY when the player has
+  // previously examined this item AND the resolved examine text has changed
+  // since the cache. Signals "this item's deeper state has shifted since you
+  // last looked closely." When present alongside `appearance`, the LLM
+  // merges them — leaning on appearance for brief room narration but using
+  // the description text to inform state details.
+  description?: string;
   fixed?: boolean;          // true = scenery; not enumerated as "you see:"
   // Author-defined classification labels carried through from Item.tags.
   // Surfaced so the LLM can describe the item in context (e.g. recognize
@@ -279,6 +292,21 @@ function toItemView(item: Item, state: GameState, story: Story): ItemView {
   if (item.tags && item.tags.length > 0) view.tags = item.tags;
   if (item.personality) view.personality = item.personality;
   if (item.narratorNote) view.narratorNote = item.narratorNote;
+
+  // Room-presence appearance: always surfaced when set, variants-resolved.
+  // The LLM uses this to narrate the item's presence in the room.
+  const appearance = resolveItemAppearance(item, state, story);
+  if (appearance !== undefined) view.appearance = appearance;
+
+  // Examine description diff: surface ONLY when the player has previously
+  // examined this item (cache populated) AND the current resolved examine
+  // text differs from the cached value. Signals "state has shifted since
+  // you last looked closely." LLM merges with appearance for room narration.
+  const cachedExamine = state.lastExamineShown[item.id];
+  if (cachedExamine !== undefined) {
+    const currentExamine = resolveItemDescription(item, state, story);
+    if (currentExamine !== cachedExamine) view.description = currentExamine;
+  }
 
   const itemState = state.itemStates[item.id];
   if (itemState && Object.keys(itemState).length > 0) {

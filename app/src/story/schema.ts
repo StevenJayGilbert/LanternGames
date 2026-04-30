@@ -179,6 +179,16 @@ export interface Room {
 export interface Item {
   id: string;
   name: string;                 // canonical display name shown in inventory and narration
+  // Short room-presence line — one sentence describing what the player would
+  // notice glancing at the room. Surfaced in ItemView.appearance every turn the
+  // item is in the current room. Optional; without it, items don't get a
+  // room-presence line (LLM falls back to inventing prose from name + state).
+  // For state-aware glance prose, use `appearanceVariants` (parallel to
+  // `variants` for the examine description).
+  appearance?: string;
+  // State-conditional overrides for `appearance`. Same shape as `variants`;
+  // first match wins, else falls back to `appearance`.
+  appearanceVariants?: TextVariant[];
   description: string;          // shown when examined
   // initial location: roomId | itemId (parent container) | "inventory" | "nowhere"
   location: string;
@@ -524,5 +534,17 @@ export interface GameState {
   visitedRooms: string[];
   examinedItems: string[];
   firedTriggers: string[];
+  // Cache of the last appearance text the LLM was sent for each visible item.
+  // The view builder writes the current resolved appearance on every turn an
+  // item is in itemsHere; if it differs from the cache (or cache is empty)
+  // the new text is surfaced and the cache catches up. Pure narration-
+  // optimization state — does not affect gameplay flags / triggers / scoring.
+  lastAppearanceShown: Record<string, string>;
+  // Cache of the last examine description text shown to the LLM. Updated by
+  // the examine action AND by the view builder when state-driven variants
+  // produce a different text since the last surfacing. Surfaced in
+  // ItemView.description ONLY when it differs from the cache (i.e. the player
+  // has previously examined this item AND its examine text has changed since).
+  lastExamineShown: Record<string, string>;
   finished?: { won: boolean; message: string };
 }

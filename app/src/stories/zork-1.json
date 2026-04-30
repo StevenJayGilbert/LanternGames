@@ -2347,6 +2347,7 @@
       "description": "A heavy iron bolt with a slot evidently sized for a wrench.",
       "location": "dam-room",
       "fixed": true,
+      "appearance": "A heavy iron bolt protrudes from the dam's control panel.",
       "narratorNote": "When the player wants to turn this bolt, the turn-dam-bolt tool requires a withItemId arg naming the tool. If the player did not name a tool in their input, ASK 'With what?' (or similar) and wait for their reply — do not call the tool with a guessed withItemId. Even if the wrench is in inventory, the player has to say so. This applies to both opening and closing the gates."
     },
     {
@@ -2355,6 +2356,7 @@
       "description": "A small green glass bubble — currently dark, evidently waiting for something.",
       "location": "dam-room",
       "fixed": true,
+      "appearance": "A small green glass bubble is set into the dam's control panel.",
       "variants": [
         {
           "when": {
@@ -2493,28 +2495,32 @@
       "name": "yellow button",
       "description": "A worn yellow button, slightly recessed. Yellow paint flakes around the edges.",
       "location": "maintenance-room",
-      "fixed": true
+      "fixed": true,
+      "appearance": "A worn yellow button is set into the panel."
     },
     {
       "id": "brown-button",
       "name": "brown button",
       "description": "A small brown button, smooth and unmarked.",
       "location": "maintenance-room",
-      "fixed": true
+      "fixed": true,
+      "appearance": "A small brown button sits beside the yellow."
     },
     {
       "id": "red-button",
       "name": "red button",
       "description": "A red button marked with a faded warning symbol.",
       "location": "maintenance-room",
-      "fixed": true
+      "fixed": true,
+      "appearance": "A red button with a faded warning symbol sits on the panel."
     },
     {
       "id": "blue-button",
       "name": "blue button",
       "description": "A small blue button, smooth and unmarked.",
       "location": "maintenance-room",
-      "fixed": true
+      "fixed": true,
+      "appearance": "A small blue button is set into the panel."
     },
     {
       "id": "trophy-case",
@@ -2535,6 +2541,7 @@
         },
         "accessBlockedMessage": "The trophy case is closed."
       },
+      "appearance": "A handsome glass-fronted trophy case stands against one wall.",
       "tags": [
         "container",
         "scenery",
@@ -2592,6 +2599,7 @@
       "description": "A cyclops, who looks prepared to eat horses (much less mere adventurers), blocks the staircase. From his state of health, and the bloodstains on the walls, you gather that he is not very friendly, though he likes people.",
       "location": "cyclops-room",
       "fixed": true,
+      "appearance": "A massive cyclops looms in the room, a single hungry eye fixed on you.",
       "tags": [
         "enemy",
         "humanoid",
@@ -2613,6 +2621,7 @@
       "description": "Flood Control Dam #3 — a vast concrete structure of evident bureaucratic origin. Water cascades over its top in a steady, thunderous fall.",
       "location": "dam-room",
       "fixed": true,
+      "appearance": "Flood Control Dam #3 — a vast concrete structure looming above the river.",
       "variants": [
         {
           "when": {
@@ -2821,6 +2830,7 @@
         "isLit": false,
         "batteryTurns": 330
       },
+      "appearance": "A battery-powered brass lantern.",
       "tags": [
         "light-source",
         "battery-powered",
@@ -2843,6 +2853,7 @@
       "readable": {
         "text": "\"WELCOME TO ZORK!| | ZORK is a game of adventure, danger, and low cunning. In it you will explore some of the most amazing territory ever seen by mortals. No computer should be without one!\""
       },
+      "appearance": "A small printed leaflet.",
       "tags": [
         "readable",
         "paper",
@@ -2894,6 +2905,7 @@
         },
         "accessBlockedMessage": "The small mailbox is closed."
       },
+      "appearance": "A small dented mailbox stands here on its post.",
       "tags": [
         "container",
         "scenery"
@@ -3267,6 +3279,7 @@
         "attack-bonus-pct": 0,
         "damage": 5
       },
+      "appearance": "An elvish sword of great antiquity, blade etched with fine runes.",
       "variants": [
         {
           "when": {
@@ -3335,6 +3348,7 @@
         },
         "accessBlockedMessage": "The thief is closed."
       },
+      "appearance": "A suspicious-looking gentleman in a black cloak watches you, fingering a stiletto.",
       "tags": [
         "npc",
         "humanoid",
@@ -3398,6 +3412,7 @@
       "name": "troll",
       "description": "A nasty-looking troll, brandishing a bloody axe, blocks all passages out of the room.",
       "location": "troll-room",
+      "appearance": "A nasty-looking troll, hulking and brutish, brandishes a bloody axe.",
       "tags": [
         "enemy",
         "troll",

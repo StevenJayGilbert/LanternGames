@@ -21,12 +21,17 @@ import type { Message } from "../llm/types";
 import { currentRoomId, PLAYER_ITEM_ID } from "../engine/state";
 
 // v6: GameState shape changed — playerLocation and playerVehicle removed,
-// player tracked as a regular item under itemLocations["player"]. Loader
-// migrates v5 saves on read.
-const SAVE_VERSION = 6;
+// player tracked as a regular item under itemLocations["player"].
+// v7: GameState gained two LLM-narration caches (lastAppearanceShown +
+// lastExamineShown) for the per-turn item-description diff system. Purely
+// additive — gameplay state is untouched. v6→v7 migration defaults both
+// caches to {} on load.
+const SAVE_VERSION = 7;
 const LEGACY_SAVE_VERSION = 5;
+const V6_SAVE_VERSION = 6;
 const PREFIX = "lanterngames_save_v" + SAVE_VERSION + "_";
 const LEGACY_PREFIX = "lanterngames_save_v" + LEGACY_SAVE_VERSION + "_";
+const V6_PREFIX = "lanterngames_save_v" + V6_SAVE_VERSION + "_";
 
 // Transcript entry types — shared between App.tsx (display) and localSave
 // (persistence) so neither side has to redeclare or guess the shape.
@@ -93,13 +98,28 @@ export function loadSession(storyId: string, slot: SaveSlot): SavedSession | nul
       const parsed = JSON.parse(raw) as unknown;
       if (isValidSession(parsed, storyId)) return parsed;
     }
+    // v6 fallback: try the v6 key. v6→v7 is purely additive (two new
+    // narration caches) so the migration is just "fill in defaults."
+    const v6Raw = localStorage.getItem(v6KeyForSlot(storyId, slot));
+    if (v6Raw) {
+      const migrated = migrateV6Session(JSON.parse(v6Raw) as unknown, storyId);
+      if (migrated) {
+        try {
+          localStorage.setItem(key(storyId, slot), JSON.stringify(migrated));
+          localStorage.removeItem(v6KeyForSlot(storyId, slot));
+        } catch {
+          // ignore write failures — migration retries next load
+        }
+        return migrated;
+      }
+    }
     // v5 fallback: try the legacy key. If found, migrate the shape on the
-    // fly, then upgrade-in-place: write the migrated payload to the v6 key
+    // fly, then upgrade-in-place: write the migrated payload to the v7 key
     // and remove the v5 key so subsequent loads skip the migration step AND
-    // a subsequent clearSession on the v6 key fully clears the slot. (Prior
+    // a subsequent clearSession on the v7 key fully clears the slot. (Prior
     // versions left the v5 key behind, which made delete and "new game"
-    // appear to do nothing — clearSession removed v6 but loadSession would
-    // re-find and re-migrate the v5.)
+    // appear to do nothing — clearSession removed the current key but
+    // loadSession would re-find and re-migrate the v5.)
     const legacyRaw = localStorage.getItem(legacyKeyForSlot(storyId, slot));
     if (legacyRaw) {
       const migrated = migrateV5Session(JSON.parse(legacyRaw) as unknown, storyId);
@@ -118,6 +138,33 @@ export function loadSession(storyId: string, slot: SaveSlot): SavedSession | nul
   } catch {
     return null;
   }
+}
+
+// v6 → v7 migration. Purely additive: v7 introduced two new narration
+// caches (lastAppearanceShown, lastExamineShown) on GameState. Defaulting
+// both to {} on load is harmless — the LLM may briefly re-narrate items as
+// "first seen," then converges within a turn or two.
+function migrateV6Session(v: unknown, storyId: string): SavedSession | null {
+  if (!v || typeof v !== "object") return null;
+  const r = v as Record<string, unknown>;
+  if (r.version !== V6_SAVE_VERSION) return null;
+  if (r.storyId !== storyId) return null;
+  if (!r.engineState || typeof r.engineState !== "object") return null;
+  const es = r.engineState as Record<string, unknown>;
+  const migratedEngineState = {
+    ...es,
+    lastAppearanceShown: (es.lastAppearanceShown as Record<string, string> | undefined) ?? {},
+    lastExamineShown: (es.lastExamineShown as Record<string, string> | undefined) ?? {},
+  } as GameState;
+  return {
+    version: SAVE_VERSION,
+    storyId,
+    engineState: migratedEngineState,
+    narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
+    transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
+    inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
+    savedAt: typeof r.savedAt === "number" ? r.savedAt : Date.now(),
+  };
 }
 
 // v5 → v6 in-memory migration. Translates legacy GameState shape (with
@@ -146,9 +193,13 @@ function migrateV5Session(v: unknown, storyId: string): SavedSession | null {
   }
   nextItemLocations[PLAYER_ITEM_ID] = playerLoc;
   const { playerLocation: _pl, playerVehicle: _pv, itemLocations: _il, ...rest } = es;
+  // Backfill the v7-era narration caches alongside the v5→v6 player-as-item
+  // shape change. v5 saves jump straight to v7 in one migration step.
   const migratedEngineState = {
     ...rest,
     itemLocations: nextItemLocations,
+    lastAppearanceShown: (rest.lastAppearanceShown as Record<string, string> | undefined) ?? {},
+    lastExamineShown: (rest.lastExamineShown as Record<string, string> | undefined) ?? {},
   } as GameState;
   const out: SavedSession = {
     version: SAVE_VERSION,
@@ -166,13 +217,18 @@ function legacyKeyForSlot(storyId: string, slot: SaveSlot): string {
   return LEGACY_PREFIX + storyId + "_" + (slot === "quick" ? "quick" : "slot" + slot);
 }
 
+function v6KeyForSlot(storyId: string, slot: SaveSlot): string {
+  return V6_PREFIX + storyId + "_" + (slot === "quick" ? "quick" : "slot" + slot);
+}
+
 export function clearSession(storyId: string, slot: SaveSlot): void {
   try {
     localStorage.removeItem(key(storyId, slot));
-    // Defensive: also remove the v5 legacy key for this slot. If it lingers,
-    // loadSession would migrate-and-restore it on the next read, and the
-    // user would see the slot "uncleared" / the LLM would resurrect old
-    // narration history after a "new game".
+    // Defensive: remove all older-version keys for this slot too. If any
+    // lingered, loadSession would migrate-and-restore them on the next read,
+    // and the user would see the slot "uncleared" / the LLM would resurrect
+    // old narration history after a "new game".
+    localStorage.removeItem(v6KeyForSlot(storyId, slot));
     localStorage.removeItem(legacyKeyForSlot(storyId, slot));
   } catch {
     // ignore

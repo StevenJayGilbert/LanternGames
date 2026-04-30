@@ -128,6 +128,8 @@ export function initialState(story: Story): GameState {
     visitedRooms: [story.startRoom],
     examinedItems: [],
     firedTriggers: [],
+    lastAppearanceShown: {},
+    lastExamineShown: {},
   };
 }
 
@@ -821,6 +823,21 @@ export function resolveItemDescription(
     if (evaluateCondition(variant.when, state, story)) return variant.text;
   }
   return item.description;
+}
+
+// Resolve the room-presence "appearance" line. Walks appearanceVariants
+// first, then falls back to item.appearance. Returns undefined if neither
+// is set — items without an appearance don't surface a room-presence line
+// (current behavior pre-feature).
+export function resolveItemAppearance(
+  item: Item,
+  state: GameState,
+  story: Story,
+): string | undefined {
+  for (const variant of item.appearanceVariants ?? []) {
+    if (evaluateCondition(variant.when, state, story)) return variant.text;
+  }
+  return item.appearance;
 }
 
 // Filter exits to those currently visible to the player. `hidden: true` exits
