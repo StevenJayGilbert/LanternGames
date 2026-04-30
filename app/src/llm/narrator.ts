@@ -340,23 +340,29 @@ export class Narrator {
           continue;
         }
 
-        // No tool call — Claude responded with text only. Two possibilities:
-        //   1. Conversational filler / refusal narration ("you don't see X here")
-        //   2. The LLM chose prose for a time-passing input ("wait", "look around")
-        //      where it should have called a tool.
-        // Either way, the world should still tick — canonical Zork advances the
-        // turn on any player input. Without this fallback, afterAction triggers
-        // (loud-room eject, lantern drain, grue, thief autonomy) silently never
-        // fire on text-only turns. Surface the no-tool-call in the console for
-        // moralizing / hallucination diagnostics, then execute one wait tick
-        // and append any new narrationCues to the displayed prose.
-        console.log(`[tool] (no tool call — text-only response; firing wait fallback)`);
+        // No tool_use in this response — text-only. Two cases:
+        //   A. engineResult === null: the LLM never called a tool this turn
+        //      (conversational filler "hi"/"hmm", refusal prose, or it chose
+        //      prose for a time-passing input like "wait"/"look around"). The
+        //      world still needs to tick — canonical Zork advances on any
+        //      player input. Fire one wait tick so afterAction triggers
+        //      (loud-room eject, lantern drain, grue, thief autonomy, dam
+        //      countdowns) still run on text-only turns.
+        //   B. engineResult !== null: a tool already executed earlier this
+        //      round-trip and this is the LLM's trailing narration response
+        //      (the loop sent tool_results back, got prose with no further
+        //      tool calls). Do NOT tick again — the tool action already
+        //      advanced the world. Ticking here would double-count every
+        //      tool-using player input (drain in 4 turns instead of 8, etc.).
         finalText = collectText(response);
-        const waitResult = this.engine.execute({ type: "wait" });
-        engineResult = waitResult;
-        if (waitResult.narrationCues.length > 0) {
-          const cuesText = waitResult.narrationCues.join("\n");
-          finalText = finalText ? `${finalText}\n\n${cuesText}` : cuesText;
+        if (engineResult === null) {
+          console.log(`[tool] (no tool call — text-only response; firing wait fallback)`);
+          const waitResult = this.engine.execute({ type: "wait" });
+          engineResult = waitResult;
+          if (waitResult.narrationCues.length > 0) {
+            const cuesText = waitResult.narrationCues.join("\n");
+            finalText = finalText ? `${finalText}\n\n${cuesText}` : cuesText;
+          }
         }
         break;
       }

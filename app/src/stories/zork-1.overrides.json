@@ -10320,7 +10320,7 @@
       ]
     },
     {
-      "$comment": "When countdown hits 0 and gates still open, set low-tide. Once-only narration (the reservoir cascades will re-flood if gates close, but we don't re-narrate every cycle).",
+      "$comment": "When countdown hits 0 and gates still open, flip low-tide. Silent state change — no narration. The reveal happens via room/item variants when the player visits an affected location (reservoir, reservoir-south, reservoir-north, loud-room, dam item). Narrating here would leak visual detail to players who can't see the reservoir from where they are.",
       "id": "low-tide-fires",
       "afterAction": true,
       "once": false,
@@ -10357,8 +10357,7 @@
           "key": "low-tide",
           "value": true
         }
-      ],
-      "narration": "Far below, the reservoir empties at last. What was deep water is now mud and silt — passable, if unpleasant."
+      ]
     },
     {
       "$comment": "Reservoir refill tick. Once gates are closed and we're in the silent window (low-tide=true AND gates-open=false), counts down each turn. When the counter hits 0 the next trigger flips low-tide back to false (reservoir has refilled and water flows over the dam top again). Mirrors low-tide-tick on the open path.",
@@ -10378,7 +10377,7 @@
       ]
     },
     {
-      "$comment": "Reservoir refilled — water level rises back above the dam top, water cascades over again. low-tide → false. The loud-room becomes loud once more. Closes the canonical silent window the player exploits to take the platinum bar.",
+      "$comment": "Reservoir refilled — water level rises back above the dam top, water cascades over again. low-tide → false. The loud-room becomes loud once more. Closes the canonical silent window the player exploits to take the platinum bar. Silent state change — no narration. Reveal happens via room/item variants on the player's next visit (mirrors low-tide-fires; same line-of-sight reasoning).",
       "id": "reservoir-refills",
       "afterAction": true,
       "once": false,
@@ -10392,8 +10391,7 @@
       },
       "effects": [
         { "type": "setFlag", "key": "low-tide", "value": false }
-      ],
-      "narration": "Far below, the reservoir has refilled. Water once again pours over the top of the dam in a steady cascade."
+      ]
     },
     {
       "$comment": "PUZZLE #10 (bonus) EMPTY-HANDED COAL MINE — canonical: timber-room ↔ lower-shaft is a narrow squeeze that requires the player to carry NOTHING. Tracks inventoryCount in real time via two symmetric triggers; flag flips automatically on take/drop. The flag-gated exits (timber-room.west and lower-shaft's two return exits) open/close as a side effect. Player must drop the lit lamp before squeezing through; the lamp glows on the floor of the room they leave.",

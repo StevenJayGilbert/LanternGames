@@ -12632,8 +12632,7 @@
           "key": "low-tide",
           "value": true
         }
-      ],
-      "narration": "Far below, the reservoir empties at last. What was deep water is now mud and silt — passable, if unpleasant."
+      ]
     },
     {
       "id": "reservoir-refill-tick",
@@ -12711,8 +12710,7 @@
           "key": "low-tide",
           "value": false
         }
-      ],
-      "narration": "Far below, the reservoir has refilled. Water once again pours over the top of the dam in a steady cascade."
+      ]
     },
     {
       "id": "empty-handed-on",
