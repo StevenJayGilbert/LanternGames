@@ -20,8 +20,17 @@
 import type { Condition, CustomTool, GameState, Story } from "../story/schema";
 import { evaluateCondition } from "./state";
 
+// ---------- Relevance-check helpers (currently unused) ----------
+//
+// These three helpers powered the per-turn conditional-tool filter that we
+// retired in favor of always-on tools (see CustomTool partition section
+// below). They're kept exported because they're general-purpose utilities
+// for "does this signal matter right now?" reasoning and may be reused if
+// we later need to trim intents from the system message (instead of from
+// the tool list, which now lives entirely in the cache-stable tier).
+
 // Every Condition the engine evaluates anywhere in the story.
-function collectConditionSites(story: Story): Condition[] {
+export function collectConditionSites(story: Story): Condition[] {
   const out: Condition[] = [];
 
   for (const room of story.rooms) {
@@ -52,7 +61,7 @@ function collectConditionSites(story: Story): Condition[] {
   return out;
 }
 
-function conditionReferencesSignal(c: Condition, signalId: string): boolean {
+export function conditionReferencesSignal(c: Condition, signalId: string): boolean {
   switch (c.type) {
     case "intentMatched":
       return c.signalId === signalId;
@@ -69,7 +78,7 @@ function conditionReferencesSignal(c: Condition, signalId: string): boolean {
 
 // Evaluate a condition treating intentMatched(signalId) as true. If true,
 // the signal is "relevant" — matching it would cause the condition to pass.
-function evaluateAssumingIntent(
+export function evaluateAssumingIntent(
   c: Condition,
   state: GameState,
   story: Story,
@@ -91,31 +100,34 @@ function evaluateAssumingIntent(
   }
 }
 
-// ----- CustomTool partition: always-on (cache-stable) vs. conditional -----
+// ----- CustomTool partition: all tools always-on for cache stability -----
+//
+// All custom tools are now exposed every turn regardless of the
+// alwaysAvailable flag. The tier partition is collapsed to keep the LLM's
+// tool list byte-stable across turns — Anthropic's prompt cache prefix
+// includes the tool list, so any per-turn churn in conditional tools
+// invalidates the entire cache (system prompt + tools + history together).
+// The ~1,550 extra cached tokens per turn are far cheaper than paying the
+// cache-write premium on a ~17K-token prefix every time the conditional
+// set shifted (which used to happen on most state changes — moves, takes,
+// flag flips). Tool preconditions on the handler side keep the LLM from
+// successfully calling tools out of context; visibility-gating was a
+// performance concern, not a correctness one.
+//
+// The alwaysAvailable schema flag is preserved for forward flexibility
+// (e.g. a future story-level opt-out for stories with hundreds of niche
+// tools). It's a no-op today.
 
-// Always-on tools — exposed every turn regardless of state. Author opts in
-// via alwaysAvailable: true. Cached in the stable tool tier.
+// All custom tools, always exposed.
 export function alwaysOnCustomTools(story: Story): CustomTool[] {
-  return (story.customTools ?? []).filter((t) => t.alwaysAvailable === true);
+  return story.customTools ?? [];
 }
 
-// Conditional tools — only exposed when at least one consuming trigger
-// could fire. Same relevance check we do for any conditional tool, just over
-// the customTools list.
+// Returns []. Kept as a callable so the narrator's per-turn debug-log code
+// path and tests that distinguish "conditional vs always-on" still compile.
 export function activeConditionalCustomTools(
-  state: GameState,
-  story: Story,
+  _state: GameState,
+  _story: Story,
 ): CustomTool[] {
-  const tools = (story.customTools ?? []).filter((t) => t.alwaysAvailable !== true);
-  if (tools.length === 0) return [];
-
-  const sites = collectConditionSites(story);
-
-  return tools.filter((tool) =>
-    sites.some(
-      (site) =>
-        conditionReferencesSignal(site, tool.id) &&
-        evaluateAssumingIntent(site, state, story, tool.id),
-    ),
-  );
+  return [];
 }

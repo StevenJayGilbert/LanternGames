@@ -175,20 +175,26 @@ console.log("\n=== handler precondition: already open ===");
     : fail(`cues=${JSON.stringify(r.narrationCues)}`);
 }
 
-// ----- alwaysOn / conditional split -----
+// ----- alwaysOn / conditional split (now collapsed for cache stability) -----
 console.log("\n=== alwaysOn / conditional split ===");
 {
+  // The conditional tier has been retired: every custom tool is always-on
+  // so the LLM's tool list stays byte-stable across turns and Anthropic's
+  // prompt cache survives. alwaysOnCustomTools returns the entire story
+  // customTools list regardless of the alwaysAvailable flag;
+  // activeConditionalCustomTools always returns [].
   const story = storyWithTestTools();
   const alwaysOn = alwaysOnCustomTools(story);
-  alwaysOn.length === 1 && alwaysOn[0].id === "test-open"
-    ? pass("alwaysOnCustomTools returns the open tool")
+  alwaysOn.length === 2 &&
+  alwaysOn.some((t) => t.id === "test-open") &&
+  alwaysOn.some((t) => t.id === "test-dangling")
+    ? pass("alwaysOnCustomTools returns ALL custom tools (collapsed tier)")
     : fail(`alwaysOn=${alwaysOn.map((t) => t.id).join(", ")}`);
 
   const e = new Engine(story);
   const conditional = activeConditionalCustomTools(e.state, e.story);
-  // test-dangling has no consuming triggers → should be filtered out.
   conditional.length === 0
-    ? pass("activeConditionalCustomTools filters dangling tools (no relevant triggers)")
+    ? pass("activeConditionalCustomTools always returns [] (tier retired)")
     : fail(`conditional=${conditional.map((t) => t.id).join(", ")}`);
 }
 
