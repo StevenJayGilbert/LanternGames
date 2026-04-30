@@ -1461,7 +1461,17 @@
         "down": {
           "to": "north-temple"
         }
-      }
+      },
+      "variants": [
+        {
+          "when": {
+            "type": "flag",
+            "key": "dome-flag",
+            "equals": true
+          },
+          "text": "This is a large room with a prominent doorway leading to a down staircase. Above you is a large dome, with a rope dangling from a wooden railing 20 feet up — the rope you tied, descending into this very room. In the center of the room sits a white marble pedestal."
+        }
+      ]
     },
     {
       "id": "north-temple",
@@ -3150,7 +3160,49 @@
       "tags": [
         "tool",
         "carryable"
-      ]
+      ],
+      "appearance": "A long coil of rope lies here.",
+      "appearanceVariants": [
+        {
+          "when": {
+            "type": "and",
+            "all": [
+              {
+                "type": "itemAt",
+                "itemId": "rope",
+                "location": "dome-room"
+              },
+              {
+                "type": "flag",
+                "key": "dome-flag",
+                "equals": true
+              }
+            ]
+          },
+          "text": "A rope is tied securely to the wooden railing here, descending into the darkness below."
+        }
+      ],
+      "variants": [
+        {
+          "when": {
+            "type": "and",
+            "all": [
+              {
+                "type": "itemAt",
+                "itemId": "rope",
+                "location": "dome-room"
+              },
+              {
+                "type": "flag",
+                "key": "dome-flag",
+                "equals": true
+              }
+            ]
+          },
+          "text": "A long coil of strong rope, currently tied to the wooden railing and descending into the darkness below. Taking the rope is the way to untie it."
+        }
+      ],
+      "narratorNote": "When the rope is at dome-room with dome-flag=true (tied), take(rope) is the canonical untie mechanic — the engine fires the untie-rope-on-take trigger, moves the rope into the player's inventory, and clears dome-flag. NEVER refuse a take with 'you must untie first' — taking IS untying. For player intents like 'untie rope', 'get the rope back', 'retrieve rope', or 'untie it' while the rope is tied, always call take(rope)."
     },
     {
       "id": "rusty-knife",
