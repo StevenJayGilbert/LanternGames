@@ -313,10 +313,16 @@ function toItemView(item: Item, state: GameState, story: Story): ItemView {
   }
 
   if (item.container) {
+    const accessible = isContainerAccessible(item, state, story);
     view.container = {
       ...(item.container.capacity !== undefined && { capacity: item.container.capacity }),
-      accessible: isContainerAccessible(item, state, story),
-      ...(item.container.accessBlockedMessage && {
+      accessible,
+      // Only surface accessBlockedMessage when the container is currently
+      // inaccessible — otherwise the message is misleading context for the
+      // LLM (e.g. an OPEN container's view would still show "the X is closed",
+      // tempting the LLM to narrate from that text rather than from the
+      // accessible: true field).
+      ...(!accessible && item.container.accessBlockedMessage && {
         accessBlockedMessage: item.container.accessBlockedMessage,
       }),
     };

@@ -2414,12 +2414,47 @@
     {
       "id": "book",
       "name": "black book",
-      "description": "A large black book bound in cracked leather, held open to page 569.",
+      "description": "A large black book bound in cracked leather. The cover is closed and weighty; the words within are not for the curious.",
       "location": "altar",
       "takeable": true,
+      "state": {
+        "isOpen": false
+      },
+      "container": {
+        "accessibleWhen": {
+          "type": "not",
+          "condition": {
+            "type": "always"
+          }
+        },
+        "accessBlockedMessage": "You'd really stuff something into a sacred ritual text? The pages are not for that."
+      },
       "readable": {
         "text": "Commandment #12592| | Oh ye who go about saying unto each: \"Hello sailor\":| Dost thou know the magnitude of thy sin before the gods?| Yea, verily, thou shalt be ground between two stones.| Shall the angry gods cast thy body into the whirlpool?| Surely, thy eye shall be put out with a sharp stick!| Even unto the ends of the earth shalt thou wander and| Unto the land of the dead shalt thou be sent at last.| Surely thou shalt repent of thy cunning."
-      }
+      },
+      "appearance": "A large black book lies here, its cover closed.",
+      "appearanceVariants": [
+        {
+          "when": {
+            "type": "itemState",
+            "itemId": "book",
+            "key": "isOpen",
+            "equals": true
+          },
+          "text": "A large black book lies here, held open to page 569."
+        }
+      ],
+      "variants": [
+        {
+          "when": {
+            "type": "itemState",
+            "itemId": "book",
+            "key": "isOpen",
+            "equals": true
+          },
+          "text": "A large black book bound in cracked leather, held open to page 569. The text is dense, archaic — a ritual prayer of some kind."
+        }
+      ]
     },
     {
       "id": "sceptre",

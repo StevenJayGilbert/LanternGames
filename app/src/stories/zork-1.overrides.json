@@ -1161,11 +1161,36 @@
       "narratorNote": "The basket is a freight elevator on a chain. It can only be moved by 'lower basket' or 'raise basket' (use the lower-basket / raise-basket intents). It cannot be picked up or carried; nor can it be opened or closed (it has no lid). Treat it as a fixed feature whose only state is up vs. down."
     },
     {
-      "$comment": "Book is a plain readable item — drop the auto-generated container and state.isOpen. Canonical Zork ZIL has CONTBIT on the book (the book conceptually 'contains' the prayer text), and the extractor faithfully emits a container shape. But our engine's `read` action ignores container.accessibleWhen, so the gating is dead weight — and worse, the view exposes accessBlockedMessage 'The black book is closed' every turn, regardless of accessible state, which had the LLM hallucinating a closed-book state and refusing to call read. Removing container + state.isOpen leaves the book as a plain readable item: read(book) returns the prayer text directly; open(book) returns 'isn't something you can open' (since itemHasStateKey check fails) — both clean canonical-tone outcomes.",
+      "$comment": "Book is a sacred-text container with an open/close mechanic — but you can NEVER put anything in it (the container.accessibleWhen is overridden to always-false, regardless of isOpen). state.isOpen is preserved so open/close work for narrative flavor. Description and appearance both have variants for the open and closed states so the LLM has clean text to narrate either way. read(book) returns the prayer text directly (engine doesn't gate read on container). put(X, book) is rejected with the snarky accessBlockedMessage. Starts closed.",
       "id": "book",
-      "description": "A large black book bound in cracked leather, held open to page 569.",
-      "container": null,
-      "state": null
+      "appearance": "A large black book lies here, its cover closed.",
+      "appearanceVariants": [
+        {
+          "when": { "type": "itemState", "itemId": "book", "key": "isOpen", "equals": true },
+          "text": "A large black book lies here, held open to page 569."
+        }
+      ],
+      "description": "A large black book bound in cracked leather. The cover is closed and weighty; the words within are not for the curious.",
+      "variants": [
+        {
+          "when": { "type": "itemState", "itemId": "book", "key": "isOpen", "equals": true },
+          "text": "A large black book bound in cracked leather, held open to page 569. The text is dense, archaic — a ritual prayer of some kind."
+        }
+      ],
+      "state": {
+        "isOpen": false
+      },
+      "container": {
+        "accessibleWhen": {
+          "$comment": "Always false. Override fully replaces the auto-gen accessibleWhen (which gated on isOpen=true) — book is sacred-text, never has anything put into it. The null entries strip the inherited itemId/key/equals fields so the merged Condition is a clean { type: 'not', condition: { type: 'always' } }.",
+          "type": "not",
+          "condition": { "type": "always" },
+          "itemId": null,
+          "key": null,
+          "equals": null
+        },
+        "accessBlockedMessage": "You'd really stuff something into a sacred ritual text? The pages are not for that."
+      }
     },
     {
       "id": "sandwich-bag",
