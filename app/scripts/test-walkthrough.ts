@@ -594,8 +594,22 @@ if (!e.state.finished && !aborted()) {
   // Walk down twice to entrance-to-hades. From south-temple: down requires coffin-cure. We have it.
   go(e, "down", "tiny-cave", "P10 down via coffin-cure");
   go(e, "down", "entrance-to-hades", "P10 hades entrance");
+  // Canonical fail-and-recover path: ring bell at hades → candles drop+extinguish.
+  // Then take candles, light them, read book to complete the ritual.
   intent(e, "ring-bell", undefined, "P10 ring bell");
-  assertFlag(e, "bell-rung", true, "P10");
+  if (e.state.itemStates["bell"]?.rangAtHades === true) {
+    pass("bell.rangAtHades = true [P10]");
+  } else {
+    fail("bell.rangAtHades = true [P10]", JSON.stringify(e.state.itemStates["bell"]));
+  }
+  // Bell-rings trigger drops candles+extinguishes since they were held lit.
+  takeItem(e, "candles", "P10 take candles after fall");
+  intent(e, "light-candles", undefined, "P10 relight candles");
+  if (e.state.itemStates["candles"]?.isLit === true) {
+    pass("candles.isLit = true [P10 relit]");
+  } else {
+    fail("candles.isLit = true [P10 relit]", JSON.stringify(e.state.itemStates["candles"]));
+  }
   intent(e, "read-book-at-hades", undefined, "P10 read book ritual");
   assertFlag(e, "lld-flag", true, "P10 ritual completes");
   go(e, "south", "land-of-living-dead", "P10 LLD");

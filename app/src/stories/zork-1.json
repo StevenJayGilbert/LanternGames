@@ -1393,6 +1393,35 @@
             "equals": true
           },
           "text": "You are outside a large gateway, on which is inscribed|| Abandon every hope all ye who enter here!|| The gate is open; through it you can see a desolation, with a pile of mangled bodies in one corner. The wailing voices have fallen silent — the spirits that barred your passage have fled. The way is clear."
+        },
+        {
+          "when": {
+            "type": "and",
+            "all": [
+              {
+                "type": "itemState",
+                "itemId": "bell",
+                "key": "rangAtHades",
+                "equals": true
+              },
+              {
+                "type": "itemState",
+                "itemId": "candles",
+                "key": "isLit",
+                "equals": true
+              }
+            ]
+          },
+          "text": "You are outside a large gateway, on which is inscribed|| Abandon every hope all ye who enter here!|| Beyond the gate, a desolation, with a pile of mangled bodies in one corner. The bell lies on the ground where it fell, the red glow gone out of it. The candles burn with strange dancing flames. The spirits cower, trembling."
+        },
+        {
+          "when": {
+            "type": "itemState",
+            "itemId": "bell",
+            "key": "rangAtHades",
+            "equals": true
+          },
+          "text": "You are outside a large gateway, on which is inscribed|| Abandon every hope all ye who enter here!|| Beyond the gate, a desolation, with a pile of mangled bodies in one corner. The bell lies on the ground where it fell, the red glow gone out of it. The spirits stand paralyzed, watching you with the expression of long-forgotten terror."
         }
       ]
     },
@@ -2351,7 +2380,10 @@
       "name": "brass bell",
       "description": "A small brass bell with a worn handle, polished smooth by use.",
       "location": "north-temple",
-      "takeable": true
+      "takeable": true,
+      "state": {
+        "rangAtHades": false
+      }
     },
     {
       "id": "axe",
@@ -4373,6 +4405,57 @@
       "description": "Player reads, recites, intones, or speaks aloud from the black book at the entrance to Hades."
     },
     {
+      "id": "light-candles",
+      "description": "Player lights, ignites, kindles, or re-ignites the pair of candles (typically with a match).",
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "hasItem",
+              "itemId": "candles"
+            },
+            "failedNarration": "You don't have the candles."
+          },
+          {
+            "when": {
+              "type": "itemState",
+              "itemId": "candles",
+              "key": "isLit",
+              "equals": false
+            },
+            "failedNarration": "The candles are already lit."
+          }
+        ],
+        "effects": [
+          {
+            "type": "setItemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "value": true
+          }
+        ],
+        "successNarration": "The candles are lit."
+      }
+    },
+    {
+      "id": "read-other-pages",
+      "description": "Player flips through, browses, skims, or reads pages other than the dog-eared marked page (569) of the black book. NOT for reading the prayer itself (that's the regular `read` action on the book).",
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "hasItem",
+              "itemId": "book"
+            },
+            "failedNarration": "You don't have the black book to flip through."
+          }
+        ],
+        "successNarration": "You leaf through the heavy black book, past the dog-eared page 569 to other passages. Among the dense archaic script, one line stands out: \"In the banishing of evil, certain noises, lights, and prayers prove most effective.\""
+      }
+    },
+    {
       "id": "turn-machine-switch",
       "description": "Player turns, presses, activates, or otherwise operates the machine's switch (with the screwdriver as a tool)."
     },
@@ -4467,36 +4550,10 @@
         {
           "type": "adjustFlag",
           "key": "score",
-          "by": 5
+          "by": 15
         }
       ],
-      "narration": "(Completing the bell-book-candle ritual at Hades. +5 points; your score is now {flag.score}.)",
-      "once": true
-    },
-    {
-      "id": "score-ring-bell-at-hades",
-      "when": {
-        "type": "and",
-        "all": [
-          {
-            "type": "flag",
-            "key": "bell-rung",
-            "equals": true
-          },
-          {
-            "type": "playerAt",
-            "roomId": "entrance-to-hades"
-          }
-        ]
-      },
-      "effects": [
-        {
-          "type": "adjustFlag",
-          "key": "score",
-          "by": 10
-        }
-      ],
-      "narration": "(Ringing the bell at this threshold. +10 points; your score is now {flag.score}.)",
+      "narration": "(Completing the bell-book-candle ritual at Hades. +15 points; your score is now {flag.score}.)",
       "once": true
     },
     {
@@ -11974,37 +12031,97 @@
     },
     {
       "id": "bell-rings",
+      "once": false,
       "when": {
-        "type": "and",
-        "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "ring-bell"
-          },
-          {
-            "type": "hasItem",
-            "itemId": "bell"
-          },
-          {
-            "type": "flag",
-            "key": "bell-rung",
-            "equals": false
-          }
-        ]
+        "type": "intentMatched",
+        "signalId": "ring-bell"
       },
       "effects": [
         {
-          "type": "setFlag",
-          "key": "bell-rung",
-          "value": true
+          "type": "if",
+          "if": {
+            "type": "hasItem",
+            "itemId": "bell"
+          },
+          "then": [
+            {
+              "type": "if",
+              "if": {
+                "type": "playerAt",
+                "roomId": "entrance-to-hades"
+              },
+              "then": [
+                {
+                  "type": "setItemState",
+                  "itemId": "bell",
+                  "key": "rangAtHades",
+                  "value": true
+                },
+                {
+                  "type": "moveItem",
+                  "itemId": "bell",
+                  "to": "entrance-to-hades"
+                },
+                {
+                  "type": "if",
+                  "if": {
+                    "type": "and",
+                    "all": [
+                      {
+                        "type": "hasItem",
+                        "itemId": "candles"
+                      },
+                      {
+                        "type": "itemState",
+                        "itemId": "candles",
+                        "key": "isLit",
+                        "equals": true
+                      }
+                    ]
+                  },
+                  "then": [
+                    {
+                      "type": "setItemState",
+                      "itemId": "candles",
+                      "key": "isLit",
+                      "value": false
+                    },
+                    {
+                      "type": "moveItem",
+                      "itemId": "candles",
+                      "to": "entrance-to-hades"
+                    },
+                    {
+                      "type": "narrate",
+                      "text": "In your confusion, the candles drop to the ground (and they are out)."
+                    }
+                  ]
+                },
+                {
+                  "type": "narrate",
+                  "text": "The bell suddenly becomes red hot and falls to the ground. The wraiths, as if paralyzed, stop their jeering and slowly turn to face you. On their ashen faces, the expression of a long-forgotten terror takes shape."
+                }
+              ],
+              "else": [
+                {
+                  "type": "narrate",
+                  "text": "The bell tolls — a deep, hollow note that hangs in the air for a long moment, then fades."
+                }
+              ]
+            }
+          ],
+          "else": [
+            {
+              "type": "narrate",
+              "text": "You'd need to be holding the bell to ring it."
+            }
+          ]
         },
         {
           "type": "removeMatchedIntent",
           "signalId": "ring-bell"
         }
-      ],
-      "narration": "The bell tolls once — a deep, hollow note that hangs in the air far longer than seems natural. The metal grows warm in your grasp.",
-      "once": true
+      ]
     },
     {
       "id": "lld-ritual-completes",
@@ -12024,8 +12141,9 @@
             "itemId": "book"
           },
           {
-            "type": "flag",
-            "key": "bell-rung",
+            "type": "itemState",
+            "itemId": "bell",
+            "key": "rangAtHades",
             "equals": true
           },
           {
@@ -12052,8 +12170,120 @@
           "signalId": "read-book-at-hades"
         }
       ],
-      "narration": "You read the words from page 569 aloud — and they hang in the air like smoke. The shrieks of the unseen wraiths fall silent, the candles flicker as if in a sudden wind, and a passage gapes open in the wall ahead. The Land of the Dead lies beyond.",
+      "narration": "Each word of the prayer reverberates through the hall in a deafening confusion. As the last word fades, a voice, loud and commanding, speaks: \"Begone, fiends!\" A heart-stopping scream fills the cavern, and the spirits, sensing a greater power, flee through the walls.",
       "once": true
+    },
+    {
+      "id": "candles-relit-at-hades-cower",
+      "once": true,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "light-candles"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "entrance-to-hades"
+          },
+          {
+            "type": "itemState",
+            "itemId": "bell",
+            "key": "rangAtHades",
+            "equals": true
+          },
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "light-candles"
+        }
+      ],
+      "narration": "The flames flicker wildly and appear to dance. The earth beneath your feet trembles, and your legs nearly buckle beneath you. The spirits cower at your unearthly power."
+    },
+    {
+      "id": "read-book-no-bell-rung",
+      "priority": -10,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "read-book-at-hades"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "entrance-to-hades"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "book"
+          },
+          {
+            "type": "itemState",
+            "itemId": "bell",
+            "key": "rangAtHades",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "read-book-at-hades"
+        }
+      ],
+      "narration": "You read the prayer aloud. The words have no power; the spirits jeer."
+    },
+    {
+      "id": "read-book-candles-out",
+      "priority": -10,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "read-book-at-hades"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "entrance-to-hades"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "book"
+          },
+          {
+            "type": "itemState",
+            "itemId": "bell",
+            "key": "rangAtHades",
+            "equals": true
+          },
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "read-book-at-hades"
+        }
+      ],
+      "narration": "You read the prayer aloud. The words fade in the dim light, leaving no impression."
     },
     {
       "id": "machine-makes-diamond",
@@ -14574,7 +14804,6 @@
     "won-flag": false,
     "echo-spoken": false,
     "loud-room-ticks": 0,
-    "bell-rung": false,
     "candles-ready": false,
     "lld-flag": false,
     "bat-carried-this-visit": false,

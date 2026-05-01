@@ -169,7 +169,7 @@ console.log("\n=== #8 Bat carry ===");
     : fail(`bat carried player anyway to ${e2.state.itemLocations.player}`);
 }
 
-// ----- Puzzle #1: Bell + book + candles -----
+// ----- Puzzle #1: Bell + book + candles (canonical fail-and-recover path) -----
 console.log("\n=== #1 Bell + book + candles ===");
 {
   const e = newEngine();
@@ -180,13 +180,25 @@ console.log("\n=== #1 Bell + book + candles ===");
       book: "player",
       candles: "player", },
   };
-  // Step 1: ring bell
+  // Step 1: ring bell at hades. Bell drops + candles drop+extinguish.
   e.execute({ type: "recordIntent", signalId: "ring-bell" });
-  e.state.flags["bell-rung"] === true
-    ? pass("bell-rung after ring-bell intent")
-    : fail("bell-rung not set");
+  e.state.itemStates["bell"]?.rangAtHades === true
+    ? pass("bell.rangAtHades after ring-bell intent at hades")
+    : fail("bell.rangAtHades not set", JSON.stringify(e.state.itemStates["bell"]));
+  e.state.itemStates["candles"]?.isLit === false
+    ? pass("candles extinguished by bell ring")
+    : fail("candles still lit after bell ring", JSON.stringify(e.state.itemStates["candles"]));
 
-  // Step 2: read book at hades (capstone)
+  // Step 2: take candles back into inventory (engine moved them to entrance-to-hades).
+  e.execute({ type: "take", itemId: "candles" });
+
+  // Step 3: light candles.
+  e.execute({ type: "recordIntent", signalId: "light-candles" });
+  e.state.itemStates["candles"]?.isLit === true
+    ? pass("candles relit via light-candles intent")
+    : fail("candles not relit", JSON.stringify(e.state.itemStates["candles"]));
+
+  // Step 4: read book at hades (capstone).
   e.execute({ type: "recordIntent", signalId: "read-book-at-hades" });
   e.state.flags["lld-flag"] === true
     ? pass("lld-flag set after capstone")

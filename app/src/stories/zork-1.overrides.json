@@ -29,7 +29,6 @@
     "won-flag": false,
     "echo-spoken": false,
     "loud-room-ticks": 0,
-    "bell-rung": false,
     "candles-ready": false,
     "lld-flag": false,
     "bat-carried-this-visit": false,
@@ -734,6 +733,22 @@
           "$comment": "Post-exorcism (lld-flag=true): the spirits have fled; the gate is now genuinely passable.",
           "when": { "type": "flag", "key": "lld-flag", "equals": true },
           "text": "You are outside a large gateway, on which is inscribed|| Abandon every hope all ye who enter here!|| The gate is open; through it you can see a desolation, with a pile of mangled bodies in one corner. The wailing voices have fallen silent — the spirits that barred your passage have fled. The way is clear."
+        },
+        {
+          "$comment": "Bell rang here AND candles currently lit. State description only.",
+          "when": {
+            "type": "and",
+            "all": [
+              { "type": "itemState", "itemId": "bell", "key": "rangAtHades", "equals": true },
+              { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true }
+            ]
+          },
+          "text": "You are outside a large gateway, on which is inscribed|| Abandon every hope all ye who enter here!|| Beyond the gate, a desolation, with a pile of mangled bodies in one corner. The bell lies on the ground where it fell, the red glow gone out of it. The candles burn with strange dancing flames. The spirits cower, trembling."
+        },
+        {
+          "$comment": "Bell rang here, candles not currently lit. State description only.",
+          "when": { "type": "itemState", "itemId": "bell", "key": "rangAtHades", "equals": true },
+          "text": "You are outside a large gateway, on which is inscribed|| Abandon every hope all ye who enter here!|| Beyond the gate, a desolation, with a pile of mangled bodies in one corner. The bell lies on the ground where it fell, the red glow gone out of it. The spirits stand paralyzed, watching you with the expression of long-forgotten terror."
         }
       ],
       "exits": {
@@ -1074,8 +1089,12 @@
       "description": "A length of broken timber, splintered at one end and surprisingly heavy."
     },
     {
+      "$comment": "Brass bell. state.rangAtHades is the persistent fact the LLD ritual gates on — set when bell is rung at entrance-to-hades. Bell heat is purely narrative (no isHot state); the bell-rings trigger's narration describes it becoming red-hot and dropping, but by next turn the player can pick it up freely.",
       "id": "bell",
-      "description": "A small brass bell with a worn handle, polished smooth by use."
+      "description": "A small brass bell with a worn handle, polished smooth by use.",
+      "state": {
+        "rangAtHades": false
+      }
     },
     {
       "id": "bones",
@@ -2167,6 +2186,43 @@
       "description": "Player reads, recites, intones, or speaks aloud from the black book at the entrance to Hades."
     },
     {
+      "$comment": "Light the pair of candles. Required for the canonical bell-rings recovery path: player rings bell → candles drop+extinguish → player picks up candles → lights them with this tool → reads book → ritual completes. Handler sets candles.isLit=true. Precondition: candles in inventory and currently unlit.",
+      "id": "light-candles",
+      "description": "Player lights, ignites, kindles, or re-ignites the pair of candles (typically with a match).",
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": { "type": "hasItem", "itemId": "candles" },
+            "failedNarration": "You don't have the candles."
+          },
+          {
+            "when": { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": false },
+            "failedNarration": "The candles are already lit."
+          }
+        ],
+        "effects": [
+          { "type": "setItemState", "itemId": "candles", "key": "isLit", "value": true }
+        ],
+        "successNarration": "The candles are lit."
+      }
+    },
+    {
+      "$comment": "READ OTHER PAGES of the black book — canonical hint mechanism (per docs/puzzles.txt:51). The book's marked page (569) holds the prayer; other pages mention 'certain noises, lights, and prayers' are effective in banishing evil. Player can flip through anywhere they have the book.",
+      "id": "read-other-pages",
+      "description": "Player flips through, browses, skims, or reads pages other than the dog-eared marked page (569) of the black book. NOT for reading the prayer itself (that's the regular `read` action on the book).",
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": { "type": "hasItem", "itemId": "book" },
+            "failedNarration": "You don't have the black book to flip through."
+          }
+        ],
+        "successNarration": "You leaf through the heavy black book, past the dog-eared page 569 to other passages. Among the dense archaic script, one line stands out: \"In the banishing of evil, certain noises, lights, and prayers prove most effective.\""
+      }
+    },
+    {
       "$comment": "TURN the machine switch (with screwdriver, when machine is closed and contains coal). Active in machine-room with the screwdriver, machine closed.",
       "id": "turn-machine-switch",
       "description": "Player turns, presses, activates, or otherwise operates the machine's switch (with the screwdriver as a tool)."
@@ -2262,6 +2318,7 @@
       "once": true
     },
     {
+      "$comment": "Completing the bell+book+candle ritual scores +15 (was +5; absorbed the +10 from the now-removed score-ring-bell-at-hades trigger). One score event for one puzzle.",
       "id": "score-complete-hades-ritual",
       "when": {
         "type": "flag",
@@ -2272,36 +2329,10 @@
         {
           "type": "adjustFlag",
           "key": "score",
-          "by": 5
+          "by": 15
         }
       ],
-      "narration": "(Completing the bell-book-candle ritual at Hades. +5 points; your score is now {flag.score}.)",
-      "once": true
-    },
-    {
-      "id": "score-ring-bell-at-hades",
-      "when": {
-        "type": "and",
-        "all": [
-          {
-            "type": "flag",
-            "key": "bell-rung",
-            "equals": true
-          },
-          {
-            "type": "playerAt",
-            "roomId": "entrance-to-hades"
-          }
-        ]
-      },
-      "effects": [
-        {
-          "type": "adjustFlag",
-          "key": "score",
-          "by": 10
-        }
-      ],
-      "narration": "(Ringing the bell at this threshold. +10 points; your score is now {flag.score}.)",
+      "narration": "(Completing the bell-book-candle ritual at Hades. +15 points; your score is now {flag.score}.)",
       "once": true
     },
     {
@@ -9816,89 +9847,130 @@
       ]
     },
     {
-      "$comment": "PUZZLE #1 BELL + BOOK + CANDLES — adapted from canonical (which has strict bell→candles→book sequence with bell becoming hot, candles dropping, etc.). Our simplified take: ring the bell anywhere (sets bell-rung); candles start lit per extraction; reading the book at entrance-to-hades while bell-rung AND candles-lit triggers lld-flag.",
+      "$comment": "PUZZLE #1 BELL + BOOK + CANDLES — canonical Zork I LLD ritual. Single bell-rings trigger handles every ring of the bell, anywhere. Outer if/then on hasItem(bell). Inner if/then on playerAt(entrance-to-hades): hades branch advances the puzzle (sets bell.state.rangAtHades, drops bell, drops+extinguishes lit candles if held); elsewhere branch is flavor narration only. Effects are idempotent so re-rings produce the same end state with the same canonical narration. Heat is purely narrative.",
       "id": "bell-rings",
+      "once": false,
       "when": {
-        "type": "and",
-        "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "ring-bell"
-          },
-          {
-            "type": "hasItem",
-            "itemId": "bell"
-          },
-          {
-            "type": "flag",
-            "key": "bell-rung",
-            "equals": false
-          }
-        ]
+        "type": "intentMatched",
+        "signalId": "ring-bell"
       },
       "effects": [
         {
-          "type": "setFlag",
-          "key": "bell-rung",
-          "value": true
+          "type": "if",
+          "if": { "type": "hasItem", "itemId": "bell" },
+          "then": [
+            {
+              "type": "if",
+              "if": { "type": "playerAt", "roomId": "entrance-to-hades" },
+              "then": [
+                { "type": "setItemState", "itemId": "bell", "key": "rangAtHades", "value": true },
+                { "type": "moveItem", "itemId": "bell", "to": "entrance-to-hades" },
+                {
+                  "type": "if",
+                  "if": {
+                    "type": "and",
+                    "all": [
+                      { "type": "hasItem", "itemId": "candles" },
+                      { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true }
+                    ]
+                  },
+                  "then": [
+                    { "type": "setItemState", "itemId": "candles", "key": "isLit", "value": false },
+                    { "type": "moveItem", "itemId": "candles", "to": "entrance-to-hades" },
+                    { "type": "narrate", "text": "In your confusion, the candles drop to the ground (and they are out)." }
+                  ]
+                },
+                { "type": "narrate", "text": "The bell suddenly becomes red hot and falls to the ground. The wraiths, as if paralyzed, stop their jeering and slowly turn to face you. On their ashen faces, the expression of a long-forgotten terror takes shape." }
+              ],
+              "else": [
+                { "type": "narrate", "text": "The bell tolls — a deep, hollow note that hangs in the air for a long moment, then fades." }
+              ]
+            }
+          ],
+          "else": [
+            { "type": "narrate", "text": "You'd need to be holding the bell to ring it." }
+          ]
         },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "ring-bell"
-        }
-      ],
-      "narration": "The bell tolls once — a deep, hollow note that hangs in the air far longer than seems natural. The metal grows warm in your grasp.",
-      "once": true
+        { "type": "removeMatchedIntent", "signalId": "ring-bell" }
+      ]
     },
     {
-      "$comment": "Capstone of the LLD ritual — read the book at entrance-to-hades while bell-rung and candles still lit. Sets lld-flag, opening the in/south exits to land-of-living-dead.",
+      "$comment": "Capstone of the LLD ritual — read the book at entrance-to-hades while bell.rangAtHades=true and candles are lit. Sets lld-flag, opening the in/south exits to land-of-living-dead. The bell does NOT need to be in inventory at this step (canonical: it lies on the floor where it fell after ringing).",
       "id": "lld-ritual-completes",
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "read-book-at-hades"
-          },
-          {
-            "type": "playerAt",
-            "roomId": "entrance-to-hades"
-          },
-          {
-            "type": "hasItem",
-            "itemId": "book"
-          },
-          {
-            "type": "flag",
-            "key": "bell-rung",
-            "equals": true
-          },
-          {
-            "type": "itemState",
-            "itemId": "candles",
-            "key": "isLit",
-            "equals": true
-          },
-          {
-            "type": "flag",
-            "key": "lld-flag",
-            "equals": false
-          }
+          { "type": "intentMatched", "signalId": "read-book-at-hades" },
+          { "type": "playerAt", "roomId": "entrance-to-hades" },
+          { "type": "hasItem", "itemId": "book" },
+          { "type": "itemState", "itemId": "bell", "key": "rangAtHades", "equals": true },
+          { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true },
+          { "type": "flag", "key": "lld-flag", "equals": false }
         ]
       },
       "effects": [
-        {
-          "type": "setFlag",
-          "key": "lld-flag",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "read-book-at-hades"
-        }
+        { "type": "setFlag", "key": "lld-flag", "value": true },
+        { "type": "removeMatchedIntent", "signalId": "read-book-at-hades" }
       ],
-      "narration": "You read the words from page 569 aloud — and they hang in the air like smoke. The shrieks of the unseen wraiths fall silent, the candles flicker as if in a sudden wind, and a passage gapes open in the wall ahead. The Land of the Dead lies beyond.",
+      "narration": "Each word of the prayer reverberates through the hall in a deafening confusion. As the last word fades, a voice, loud and commanding, speaks: \"Begone, fiends!\" A heart-stopping scream fills the cavern, and the spirits, sensing a greater power, flee through the walls.",
       "once": true
+    },
+    {
+      "$comment": "Cower cue: when the player lights the candles at entrance-to-hades AFTER bell rang at hades. Once-per-game dramatic narration matching canonical text. Doesn't change state — pure feedback.",
+      "id": "candles-relit-at-hades-cower",
+      "once": true,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "light-candles" },
+          { "type": "playerAt", "roomId": "entrance-to-hades" },
+          { "type": "itemState", "itemId": "bell", "key": "rangAtHades", "equals": true },
+          { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true }
+        ]
+      },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "light-candles" }
+      ],
+      "narration": "The flames flicker wildly and appear to dance. The earth beneath your feet trembles, and your legs nearly buckle beneath you. The spirits cower at your unearthly power."
+    },
+    {
+      "$comment": "Soft-fail: read the prayer at hades without bell.rangAtHades. State description, no engine state change.",
+      "id": "read-book-no-bell-rung",
+      "priority": -10,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "read-book-at-hades" },
+          { "type": "playerAt", "roomId": "entrance-to-hades" },
+          { "type": "hasItem", "itemId": "book" },
+          { "type": "itemState", "itemId": "bell", "key": "rangAtHades", "equals": false }
+        ]
+      },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "read-book-at-hades" }
+      ],
+      "narration": "You read the prayer aloud. The words have no power; the spirits jeer."
+    },
+    {
+      "$comment": "Soft-fail: read the prayer at hades with bell rung but candles unlit. State description, no engine state change.",
+      "id": "read-book-candles-out",
+      "priority": -10,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "read-book-at-hades" },
+          { "type": "playerAt", "roomId": "entrance-to-hades" },
+          { "type": "hasItem", "itemId": "book" },
+          { "type": "itemState", "itemId": "bell", "key": "rangAtHades", "equals": true },
+          { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": false }
+        ]
+      },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "read-book-at-hades" }
+      ],
+      "narration": "You read the prayer aloud. The words fade in the dim light, leaving no impression."
     },
     {
       "$comment": "PUZZLE #7 COAL → DIAMOND MACHINE — canonical: TURN switch WITH screwdriver only fires the conversion if machine lid is CLOSED. We gate the intent on machine being closed; this trigger additionally checks coal is inside the machine. On success: coal → nowhere, diamond → machine-room (player can then take it).",
