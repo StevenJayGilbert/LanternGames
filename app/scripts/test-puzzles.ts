@@ -173,12 +173,13 @@ console.log("\n=== #8 Bat carry ===");
 console.log("\n=== #1 Bell + book + candles ===");
 {
   const e = newEngine();
-  // Player at entrance-to-hades with bell + book + lit candles
+  // Player at entrance-to-hades with bell + book + lit candles + matchbook.
   e.state = {
     ...e.state,
     itemLocations: { ...e.state.itemLocations, player: "entrance-to-hades", bell: "player",
       book: "player",
-      candles: "player", },
+      candles: "player",
+      match: "player", },
   };
   // Step 1: ring bell at hades. Bell drops + candles drop+extinguish.
   e.execute({ type: "recordIntent", signalId: "ring-bell" });
@@ -192,13 +193,25 @@ console.log("\n=== #1 Bell + book + candles ===");
   // Step 2: take candles back into inventory (engine moved them to entrance-to-hades).
   e.execute({ type: "take", itemId: "candles" });
 
-  // Step 3: light candles.
+  // Step 3: strike a match (consumes one of 5; sets matchBurning + 2-turn countdown).
+  e.execute({ type: "recordIntent", signalId: "light-match" });
+  e.state.itemStates["match"]?.matchesRemaining === 4
+    ? pass("match.matchesRemaining = 4 after strike")
+    : fail("matches remaining wrong", JSON.stringify(e.state.itemStates["match"]));
+  e.state.itemStates["match"]?.matchBurning === true
+    ? pass("match.matchBurning = true after strike")
+    : fail("match.matchBurning wrong", JSON.stringify(e.state.itemStates["match"]));
+
+  // Step 4: light candles using the burning match.
   e.execute({ type: "recordIntent", signalId: "light-candles" });
   e.state.itemStates["candles"]?.isLit === true
     ? pass("candles relit via light-candles intent")
     : fail("candles not relit", JSON.stringify(e.state.itemStates["candles"]));
+  e.state.itemStates["match"]?.matchBurning === false
+    ? pass("match.matchBurning = false after lighting candles")
+    : fail("match still burning after lighting candles", JSON.stringify(e.state.itemStates["match"]));
 
-  // Step 4: read book at hades (capstone).
+  // Step 5: read book at hades (capstone).
   e.execute({ type: "recordIntent", signalId: "read-book-at-hades" });
   e.state.flags["lld-flag"] === true
     ? pass("lld-flag set after capstone")
@@ -210,6 +223,43 @@ console.log("\n=== #1 Bell + book + candles ===");
   inExit && !inExit.blocked
     ? pass("entrance-to-hades.in → land-of-living-dead unblocked")
     : fail("in still blocked", JSON.stringify(inExit));
+}
+
+// ----- Puzzle #1b: Match burns out after 2 turns if unused -----
+console.log("\n=== #1b Match burns out after 2 turns ===");
+{
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "entrance-to-hades", match: "player" },
+  };
+  // Strike match: matchesRemaining: 4, matchBurning: true, countdown: 2.
+  e.execute({ type: "recordIntent", signalId: "light-match" });
+  // Tick 1 (any wait action triggers afterAction tick).
+  e.execute({ type: "wait" });
+  e.state.itemStates["match"]?.matchBurning === true
+    ? pass("match still burning after 1 wait tick")
+    : fail("match extinguished too early", JSON.stringify(e.state.itemStates["match"]));
+  // Tick 2: countdown hits 0; match-burns-out fires.
+  e.execute({ type: "wait" });
+  e.state.itemStates["match"]?.matchBurning === false
+    ? pass("match extinguished after 2 wait ticks")
+    : fail("match still burning after 2 ticks", JSON.stringify(e.state.itemStates["match"]));
+}
+
+// ----- Puzzle #1c: Out of matches -----
+console.log("\n=== #1c Empty matchbook ===");
+{
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, match: "player" },
+    itemStates: { ...e.state.itemStates, match: { matchesRemaining: 0, matchBurning: false } },
+  };
+  const r = e.execute({ type: "recordIntent", signalId: "light-match" });
+  r.narrationCues.some((c) => c.includes("matchbook is empty"))
+    ? pass("light-match with 0 matches → 'matchbook is empty' cue")
+    : fail("expected empty-matchbook cue", JSON.stringify(r.narrationCues));
 }
 
 // ----- Puzzle #7: Coal → diamond -----

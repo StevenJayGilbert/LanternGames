@@ -30,6 +30,7 @@
     "echo-spoken": false,
     "loud-room-ticks": 0,
     "candles-ready": false,
+    "match-burn-countdown": 0,
     "lld-flag": false,
     "bat-carried-this-visit": false,
     "gate-flag": false,
@@ -1236,8 +1237,13 @@
       "description": "A battered brass lantern, its battery long since drained dry."
     },
     {
+      "$comment": "Matchbook with 5 matches and a burn-state. light-match consumes a match and sets matchBurning=true with a 2-turn countdown (match-burn-countdown flag). light-candles requires matchBurning=true (must use a burning match) and clears it. afterAction triggers tick the countdown and auto-extinguish on timeout.",
       "id": "match",
-      "description": "A matchbook whose cover advertises FCD#3 in chipper bureaucratic prose."
+      "description": "A matchbook whose cover advertises FCD#3 in chipper bureaucratic prose.",
+      "state": {
+        "matchesRemaining": 5,
+        "matchBurning": false
+      }
     },
     {
       "id": "candles",
@@ -2186,9 +2192,37 @@
       "description": "Player reads, recites, intones, or speaks aloud from the black book at the entrance to Hades."
     },
     {
-      "$comment": "Light the pair of candles. Required for the canonical bell-rings recovery path: player rings bell → candles drop+extinguish → player picks up candles → lights them with this tool → reads book → ritual completes. Handler sets candles.isLit=true. Precondition: candles in inventory and currently unlit.",
+      "$comment": "Strike a match. Canonical mechanic: matchbook holds 5 matches; striking consumes one and starts a 2-turn burn timer. After 2 turns the match goes out on its own (match-burns-out trigger). Player must use the burning match (e.g. light-candles) within those 2 turns or burn it for nothing.",
+      "id": "light-match",
+      "description": "Player strikes, lights, or ignites a match from the matchbook.",
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": { "type": "hasItem", "itemId": "match" },
+            "failedNarration": "You don't have any matches."
+          },
+          {
+            "when": { "type": "compare", "left": { "kind": "itemState", "itemId": "match", "key": "matchesRemaining" }, "op": ">", "right": { "kind": "literal", "value": 0 } },
+            "failedNarration": "The matchbook is empty — you've burned all your matches."
+          },
+          {
+            "when": { "type": "itemState", "itemId": "match", "key": "matchBurning", "equals": false },
+            "failedNarration": "A match is already burning."
+          }
+        ],
+        "effects": [
+          { "type": "adjustItemState", "itemId": "match", "key": "matchesRemaining", "by": -1 },
+          { "type": "setItemState", "itemId": "match", "key": "matchBurning", "value": true },
+          { "type": "setFlag", "key": "match-burn-countdown", "value": 3 }
+        ],
+        "successNarration": "One of the matches starts to burn."
+      }
+    },
+    {
+      "$comment": "Light the pair of candles. Requires a currently-burning match (canonical: must strike a match first via light-match). Handler sets candles.isLit=true and extinguishes the match (it's used up touching the candles).",
       "id": "light-candles",
-      "description": "Player lights, ignites, kindles, or re-ignites the pair of candles (typically with a match).",
+      "description": "Player lights, ignites, kindles, or re-ignites the pair of candles using a burning match.",
       "alwaysAvailable": true,
       "handler": {
         "preconditions": [
@@ -2199,12 +2233,17 @@
           {
             "when": { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": false },
             "failedNarration": "The candles are already lit."
+          },
+          {
+            "when": { "type": "itemState", "itemId": "match", "key": "matchBurning", "equals": true },
+            "failedNarration": "You have nothing burning to light them with. Strike a match first."
           }
         ],
         "effects": [
-          { "type": "setItemState", "itemId": "candles", "key": "isLit", "value": true }
+          { "type": "setItemState", "itemId": "candles", "key": "isLit", "value": true },
+          { "type": "setItemState", "itemId": "match", "key": "matchBurning", "value": false }
         ],
-        "successNarration": "The candles are lit."
+        "successNarration": "You touch the burning match to the candles. The candles are lit. The match has gone out."
       }
     },
     {
@@ -9932,6 +9971,39 @@
         { "type": "removeMatchedIntent", "signalId": "light-candles" }
       ],
       "narration": "The flames flicker wildly and appear to dance. The earth beneath your feet trembles, and your legs nearly buckle beneath you. The spirits cower at your unearthly power."
+    },
+    {
+      "$comment": "Tick the match-burn countdown each turn while a match is burning. Mirror of low-tide-countdown / bell-cooldown patterns.",
+      "id": "match-burn-tick",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "itemState", "itemId": "match", "key": "matchBurning", "equals": true },
+          { "type": "compare", "left": { "kind": "flag", "key": "match-burn-countdown" }, "op": ">", "right": { "kind": "literal", "value": 0 } }
+        ]
+      },
+      "effects": [
+        { "type": "adjustFlag", "key": "match-burn-countdown", "by": -1 }
+      ]
+    },
+    {
+      "$comment": "When the burn countdown hits 0 and the match is still burning, extinguish it. Canonical 'The match has gone out.' — player must strike a fresh match to retry.",
+      "id": "match-burns-out",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "itemState", "itemId": "match", "key": "matchBurning", "equals": true },
+          { "type": "compare", "left": { "kind": "flag", "key": "match-burn-countdown" }, "op": "<=", "right": { "kind": "literal", "value": 0 } }
+        ]
+      },
+      "effects": [
+        { "type": "setItemState", "itemId": "match", "key": "matchBurning", "value": false }
+      ],
+      "narration": "The match has gone out."
     },
     {
       "$comment": "Soft-fail: read the prayer at hades without bell.rangAtHades. State description, no engine state change.",

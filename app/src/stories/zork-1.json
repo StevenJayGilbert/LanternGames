@@ -3006,6 +3006,10 @@
       "takeable": true,
       "readable": {
         "text": "| (Close cover before striking)| | YOU too can make BIG MONEY in the exciting field of PAPER SHUFFLING!| | Mr. Anderson of Muddle, Mass. says: \"Before I took this course I was a lowly bit twiddler. Now with what I learned at GUE Tech I feel really important and can obfuscate and confuse with the best.\"| | Dr. Blank had this to say: \"Ten short days ago all I could look forward to was a dead-end job as a doctor. Now I have a promising future and make really big Zorkmids.\"| | GUE Tech can't promise these fantastic results to everyone. But when you earn your degree from GUE Tech, your future will be brighter."
+      },
+      "state": {
+        "matchesRemaining": 5,
+        "matchBurning": false
       }
     },
     {
@@ -4405,8 +4409,69 @@
       "description": "Player reads, recites, intones, or speaks aloud from the black book at the entrance to Hades."
     },
     {
+      "id": "light-match",
+      "description": "Player strikes, lights, or ignites a match from the matchbook.",
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "hasItem",
+              "itemId": "match"
+            },
+            "failedNarration": "You don't have any matches."
+          },
+          {
+            "when": {
+              "type": "compare",
+              "left": {
+                "kind": "itemState",
+                "itemId": "match",
+                "key": "matchesRemaining"
+              },
+              "op": ">",
+              "right": {
+                "kind": "literal",
+                "value": 0
+              }
+            },
+            "failedNarration": "The matchbook is empty — you've burned all your matches."
+          },
+          {
+            "when": {
+              "type": "itemState",
+              "itemId": "match",
+              "key": "matchBurning",
+              "equals": false
+            },
+            "failedNarration": "A match is already burning."
+          }
+        ],
+        "effects": [
+          {
+            "type": "adjustItemState",
+            "itemId": "match",
+            "key": "matchesRemaining",
+            "by": -1
+          },
+          {
+            "type": "setItemState",
+            "itemId": "match",
+            "key": "matchBurning",
+            "value": true
+          },
+          {
+            "type": "setFlag",
+            "key": "match-burn-countdown",
+            "value": 3
+          }
+        ],
+        "successNarration": "One of the matches starts to burn."
+      }
+    },
+    {
       "id": "light-candles",
-      "description": "Player lights, ignites, kindles, or re-ignites the pair of candles (typically with a match).",
+      "description": "Player lights, ignites, kindles, or re-ignites the pair of candles using a burning match.",
       "alwaysAvailable": true,
       "handler": {
         "preconditions": [
@@ -4425,6 +4490,15 @@
               "equals": false
             },
             "failedNarration": "The candles are already lit."
+          },
+          {
+            "when": {
+              "type": "itemState",
+              "itemId": "match",
+              "key": "matchBurning",
+              "equals": true
+            },
+            "failedNarration": "You have nothing burning to light them with. Strike a match first."
           }
         ],
         "effects": [
@@ -4433,9 +4507,15 @@
             "itemId": "candles",
             "key": "isLit",
             "value": true
+          },
+          {
+            "type": "setItemState",
+            "itemId": "match",
+            "key": "matchBurning",
+            "value": false
           }
         ],
-        "successNarration": "The candles are lit."
+        "successNarration": "You touch the burning match to the candles. The candles are lit. The match has gone out."
       }
     },
     {
@@ -12210,6 +12290,78 @@
       "narration": "The flames flicker wildly and appear to dance. The earth beneath your feet trembles, and your legs nearly buckle beneath you. The spirits cower at your unearthly power."
     },
     {
+      "id": "match-burn-tick",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemState",
+            "itemId": "match",
+            "key": "matchBurning",
+            "equals": true
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "match-burn-countdown"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "match-burn-countdown",
+          "by": -1
+        }
+      ]
+    },
+    {
+      "id": "match-burns-out",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemState",
+            "itemId": "match",
+            "key": "matchBurning",
+            "equals": true
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "match-burn-countdown"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "match",
+          "key": "matchBurning",
+          "value": false
+        }
+      ],
+      "narration": "The match has gone out."
+    },
+    {
       "id": "read-book-no-bell-rung",
       "priority": -10,
       "once": false,
@@ -14805,6 +14957,7 @@
     "echo-spoken": false,
     "loud-room-ticks": 0,
     "candles-ready": false,
+    "match-burn-countdown": 0,
     "lld-flag": false,
     "bat-carried-this-visit": false,
     "gate-flag": false,

@@ -604,11 +604,29 @@ if (!e.state.finished && !aborted()) {
   }
   // Bell-rings trigger drops candles+extinguishes since they were held lit.
   takeItem(e, "candles", "P10 take candles after fall");
-  intent(e, "light-candles", undefined, "P10 relight candles");
+  // Canonical match mechanic: strike a match (consumes one of 5), then use it
+  // to light the candles within 2 turns.
+  intent(e, "light-match", undefined, "P10 strike match");
+  if (e.state.itemStates["match"]?.matchesRemaining === 4) {
+    pass("match.matchesRemaining = 4 after strike [P10]");
+  } else {
+    fail("match.matchesRemaining wrong after strike", JSON.stringify(e.state.itemStates["match"]));
+  }
+  if (e.state.itemStates["match"]?.matchBurning === true) {
+    pass("match.matchBurning = true after strike [P10]");
+  } else {
+    fail("match.matchBurning wrong after strike", JSON.stringify(e.state.itemStates["match"]));
+  }
+  intent(e, "light-candles", undefined, "P10 relight candles with burning match");
   if (e.state.itemStates["candles"]?.isLit === true) {
     pass("candles.isLit = true [P10 relit]");
   } else {
     fail("candles.isLit = true [P10 relit]", JSON.stringify(e.state.itemStates["candles"]));
+  }
+  if (e.state.itemStates["match"]?.matchBurning === false) {
+    pass("match.matchBurning = false after lighting candles [P10]");
+  } else {
+    fail("match.matchBurning should be false after candles lit", JSON.stringify(e.state.itemStates["match"]));
   }
   intent(e, "read-book-at-hades", undefined, "P10 read book ritual");
   assertFlag(e, "lld-flag", true, "P10 ritual completes");
