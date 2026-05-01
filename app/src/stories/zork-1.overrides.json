@@ -715,7 +715,7 @@
         "up": {
           "to": "dome-room",
           "when": { "type": "not", "condition": { "type": "always" } },
-          "blockedMessage": "The rope dangles overhead, but it ends some five feet above your head — too high to reach. You'll have to find another way back to the Dome Room."
+          "blockedMessage": "The rope dangles overhead, but it ends some five feet above your head — too high to reach."
         }
       },
       "variants": [
@@ -2236,7 +2236,7 @@
           },
           {
             "when": { "type": "itemState", "itemId": "match", "key": "matchBurning", "equals": true },
-            "failedNarration": "You have nothing burning to light them with. Strike a match first."
+            "failedNarration": "You have nothing burning to light them with."
           }
         ],
         "effects": [
@@ -9927,7 +9927,7 @@
             }
           ],
           "else": [
-            { "type": "narrate", "text": "You'd need to be holding the bell to ring it." }
+            { "type": "narrate", "text": "There's no bell in your hand." }
           ]
         },
         { "type": "removeMatchedIntent", "signalId": "ring-bell" }
