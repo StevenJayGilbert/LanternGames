@@ -27,15 +27,25 @@ import { currentRoomId, PLAYER_ITEM_ID } from "../engine/state";
 // v8: Both caches removed — narration-staleness now handled by the
 // Narrator's view-string fingerprint (in-memory, not persisted).
 // examinedItems (which already existed) is now the sole gate for whether
-// ItemView.description is included. Migration just strips the two old fields.
-const SAVE_VERSION = 8;
+// ItemView.description is included.
+// v9: Backfills new state fields added to story data after v8 shipped:
+//   - itemStates.match: matchesRemaining (default 5), matchBurning (false)
+//   - itemStates.bell: rangAtHades (false)
+//   - flags["match-burn-countdown"] (default 0)
+// Old saves without these fields had the LLD ritual immediately broken
+// ("matchbook is empty" on the first light-match attempt because missing
+// numeric state evaluates as 0). Migration is purely additive — saved
+// values win where present; missing keys get the defaults.
+const SAVE_VERSION = 9;
 const LEGACY_SAVE_VERSION = 5;
 const V6_SAVE_VERSION = 6;
 const V7_SAVE_VERSION = 7;
+const V8_SAVE_VERSION = 8;
 const PREFIX = "lanterngames_save_v" + SAVE_VERSION + "_";
 const LEGACY_PREFIX = "lanterngames_save_v" + LEGACY_SAVE_VERSION + "_";
 const V6_PREFIX = "lanterngames_save_v" + V6_SAVE_VERSION + "_";
 const V7_PREFIX = "lanterngames_save_v" + V7_SAVE_VERSION + "_";
+const V8_PREFIX = "lanterngames_save_v" + V8_SAVE_VERSION + "_";
 
 // Transcript entry types — shared between App.tsx (display) and localSave
 // (persistence) so neither side has to redeclare or guess the shape.
@@ -102,8 +112,24 @@ export function loadSession(storyId: string, slot: SaveSlot): SavedSession | nul
       const parsed = JSON.parse(raw) as unknown;
       if (isValidSession(parsed, storyId)) return parsed;
     }
-    // v7 fallback: try the v7 key. v7→v8 just strips two now-removed
-    // narration caches from engineState (gameplay state is untouched).
+    // v8 fallback: try the v8 key. v8→v9 backfills the new match/bell state
+    // fields and the match-burn-countdown flag (gameplay state untouched
+    // beyond the additive defaults).
+    const v8Raw = localStorage.getItem(v8KeyForSlot(storyId, slot));
+    if (v8Raw) {
+      const migrated = migrateV8Session(JSON.parse(v8Raw) as unknown, storyId);
+      if (migrated) {
+        try {
+          localStorage.setItem(key(storyId, slot), JSON.stringify(migrated));
+          localStorage.removeItem(v8KeyForSlot(storyId, slot));
+        } catch {
+          // ignore write failures — migration retries next load
+        }
+        return migrated;
+      }
+    }
+    // v7 fallback: try the v7 key. v7→v9 strips the two now-removed narration
+    // caches AND applies the v8→v9 backfill so v7 saves land at v9 directly.
     const v7Raw = localStorage.getItem(v7KeyForSlot(storyId, slot));
     if (v7Raw) {
       const migrated = migrateV7Session(JSON.parse(v7Raw) as unknown, storyId);
@@ -159,13 +185,53 @@ export function loadSession(storyId: string, slot: SaveSlot): SavedSession | nul
   }
 }
 
-// v7 → v8 migration. Drops the two now-removed narration caches
-// (lastAppearanceShown, lastExamineShown) from engineState. Gameplay state
-// (rooms, items, flags, examinedItems, scoring, triggers fired, etc.) is
-// untouched. Player consequence: on the first turn after load, the LLM may
-// receive a [Current view] block (because the Narrator's in-memory
-// fingerprint starts null) — that's the new view-fingerprint mechanism
-// catching itself up. No flags reset, no progress lost.
+// v8 → v9 backfill. Adds the new state fields introduced after v8 shipped:
+//   - itemStates.match.matchesRemaining (5), matchBurning (false)
+//   - itemStates.bell.rangAtHades (false)
+//   - flags["match-burn-countdown"] (0)
+// Saved values win where present; missing keys get the defaults. Used by
+// migrateV8Session AND by every earlier migration so they all land at v9.
+function applyV9Backfill(es: Record<string, unknown>): Record<string, unknown> {
+  const itemStates = (es.itemStates as Record<string, Record<string, unknown>> | undefined) ?? {};
+  const flags = (es.flags as Record<string, unknown> | undefined) ?? {};
+  const migratedItemStates: Record<string, Record<string, unknown>> = { ...itemStates };
+  migratedItemStates["match"] = {
+    matchesRemaining: 5,
+    matchBurning: false,
+    ...itemStates["match"],
+  };
+  migratedItemStates["bell"] = {
+    rangAtHades: false,
+    ...itemStates["bell"],
+  };
+  const migratedFlags: Record<string, unknown> = {
+    "match-burn-countdown": 0,
+    ...flags,
+  };
+  return { ...es, itemStates: migratedItemStates, flags: migratedFlags };
+}
+
+// v8 → v9 migration. Backfills the new state fields per applyV9Backfill.
+function migrateV8Session(v: unknown, storyId: string): SavedSession | null {
+  if (!v || typeof v !== "object") return null;
+  const r = v as Record<string, unknown>;
+  if (r.version !== V8_SAVE_VERSION) return null;
+  if (r.storyId !== storyId) return null;
+  if (!r.engineState || typeof r.engineState !== "object") return null;
+  const es = r.engineState as Record<string, unknown>;
+  return {
+    version: SAVE_VERSION,
+    storyId,
+    engineState: applyV9Backfill(es) as unknown as GameState,
+    narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
+    transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
+    inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
+    savedAt: typeof r.savedAt === "number" ? r.savedAt : Date.now(),
+  };
+}
+
+// v7 → v9 migration. Strips the two now-removed narration caches AND applies
+// the v8→v9 backfill so v7 saves land at v9 in one step.
 function migrateV7Session(v: unknown, storyId: string): SavedSession | null {
   if (!v || typeof v !== "object") return null;
   const r = v as Record<string, unknown>;
@@ -177,7 +243,7 @@ function migrateV7Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: stripped as unknown as GameState,
+    engineState: applyV9Backfill(stripped) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -185,8 +251,8 @@ function migrateV7Session(v: unknown, storyId: string): SavedSession | null {
   };
 }
 
-// v6 → v8 migration. v6 didn't have the two narration caches at all, so
-// engineState is shape-compatible with v8 — just bump the version stamp.
+// v6 → v9 migration. Applies the v8→v9 backfill (v6 already had no narration
+// caches; just need to add the new state fields and bump the version stamp).
 function migrateV6Session(v: unknown, storyId: string): SavedSession | null {
   if (!v || typeof v !== "object") return null;
   const r = v as Record<string, unknown>;
@@ -196,7 +262,7 @@ function migrateV6Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: r.engineState as GameState,
+    engineState: applyV9Backfill(r.engineState as Record<string, unknown>) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -229,8 +295,8 @@ function migrateV5Session(v: unknown, storyId: string): SavedSession | null {
     if (loc === "inventory") nextItemLocations[id] = PLAYER_ITEM_ID;
   }
   nextItemLocations[PLAYER_ITEM_ID] = playerLoc;
-  // Strip player* fields and the v7-era narration caches (now gone in v8).
-  // v5 saves jump straight to v8 in one migration step.
+  // Strip player* fields and the v7-era narration caches (gone in v8).
+  // v5 saves jump straight to v9 in one migration step (v5→v6→v8→v9).
   const {
     playerLocation: _pl,
     playerVehicle: _pv,
@@ -239,10 +305,10 @@ function migrateV5Session(v: unknown, storyId: string): SavedSession | null {
     lastExamineShown: _le,
     ...rest
   } = es;
-  const migratedEngineState = {
+  const migratedEngineState = applyV9Backfill({
     ...rest,
     itemLocations: nextItemLocations,
-  } as GameState;
+  }) as unknown as GameState;
   const out: SavedSession = {
     version: SAVE_VERSION,
     storyId,
@@ -267,6 +333,10 @@ function v7KeyForSlot(storyId: string, slot: SaveSlot): string {
   return V7_PREFIX + storyId + "_" + (slot === "quick" ? "quick" : "slot" + slot);
 }
 
+function v8KeyForSlot(storyId: string, slot: SaveSlot): string {
+  return V8_PREFIX + storyId + "_" + (slot === "quick" ? "quick" : "slot" + slot);
+}
+
 export function clearSession(storyId: string, slot: SaveSlot): void {
   try {
     localStorage.removeItem(key(storyId, slot));
@@ -274,6 +344,7 @@ export function clearSession(storyId: string, slot: SaveSlot): void {
     // lingered, loadSession would migrate-and-restore them on the next read,
     // and the user would see the slot "uncleared" / the LLM would resurrect
     // old narration history after a "new game".
+    localStorage.removeItem(v8KeyForSlot(storyId, slot));
     localStorage.removeItem(v7KeyForSlot(storyId, slot));
     localStorage.removeItem(v6KeyForSlot(storyId, slot));
     localStorage.removeItem(legacyKeyForSlot(storyId, slot));
