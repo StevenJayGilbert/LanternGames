@@ -287,6 +287,52 @@ console.log("\n=== handler: close refuses on surface containers ===");
     : fail(`unexpected isOpen=${e.state.itemStates["kitchen-table"]?.isOpen}`);
 }
 
+// ----- Built-in actions record matched intents -----
+console.log("\n=== built-in actions: matchedIntents recording ===");
+{
+  // go(direction) — args.direction is recorded
+  const e = new Engine(zork as unknown as Story);
+  e.execute({ type: "go", direction: "north" });
+  e.state.matchedIntents.includes("go")
+    ? pass("matchedIntents includes 'go' after go(direction=north)")
+    : fail(`matchedIntents=${JSON.stringify(e.state.matchedIntents)}`);
+  e.state.matchedIntentArgs["go"]?.direction === "north"
+    ? pass("matchedIntentArgs.go.direction === 'north'")
+    : fail(`args=${JSON.stringify(e.state.matchedIntentArgs["go"])}`);
+
+  // take(itemId) — args.itemId is recorded; works on rejected actions too
+  // (rock doesn't exist → rejected, but intent still records).
+  e.execute({ type: "take", itemId: "leaflet" });
+  e.state.matchedIntents.includes("take")
+    ? pass("matchedIntents includes 'take' after take(leaflet)")
+    : fail(`matchedIntents=${JSON.stringify(e.state.matchedIntents)}`);
+  e.state.matchedIntentArgs["take"]?.itemId === "leaflet"
+    ? pass("matchedIntentArgs.take.itemId === 'leaflet'")
+    : fail(`args=${JSON.stringify(e.state.matchedIntentArgs["take"])}`);
+
+  // wait — no args, just signalId
+  e.execute({ type: "wait" });
+  e.state.matchedIntents.includes("wait")
+    ? pass("matchedIntents includes 'wait' (no-arg action)")
+    : fail(`matchedIntents=${JSON.stringify(e.state.matchedIntents)}`);
+
+  // Rejected action still records intent
+  const e2 = new Engine(zork as unknown as Story);
+  const r = e2.execute({ type: "go", direction: "down" });
+  r.event.type === "rejected"
+    ? pass("go(down) from west-of-house is rejected (no such direction)")
+    : fail(`event=${JSON.stringify(r.event)}`);
+  e2.state.matchedIntentArgs["go"]?.direction === "down"
+    ? pass("rejected go still records matchedIntentArgs.go.direction='down'")
+    : fail(`args=${JSON.stringify(e2.state.matchedIntentArgs["go"])}`);
+
+  // Args supersede on subsequent calls (same signalId, new args)
+  e2.execute({ type: "go", direction: "east" });
+  e2.state.matchedIntentArgs["go"]?.direction === "east"
+    ? pass("subsequent go(east) overwrites args (direction='east')")
+    : fail(`args=${JSON.stringify(e2.state.matchedIntentArgs["go"])}`);
+}
+
 // ----- removeMatchedIntent clears args -----
 console.log("\n=== removeMatchedIntent clears args ===");
 {

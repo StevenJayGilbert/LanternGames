@@ -247,7 +247,7 @@ if (!e.state.finished && !aborted()) {
     fail("trap-door not open", JSON.stringify(e.state.passageStates["trap-door"]));
   }
   // Light lamp BEFORE descent (cellar is dark)
-  intent(e, "light-lamp", undefined, "P2 light lamp");
+  intent(e, "light", { itemId: "lamp" }, "P2 light lamp");
   if (e.state.itemStates["lamp"]?.isLit === true) {
     pass("lamp.isLit = true");
   } else {
@@ -570,7 +570,7 @@ if (!e.state.finished && !aborted()) {
   go(e, "down", "torch-room", "P9 descend to torch-room");
 
   takeItem(e, "torch", "P9 torch");
-  intent(e, "extinguish-lamp", undefined, "P9 extinguish lamp");
+  intent(e, "extinguish", { itemId: "lamp" }, "P9 extinguish lamp");
   if (e.state.itemStates["lamp"]?.isLit === false) {
     pass("P9 lamp extinguished");
   } else {
@@ -606,29 +606,29 @@ if (!e.state.finished && !aborted()) {
   takeItem(e, "candles", "P10 take candles after fall");
   // Canonical match mechanic: strike a match (consumes one of 5), then use it
   // to light the candles within 2 turns.
-  intent(e, "light-match", undefined, "P10 strike match");
+  intent(e, "light", { itemId: "match" }, "P10 strike match");
   if (e.state.itemStates["match"]?.matchesRemaining === 4) {
     pass("match.matchesRemaining = 4 after strike [P10]");
   } else {
     fail("match.matchesRemaining wrong after strike", JSON.stringify(e.state.itemStates["match"]));
   }
-  if (e.state.itemStates["match"]?.matchBurning === true) {
-    pass("match.matchBurning = true after strike [P10]");
+  if (e.state.itemStates["match"]?.isLit === true) {
+    pass("match.isLit = true after strike [P10]");
   } else {
-    fail("match.matchBurning wrong after strike", JSON.stringify(e.state.itemStates["match"]));
+    fail("match.isLit wrong after strike", JSON.stringify(e.state.itemStates["match"]));
   }
-  intent(e, "light-candles", undefined, "P10 relight candles with burning match");
+  intent(e, "light", { itemId: "candles" }, "P10 relight candles with burning match");
   if (e.state.itemStates["candles"]?.isLit === true) {
     pass("candles.isLit = true [P10 relit]");
   } else {
     fail("candles.isLit = true [P10 relit]", JSON.stringify(e.state.itemStates["candles"]));
   }
-  if (e.state.itemStates["match"]?.matchBurning === false) {
-    pass("match.matchBurning = false after lighting candles [P10]");
+  if (e.state.itemStates["match"]?.isLit === false) {
+    pass("match.isLit = false after lighting candles [P10]");
   } else {
-    fail("match.matchBurning should be false after candles lit", JSON.stringify(e.state.itemStates["match"]));
+    fail("match.isLit should be false after candles lit", JSON.stringify(e.state.itemStates["match"]));
   }
-  intent(e, "read-book-at-hades", undefined, "P10 read book ritual");
+  intent(e, "read", { itemId: "book" }, "P10 read book ritual");
   assertFlag(e, "lld-flag", true, "P10 ritual completes");
   go(e, "south", "land-of-living-dead", "P10 LLD");
   takeItem(e, "skull", "P10 skull");
@@ -681,7 +681,7 @@ if (!e.state.finished && !aborted()) {
 
   // Light lamp before going through smelly-room/gas-room (these are dark).
   // Walkthrough re-lights lamp before entering gas-room.
-  intent(e, "light-lamp", undefined, "P11 re-light lamp");
+  intent(e, "light", { itemId: "lamp" }, "P11 re-light lamp");
 
   // Put torch, screwdriver, and candles in the basket. Candles are still lit
   // from the hades ritual; canonical Zork blows up the player if they walk
@@ -1185,7 +1185,7 @@ console.log("\n\n========== FAILURE-PATH TESTS ==========");
 console.log("\n--- F1: Grue eats player (extinguish lamp + wait in cellar) ---");
 {
   const f = new Engine(story, JSON.parse(JSON.stringify(s_below_trapdoor)));
-  intent(f, "extinguish-lamp", undefined, "F1 douse");
+  intent(f, "extinguish", { itemId: "lamp" }, "F1 douse");
   f.execute({ type: "wait" });
   f.execute({ type: "wait" });
   f.execute({ type: "wait" });

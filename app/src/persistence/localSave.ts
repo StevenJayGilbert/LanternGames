@@ -29,23 +29,34 @@ import { currentRoomId, PLAYER_ITEM_ID } from "../engine/state";
 // examinedItems (which already existed) is now the sole gate for whether
 // ItemView.description is included.
 // v9: Backfills new state fields added to story data after v8 shipped:
-//   - itemStates.match: matchesRemaining (default 5), matchBurning (false)
+//   - itemStates.match: matchesRemaining (default 5), isLit (false; was matchBurning pre-v10)
 //   - itemStates.bell: rangAtHades (false)
 //   - flags["match-burn-countdown"] (default 0)
 // Old saves without these fields had the LLD ritual immediately broken
 // ("matchbook is empty" on the first light-match attempt because missing
 // numeric state evaluates as 0). Migration is purely additive — saved
 // values win where present; missing keys get the defaults.
-const SAVE_VERSION = 9;
+// v10: Harmonizes lit-state key names so the new generic light/extinguish
+// customTools can target match, candles, lamp, and torch uniformly:
+//   - itemStates.match.matchBurning → itemStates.match.isLit (rename, value preserved)
+//   - itemStates.torch.isLit defaults to true (canonical: torch starts lit)
+// v11: Adds the canonical candle burn-time mechanic (mirrors the lamp's
+// battery model). New tick triggers drain candles each turn while lit.
+//   - itemStates.candles.burnTurnsRemaining defaults to 230 (canonical Zork CANDLES-FUSE)
+const SAVE_VERSION = 11;
 const LEGACY_SAVE_VERSION = 5;
 const V6_SAVE_VERSION = 6;
 const V7_SAVE_VERSION = 7;
 const V8_SAVE_VERSION = 8;
+const V9_SAVE_VERSION = 9;
+const V10_SAVE_VERSION = 10;
 const PREFIX = "lanterngames_save_v" + SAVE_VERSION + "_";
 const LEGACY_PREFIX = "lanterngames_save_v" + LEGACY_SAVE_VERSION + "_";
 const V6_PREFIX = "lanterngames_save_v" + V6_SAVE_VERSION + "_";
 const V7_PREFIX = "lanterngames_save_v" + V7_SAVE_VERSION + "_";
 const V8_PREFIX = "lanterngames_save_v" + V8_SAVE_VERSION + "_";
+const V9_PREFIX = "lanterngames_save_v" + V9_SAVE_VERSION + "_";
+const V10_PREFIX = "lanterngames_save_v" + V10_SAVE_VERSION + "_";
 
 // Transcript entry types — shared between App.tsx (display) and localSave
 // (persistence) so neither side has to redeclare or guess the shape.
@@ -112,9 +123,39 @@ export function loadSession(storyId: string, slot: SaveSlot): SavedSession | nul
       const parsed = JSON.parse(raw) as unknown;
       if (isValidSession(parsed, storyId)) return parsed;
     }
-    // v8 fallback: try the v8 key. v8→v9 backfills the new match/bell state
-    // fields and the match-burn-countdown flag (gameplay state untouched
-    // beyond the additive defaults).
+    // v10 fallback: try the v10 key. v10→v11 adds candles.burnTurnsRemaining=230
+    // for the canonical candle burn-time mechanic.
+    const v10Raw = localStorage.getItem(v10KeyForSlot(storyId, slot));
+    if (v10Raw) {
+      const migrated = migrateV10Session(JSON.parse(v10Raw) as unknown, storyId);
+      if (migrated) {
+        try {
+          localStorage.setItem(key(storyId, slot), JSON.stringify(migrated));
+          localStorage.removeItem(v10KeyForSlot(storyId, slot));
+        } catch {
+          // ignore write failures — migration retries next load
+        }
+        return migrated;
+      }
+    }
+    // v9 fallback: try the v9 key. v9→v11 renames match.matchBurning →
+    // match.isLit, adds torch.isLit=true, and adds candles.burnTurnsRemaining.
+    const v9Raw = localStorage.getItem(v9KeyForSlot(storyId, slot));
+    if (v9Raw) {
+      const migrated = migrateV9Session(JSON.parse(v9Raw) as unknown, storyId);
+      if (migrated) {
+        try {
+          localStorage.setItem(key(storyId, slot), JSON.stringify(migrated));
+          localStorage.removeItem(v9KeyForSlot(storyId, slot));
+        } catch {
+          // ignore write failures — migration retries next load
+        }
+        return migrated;
+      }
+    }
+    // v8 fallback: try the v8 key. v8→v11 backfills the new match/bell state
+    // fields, the match-burn-countdown flag, the lit-state harmonization,
+    // and the torch.isLit init (gameplay state untouched beyond defaults).
     const v8Raw = localStorage.getItem(v8KeyForSlot(storyId, slot));
     if (v8Raw) {
       const migrated = migrateV8Session(JSON.parse(v8Raw) as unknown, storyId);
@@ -185,25 +226,53 @@ export function loadSession(storyId: string, slot: SaveSlot): SavedSession | nul
   }
 }
 
-// v8 → v9 backfill. Adds the new state fields introduced after v8 shipped:
-//   - itemStates.match.matchesRemaining (5), matchBurning (false)
+// Cumulative v8 → v11 backfill. Applies all state-shape changes accumulated
+// after v8 shipped, so any earlier-version migration can chain through this
+// to land at the current SAVE_VERSION.
+//
+// v9 additions (kept here to avoid splitting backfills):
+//   - itemStates.match.matchesRemaining (5)
 //   - itemStates.bell.rangAtHades (false)
 //   - flags["match-burn-countdown"] (0)
-// Saved values win where present; missing keys get the defaults. Used by
-// migrateV8Session AND by every earlier migration so they all land at v9.
-function applyV9Backfill(es: Record<string, unknown>): Record<string, unknown> {
+//
+// v10 additions:
+//   - itemStates.match.isLit (renamed from matchBurning; value preserved)
+//   - itemStates.torch.isLit (default true — canonical: torch starts lit)
+//
+// v11 additions:
+//   - itemStates.candles.burnTurnsRemaining (default 230 — canonical CANDLES-FUSE)
+//
+// Saved values win where present; missing keys get the defaults.
+function applyV11Backfill(es: Record<string, unknown>): Record<string, unknown> {
   const itemStates = (es.itemStates as Record<string, Record<string, unknown>> | undefined) ?? {};
   const flags = (es.flags as Record<string, unknown> | undefined) ?? {};
   const migratedItemStates: Record<string, Record<string, unknown>> = { ...itemStates };
-  migratedItemStates["match"] = {
+
+  const matchPrev = itemStates["match"] ?? {};
+  const inheritedIsLit = "isLit" in matchPrev
+    ? matchPrev["isLit"]
+    : ("matchBurning" in matchPrev ? matchPrev["matchBurning"] : false);
+  const matchNext: Record<string, unknown> = {
     matchesRemaining: 5,
-    matchBurning: false,
-    ...itemStates["match"],
+    ...matchPrev,
+    isLit: inheritedIsLit,
   };
+  delete matchNext["matchBurning"];
+  migratedItemStates["match"] = matchNext;
+
   migratedItemStates["bell"] = {
     rangAtHades: false,
     ...itemStates["bell"],
   };
+  migratedItemStates["torch"] = {
+    isLit: true,
+    ...itemStates["torch"],
+  };
+  migratedItemStates["candles"] = {
+    burnTurnsRemaining: 230,
+    ...itemStates["candles"],
+  };
+
   const migratedFlags: Record<string, unknown> = {
     "match-burn-countdown": 0,
     ...flags,
@@ -211,7 +280,47 @@ function applyV9Backfill(es: Record<string, unknown>): Record<string, unknown> {
   return { ...es, itemStates: migratedItemStates, flags: migratedFlags };
 }
 
-// v8 → v9 migration. Backfills the new state fields per applyV9Backfill.
+// v10 → v11 migration. Backfills candles.burnTurnsRemaining=230 for the
+// canonical candle burn-time mechanic.
+function migrateV10Session(v: unknown, storyId: string): SavedSession | null {
+  if (!v || typeof v !== "object") return null;
+  const r = v as Record<string, unknown>;
+  if (r.version !== V10_SAVE_VERSION) return null;
+  if (r.storyId !== storyId) return null;
+  if (!r.engineState || typeof r.engineState !== "object") return null;
+  const es = r.engineState as Record<string, unknown>;
+  return {
+    version: SAVE_VERSION,
+    storyId,
+    engineState: applyV11Backfill(es) as unknown as GameState,
+    narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
+    transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
+    inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
+    savedAt: typeof r.savedAt === "number" ? r.savedAt : Date.now(),
+  };
+}
+
+// v9 → v11 migration. Renames match.matchBurning → match.isLit (preserving
+// the bool value), seeds torch.isLit=true and candles.burnTurnsRemaining=230.
+function migrateV9Session(v: unknown, storyId: string): SavedSession | null {
+  if (!v || typeof v !== "object") return null;
+  const r = v as Record<string, unknown>;
+  if (r.version !== V9_SAVE_VERSION) return null;
+  if (r.storyId !== storyId) return null;
+  if (!r.engineState || typeof r.engineState !== "object") return null;
+  const es = r.engineState as Record<string, unknown>;
+  return {
+    version: SAVE_VERSION,
+    storyId,
+    engineState: applyV11Backfill(es) as unknown as GameState,
+    narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
+    transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
+    inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
+    savedAt: typeof r.savedAt === "number" ? r.savedAt : Date.now(),
+  };
+}
+
+// v8 → v10 migration. Backfills the new state fields per applyV11Backfill.
 function migrateV8Session(v: unknown, storyId: string): SavedSession | null {
   if (!v || typeof v !== "object") return null;
   const r = v as Record<string, unknown>;
@@ -222,7 +331,7 @@ function migrateV8Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV9Backfill(es) as unknown as GameState,
+    engineState: applyV11Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -243,7 +352,7 @@ function migrateV7Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV9Backfill(stripped) as unknown as GameState,
+    engineState: applyV11Backfill(stripped) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -262,7 +371,7 @@ function migrateV6Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV9Backfill(r.engineState as Record<string, unknown>) as unknown as GameState,
+    engineState: applyV11Backfill(r.engineState as Record<string, unknown>) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -305,7 +414,7 @@ function migrateV5Session(v: unknown, storyId: string): SavedSession | null {
     lastExamineShown: _le,
     ...rest
   } = es;
-  const migratedEngineState = applyV9Backfill({
+  const migratedEngineState = applyV11Backfill({
     ...rest,
     itemLocations: nextItemLocations,
   }) as unknown as GameState;
@@ -337,6 +446,14 @@ function v8KeyForSlot(storyId: string, slot: SaveSlot): string {
   return V8_PREFIX + storyId + "_" + (slot === "quick" ? "quick" : "slot" + slot);
 }
 
+function v9KeyForSlot(storyId: string, slot: SaveSlot): string {
+  return V9_PREFIX + storyId + "_" + (slot === "quick" ? "quick" : "slot" + slot);
+}
+
+function v10KeyForSlot(storyId: string, slot: SaveSlot): string {
+  return V10_PREFIX + storyId + "_" + (slot === "quick" ? "quick" : "slot" + slot);
+}
+
 export function clearSession(storyId: string, slot: SaveSlot): void {
   try {
     localStorage.removeItem(key(storyId, slot));
@@ -344,6 +461,8 @@ export function clearSession(storyId: string, slot: SaveSlot): void {
     // lingered, loadSession would migrate-and-restore them on the next read,
     // and the user would see the slot "uncleared" / the LLM would resurrect
     // old narration history after a "new game".
+    localStorage.removeItem(v10KeyForSlot(storyId, slot));
+    localStorage.removeItem(v9KeyForSlot(storyId, slot));
     localStorage.removeItem(v8KeyForSlot(storyId, slot));
     localStorage.removeItem(v7KeyForSlot(storyId, slot));
     localStorage.removeItem(v6KeyForSlot(storyId, slot));

@@ -73,8 +73,6 @@ export function parseCommand(input: string, story: Story): ParseResult {
       return { type: "go", direction: dir };
     }
 
-    case "read":
-      return needItem("read", rest, story);
   }
 
   return { error: `I don't understand "${input.trim()}".` };
@@ -91,7 +89,7 @@ function parseLook(rest: string[], story: Story): ParseResult {
 }
 
 function needItem(
-  verb: "examine" | "take" | "drop" | "read",
+  verb: "examine" | "take" | "drop",
   query: string,
   story: Story,
 ): ParseResult {

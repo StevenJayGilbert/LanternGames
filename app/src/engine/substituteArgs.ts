@@ -5,7 +5,7 @@
 //
 // The substitution is shallow-typed: schema-wise only a few id fields are
 // IdRef (Condition.itemState.itemId, Condition.itemAccessible.itemId,
-// Condition.itemHasStateKey.itemId, Effect.setItemState.itemId). We cover
+// Condition.itemHasStateKey.itemId, Condition.itemReadable.itemId, Effect.setItemState.itemId). We cover
 // those explicitly. Adding new IdRef fields means widening the schema arm
 // AND adding a case here.
 
@@ -38,6 +38,11 @@ export function substituteCondition(c: Condition, args: Args): Condition | null 
       return { ...c, itemId: id };
     }
     case "itemHasStateKey": {
+      const id = resolveIdRef(c.itemId, args);
+      if (id === null) return null;
+      return { ...c, itemId: id };
+    }
+    case "itemReadable": {
       const id = resolveIdRef(c.itemId, args);
       if (id === null) return null;
       return { ...c, itemId: id };

@@ -14,7 +14,6 @@ export type ActionEvent =
   | { type: "put"; itemId: string; targetId: string }
   | { type: "inventoried" }
   | { type: "moved"; from: string; to: string; direction: string }
-  | { type: "read"; itemId: string; text: string }
   | { type: "waited" }
   | { type: "attacked"; itemId: string; targetId: string; mode: string }
   | { type: "intent-recorded"; signalId: string }
@@ -42,7 +41,6 @@ export type RejectionReason =
   | "broken-exit-target"  // exit points to a nonexistent room (validator should catch)
   | "traverse-blocked"    // for passages: traversableWhen condition failed
   | "unknown-intent"      // recordIntent called with a signalId that doesn't exist
-  | "not-readable"
   | "not-container"       // for put: target item isn't a container
   | "container-inaccessible" // for put: target container's accessibleWhen is false
   | "container-full"      // for put: target container at capacity

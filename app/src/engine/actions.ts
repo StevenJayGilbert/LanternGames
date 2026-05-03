@@ -36,12 +36,29 @@ export type ActionRequest =
   | { type: "put"; itemId: string; targetId: string }
   | { type: "inventory" }
   | { type: "go"; direction: string }
-  | { type: "read"; itemId: string }
   | { type: "wait" }
   | { type: "attack"; itemId: string; targetId: string; mode?: string }
   | { type: "recordIntent"; signalId: string; args?: Record<string, Atom> }
   | { type: "board"; itemId: string }
   | { type: "disembark" };
+
+// signalIds reserved for built-in actions. Triggers can gate on these via
+// Condition.intentMatched / intentArg just like custom-tool intents.
+// The validator refuses customTool ids that collide with this set so authors
+// can't accidentally shadow a built-in's intent recording.
+export const BUILT_IN_INTENT_NAMES = [
+  "look",
+  "examine",
+  "take",
+  "drop",
+  "put",
+  "inventory",
+  "go",
+  "wait",
+  "attack",
+  "board",
+  "disembark",
+] as const;
 
 export interface ActionResult {
   state: GameState;
@@ -50,7 +67,54 @@ export interface ActionResult {
   cues?: string[];   // narration cues emitted by the action itself (e.g. tool handler success/failure text)
 }
 
+// Map any ActionRequest to {signalId, args} for intent recording. Generic
+// spread — no per-case switch. Recording happens regardless of action
+// success or rejection so triggers can react to attempted-but-failed
+// actions (e.g. "go west while loaded" thematic refusals). recordIntent is
+// skipped because the custom-tool path records itself.
+function actionToIntent(
+  req: ActionRequest,
+): { signalId: string; args: Record<string, Atom> } | null {
+  if (req.type === "recordIntent") return null;
+  const { type, ...rest } = req;
+  return { signalId: type, args: rest as Record<string, Atom> };
+}
+
+// Single shared mutator — used by both performAction (built-ins) and
+// recordIntent (custom tools) so the matchedIntents shape is identical
+// across both paths.
+function applyMatchedIntent(
+  state: GameState,
+  signalId: string,
+  args: Record<string, Atom>,
+): GameState {
+  const nextMatched = state.matchedIntents.includes(signalId)
+    ? state.matchedIntents
+    : [...state.matchedIntents, signalId];
+  const nextArgs = { ...state.matchedIntentArgs, [signalId]: args };
+  return { ...state, matchedIntents: nextMatched, matchedIntentArgs: nextArgs };
+}
+
 export function performAction(
+  state: GameState,
+  story: Story,
+  req: ActionRequest,
+): ActionResult {
+  const result = dispatchAction(state, story, req);
+  // Record built-in actions as matched intents so triggers can gate on them
+  // via Condition.intentMatched / intentArg. recordIntent is skipped (its
+  // own code path already records). Recording is unconditional — failed
+  // and successful actions both flag the intent, letting triggers react to
+  // attempted-but-failed actions (e.g. "go west while loaded").
+  const intent = actionToIntent(req);
+  if (!intent) return result;
+  return {
+    ...result,
+    state: applyMatchedIntent(result.state, intent.signalId, intent.args),
+  };
+}
+
+function dispatchAction(
   state: GameState,
   story: Story,
   req: ActionRequest,
@@ -63,7 +127,6 @@ export function performAction(
     case "put": return put(state, story, req.itemId, req.targetId);
     case "inventory": return inventory(state);
     case "go": return go(state, story, req.direction);
-    case "read": return read(state, story, req.itemId);
     case "wait": return { state, event: { type: "waited" }, ok: true };
     case "attack": return attack(state, story, req.itemId, req.targetId, req.mode);
     case "recordIntent": return recordIntent(state, story, req.signalId, req.args);
@@ -406,13 +469,9 @@ function recordIntent(
     return { state, event: reject("unknown-intent", { itemId: signalId }), ok: false };
   }
   // Store the call args (even on a duplicate match — new args supersede).
-  const nextMatched = state.matchedIntents.includes(signalId)
-    ? state.matchedIntents
-    : [...state.matchedIntents, signalId];
-  const nextArgs = args !== undefined
-    ? { ...state.matchedIntentArgs, [signalId]: args }
-    : state.matchedIntentArgs;
-  let nextState: GameState = { ...state, matchedIntents: nextMatched, matchedIntentArgs: nextArgs };
+  // Shared mutator with built-in action recording so the matchedIntents
+  // shape is identical across both paths.
+  let nextState = applyMatchedIntent(state, signalId, args ?? {});
   const cues: string[] = [];
 
   // Run the handler if the tool declares one.
@@ -483,26 +542,6 @@ function renderHandlerTemplate(
   state: GameState,
 ): string {
   return renderNarration(template, args, story, state);
-}
-
-// ---------- read ----------
-
-function read(state: GameState, story: Story, itemId: string): ActionResult {
-  const item = itemById(story, itemId);
-  if (!item) {
-    return { state, event: reject("unknown-item", { itemId }), ok: false };
-  }
-  if (!isItemAccessible(item, state, story)) {
-    return { state, event: reject("not-accessible", { itemId: item.id }), ok: false };
-  }
-  if (!item.readable) {
-    return { state, event: reject("not-readable", { itemId: item.id }), ok: false };
-  }
-  return {
-    state,
-    event: { type: "read", itemId: item.id, text: item.readable.text },
-    ok: true,
-  };
 }
 
 // ---------- board ----------

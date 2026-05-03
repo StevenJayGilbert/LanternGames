@@ -14,6 +14,9 @@
 
 import type { Atom, Story } from "./schema";
 import { SCHEMA_VERSION } from "./schema";
+import { BUILT_IN_INTENT_NAMES } from "../engine/actions";
+
+const RESERVED_INTENT_NAMES: ReadonlySet<string> = new Set(BUILT_IN_INTENT_NAMES);
 
 export interface ValidationError {
   path: string;
@@ -652,6 +655,16 @@ function validateCustomTool(
 ) {
   if (!isObject(raw)) return err(path, "must be an object");
   requireString(raw, "id", err, path);
+  // customTool ids must not collide with built-in action signalIds, or
+  // they'd silently shadow the built-in's intent recording in
+  // matchedIntents (and make it impossible to write triggers gating on
+  // either side reliably).
+  if (typeof raw.id === "string" && RESERVED_INTENT_NAMES.has(raw.id)) {
+    err(
+      `${path}.id`,
+      `"${raw.id}" is a reserved built-in action intent name. Pick a different id.`,
+    );
+  }
   requireString(raw, "description", err, path);
   if (raw.alwaysAvailable !== undefined && typeof raw.alwaysAvailable !== "boolean") {
     err(`${path}.alwaysAvailable`, "must be a boolean");
@@ -938,6 +951,9 @@ function validateCondition(
       if (typeof raw.key !== "string" || raw.key === "") {
         err(`${path}.key`, "must be a non-empty string");
       }
+      return;
+    case "itemReadable":
+      validateIdRef(raw.itemId, `${path}.itemId`, itemIds, err);
       return;
     case "compare": {
       const validOps = new Set(["==", "!=", "<", "<=", ">", ">="]);

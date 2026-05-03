@@ -504,6 +504,12 @@ export function evaluateCondition(
       if (!item) return false;
       return item.state?.[c.key] !== undefined;
     }
+    case "itemReadable": {
+      if (typeof c.itemId !== "string") return false;
+      const item = itemById(story, c.itemId);
+      if (!item) return false;
+      return item.readable !== undefined;
+    }
     case "passagePerceivable": {
       if (typeof c.passageId !== "string") return false;
       const passage = passageById(story, c.passageId);

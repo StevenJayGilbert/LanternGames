@@ -136,8 +136,6 @@ function renderEvent(event: ActionEvent, story: Story): string {
       return `Dropped: ${nameOf(story, event.itemId)}.`;
     case "put":
       return `You put the ${nameOf(story, event.itemId)} into the ${nameOf(story, event.targetId)}.`;
-    case "read":
-      return event.text;
     case "waited":
       return "Time passes.";
     case "attacked":
@@ -184,7 +182,6 @@ function rejectionMessage(
     case "broken-exit-target": return `(error: exit target "${ctx.message ?? "?"}" doesn't exist)`;
     case "traverse-blocked": return ctx.message ?? `You can't go that way right now.`;
     case "unknown-intent": return `(unknown intent signal: ${ctx.itemName ?? "?"})`;
-    case "not-readable": return `There's nothing to read on the ${item}.`;
     case "not-container": return `The ${target} can't hold things.`;
     case "container-inaccessible": return ctx.message ?? `You can't get to the inside of the ${target} right now.`;
     case "container-full": return `The ${target} is full.`;
