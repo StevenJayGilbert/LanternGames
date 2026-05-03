@@ -193,26 +193,26 @@ console.log("\n=== #1 Bell + book + candles ===");
   // Step 2: take candles back into inventory (engine moved them to entrance-to-hades).
   e.execute({ type: "take", itemId: "candles" });
 
-  // Step 3: strike a match (consumes one of 5; sets matchBurning + 2-turn countdown).
-  e.execute({ type: "recordIntent", signalId: "light-match" });
+  // Step 3: strike a match (consumes one of 5; sets isLit + 2-turn countdown).
+  e.execute({ type: "recordIntent", signalId: "light", args: { itemId: "match" } });
   e.state.itemStates["match"]?.matchesRemaining === 4
     ? pass("match.matchesRemaining = 4 after strike")
     : fail("matches remaining wrong", JSON.stringify(e.state.itemStates["match"]));
-  e.state.itemStates["match"]?.matchBurning === true
-    ? pass("match.matchBurning = true after strike")
-    : fail("match.matchBurning wrong", JSON.stringify(e.state.itemStates["match"]));
+  e.state.itemStates["match"]?.isLit === true
+    ? pass("match.isLit = true after strike")
+    : fail("match.isLit wrong", JSON.stringify(e.state.itemStates["match"]));
 
   // Step 4: light candles using the burning match.
-  e.execute({ type: "recordIntent", signalId: "light-candles" });
+  e.execute({ type: "recordIntent", signalId: "light", args: { itemId: "candles" } });
   e.state.itemStates["candles"]?.isLit === true
-    ? pass("candles relit via light-candles intent")
+    ? pass("candles relit via light(candles) intent")
     : fail("candles not relit", JSON.stringify(e.state.itemStates["candles"]));
-  e.state.itemStates["match"]?.matchBurning === false
-    ? pass("match.matchBurning = false after lighting candles")
+  e.state.itemStates["match"]?.isLit === false
+    ? pass("match.isLit = false after lighting candles")
     : fail("match still burning after lighting candles", JSON.stringify(e.state.itemStates["match"]));
 
   // Step 5: read book at hades (capstone).
-  e.execute({ type: "recordIntent", signalId: "read-book-at-hades" });
+  e.execute({ type: "recordIntent", signalId: "read", args: { itemId: "book" } });
   e.state.flags["lld-flag"] === true
     ? pass("lld-flag set after capstone")
     : fail("lld-flag not set");
@@ -233,16 +233,16 @@ console.log("\n=== #1b Match burns out after 2 turns ===");
     ...e.state,
     itemLocations: { ...e.state.itemLocations, player: "entrance-to-hades", match: "player" },
   };
-  // Strike match: matchesRemaining: 4, matchBurning: true, countdown: 2.
-  e.execute({ type: "recordIntent", signalId: "light-match" });
+  // Strike match: matchesRemaining: 4, isLit: true, countdown: 3.
+  e.execute({ type: "recordIntent", signalId: "light", args: { itemId: "match" } });
   // Tick 1 (any wait action triggers afterAction tick).
   e.execute({ type: "wait" });
-  e.state.itemStates["match"]?.matchBurning === true
+  e.state.itemStates["match"]?.isLit === true
     ? pass("match still burning after 1 wait tick")
     : fail("match extinguished too early", JSON.stringify(e.state.itemStates["match"]));
   // Tick 2: countdown hits 0; match-burns-out fires.
   e.execute({ type: "wait" });
-  e.state.itemStates["match"]?.matchBurning === false
+  e.state.itemStates["match"]?.isLit === false
     ? pass("match extinguished after 2 wait ticks")
     : fail("match still burning after 2 ticks", JSON.stringify(e.state.itemStates["match"]));
 }
@@ -254,11 +254,11 @@ console.log("\n=== #1c Empty matchbook ===");
   e.state = {
     ...e.state,
     itemLocations: { ...e.state.itemLocations, match: "player" },
-    itemStates: { ...e.state.itemStates, match: { matchesRemaining: 0, matchBurning: false } },
+    itemStates: { ...e.state.itemStates, match: { matchesRemaining: 0, isLit: false } },
   };
-  const r = e.execute({ type: "recordIntent", signalId: "light-match" });
+  const r = e.execute({ type: "recordIntent", signalId: "light", args: { itemId: "match" } });
   r.narrationCues.some((c) => c.includes("matchbook is empty"))
-    ? pass("light-match with 0 matches → 'matchbook is empty' cue")
+    ? pass("light(match) with 0 matches → 'matchbook is empty' cue")
     : fail("expected empty-matchbook cue", JSON.stringify(r.narrationCues));
 }
 
@@ -275,13 +275,60 @@ console.log("\n=== #7 Coal → diamond ===");
       machine: { ...(e.state.itemStates.machine ?? {}), isOpen: false },
     },
   };
-  e.execute({ type: "recordIntent", signalId: "turn-machine-switch" });
+  e.execute({ type: "recordIntent", signalId: "turn-machine-switch", args: { withItemId: "screwdriver" } });
   e.state.itemLocations.diamond === "machine-room"
     ? pass("diamond moved to machine-room")
     : fail(`diamond at ${e.state.itemLocations.diamond}`);
   e.state.itemLocations.coal === "nowhere"
     ? pass("coal consumed (moved to nowhere)")
     : fail(`coal at ${e.state.itemLocations.coal}`);
+}
+
+// ----- Puzzle #7b: Bare-hand push-machine-switch must NOT fire the puzzle -----
+console.log("\n=== #7b Machine switch refuses bare-hand ===");
+{
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "machine-room", screwdriver: "player",
+      coal: "machine", },
+    itemStates: {
+      ...e.state.itemStates,
+      machine: { ...(e.state.itemStates.machine ?? {}), isOpen: false },
+    },
+  };
+  const r = e.execute({ type: "recordIntent", signalId: "push-machine-switch" });
+  e.state.itemLocations.coal === "machine"
+    ? pass("coal still in machine (puzzle did not fire)")
+    : fail(`coal at ${e.state.itemLocations.coal}`);
+  e.state.itemLocations.diamond === "nowhere"
+    ? pass("diamond still at nowhere")
+    : fail(`diamond at ${e.state.itemLocations.diamond}`);
+  r.narrationCues.some((c) => c.includes("too small"))
+    ? pass("push-machine-switch → 'switch is too small' refusal cue")
+    : fail("expected too-small refusal cue", JSON.stringify(r.narrationCues));
+}
+
+// ----- Puzzle #7c: Wrong-tool turn-machine-switch (e.g. withItemId='wrench') still refused -----
+console.log("\n=== #7c Machine switch refuses wrong tool ===");
+{
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "machine-room", screwdriver: "player",
+      coal: "machine", wrench: "player", },
+    itemStates: {
+      ...e.state.itemStates,
+      machine: { ...(e.state.itemStates.machine ?? {}), isOpen: false },
+    },
+  };
+  const r = e.execute({ type: "recordIntent", signalId: "turn-machine-switch", args: { withItemId: "wrench" } });
+  e.state.itemLocations.coal === "machine"
+    ? pass("coal still in machine (wrong-tool path did not fire puzzle)")
+    : fail(`coal at ${e.state.itemLocations.coal}`);
+  r.narrationCues.some((c) => c.includes("doesn't budge"))
+    ? pass("wrong-tool turn-machine-switch → 'switch doesn't budge' refusal cue")
+    : fail("expected switch-doesn't-budge refusal cue", JSON.stringify(r.narrationCues));
 }
 
 // ----- Puzzle #9: Dam control panel -----
@@ -321,6 +368,63 @@ console.log("\n=== #9 Dam control panel ===");
   n && !n.blocked
     ? pass("reservoir-south.north unblocked at low-tide")
     : fail("north still blocked", JSON.stringify(n));
+}
+
+// ----- Puzzle #9b: Bare-hand dam bolt must NOT toggle gates -----
+console.log("\n=== #9b Dam bolt refuses bare-hand ===");
+{
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "dam-room", wrench: "player" },
+    flags: { ...e.state.flags, "gate-flag": true, "gates-open": false },
+  };
+  const r = e.execute({ type: "recordIntent", signalId: "turn-dam-bolt-by-hand" });
+  e.state.flags["gates-open"] !== true
+    ? pass("gates-open still false (bare-hand did not fire bolt)")
+    : fail("gates-open flipped on bare-hand");
+  r.narrationCues.some((c) => c.includes("bare hands") || c.includes("budge"))
+    ? pass("turn-dam-bolt-by-hand → 'bolt won't budge' refusal cue")
+    : fail("expected bare-hand refusal cue", JSON.stringify(r.narrationCues));
+}
+
+// ----- Puzzle #9c: Plug-leak by hand must NOT seal the leak -----
+console.log("\n=== #9c Leak refuses bare-hand plug ===");
+{
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "maintenance-room" },
+    flags: { ...e.state.flags, "leak-active": true, "leak-flood-counter": 5 },
+  };
+  const r = e.execute({ type: "recordIntent", signalId: "plug-leak-by-hand" });
+  e.state.flags["leak-active"] === true
+    ? pass("leak still active (bare-hand did not seal it)")
+    : fail("leak-active flipped on bare-hand");
+  r.narrationCues.some((c) => c.includes("Water sprays") || c.includes("fingers"))
+    ? pass("plug-leak-by-hand → bare-hand refusal cue")
+    : fail("expected bare-hand leak refusal cue", JSON.stringify(r.narrationCues));
+}
+
+// ----- Puzzle #11b: Inflate-boat by mouth must NOT inflate the boat -----
+console.log("\n=== #11b Boat refuses bare-mouth inflation ===");
+{
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "dam-base", "inflatable-boat": "player" },
+    itemStates: {
+      ...e.state.itemStates,
+      "inflatable-boat": { ...(e.state.itemStates["inflatable-boat"] ?? {}), inflation: "deflated" },
+    },
+  };
+  const r = e.execute({ type: "recordIntent", signalId: "inflate-boat-by-mouth" });
+  e.state.itemStates["inflatable-boat"]?.inflation === "deflated"
+    ? pass("boat still deflated (bare-mouth did not inflate it)")
+    : fail(`boat state = ${e.state.itemStates["inflatable-boat"]?.inflation}`);
+  r.narrationCues.some((c) => c.includes("blow") || c.includes("doesn't budge"))
+    ? pass("inflate-boat-by-mouth → bare-mouth refusal cue")
+    : fail("expected bare-mouth refusal cue", JSON.stringify(r.narrationCues));
 }
 
 // ----- Puzzle #10 (bonus): Empty-handed coal mine -----

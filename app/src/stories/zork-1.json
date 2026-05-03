@@ -34,7 +34,8 @@
             "type": "flag",
             "key": "won-flag",
             "equals": true
-          }
+          },
+          "blockedMessage": "The path to the barrow lies in shadow. It will not open to you yet."
         },
         "in": {
           "to": "stone-barrow",
@@ -42,7 +43,8 @@
             "type": "flag",
             "key": "won-flag",
             "equals": true
-          }
+          },
+          "blockedMessage": "The path to the barrow lies in shadow. It will not open to you yet."
         }
       }
     },
@@ -401,7 +403,8 @@
             "type": "flag",
             "key": "troll-flag",
             "equals": true
-          }
+          },
+          "blockedMessage": "The troll's axe swings wildly — you cannot pass while he stands here, very much alive."
         },
         "west": {
           "to": "maze-1",
@@ -409,7 +412,8 @@
             "type": "flag",
             "key": "troll-flag",
             "equals": true
-          }
+          },
+          "blockedMessage": "The troll's axe swings wildly — you cannot pass while he stands here, very much alive."
         }
       },
       "state": {
@@ -851,7 +855,8 @@
             "type": "flag",
             "key": "magic-flag",
             "equals": true
-          }
+          },
+          "blockedMessage": "The cyclops, a hulking giant, blocks the passage east, glowering hungrily down at you."
         },
         "up": {
           "to": "treasure-room",
@@ -859,7 +864,8 @@
             "type": "flag",
             "key": "cyclops-flag",
             "equals": true
-          }
+          },
+          "blockedMessage": "The cyclops watches the staircase with his single fierce eye — you'd never get past him alive."
         }
       }
     },
@@ -912,7 +918,8 @@
             "type": "flag",
             "key": "low-tide",
             "equals": true
-          }
+          },
+          "blockedMessage": "The reservoir is too deep and the water far too cold — you'd drown before reaching the other side."
         }
       },
       "variants": [
@@ -2046,6 +2053,7 @@
         },
         "west": {
           "to": "lower-shaft",
+          "hidden": true,
           "when": {
             "type": "flag",
             "key": "empty-handed",
@@ -2067,6 +2075,7 @@
         },
         "out": {
           "to": "timber-room",
+          "hidden": true,
           "when": {
             "type": "flag",
             "key": "empty-handed",
@@ -2075,6 +2084,7 @@
         },
         "east": {
           "to": "timber-room",
+          "hidden": true,
           "when": {
             "type": "flag",
             "key": "empty-handed",
@@ -2412,7 +2422,7 @@
       "location": "dam-room",
       "fixed": true,
       "appearance": "A heavy iron bolt protrudes from the dam's control panel.",
-      "narratorNote": "When the player wants to turn this bolt, the turn-dam-bolt tool requires a withItemId arg naming the tool. If the player did not name a tool in their input, ASK 'With what?' (or similar) and wait for their reply — do not call the tool with a guessed withItemId. Even if the wrench is in inventory, the player has to say so. This applies to both opening and closing the gates."
+      "narratorNote": "DEFAULT to turn-dam-bolt-by-hand (no args) for ANY input about the bolt unless the player's input literally names a tool. Inputs like 'turn the bolt', 'twist bolt', 'open the gates', 'open the dam' → turn-dam-bolt-by-hand. ONLY call turn-dam-bolt when the player's input contains a literal tool noun like 'wrench' (e.g. 'turn bolt with wrench', 'use the wrench on the bolt'). NEVER auto-fill withItemId from inventory. This applies to both opening and closing the gates."
     },
     {
       "id": "bubble",
@@ -3009,7 +3019,7 @@
       },
       "state": {
         "matchesRemaining": 5,
-        "matchBurning": false
+        "isLit": false
       }
     },
     {
@@ -3061,7 +3071,8 @@
       "takeable": true,
       "lightSource": {},
       "state": {
-        "isLit": true
+        "isLit": true,
+        "burnTurnsRemaining": 230
       }
     },
     {
@@ -3391,7 +3402,8 @@
       "name": "switch",
       "description": "A small switch with a slot evidently sized for a screwdriver.",
       "location": "machine-room",
-      "fixed": true
+      "fixed": true,
+      "narratorNote": "DEFAULT to push-machine-switch (no args) for ANY input about the START switch unless the player's input literally names a tool. Inputs like 'push start', 'start the machine', 'press switch', 'turn it on', 'activate', 'operate switch' → push-machine-switch. ONLY call turn-machine-switch when the player's input contains a literal tool noun like 'screwdriver' (e.g. 'turn switch with screwdriver', 'use the screwdriver on the switch'). NEVER auto-fill withItemId from inventory."
     },
     {
       "id": "sword",
@@ -3758,6 +3770,9 @@
       "name": "large basket",
       "description": "A large wicker basket suspended from a chain that disappears upward into the darkness of the shaft.",
       "location": "shaft-room",
+      "appearsIn": [
+        "lower-shaft"
+      ],
       "fixed": true,
       "tags": [
         "container",
@@ -3782,18 +3797,64 @@
           "type": "always"
         }
       },
-      "variants": [
+      "appearance": "A large wicker basket hangs from a heavy iron chain, suspended over the mouth of the shaft.",
+      "appearanceVariants": [
         {
           "when": {
-            "type": "itemState",
-            "itemId": "basket",
-            "key": "position",
-            "equals": "lowered"
+            "type": "and",
+            "all": [
+              {
+                "type": "playerAt",
+                "roomId": "lower-shaft"
+              },
+              {
+                "type": "itemState",
+                "itemId": "basket",
+                "key": "position",
+                "equals": "raised"
+              }
+            ]
           },
-          "text": "A large wicker basket sits at your feet, attached to a chain that runs up through the shaft above into darkness."
+          "text": "Far above you at the top of the shaft, the wicker basket sways gently on its chain."
+        },
+        {
+          "when": {
+            "type": "and",
+            "all": [
+              {
+                "type": "playerAt",
+                "roomId": "lower-shaft"
+              },
+              {
+                "type": "itemState",
+                "itemId": "basket",
+                "key": "position",
+                "equals": "lowered"
+              }
+            ]
+          },
+          "text": "A large wicker basket rests at your feet, the chain rising into the shaft above."
+        },
+        {
+          "when": {
+            "type": "and",
+            "all": [
+              {
+                "type": "playerAt",
+                "roomId": "shaft-room"
+              },
+              {
+                "type": "itemState",
+                "itemId": "basket",
+                "key": "position",
+                "equals": "lowered"
+              }
+            ]
+          },
+          "text": "The chain dangles down into the shaft. The basket has been lowered out of sight below."
         }
       ],
-      "narratorNote": "The basket is a freight elevator on a chain. It can only be moved by 'lower basket' or 'raise basket' (use the lower-basket / raise-basket intents). It cannot be picked up or carried; nor can it be opened or closed (it has no lid). Treat it as a fixed feature whose only state is up vs. down."
+      "narratorNote": "The basket is a freight elevator on a chain. It can only be moved by 'lower basket' or 'raise basket' (use the lower-basket / raise-basket intents). It cannot be picked up or carried; nor can it be opened or closed (it has no lid). Treat it as a fixed feature whose only state is up vs. down. The chain spans both ends of the shaft, so the basket is perceivable from BOTH shaft-room and lower-shaft, but with different prose: from above you see it (or its absence), from below you see it overhead (or at your feet)."
     },
     {
       "id": "diamond",
@@ -4316,14 +4377,106 @@
       "description": "Player prays, kneels, makes an offering, or performs a ritual at the altar."
     },
     {
-      "id": "light-lamp",
-      "description": "Player turns on, lights, switches on, fires up, or activates the brass lantern.",
-      "alwaysAvailable": true
+      "id": "light",
+      "description": "Player lights, ignites, kindles, switches on, fires up, or activates a light-bearing item (lantern, candles, match, torch). Pass the id of an item from the current view's inventory or itemsHere.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the item to light"
+          }
+        },
+        "required": [
+          "itemId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
+            "failedNarration": "You don't see {arg.itemId.name} here."
+          },
+          {
+            "when": {
+              "type": "itemHasStateKey",
+              "itemId": {
+                "fromArg": "itemId"
+              },
+              "key": "isLit"
+            },
+            "failedNarration": "{arg.itemId.name} isn't something you can light."
+          }
+        ],
+        "effects": [
+          {
+            "type": "setItemState",
+            "itemId": {
+              "fromArg": "itemId"
+            },
+            "key": "isLit",
+            "value": true
+          }
+        ],
+        "successNarration": ""
+      }
     },
     {
-      "id": "extinguish-lamp",
-      "description": "Player turns off, douses, switches off, or extinguishes the brass lantern.",
-      "alwaysAvailable": true
+      "id": "extinguish",
+      "description": "Player extinguishes, douses, blows out, snuffs, switches off, or puts out a lit item (lantern, candles, match, torch). Pass the id of an item from the current view's inventory or itemsHere.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the item to extinguish"
+          }
+        },
+        "required": [
+          "itemId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
+            "failedNarration": "You don't see {arg.itemId.name} here."
+          },
+          {
+            "when": {
+              "type": "itemHasStateKey",
+              "itemId": {
+                "fromArg": "itemId"
+              },
+              "key": "isLit"
+            },
+            "failedNarration": "{arg.itemId.name} isn't something you can extinguish."
+          }
+        ],
+        "effects": [
+          {
+            "type": "setItemState",
+            "itemId": {
+              "fromArg": "itemId"
+            },
+            "key": "isLit",
+            "value": false
+          }
+        ],
+        "successNarration": ""
+      }
     },
     {
       "id": "free-stuck-weapon",
@@ -4384,6 +4537,23 @@
       "description": "Player digs in the sand on the beach (with the shovel or by hand)."
     },
     {
+      "id": "clear-rubble",
+      "description": "Player tries to clear, move, push, shove, drag, remove, dig out, or otherwise dislodge the broken timbers / rubble / debris that clutters the timber-room (or any similar passage they think is blocked by debris).",
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "playerAt",
+              "roomId": "timber-room"
+            },
+            "failedNarration": "There's nothing here you could call rubble."
+          }
+        ],
+        "successNarration": "You strain at the splintered timbers, but they're heavy and tightly wedged. Past them the passage narrows to a crack barely a person's width — clearing the rubble wouldn't widen it."
+      }
+    },
+    {
       "id": "mung-painting",
       "description": "Player mutilates, defaces, slashes, or otherwise destroys the painting."
     },
@@ -4405,117 +4575,43 @@
       "alwaysAvailable": true
     },
     {
-      "id": "read-book-at-hades",
-      "description": "Player reads, recites, intones, or speaks aloud from the black book at the entrance to Hades."
-    },
-    {
-      "id": "light-match",
-      "description": "Player strikes, lights, or ignites a match from the matchbook.",
+      "id": "read",
+      "description": "Read the contents of an item with readable text — book pages, leaflet, prayer inscription, matchbook cover, etc. Pass the id of an item from the current view's itemsHere or inventory.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the item to read"
+          }
+        },
+        "required": [
+          "itemId"
+        ]
+      },
       "alwaysAvailable": true,
       "handler": {
         "preconditions": [
           {
             "when": {
-              "type": "hasItem",
-              "itemId": "match"
-            },
-            "failedNarration": "You don't have any matches."
-          },
-          {
-            "when": {
-              "type": "compare",
-              "left": {
-                "kind": "itemState",
-                "itemId": "match",
-                "key": "matchesRemaining"
-              },
-              "op": ">",
-              "right": {
-                "kind": "literal",
-                "value": 0
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
               }
             },
-            "failedNarration": "The matchbook is empty — you've burned all your matches."
+            "failedNarration": "You don't see {arg.itemId.name} here."
           },
           {
             "when": {
-              "type": "itemState",
-              "itemId": "match",
-              "key": "matchBurning",
-              "equals": false
+              "type": "itemReadable",
+              "itemId": {
+                "fromArg": "itemId"
+              }
             },
-            "failedNarration": "A match is already burning."
+            "failedNarration": "{arg.itemId.name} has nothing to read."
           }
         ],
-        "effects": [
-          {
-            "type": "adjustItemState",
-            "itemId": "match",
-            "key": "matchesRemaining",
-            "by": -1
-          },
-          {
-            "type": "setItemState",
-            "itemId": "match",
-            "key": "matchBurning",
-            "value": true
-          },
-          {
-            "type": "setFlag",
-            "key": "match-burn-countdown",
-            "value": 3
-          }
-        ],
-        "successNarration": "One of the matches starts to burn."
-      }
-    },
-    {
-      "id": "light-candles",
-      "description": "Player lights, ignites, kindles, or re-ignites the pair of candles using a burning match.",
-      "alwaysAvailable": true,
-      "handler": {
-        "preconditions": [
-          {
-            "when": {
-              "type": "hasItem",
-              "itemId": "candles"
-            },
-            "failedNarration": "You don't have the candles."
-          },
-          {
-            "when": {
-              "type": "itemState",
-              "itemId": "candles",
-              "key": "isLit",
-              "equals": false
-            },
-            "failedNarration": "The candles are already lit."
-          },
-          {
-            "when": {
-              "type": "itemState",
-              "itemId": "match",
-              "key": "matchBurning",
-              "equals": true
-            },
-            "failedNarration": "You have nothing burning to light them with."
-          }
-        ],
-        "effects": [
-          {
-            "type": "setItemState",
-            "itemId": "candles",
-            "key": "isLit",
-            "value": true
-          },
-          {
-            "type": "setItemState",
-            "itemId": "match",
-            "key": "matchBurning",
-            "value": false
-          }
-        ],
-        "successNarration": "You touch the burning match to the candles. The candles are lit. The match has gone out."
+        "successNarration": "{arg.itemId.readable.text}"
       }
     },
     {
@@ -4537,7 +4633,23 @@
     },
     {
       "id": "turn-machine-switch",
-      "description": "Player turns, presses, activates, or otherwise operates the machine's switch (with the screwdriver as a tool)."
+      "description": "ONLY call when the player's input contains a literal tool name (e.g. 'turn switch WITH screwdriver', 'use the screwdriver on the switch', 'apply screwdriver to switch'). If the input does NOT contain a literal tool name, DO NOT call this tool — call push-machine-switch instead. Inputs like 'start the machine', 'press start', 'turn the switch', 'activate it', 'flip switch', 'operate switch', 'turn it on' do NOT name a tool — route those to push-machine-switch. NEVER auto-fill withItemId from inventory or context.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "withItemId": {
+            "type": "string",
+            "description": "the id of the tool the player literally named in their input (must come from the player's stated words — do not assume from inventory or context)"
+          }
+        },
+        "required": [
+          "withItemId"
+        ]
+      }
+    },
+    {
+      "id": "push-machine-switch",
+      "description": "DEFAULT tool for the machine's START switch when the player has NOT named a tool. Player tries to start, push, press, poke, flip, tap, turn, activate, operate, run, trigger, engage, use, or turn-on the START switch / machine — any phrasing that doesn't literally name a tool. Examples: 'push start', 'start the machine', 'press the switch', 'flip the switch', 'turn the switch', 'activate the switch', 'operate the machine', 'use the switch', 'turn it on'. If the player names a tool (screwdriver, etc.), use turn-machine-switch instead."
     },
     {
       "id": "lower-basket",
@@ -4565,17 +4677,21 @@
     },
     {
       "id": "plug-leak-with-putty",
-      "description": "Player plugs, seals, stops, or fills the leak using the viscous material (putty)."
+      "description": "ONLY call when the player's input contains a literal material name (e.g. 'plug leak WITH putty', 'use the putty on the leak', 'apply putty'). If the input does NOT contain a literal material name, DO NOT call this tool — call plug-leak-by-hand instead. Inputs like 'plug the leak', 'stop the leak', 'seal the leak', 'fix the pipe' do NOT name a material — route those to plug-leak-by-hand."
+    },
+    {
+      "id": "plug-leak-by-hand",
+      "description": "DEFAULT tool for the maintenance-room leak when the player has NOT named anything to plug it with. Player tries to plug, press, stop, cover, block, seal, fix, or close the leak / pipe / hole — any phrasing that doesn't literally name a material. Examples: 'plug the leak', 'stop the water', 'press the hole', 'seal the leak', 'fix the pipe'. If the player names putty or any other material, use plug-leak-with-putty instead."
     },
     {
       "id": "turn-dam-bolt",
-      "description": "Player turns, twists, rotates, or otherwise operates the bolt on the dam control panel using a tool the player has named. The player MUST specify the tool (e.g. 'turn bolt with wrench'); if they don't, ask 'with what?' before calling this — never assume the tool from inventory.",
+      "description": "ONLY call when the player's input contains a literal tool name (e.g. 'turn bolt WITH wrench', 'use the wrench on the bolt'). If the input does NOT contain a literal tool name, DO NOT call this tool — call turn-dam-bolt-by-hand instead. Inputs like 'turn the bolt', 'twist bolt', 'open the gates', 'open the dam', 'release the gates' do NOT name a tool — route those to turn-dam-bolt-by-hand. NEVER auto-fill withItemId from inventory or context.",
       "args": {
         "type": "object",
         "properties": {
           "withItemId": {
             "type": "string",
-            "description": "the id of the tool the player used (must come from the player's stated input — do not assume)"
+            "description": "the id of the tool the player literally named in their input (must come from the player's stated words — do not assume from inventory or context)"
           }
         },
         "required": [
@@ -4584,8 +4700,16 @@
       }
     },
     {
+      "id": "turn-dam-bolt-by-hand",
+      "description": "DEFAULT tool for the dam control panel's iron bolt when the player has NOT named a tool. Player tries to turn, twist, pull, pry, rotate, operate, work, force, or otherwise act on the bolt / gates / dam — any phrasing that doesn't literally name a tool. Examples: 'turn the bolt', 'twist bolt', 'open the gates', 'open the dam', 'release the gates'. If the player names a tool (wrench, etc.), use turn-dam-bolt instead."
+    },
+    {
       "id": "inflate-boat",
-      "description": "Player inflates, pumps up, fills, or blows up the boat (with the pump)."
+      "description": "ONLY call when the player's input contains a literal tool name (e.g. 'inflate boat WITH pump', 'use the pump on the boat', 'pump up the raft'). If the input does NOT contain a literal tool name, DO NOT call this tool — call inflate-boat-by-mouth instead. Inputs like 'inflate the boat', 'blow up the boat', 'fill the raft', 'expand the boat' do NOT name a tool — route those to inflate-boat-by-mouth."
+    },
+    {
+      "id": "inflate-boat-by-mouth",
+      "description": "DEFAULT tool for inflating the boat when the player has NOT named a tool. Player tries to inflate, blow up, fill, expand, breathe into, or open the boat / raft — any phrasing that doesn't literally name a tool (or that mentions breath/mouth/lungs). Examples: 'inflate the boat', 'blow up the boat', 'fill the raft', 'breathe into the boat', 'expand the raft'. If the player names the pump or any other tool, use inflate-boat instead."
     },
     {
       "id": "repair-boat-with-putty",
@@ -7841,7 +7965,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "light-lamp"
+            "signalId": "light"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "light",
+            "key": "itemId",
+            "equals": "lamp"
           },
           {
             "type": "hasItem",
@@ -7851,7 +7981,7 @@
             "type": "itemState",
             "itemId": "lamp",
             "key": "isLit",
-            "equals": false
+            "equals": true
           },
           {
             "type": "compare",
@@ -7870,33 +8000,51 @@
       },
       "effects": [
         {
-          "type": "setItemState",
-          "itemId": "lamp",
-          "key": "isLit",
-          "value": true
-        },
-        {
           "type": "removeMatchedIntent",
-          "signalId": "light-lamp"
+          "signalId": "light"
         }
       ],
       "narration": "The brass lantern flickers on, casting a warm glow.",
       "once": false
     },
     {
-      "id": "lamp-extinguishes",
+      "id": "lamp-light-no-battery",
+      "priority": -10,
       "when": {
         "type": "and",
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "extinguish-lamp"
+            "signalId": "light"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "light",
+            "key": "itemId",
+            "equals": "lamp"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "lamp"
           },
           {
             "type": "itemState",
             "itemId": "lamp",
             "key": "isLit",
             "equals": true
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "lamp",
+              "key": "batteryTurns"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
           }
         ]
       },
@@ -7909,7 +8057,39 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "extinguish-lamp"
+          "signalId": "light"
+        }
+      ],
+      "narration": "The lantern's battery is dead. Nothing happens.",
+      "once": false
+    },
+    {
+      "id": "lamp-extinguishes",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "extinguish"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "extinguish",
+            "key": "itemId",
+            "equals": "lamp"
+          },
+          {
+            "type": "itemState",
+            "itemId": "lamp",
+            "key": "isLit",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "extinguish"
         }
       ],
       "narration": "The lantern goes dark.",
@@ -7971,6 +8151,81 @@
         }
       ],
       "narration": "Your lamp dims, flickers, and goes dark."
+    },
+    {
+      "id": "candles-burn-fuel",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": true
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "candles",
+              "key": "burnTurnsRemaining"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustItemState",
+          "itemId": "candles",
+          "key": "burnTurnsRemaining",
+          "by": -1
+        }
+      ]
+    },
+    {
+      "id": "candles-burn-out",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": true
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "candles",
+              "key": "burnTurnsRemaining"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "candles",
+          "key": "isLit",
+          "value": false
+        }
+      ],
+      "narration": "Your candles have burned down to nothing — the flames sputter and die."
     },
     {
       "id": "darkness-tick-incr",
@@ -12210,7 +12465,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "read-book-at-hades"
+            "signalId": "read"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "read",
+            "key": "itemId",
+            "equals": "book"
           },
           {
             "type": "playerAt",
@@ -12247,21 +12508,380 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "read-book-at-hades"
+          "signalId": "read"
         }
       ],
       "narration": "Each word of the prayer reverberates through the hall in a deafening confusion. As the last word fades, a voice, loud and commanding, speaks: \"Begone, fiends!\" A heart-stopping scream fills the cavern, and the spirits, sensing a greater power, flee through the walls.",
       "once": true
     },
     {
+      "id": "match-strikes",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "light"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "light",
+            "key": "itemId",
+            "equals": "match"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "match"
+          },
+          {
+            "type": "itemState",
+            "itemId": "match",
+            "key": "isLit",
+            "equals": true
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "match",
+              "key": "matchesRemaining"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustItemState",
+          "itemId": "match",
+          "key": "matchesRemaining",
+          "by": -1
+        },
+        {
+          "type": "setFlag",
+          "key": "match-burn-countdown",
+          "value": 3
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "light"
+        }
+      ],
+      "narration": "One of the matches starts to burn.",
+      "once": false
+    },
+    {
+      "id": "match-strike-empty",
+      "priority": -10,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "light"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "light",
+            "key": "itemId",
+            "equals": "match"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "match"
+          },
+          {
+            "type": "itemState",
+            "itemId": "match",
+            "key": "isLit",
+            "equals": true
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "match",
+              "key": "matchesRemaining"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "match",
+          "key": "isLit",
+          "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "light"
+        }
+      ],
+      "narration": "The matchbook is empty — you've burned all your matches.",
+      "once": false
+    },
+    {
+      "id": "candles-light",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "light"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "light",
+            "key": "itemId",
+            "equals": "candles"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "candles"
+          },
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": true
+          },
+          {
+            "type": "itemState",
+            "itemId": "match",
+            "key": "isLit",
+            "equals": true
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "candles",
+              "key": "burnTurnsRemaining"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "match",
+          "key": "isLit",
+          "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "light"
+        }
+      ],
+      "narration": "You touch the burning match to the candles, lighting them.",
+      "once": false
+    },
+    {
+      "id": "candles-light-no-match",
+      "priority": -10,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "light"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "light",
+            "key": "itemId",
+            "equals": "candles"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "candles"
+          },
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": true
+          },
+          {
+            "type": "itemState",
+            "itemId": "match",
+            "key": "isLit",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "candles",
+          "key": "isLit",
+          "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "light"
+        }
+      ],
+      "narration": "You have nothing burning to light them with.",
+      "once": false
+    },
+    {
+      "id": "candles-light-spent",
+      "priority": -20,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "light"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "light",
+            "key": "itemId",
+            "equals": "candles"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "candles"
+          },
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": true
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "candles",
+              "key": "burnTurnsRemaining"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "candles",
+          "key": "isLit",
+          "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "light"
+        }
+      ],
+      "narration": "The candles are spent — only stubs of wax remain. There's nothing left to light.",
+      "once": false
+    },
+    {
+      "id": "candles-extinguish",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "extinguish"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "extinguish",
+            "key": "itemId",
+            "equals": "candles"
+          },
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "extinguish"
+        }
+      ],
+      "narration": "You blow out the candles.",
+      "once": false
+    },
+    {
+      "id": "torch-extinguish-noop",
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "extinguish"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "extinguish",
+            "key": "itemId",
+            "equals": "torch"
+          },
+          {
+            "type": "itemState",
+            "itemId": "torch",
+            "key": "isLit",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "torch",
+          "key": "isLit",
+          "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "extinguish"
+        }
+      ],
+      "narration": "The flames cling to the torch — it can't be extinguished.",
+      "once": false
+    },
+    {
       "id": "candles-relit-at-hades-cower",
+      "priority": 50,
       "once": true,
       "when": {
         "type": "and",
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "light-candles"
+            "signalId": "light"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "light",
+            "key": "itemId",
+            "equals": "candles"
           },
           {
             "type": "playerAt",
@@ -12281,12 +12901,7 @@
           }
         ]
       },
-      "effects": [
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "light-candles"
-        }
-      ],
+      "effects": [],
       "narration": "The flames flicker wildly and appear to dance. The earth beneath your feet trembles, and your legs nearly buckle beneath you. The spirits cower at your unearthly power."
     },
     {
@@ -12299,7 +12914,7 @@
           {
             "type": "itemState",
             "itemId": "match",
-            "key": "matchBurning",
+            "key": "isLit",
             "equals": true
           },
           {
@@ -12334,7 +12949,7 @@
           {
             "type": "itemState",
             "itemId": "match",
-            "key": "matchBurning",
+            "key": "isLit",
             "equals": true
           },
           {
@@ -12355,7 +12970,7 @@
         {
           "type": "setItemState",
           "itemId": "match",
-          "key": "matchBurning",
+          "key": "isLit",
           "value": false
         }
       ],
@@ -12370,7 +12985,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "read-book-at-hades"
+            "signalId": "read"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "read",
+            "key": "itemId",
+            "equals": "book"
           },
           {
             "type": "playerAt",
@@ -12391,7 +13012,7 @@
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "read-book-at-hades"
+          "signalId": "read"
         }
       ],
       "narration": "You read the prayer aloud. The words have no power; the spirits jeer."
@@ -12405,7 +13026,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "read-book-at-hades"
+            "signalId": "read"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "read",
+            "key": "itemId",
+            "equals": "book"
           },
           {
             "type": "playerAt",
@@ -12432,7 +13059,7 @@
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "read-book-at-hades"
+          "signalId": "read"
         }
       ],
       "narration": "You read the prayer aloud. The words fade in the dim light, leaving no impression."
@@ -12446,6 +13073,12 @@
           {
             "type": "intentMatched",
             "signalId": "turn-machine-switch"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn-machine-switch",
+            "key": "withItemId",
+            "equals": "screwdriver"
           },
           {
             "type": "itemAt",
@@ -12497,6 +13130,12 @@
             "signalId": "turn-machine-switch"
           },
           {
+            "type": "intentArg",
+            "signalId": "turn-machine-switch",
+            "key": "withItemId",
+            "equals": "screwdriver"
+          },
+          {
             "type": "not",
             "condition": {
               "type": "itemAt",
@@ -12527,6 +13166,55 @@
         }
       ],
       "narration": "The machine clatters and whirs, but produces only a faint puff of greenish smoke. Whatever it's looking for, it isn't finding."
+    },
+    {
+      "id": "machine-switch-wrong-tool",
+      "once": false,
+      "priority": -10,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "turn-machine-switch"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "machine-room"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "turn-machine-switch"
+        }
+      ],
+      "narration": "The switch doesn't budge."
+    },
+    {
+      "id": "machine-switch-bare-hands",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "push-machine-switch"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "machine-room"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "push-machine-switch"
+        }
+      ],
+      "narration": "The switch is too small to manipulate with human fingers — barely 1/16 by 1/4 of an inch."
     },
     {
       "id": "basket-lowers",
@@ -12627,6 +13315,97 @@
         }
       ],
       "narration": "The chain creaks as you haul; the basket rises smoothly out of the depths and settles at the top of the shaft."
+    },
+    {
+      "id": "lower-shaft-enter-look-up",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "go"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "lower-shaft"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "go"
+        },
+        {
+          "type": "if",
+          "if": {
+            "type": "itemState",
+            "itemId": "basket",
+            "key": "position",
+            "equals": "raised"
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "Far above you at the top of the shaft, the wicker basket sways gently on its chain — well out of reach."
+            }
+          ]
+        },
+        {
+          "type": "if",
+          "if": {
+            "type": "itemState",
+            "itemId": "basket",
+            "key": "position",
+            "equals": "lowered"
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "The wicker basket sits at your feet at the bottom of the shaft, the chain rising into darkness above."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shaft-room-enter-look-down",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "go"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "shaft-room"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "go"
+        },
+        {
+          "type": "if",
+          "if": {
+            "type": "itemState",
+            "itemId": "basket",
+            "key": "position",
+            "equals": "lowered"
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "The basket has been lowered out of sight; the chain disappears down into the shaft."
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "yellow-button-enables-bolt",
@@ -12903,6 +13682,30 @@
       "narration": "You press the viscous material against the pipe; it spreads and seals the leak with a satisfying squelch. The flow stops. The water level slowly recedes."
     },
     {
+      "id": "leak-bare-hands",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "plug-leak-by-hand"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "maintenance-room"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "plug-leak-by-hand"
+        }
+      ],
+      "narration": "Water sprays past your fingers, the pressure forcing your hand right back."
+    },
+    {
       "id": "bolt-opens-gates",
       "once": false,
       "when": {
@@ -13039,6 +13842,30 @@
         }
       ],
       "narration": "The bolt doesn't budge — you'll need the right tool, in the right place, with the right control surface enabled."
+    },
+    {
+      "id": "dam-bolt-bare-hands",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "turn-dam-bolt-by-hand"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "dam-room"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "turn-dam-bolt-by-hand"
+        }
+      ],
+      "narration": "The bolt is heavy iron and held tight in its socket. Your bare hands can't budge it."
     },
     {
       "id": "low-tide-tick",
@@ -13220,6 +14047,32 @@
           "type": "setFlag",
           "key": "empty-handed",
           "value": true
+        },
+        {
+          "type": "if",
+          "if": {
+            "type": "playerAt",
+            "roomId": "timber-room"
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "With your hands free, you think you might just be able to squeeze through the narrow passage to the west."
+            }
+          ]
+        },
+        {
+          "type": "if",
+          "if": {
+            "type": "playerAt",
+            "roomId": "lower-shaft"
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "With your hands free, you think you might just be able to squeeze back through the narrow passage."
+            }
+          ]
         }
       ]
     },
@@ -13254,6 +14107,87 @@
           "value": false
         }
       ]
+    },
+    {
+      "id": "timber-room-too-loaded",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "go"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "go",
+            "key": "direction",
+            "equals": "west"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "timber-room"
+          },
+          {
+            "type": "flag",
+            "key": "empty-handed",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "go"
+        }
+      ],
+      "narration": "Your load is too great. The passage west narrows to a slit barely a person's width."
+    },
+    {
+      "id": "lower-shaft-too-loaded",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "go"
+          },
+          {
+            "type": "or",
+            "any": [
+              {
+                "type": "intentArg",
+                "signalId": "go",
+                "key": "direction",
+                "equals": "east"
+              },
+              {
+                "type": "intentArg",
+                "signalId": "go",
+                "key": "direction",
+                "equals": "out"
+              }
+            ]
+          },
+          {
+            "type": "playerAt",
+            "roomId": "lower-shaft"
+          },
+          {
+            "type": "flag",
+            "key": "empty-handed",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "go"
+        }
+      ],
+      "narration": "Your load is too great. The passage back narrows to a slit barely a person's width."
     },
     {
       "id": "boat-inflates",
@@ -13304,6 +14238,21 @@
         }
       ],
       "narration": "The boat hisses and swells into a sturdy yellow raft, ready for the river."
+    },
+    {
+      "id": "boat-bare-mouth",
+      "once": false,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "inflate-boat-by-mouth"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "inflate-boat-by-mouth"
+        }
+      ],
+      "narration": "You blow until your head spins. The folded plastic doesn't budge."
     },
     {
       "id": "boat-repairs",

@@ -15,10 +15,16 @@ import type {
   Tool,
 } from "./types";
 import { LLMError } from "./types";
-import { debugLog } from "../debug";
+import { debugLog, isDebugEnabled } from "../debug";
 
 const DEFAULT_MODEL = "claude-haiku-4-5-20251001";
 const DEFAULT_MAX_TOKENS = 1024;
+// Debug-mode text blocks the model emits when the "thinking" flag is on
+// begin with one of these markers (per the system-prompt instruction
+// injected by the narrator). The client labels them in the console; the
+// narrator strips them from player-facing narration.
+const REASONING_PREFIX = "[reasoning]";
+const VALIDATION_PREFIX = "[validation]";
 
 export class DirectAnthropicClient implements LLMClient {
   private client: Anthropic;
@@ -67,6 +73,30 @@ export class DirectAnthropicClient implements LLMClient {
       });
     } catch (err: unknown) {
       throw toLLMError(err);
+    }
+
+    // Surface text blocks to the console when the thinking flag is on. The
+    // narrator's system-prompt suffix asks the model to emit "[reasoning]"
+    // and "[validation]" text blocks alongside each tool call. Labels each
+    // block by which marker it leads with so the user can read the trace
+    // and the rule-compliance audit at a glance. Logs ALL text blocks even
+    // when they don't follow the format, so we can see what's actually there.
+    if (isDebugEnabled("thinking")) {
+      const textBlocks = response.content.filter(
+        (b): b is Anthropic.TextBlock => b.type === "text",
+      );
+      if (textBlocks.length === 0) {
+        debugLog("thinking", "[Reasoning] (no text blocks in response)");
+      } else {
+        for (const block of textBlocks) {
+          const trimmed = block.text.trim();
+          const lower = trimmed.toLowerCase();
+          let tag = "[Text block]";
+          if (lower.startsWith(REASONING_PREFIX)) tag = "[Reasoning]";
+          else if (lower.startsWith(VALIDATION_PREFIX)) tag = "[Validation]";
+          debugLog("thinking", tag, trimmed);
+        }
+      }
     }
 
     // Surface cache hit/miss so we can verify caching is working. cache_read =

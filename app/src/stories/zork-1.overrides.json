@@ -298,7 +298,7 @@
       ]
     },
     {
-      "$comment": "Reservoir-south: the lake's south shore. Default = full lake (impassable to the north); low-tide variant = exposed mud-flat (north traversal opens via the existing low-tide-gated exit).",
+      "$comment": "Reservoir-south: the lake's south shore. Default = full lake (impassable to the north); low-tide variant = exposed mud-flat (north traversal opens via the existing low-tide-gated exit). Override redeclares the gated north exit so the blockedMessage attaches alongside the existing `when` gate.",
       "id": "reservoir-south",
       "description": "You are in a long room on the south shore of a large lake, far too deep and wide for crossing. There is a path along the stream to the east or west, a steep pathway climbing southwest along the edge of a chasm, and a path leading into a canyon to the southeast.",
       "variants": [
@@ -306,7 +306,14 @@
           "when": { "type": "flag", "key": "low-tide", "equals": true },
           "text": "You are at the south end of what was once a large lake. With the reservoir drained, the lake bed lies exposed — a stretch of dark mud, silt, and the occasional rusted relic. A path runs east and west; a steep pathway climbs southwest along the edge of a chasm; a canyon opens to the southeast. To the north, the dry bed leads into the reservoir proper."
         }
-      ]
+      ],
+      "exits": {
+        "north": {
+          "to": "reservoir",
+          "when": { "type": "flag", "key": "low-tide", "equals": true },
+          "blockedMessage": "The reservoir is too deep and the water far too cold — you'd drown before reaching the other side."
+        }
+      }
     },
     {
       "$comment": "Reservoir-north: the head of the reservoir, fed by a stream from the north. Default = wide deep stream feeding the lake; low-tide variant = sluggish trickle through mud.",
@@ -415,9 +422,22 @@
       }
     },
     {
+      "$comment": "Troll-room: dark + the troll blocks the east/west exits while alive. Override redeclares the gated exits so the blockedMessage attaches alongside the existing troll-flag gate.",
       "id": "troll-room",
       "state": {
         "dark": true
+      },
+      "exits": {
+        "east": {
+          "to": "ew-passage",
+          "when": { "type": "flag", "key": "troll-flag", "equals": true },
+          "blockedMessage": "The troll's axe swings wildly — you cannot pass while he stands here, very much alive."
+        },
+        "west": {
+          "to": "maze-1",
+          "when": { "type": "flag", "key": "troll-flag", "equals": true },
+          "blockedMessage": "The troll's axe swings wildly — you cannot pass while he stands here, very much alive."
+        }
       }
     },
     {
@@ -816,15 +836,48 @@
       }
     },
     {
+      "$comment": "timber-room.west is hidden when blocked so the LLM doesn't see the exit toggle between turns and dramatize it ('the way is now open / blocked again'). The room description still tells the player about the narrow passage to the west; the empty-handed gate stays the canonical mechanic.",
       "id": "timber-room",
       "state": {
         "dark": true
+      },
+      "exits": {
+        "west": {
+          "to": "lower-shaft",
+          "hidden": true,
+          "when": {
+            "type": "flag",
+            "key": "empty-handed",
+            "equals": true
+          }
+        }
       }
     },
     {
+      "$comment": "lower-shaft return exits (out, east) hidden when blocked — same reasoning as timber-room.west.",
       "id": "lower-shaft",
       "state": {
         "dark": true
+      },
+      "exits": {
+        "out": {
+          "to": "timber-room",
+          "hidden": true,
+          "when": {
+            "type": "flag",
+            "key": "empty-handed",
+            "equals": true
+          }
+        },
+        "east": {
+          "to": "timber-room",
+          "hidden": true,
+          "when": {
+            "type": "flag",
+            "key": "empty-handed",
+            "equals": true
+          }
+        }
       }
     },
     {
@@ -841,6 +894,38 @@
           "text": "This is a large, cold room whose sole exit is to the north. In one corner there is a machine which is reminiscent of a clothes dryer. On its face is a switch which is labelled \"START\". The switch does not appear to be manipulable by any human hand (unless the fingers are about 1/16 by 1/4 inch). On the front of the machine is a large lid, which is closed."
         }
       ]
+    },
+    {
+      "$comment": "Cyclops-room: the cyclops blocks east (his hunger / rage gate via magic-flag) and up (the staircase, gate via cyclops-flag — fled). Override adds blockedMessages for both.",
+      "id": "cyclops-room",
+      "exits": {
+        "east": {
+          "to": "strange-passage",
+          "when": { "type": "flag", "key": "magic-flag", "equals": true },
+          "blockedMessage": "The cyclops, a hulking giant, blocks the passage east, glowering hungrily down at you."
+        },
+        "up": {
+          "to": "treasure-room",
+          "when": { "type": "flag", "key": "cyclops-flag", "equals": true },
+          "blockedMessage": "The cyclops watches the staircase with his single fierce eye — you'd never get past him alive."
+        }
+      }
+    },
+    {
+      "$comment": "West-of-house: the stone barrow path is sealed until the player has won the game (won-flag). Override redeclares the two barrow exits with thematic refusal text.",
+      "id": "west-of-house",
+      "exits": {
+        "southwest": {
+          "to": "stone-barrow",
+          "when": { "type": "flag", "key": "won-flag", "equals": true },
+          "blockedMessage": "The path to the barrow lies in shadow. It will not open to you yet."
+        },
+        "in": {
+          "to": "stone-barrow",
+          "when": { "type": "flag", "key": "won-flag", "equals": true },
+          "blockedMessage": "The path to the barrow lies in shadow. It will not open to you yet."
+        }
+      }
     },
     {
       "$comment": "Description: state-neutral base; variants append the canonical window state (slightly ajar / open) so the LDESC reads canonically each visit.",
@@ -1035,7 +1120,7 @@
       "id": "bolt",
       "appearance": "A heavy iron bolt protrudes from the dam's control panel.",
       "description": "A heavy iron bolt with a slot evidently sized for a wrench.",
-      "narratorNote": "When the player wants to turn this bolt, the turn-dam-bolt tool requires a withItemId arg naming the tool. If the player did not name a tool in their input, ASK 'With what?' (or similar) and wait for their reply — do not call the tool with a guessed withItemId. Even if the wrench is in inventory, the player has to say so. This applies to both opening and closing the gates."
+      "narratorNote": "DEFAULT to turn-dam-bolt-by-hand (no args) for ANY input about the bolt unless the player's input literally names a tool. Inputs like 'turn the bolt', 'twist bolt', 'open the gates', 'open the dam' → turn-dam-bolt-by-hand. ONLY call turn-dam-bolt when the player's input contains a literal tool noun like 'wrench' (e.g. 'turn bolt with wrench', 'use the wrench on the bolt'). NEVER auto-fill withItemId from inventory. This applies to both opening and closing the gates."
     },
     {
       "$comment": "Dam-panel indicator. Glows when gate-flag=true (yellow button pressed) — the bolt control is live. yellow-button-enables-bolt narrates the flicker once; this variant makes the state persistently readable on examine bubble.",
@@ -1079,7 +1164,8 @@
     },
     {
       "id": "machine-switch",
-      "description": "A small switch with a slot evidently sized for a screwdriver."
+      "description": "A small switch with a slot evidently sized for a screwdriver.",
+      "narratorNote": "DEFAULT to push-machine-switch (no args) for ANY input about the START switch unless the player's input literally names a tool. Inputs like 'push start', 'start the machine', 'press switch', 'turn it on', 'activate', 'operate switch' → push-machine-switch. ONLY call turn-machine-switch when the player's input contains a literal tool noun like 'screwdriver' (e.g. 'turn switch with screwdriver', 'use the screwdriver on the switch'). NEVER auto-fill withItemId from inventory."
     },
     {
       "id": "slide",
@@ -1142,11 +1228,12 @@
       "description": "A delicate bracelet set with sapphires, glittering even in dim light. A treasure."
     },
     {
-      "$comment": "Single physical basket suspended on a chain in the shaft. Initial position: raised at shaft-room. Lowered/raised by intent → basket-lowers / basket-raises triggers move the item between shaft-room and lower-shaft and toggle position state. Items put into the basket follow it transitively (item-inside-item parentage). Wicker construction = always open; openWhen/closeWhen are suppressed so the player can neither force it shut nor pry it open via generic open/close.",
+      "$comment": "Single physical basket suspended on a chain in the shaft. Initial position: raised at shaft-room. Lowered/raised by intent → basket-lowers / basket-raises triggers move the item between shaft-room and lower-shaft and toggle position state. Items put into the basket follow it transitively. Wicker construction = always open; openWhen/closeWhen suppressed. The chain spans both ends of the shaft, so the basket appearsIn lower-shaft as well as its current location — appearanceVariants give room-and-position-aware prose so the LLM doesn't hallucinate a basket from the room's chain mention. Default appearance handles the default case (player at shaft-room, basket raised).",
       "id": "basket",
       "name": "large basket",
       "description": "A large wicker basket suspended from a chain that disappears upward into the darkness of the shaft.",
       "location": "shaft-room",
+      "appearsIn": ["lower-shaft"],
       "fixed": true,
       "tags": [
         "container",
@@ -1167,18 +1254,40 @@
         "type": "not",
         "condition": { "type": "always" }
       },
-      "variants": [
+      "appearance": "A large wicker basket hangs from a heavy iron chain, suspended over the mouth of the shaft.",
+      "appearanceVariants": [
         {
           "when": {
-            "type": "itemState",
-            "itemId": "basket",
-            "key": "position",
-            "equals": "lowered"
+            "type": "and",
+            "all": [
+              { "type": "playerAt", "roomId": "lower-shaft" },
+              { "type": "itemState", "itemId": "basket", "key": "position", "equals": "raised" }
+            ]
           },
-          "text": "A large wicker basket sits at your feet, attached to a chain that runs up through the shaft above into darkness."
+          "text": "Far above you at the top of the shaft, the wicker basket sways gently on its chain."
+        },
+        {
+          "when": {
+            "type": "and",
+            "all": [
+              { "type": "playerAt", "roomId": "lower-shaft" },
+              { "type": "itemState", "itemId": "basket", "key": "position", "equals": "lowered" }
+            ]
+          },
+          "text": "A large wicker basket rests at your feet, the chain rising into the shaft above."
+        },
+        {
+          "when": {
+            "type": "and",
+            "all": [
+              { "type": "playerAt", "roomId": "shaft-room" },
+              { "type": "itemState", "itemId": "basket", "key": "position", "equals": "lowered" }
+            ]
+          },
+          "text": "The chain dangles down into the shaft. The basket has been lowered out of sight below."
         }
       ],
-      "narratorNote": "The basket is a freight elevator on a chain. It can only be moved by 'lower basket' or 'raise basket' (use the lower-basket / raise-basket intents). It cannot be picked up or carried; nor can it be opened or closed (it has no lid). Treat it as a fixed feature whose only state is up vs. down."
+      "narratorNote": "The basket is a freight elevator on a chain. It can only be moved by 'lower basket' or 'raise basket' (use the lower-basket / raise-basket intents). It cannot be picked up or carried; nor can it be opened or closed (it has no lid). Treat it as a fixed feature whose only state is up vs. down. The chain spans both ends of the shaft, so the basket is perceivable from BOTH shaft-room and lower-shaft, but with different prose: from above you see it (or its absence), from below you see it overhead (or at your feet)."
     },
     {
       "$comment": "Book is a sacred-text container with an open/close mechanic — but you can NEVER put anything in it (the container.accessibleWhen is overridden to always-false, regardless of isOpen). state.isOpen is preserved so open/close work for narrative flavor. Description and appearance both have variants for the open and closed states so the LLM has clean text to narrate either way. read(book) returns the prayer text directly (engine doesn't gate read on container). put(X, book) is rejected with the snarky accessBlockedMessage. Starts closed.",
@@ -1237,17 +1346,21 @@
       "description": "A battered brass lantern, its battery long since drained dry."
     },
     {
-      "$comment": "Matchbook with 5 matches and a burn-state. light-match consumes a match and sets matchBurning=true with a 2-turn countdown (match-burn-countdown flag). light-candles requires matchBurning=true (must use a burning match) and clears it. afterAction triggers tick the countdown and auto-extinguish on timeout.",
+      "$comment": "Matchbook with 5 matches and a burn-state. The generic light(itemId=match) tool fires the match-strikes trigger, which consumes a match and starts a 2-turn countdown (match-burn-countdown flag). The candles-light trigger requires match.isLit==true (must use a burning match) and clears it. afterAction triggers tick the countdown and auto-extinguish on timeout. State key `isLit` is harmonized with lamp/candles/torch so the generic light/extinguish tools work uniformly.",
       "id": "match",
       "description": "A matchbook whose cover advertises FCD#3 in chipper bureaucratic prose.",
       "state": {
         "matchesRemaining": 5,
-        "matchBurning": false
+        "isLit": false
       }
     },
     {
+      "$comment": "Candles burn-time mirrors the lamp-battery model. Canonical Zork I: candles burn for ~230 turns once lit, then go out permanently (FLAMEBIT items in ZIL had finite fuses). state.isLit is set during extraction (candles start lit at south-temple altar). burnTurnsRemaining ticks down each turn while lit; when it hits 0 the candles-burn-out trigger force-extinguishes them. The candles-light-spent soft-fail blocks re-lighting once the wax is gone.",
       "id": "candles",
-      "description": "A pair of long burning candles, dripping wax steadily."
+      "description": "A pair of long burning candles, dripping wax steadily.",
+      "state": {
+        "burnTurnsRemaining": 230
+      }
     },
     {
       "id": "leaves",
@@ -1626,6 +1739,7 @@
       ]
     },
     {
+      "$comment": "Torch state.isLit defaults to true — canonical Zork: the torch is perpetually lit (it's wreathed in flame from the moment the player first sees it). The generic extinguish tool would normally flip it to false; the torch-extinguish-noop trigger reverses that and narrates a refusal. Existing puzzle triggers (gas-room-explodes, burn-leaves) check torch.isLit, which now resolves correctly from the start.",
       "id": "torch",
       "tags": [
         "light-source",
@@ -1633,7 +1747,10 @@
         "carryable",
         "valuable"
       ],
-      "description": "A flaming torch, the haft carved from ivory and the head wreathed in clean flame. A treasure."
+      "description": "A flaming torch, the haft carved from ivory and the head wreathed in clean flame. A treasure.",
+      "state": {
+        "isLit": true
+      }
     },
     {
       "$comment": "Maze treasure. Listed in win condition; tagging it 'treasure' lets future score-counter triggers walk all treasure-tagged items rather than enumerate by id.",
@@ -2087,16 +2204,62 @@
       "description": "Player prays, kneels, makes an offering, or performs a ritual at the altar."
     },
     {
-      "$comment": "Light the brass lantern. alwaysAvailable so the tool stays in the cache-stable tier — the consuming trigger gates on hasItem(lamp), isLit=false, and battery>0; the LLM tries the verb anytime, the trigger handles it (or silently no-ops if the conditions don't hold).",
-      "id": "light-lamp",
-      "description": "Player turns on, lights, switches on, fires up, or activates the brass lantern.",
-      "alwaysAvailable": true
+      "$comment": "Light any lightable item — lantern, candles, match, torch, etc. Generic handler: gates on accessibility + presence of state.isLit. Sets isLit=true unconditionally; per-item triggers (lamp-lights, match-strikes, candles-light) gate on intentArg(light, itemId, X) + per-item conditions and emit the canonical narration. We deliberately skip an `isLit==false` precondition so the handler's failedNarration can't double-up with the trigger's success narration on duplicate calls — a duplicate `light X` simply re-fires the trigger's prose, which the LLM handles cleanly.",
+      "id": "light",
+      "description": "Player lights, ignites, kindles, switches on, fires up, or activates a light-bearing item (lantern, candles, match, torch). Pass the id of an item from the current view's inventory or itemsHere.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": { "type": "string", "description": "id of the item to light" }
+        },
+        "required": ["itemId"]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } },
+            "failedNarration": "You don't see {arg.itemId.name} here."
+          },
+          {
+            "when": { "type": "itemHasStateKey", "itemId": { "fromArg": "itemId" }, "key": "isLit" },
+            "failedNarration": "{arg.itemId.name} isn't something you can light."
+          }
+        ],
+        "effects": [
+          { "type": "setItemState", "itemId": { "fromArg": "itemId" }, "key": "isLit", "value": true }
+        ],
+        "successNarration": ""
+      }
     },
     {
-      "$comment": "Extinguish the brass lantern. alwaysAvailable for cache stability — see light-lamp comment above.",
-      "id": "extinguish-lamp",
-      "description": "Player turns off, douses, switches off, or extinguishes the brass lantern.",
-      "alwaysAvailable": true
+      "$comment": "Extinguish any lit item. Mirrors `light`: gates on accessibility + isLit state-key. Sets isLit=false; per-item triggers handle side effects + canonical narration. Same reason as `light` for skipping the isLit==true precondition.",
+      "id": "extinguish",
+      "description": "Player extinguishes, douses, blows out, snuffs, switches off, or puts out a lit item (lantern, candles, match, torch). Pass the id of an item from the current view's inventory or itemsHere.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": { "type": "string", "description": "id of the item to extinguish" }
+        },
+        "required": ["itemId"]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } },
+            "failedNarration": "You don't see {arg.itemId.name} here."
+          },
+          {
+            "when": { "type": "itemHasStateKey", "itemId": { "fromArg": "itemId" }, "key": "isLit" },
+            "failedNarration": "{arg.itemId.name} isn't something you can extinguish."
+          }
+        ],
+        "effects": [
+          { "type": "setItemState", "itemId": { "fromArg": "itemId" }, "key": "isLit", "value": false }
+        ],
+        "successNarration": ""
+      }
     },
     {
       "$comment": "Player tries to free a stuck weapon (sword/axe/knife). Active whenever any of the bladed weapons is in the weapon-stuck state. The trigger picks the right weapon by checking each individually.",
@@ -2164,6 +2327,21 @@
       "description": "Player digs in the sand on the beach (with the shovel or by hand)."
     },
     {
+      "$comment": "CLEAR-RUBBLE — the obvious thing to try when the timber-room blocks the way west. We don't actually clear anything (the canonical mechanic is empty-handed squeeze, not debris removal). Handler narrates a thematic refusal that reiterates the tight passage. Outside the timber-room, the action no-ops with a generic 'nothing to clear' line.",
+      "id": "clear-rubble",
+      "description": "Player tries to clear, move, push, shove, drag, remove, dig out, or otherwise dislodge the broken timbers / rubble / debris that clutters the timber-room (or any similar passage they think is blocked by debris).",
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": { "type": "playerAt", "roomId": "timber-room" },
+            "failedNarration": "There's nothing here you could call rubble."
+          }
+        ],
+        "successNarration": "You strain at the splintered timbers, but they're heavy and tightly wedged. Past them the passage narrows to a crack barely a person's width — clearing the rubble wouldn't widen it."
+      }
+    },
+    {
       "id": "mung-painting",
       "description": "Player mutilates, defaces, slashes, or otherwise destroys the painting."
     },
@@ -2187,63 +2365,29 @@
       "alwaysAvailable": true
     },
     {
-      "$comment": "READ the book — canonical capstone of the bell+candles+book ritual. Active at entrance-to-hades with book + bell already rung + candles still lit.",
-      "id": "read-book-at-hades",
-      "description": "Player reads, recites, intones, or speaks aloud from the black book at the entrance to Hades."
-    },
-    {
-      "$comment": "Strike a match. Canonical mechanic: matchbook holds 5 matches; striking consumes one and starts a 2-turn burn timer. After 2 turns the match goes out on its own (match-burns-out trigger). Player must use the burning match (e.g. light-candles) within those 2 turns or burn it for nothing.",
-      "id": "light-match",
-      "description": "Player strikes, lights, or ignites a match from the matchbook.",
+      "$comment": "Read an item with readable text. Generic handler: gates on accessibility + readability, surfaces the item's readable.text via the {arg.itemId.readable.text} template. Side effects (puzzle triggers like LLD ritual completion) are wired via separate triggers gated on intentMatched(read) + intentArg(read, itemId, ...).",
+      "id": "read",
+      "description": "Read the contents of an item with readable text — book pages, leaflet, prayer inscription, matchbook cover, etc. Pass the id of an item from the current view's itemsHere or inventory.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": { "type": "string", "description": "id of the item to read" }
+        },
+        "required": ["itemId"]
+      },
       "alwaysAvailable": true,
       "handler": {
         "preconditions": [
           {
-            "when": { "type": "hasItem", "itemId": "match" },
-            "failedNarration": "You don't have any matches."
+            "when": { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } },
+            "failedNarration": "You don't see {arg.itemId.name} here."
           },
           {
-            "when": { "type": "compare", "left": { "kind": "itemState", "itemId": "match", "key": "matchesRemaining" }, "op": ">", "right": { "kind": "literal", "value": 0 } },
-            "failedNarration": "The matchbook is empty — you've burned all your matches."
-          },
-          {
-            "when": { "type": "itemState", "itemId": "match", "key": "matchBurning", "equals": false },
-            "failedNarration": "A match is already burning."
+            "when": { "type": "itemReadable", "itemId": { "fromArg": "itemId" } },
+            "failedNarration": "{arg.itemId.name} has nothing to read."
           }
         ],
-        "effects": [
-          { "type": "adjustItemState", "itemId": "match", "key": "matchesRemaining", "by": -1 },
-          { "type": "setItemState", "itemId": "match", "key": "matchBurning", "value": true },
-          { "type": "setFlag", "key": "match-burn-countdown", "value": 3 }
-        ],
-        "successNarration": "One of the matches starts to burn."
-      }
-    },
-    {
-      "$comment": "Light the pair of candles. Requires a currently-burning match (canonical: must strike a match first via light-match). Handler sets candles.isLit=true and extinguishes the match (it's used up touching the candles).",
-      "id": "light-candles",
-      "description": "Player lights, ignites, kindles, or re-ignites the pair of candles using a burning match.",
-      "alwaysAvailable": true,
-      "handler": {
-        "preconditions": [
-          {
-            "when": { "type": "hasItem", "itemId": "candles" },
-            "failedNarration": "You don't have the candles."
-          },
-          {
-            "when": { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": false },
-            "failedNarration": "The candles are already lit."
-          },
-          {
-            "when": { "type": "itemState", "itemId": "match", "key": "matchBurning", "equals": true },
-            "failedNarration": "You have nothing burning to light them with."
-          }
-        ],
-        "effects": [
-          { "type": "setItemState", "itemId": "candles", "key": "isLit", "value": true },
-          { "type": "setItemState", "itemId": "match", "key": "matchBurning", "value": false }
-        ],
-        "successNarration": "You touch the burning match to the candles. The candles are lit. The match has gone out."
+        "successNarration": "{arg.itemId.readable.text}"
       }
     },
     {
@@ -2262,9 +2406,24 @@
       }
     },
     {
-      "$comment": "TURN the machine switch (with screwdriver, when machine is closed and contains coal). Active in machine-room with the screwdriver, machine closed.",
+      "$comment": "TURN the machine switch WITH a named tool. Narrow tool: only fires when the player's input literally names the tool. DEFAULT for ALL other phrasings is push-machine-switch (the bare-hand pair). Broad operating verbs ('start', 'activate', 'operate', 'turn it on') belong on push-machine-switch — keep them OFF this description so the LLM doesn't match them here.",
       "id": "turn-machine-switch",
-      "description": "Player turns, presses, activates, or otherwise operates the machine's switch (with the screwdriver as a tool)."
+      "description": "ONLY call when the player's input contains a literal tool name (e.g. 'turn switch WITH screwdriver', 'use the screwdriver on the switch', 'apply screwdriver to switch'). If the input does NOT contain a literal tool name, DO NOT call this tool — call push-machine-switch instead. Inputs like 'start the machine', 'press start', 'turn the switch', 'activate it', 'flip switch', 'operate switch', 'turn it on' do NOT name a tool — route those to push-machine-switch. NEVER auto-fill withItemId from inventory or context.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "withItemId": {
+            "type": "string",
+            "description": "the id of the tool the player literally named in their input (must come from the player's stated words — do not assume from inventory or context)"
+          }
+        },
+        "required": ["withItemId"]
+      }
+    },
+    {
+      "$comment": "DEFAULT machine-switch tool. Carries the broad verb namespace ('start', 'activate', 'operate', 'push', 'press', 'flip', 'turn') so ambiguous inputs route here, not to turn-machine-switch. Trigger machine-switch-bare-hands emits the canonical refusal.",
+      "id": "push-machine-switch",
+      "description": "DEFAULT tool for the machine's START switch when the player has NOT named a tool. Player tries to start, push, press, poke, flip, tap, turn, activate, operate, run, trigger, engage, use, or turn-on the START switch / machine — any phrasing that doesn't literally name a tool. Examples: 'push start', 'start the machine', 'press the switch', 'flip the switch', 'turn the switch', 'activate the switch', 'operate the machine', 'use the switch', 'turn it on'. If the player names a tool (screwdriver, etc.), use turn-machine-switch instead."
     },
     {
       "$comment": "LOWER the basket on its chain — basket descends from shaft-room to lower-shaft, taking any contents with it (transitive parentage). Operable from either room: pulling the chain from above lowers it; pulling the chain from below also lowers an already-raised basket toward you. Backed by the basket-lowers trigger.",
@@ -2297,29 +2456,44 @@
       "description": "Player pushes, presses, depresses, or activates the blue button."
     },
     {
-      "$comment": "PLUG the leak with the viscous material (putty). Canonical fix for the blue-button leak puzzle.",
+      "$comment": "PLUG the leak WITH a named material. Narrow tool: only fires when the player's input literally names the material. DEFAULT for ALL other phrasings is plug-leak-by-hand. Broad verbs ('plug', 'stop', 'seal', 'fix') belong on plug-leak-by-hand — keep them OFF this description.",
       "id": "plug-leak-with-putty",
-      "description": "Player plugs, seals, stops, or fills the leak using the viscous material (putty)."
+      "description": "ONLY call when the player's input contains a literal material name (e.g. 'plug leak WITH putty', 'use the putty on the leak', 'apply putty'). If the input does NOT contain a literal material name, DO NOT call this tool — call plug-leak-by-hand instead. Inputs like 'plug the leak', 'stop the leak', 'seal the leak', 'fix the pipe' do NOT name a material — route those to plug-leak-by-hand."
     },
     {
-      "$comment": "TURN the dam bolt — requires the player to explicitly name the tool. withItemId is a required arg; the success trigger gates on it equalling 'wrench'. If the player says just 'turn bolt' the LLM should ASK what to use, NOT auto-fill from inventory (see bolt narratorNote).",
+      "$comment": "DEFAULT leak tool. Carries the broad verb namespace ('plug', 'press', 'stop', 'cover', 'block', 'seal', 'fix') so ambiguous inputs route here, not to plug-leak-with-putty. Trigger leak-bare-hands emits the hint-free refusal.",
+      "id": "plug-leak-by-hand",
+      "description": "DEFAULT tool for the maintenance-room leak when the player has NOT named anything to plug it with. Player tries to plug, press, stop, cover, block, seal, fix, or close the leak / pipe / hole — any phrasing that doesn't literally name a material. Examples: 'plug the leak', 'stop the water', 'press the hole', 'seal the leak', 'fix the pipe'. If the player names putty or any other material, use plug-leak-with-putty instead."
+    },
+    {
+      "$comment": "TURN the dam bolt WITH a named tool. Narrow tool: only fires when the player's input literally names the tool. DEFAULT for ALL other phrasings is turn-dam-bolt-by-hand (the bare-hand pair). Broad operating verbs ('turn', 'twist', 'open the gates') belong on turn-dam-bolt-by-hand — keep them OFF this description so the LLM doesn't match them here.",
       "id": "turn-dam-bolt",
-      "description": "Player turns, twists, rotates, or otherwise operates the bolt on the dam control panel using a tool the player has named. The player MUST specify the tool (e.g. 'turn bolt with wrench'); if they don't, ask 'with what?' before calling this — never assume the tool from inventory.",
+      "description": "ONLY call when the player's input contains a literal tool name (e.g. 'turn bolt WITH wrench', 'use the wrench on the bolt'). If the input does NOT contain a literal tool name, DO NOT call this tool — call turn-dam-bolt-by-hand instead. Inputs like 'turn the bolt', 'twist bolt', 'open the gates', 'open the dam', 'release the gates' do NOT name a tool — route those to turn-dam-bolt-by-hand. NEVER auto-fill withItemId from inventory or context.",
       "args": {
         "type": "object",
         "properties": {
           "withItemId": {
             "type": "string",
-            "description": "the id of the tool the player used (must come from the player's stated input — do not assume)"
+            "description": "the id of the tool the player literally named in their input (must come from the player's stated words — do not assume from inventory or context)"
           }
         },
         "required": ["withItemId"]
       }
     },
     {
-      "$comment": "BOAT INFLATE: pump the deflated raft. Requires hasItem(pump) and the boat in the same room (or carryable in inventory while deflated). Active only while deflated. Boarding/disembarking are engine actions (not intents) — the LLM calls board(itemId) directly.",
+      "$comment": "DEFAULT dam-bolt tool. Carries the broad verb namespace ('turn', 'twist', 'pull', 'pry', 'rotate', 'operate', 'open the gates/dam') so ambiguous inputs route here, not to turn-dam-bolt. Trigger dam-bolt-bare-hands emits the hint-free refusal.",
+      "id": "turn-dam-bolt-by-hand",
+      "description": "DEFAULT tool for the dam control panel's iron bolt when the player has NOT named a tool. Player tries to turn, twist, pull, pry, rotate, operate, work, force, or otherwise act on the bolt / gates / dam — any phrasing that doesn't literally name a tool. Examples: 'turn the bolt', 'twist bolt', 'open the gates', 'open the dam', 'release the gates'. If the player names a tool (wrench, etc.), use turn-dam-bolt instead."
+    },
+    {
+      "$comment": "BOAT INFLATE WITH a named tool. Narrow tool: only fires when the player's input literally names the tool. DEFAULT for ALL other phrasings is inflate-boat-by-mouth. Broad verbs ('inflate', 'blow up', 'fill') belong on inflate-boat-by-mouth — keep them OFF this description. Boarding/disembarking are engine actions (not intents) — the LLM calls board(itemId) directly.",
       "id": "inflate-boat",
-      "description": "Player inflates, pumps up, fills, or blows up the boat (with the pump)."
+      "description": "ONLY call when the player's input contains a literal tool name (e.g. 'inflate boat WITH pump', 'use the pump on the boat', 'pump up the raft'). If the input does NOT contain a literal tool name, DO NOT call this tool — call inflate-boat-by-mouth instead. Inputs like 'inflate the boat', 'blow up the boat', 'fill the raft', 'expand the boat' do NOT name a tool — route those to inflate-boat-by-mouth."
+    },
+    {
+      "$comment": "DEFAULT boat-inflation tool. Carries the broad verb namespace ('inflate', 'blow up', 'fill', 'expand', 'breathe into') so ambiguous inputs route here, not to inflate-boat. Trigger boat-bare-mouth emits the hint-free refusal.",
+      "id": "inflate-boat-by-mouth",
+      "description": "DEFAULT tool for inflating the boat when the player has NOT named a tool. Player tries to inflate, blow up, fill, expand, breathe into, or open the boat / raft — any phrasing that doesn't literally name a tool (or that mentions breath/mouth/lungs). Examples: 'inflate the boat', 'blow up the boat', 'fill the raft', 'breathe into the boat', 'expand the raft'. If the player names the pump or any other tool, use inflate-boat instead."
     },
     {
       "$comment": "BOAT REPAIR with putty (in tube). Active only when boat is punctured and player carries putty. Consumed on use.",
@@ -5574,83 +5748,68 @@
       "narration": "From above, an unseen hand slams the trap door shut. You hear the click of a latch."
     },
     {
-      "$comment": "Consume the matched intent so the trigger doesn't auto-re-fire every turn (matchedIntents persists forever; without removeMatchedIntent the regular fixed-point loop would re-fire this on every iteration up to MAX_TRIGGER_ITERATIONS, flooding narrationCues with duplicate 'flickers on' lines).",
+      "$comment": "Lamp-light success path. Generic light handler already set lamp.isLit=true; this trigger emits the canonical narration and consumes the matched intent so it doesn't re-fire within the same cascade. The lamp-light-no-battery trigger (priority -10) handles the dead-battery case by reversing isLit back to false.",
       "id": "lamp-lights",
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "light-lamp"
-          },
-          {
-            "type": "hasItem",
-            "itemId": "lamp"
-          },
-          {
-            "type": "itemState",
-            "itemId": "lamp",
-            "key": "isLit",
-            "equals": false
-          },
+          { "type": "intentMatched", "signalId": "light" },
+          { "type": "intentArg", "signalId": "light", "key": "itemId", "equals": "lamp" },
+          { "type": "hasItem", "itemId": "lamp" },
+          { "type": "itemState", "itemId": "lamp", "key": "isLit", "equals": true },
           {
             "type": "compare",
-            "left": {
-              "kind": "itemState",
-              "itemId": "lamp",
-              "key": "batteryTurns"
-            },
+            "left": { "kind": "itemState", "itemId": "lamp", "key": "batteryTurns" },
             "op": ">",
-            "right": {
-              "kind": "literal",
-              "value": 0
-            }
+            "right": { "kind": "literal", "value": 0 }
           }
         ]
       },
       "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "lamp",
-          "key": "isLit",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "light-lamp"
-        }
+        { "type": "removeMatchedIntent", "signalId": "light" }
       ],
       "narration": "The brass lantern flickers on, casting a warm glow.",
       "once": false
     },
     {
-      "id": "lamp-extinguishes",
+      "$comment": "Soft-fail: lamp battery is dead. Handler set isLit=true; reverse it and narrate. Priority -10 so this fires after lamp-lights would have (which wouldn't fire because battery==0 fails its gate).",
+      "id": "lamp-light-no-battery",
+      "priority": -10,
       "when": {
         "type": "and",
         "all": [
+          { "type": "intentMatched", "signalId": "light" },
+          { "type": "intentArg", "signalId": "light", "key": "itemId", "equals": "lamp" },
+          { "type": "hasItem", "itemId": "lamp" },
+          { "type": "itemState", "itemId": "lamp", "key": "isLit", "equals": true },
           {
-            "type": "intentMatched",
-            "signalId": "extinguish-lamp"
-          },
-          {
-            "type": "itemState",
-            "itemId": "lamp",
-            "key": "isLit",
-            "equals": true
+            "type": "compare",
+            "left": { "kind": "itemState", "itemId": "lamp", "key": "batteryTurns" },
+            "op": "<=",
+            "right": { "kind": "literal", "value": 0 }
           }
         ]
       },
       "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "lamp",
-          "key": "isLit",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "extinguish-lamp"
-        }
+        { "type": "setItemState", "itemId": "lamp", "key": "isLit", "value": false },
+        { "type": "removeMatchedIntent", "signalId": "light" }
+      ],
+      "narration": "The lantern's battery is dead. Nothing happens.",
+      "once": false
+    },
+    {
+      "$comment": "Lamp-extinguish success path. Generic extinguish handler already set lamp.isLit=false; this trigger emits canonical narration and consumes the intent.",
+      "id": "lamp-extinguishes",
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "extinguish" },
+          { "type": "intentArg", "signalId": "extinguish", "key": "itemId", "equals": "lamp" },
+          { "type": "itemState", "itemId": "lamp", "key": "isLit", "equals": false }
+        ]
+      },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "extinguish" }
       ],
       "narration": "The lantern goes dark.",
       "once": false
@@ -5713,6 +5872,49 @@
         }
       ],
       "narration": "Your lamp dims, flickers, and goes dark."
+    },
+    {
+      "$comment": "Tick: while the candles are lit, drain one burn-turn per action. Mirrors lamp-burns-fuel.",
+      "id": "candles-burn-fuel",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true },
+          {
+            "type": "compare",
+            "left": { "kind": "itemState", "itemId": "candles", "key": "burnTurnsRemaining" },
+            "op": ">",
+            "right": { "kind": "literal", "value": 0 }
+          }
+        ]
+      },
+      "effects": [
+        { "type": "adjustItemState", "itemId": "candles", "key": "burnTurnsRemaining", "by": -1 }
+      ]
+    },
+    {
+      "$comment": "Tick: at zero burn-time, force-extinguish the candles. Mirrors lamp-runs-out, but once:false so the cue plays each time the player relights spent candles (and they immediately re-extinguish). The candles-light-spent soft-fail intercepts that case at the light step instead.",
+      "id": "candles-burn-out",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true },
+          {
+            "type": "compare",
+            "left": { "kind": "itemState", "itemId": "candles", "key": "burnTurnsRemaining" },
+            "op": "<=",
+            "right": { "kind": "literal", "value": 0 }
+          }
+        ]
+      },
+      "effects": [
+        { "type": "setItemState", "itemId": "candles", "key": "isLit", "value": false }
+      ],
+      "narration": "Your candles have burned down to nothing — the flames sputter and die."
     },
     {
       "$comment": "GRUE: ticks the darkness-turns counter while the player is in pitch black. Player dies on the SECOND consecutive dark turn — first turn shows pitch-black warning, second turn the grue gets them. Counter resets when light is restored.",
@@ -9939,7 +10141,8 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "read-book-at-hades" },
+          { "type": "intentMatched", "signalId": "read" },
+          { "type": "intentArg", "signalId": "read", "key": "itemId", "equals": "book" },
           { "type": "playerAt", "roomId": "entrance-to-hades" },
           { "type": "hasItem", "itemId": "book" },
           { "type": "itemState", "itemId": "bell", "key": "rangAtHades", "equals": true },
@@ -9949,27 +10152,187 @@
       },
       "effects": [
         { "type": "setFlag", "key": "lld-flag", "value": true },
-        { "type": "removeMatchedIntent", "signalId": "read-book-at-hades" }
+        { "type": "removeMatchedIntent", "signalId": "read" }
       ],
       "narration": "Each word of the prayer reverberates through the hall in a deafening confusion. As the last word fades, a voice, loud and commanding, speaks: \"Begone, fiends!\" A heart-stopping scream fills the cavern, and the spirits, sensing a greater power, flee through the walls.",
       "once": true
     },
     {
-      "$comment": "Cower cue: when the player lights the candles at entrance-to-hades AFTER bell rang at hades. Once-per-game dramatic narration matching canonical text. Doesn't change state — pure feedback.",
+      "$comment": "Match strike success path. Generic light handler set match.isLit=true; this trigger does the canonical side effects: decrement matchesRemaining, start the 2-turn burn-countdown, narrate. Gates additionally on matchesRemaining > 0 so the match-strike-empty soft-fail (priority -10) handles the empty-matchbook case.",
+      "id": "match-strikes",
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "light" },
+          { "type": "intentArg", "signalId": "light", "key": "itemId", "equals": "match" },
+          { "type": "hasItem", "itemId": "match" },
+          { "type": "itemState", "itemId": "match", "key": "isLit", "equals": true },
+          {
+            "type": "compare",
+            "left": { "kind": "itemState", "itemId": "match", "key": "matchesRemaining" },
+            "op": ">",
+            "right": { "kind": "literal", "value": 0 }
+          }
+        ]
+      },
+      "effects": [
+        { "type": "adjustItemState", "itemId": "match", "key": "matchesRemaining", "by": -1 },
+        { "type": "setFlag", "key": "match-burn-countdown", "value": 3 },
+        { "type": "removeMatchedIntent", "signalId": "light" }
+      ],
+      "narration": "One of the matches starts to burn.",
+      "once": false
+    },
+    {
+      "$comment": "Soft-fail: matchbook is empty. Reverse the handler's isLit=true mutation and narrate. Priority -10 so it fires after any same-priority success path would have.",
+      "id": "match-strike-empty",
+      "priority": -10,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "light" },
+          { "type": "intentArg", "signalId": "light", "key": "itemId", "equals": "match" },
+          { "type": "hasItem", "itemId": "match" },
+          { "type": "itemState", "itemId": "match", "key": "isLit", "equals": true },
+          {
+            "type": "compare",
+            "left": { "kind": "itemState", "itemId": "match", "key": "matchesRemaining" },
+            "op": "<=",
+            "right": { "kind": "literal", "value": 0 }
+          }
+        ]
+      },
+      "effects": [
+        { "type": "setItemState", "itemId": "match", "key": "isLit", "value": false },
+        { "type": "removeMatchedIntent", "signalId": "light" }
+      ],
+      "narration": "The matchbook is empty — you've burned all your matches.",
+      "once": false
+    },
+    {
+      "$comment": "Candles light success path. Requires a currently-burning match (canonical: must strike a match first) AND remaining burn-time. Handler set candles.isLit=true; this trigger consumes the match (sets isLit=false) and emits canonical narration. The burnTurnsRemaining > 0 gate prevents the player from wasting a match on spent candles — candles-light-spent (priority -20) handles that case.",
+      "id": "candles-light",
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "light" },
+          { "type": "intentArg", "signalId": "light", "key": "itemId", "equals": "candles" },
+          { "type": "hasItem", "itemId": "candles" },
+          { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true },
+          { "type": "itemState", "itemId": "match", "key": "isLit", "equals": true },
+          {
+            "type": "compare",
+            "left": { "kind": "itemState", "itemId": "candles", "key": "burnTurnsRemaining" },
+            "op": ">",
+            "right": { "kind": "literal", "value": 0 }
+          }
+        ]
+      },
+      "effects": [
+        { "type": "setItemState", "itemId": "match", "key": "isLit", "value": false },
+        { "type": "removeMatchedIntent", "signalId": "light" }
+      ],
+      "narration": "You touch the burning match to the candles, lighting them.",
+      "once": false
+    },
+    {
+      "$comment": "Soft-fail: tried to light candles without a burning match. Reverse the handler's isLit=true mutation and narrate. Priority -10.",
+      "id": "candles-light-no-match",
+      "priority": -10,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "light" },
+          { "type": "intentArg", "signalId": "light", "key": "itemId", "equals": "candles" },
+          { "type": "hasItem", "itemId": "candles" },
+          { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true },
+          { "type": "itemState", "itemId": "match", "key": "isLit", "equals": false }
+        ]
+      },
+      "effects": [
+        { "type": "setItemState", "itemId": "candles", "key": "isLit", "value": false },
+        { "type": "removeMatchedIntent", "signalId": "light" }
+      ],
+      "narration": "You have nothing burning to light them with.",
+      "once": false
+    },
+    {
+      "$comment": "Soft-fail: candles are spent (burnTurnsRemaining<=0). Reverse the handler's isLit=true mutation and narrate. Priority -20 (lower than candles-light-no-match) so we only fire when there IS a burning match — otherwise the no-match path narrates first.",
+      "id": "candles-light-spent",
+      "priority": -20,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "light" },
+          { "type": "intentArg", "signalId": "light", "key": "itemId", "equals": "candles" },
+          { "type": "hasItem", "itemId": "candles" },
+          { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true },
+          {
+            "type": "compare",
+            "left": { "kind": "itemState", "itemId": "candles", "key": "burnTurnsRemaining" },
+            "op": "<=",
+            "right": { "kind": "literal", "value": 0 }
+          }
+        ]
+      },
+      "effects": [
+        { "type": "setItemState", "itemId": "candles", "key": "isLit", "value": false },
+        { "type": "removeMatchedIntent", "signalId": "light" }
+      ],
+      "narration": "The candles are spent — only stubs of wax remain. There's nothing left to light.",
+      "once": false
+    },
+    {
+      "$comment": "Candles extinguish success path. Generic extinguish handler set candles.isLit=false; this trigger emits canonical narration.",
+      "id": "candles-extinguish",
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "extinguish" },
+          { "type": "intentArg", "signalId": "extinguish", "key": "itemId", "equals": "candles" },
+          { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": false }
+        ]
+      },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "extinguish" }
+      ],
+      "narration": "You blow out the candles.",
+      "once": false
+    },
+    {
+      "$comment": "Torch can't be extinguished (canonical: torch is perpetually lit, wreathed in flame). Generic extinguish handler set torch.isLit=false; this trigger reverses the mutation immediately and narrates the refusal. Functions as a soft-fail no-op.",
+      "id": "torch-extinguish-noop",
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "extinguish" },
+          { "type": "intentArg", "signalId": "extinguish", "key": "itemId", "equals": "torch" },
+          { "type": "itemState", "itemId": "torch", "key": "isLit", "equals": false }
+        ]
+      },
+      "effects": [
+        { "type": "setItemState", "itemId": "torch", "key": "isLit", "value": true },
+        { "type": "removeMatchedIntent", "signalId": "extinguish" }
+      ],
+      "narration": "The flames cling to the torch — it can't be extinguished.",
+      "once": false
+    },
+    {
+      "$comment": "Cower cue: when the player lights the candles at entrance-to-hades AFTER bell rang at hades. Once-per-game dramatic narration matching canonical text. priority 50 ensures it fires BEFORE candles-light (priority 0) removes the matched intent in the same cascade iteration.",
       "id": "candles-relit-at-hades-cower",
+      "priority": 50,
       "once": true,
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "light-candles" },
+          { "type": "intentMatched", "signalId": "light" },
+          { "type": "intentArg", "signalId": "light", "key": "itemId", "equals": "candles" },
           { "type": "playerAt", "roomId": "entrance-to-hades" },
           { "type": "itemState", "itemId": "bell", "key": "rangAtHades", "equals": true },
           { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true }
         ]
       },
-      "effects": [
-        { "type": "removeMatchedIntent", "signalId": "light-candles" }
-      ],
+      "effects": [],
       "narration": "The flames flicker wildly and appear to dance. The earth beneath your feet trembles, and your legs nearly buckle beneath you. The spirits cower at your unearthly power."
     },
     {
@@ -9980,7 +10343,7 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "itemState", "itemId": "match", "key": "matchBurning", "equals": true },
+          { "type": "itemState", "itemId": "match", "key": "isLit", "equals": true },
           { "type": "compare", "left": { "kind": "flag", "key": "match-burn-countdown" }, "op": ">", "right": { "kind": "literal", "value": 0 } }
         ]
       },
@@ -9996,12 +10359,12 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "itemState", "itemId": "match", "key": "matchBurning", "equals": true },
+          { "type": "itemState", "itemId": "match", "key": "isLit", "equals": true },
           { "type": "compare", "left": { "kind": "flag", "key": "match-burn-countdown" }, "op": "<=", "right": { "kind": "literal", "value": 0 } }
         ]
       },
       "effects": [
-        { "type": "setItemState", "itemId": "match", "key": "matchBurning", "value": false }
+        { "type": "setItemState", "itemId": "match", "key": "isLit", "value": false }
       ],
       "narration": "The match has gone out."
     },
@@ -10013,14 +10376,15 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "read-book-at-hades" },
+          { "type": "intentMatched", "signalId": "read" },
+          { "type": "intentArg", "signalId": "read", "key": "itemId", "equals": "book" },
           { "type": "playerAt", "roomId": "entrance-to-hades" },
           { "type": "hasItem", "itemId": "book" },
           { "type": "itemState", "itemId": "bell", "key": "rangAtHades", "equals": false }
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "read-book-at-hades" }
+        { "type": "removeMatchedIntent", "signalId": "read" }
       ],
       "narration": "You read the prayer aloud. The words have no power; the spirits jeer."
     },
@@ -10032,7 +10396,8 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "read-book-at-hades" },
+          { "type": "intentMatched", "signalId": "read" },
+          { "type": "intentArg", "signalId": "read", "key": "itemId", "equals": "book" },
           { "type": "playerAt", "roomId": "entrance-to-hades" },
           { "type": "hasItem", "itemId": "book" },
           { "type": "itemState", "itemId": "bell", "key": "rangAtHades", "equals": true },
@@ -10040,7 +10405,7 @@
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "read-book-at-hades" }
+        { "type": "removeMatchedIntent", "signalId": "read" }
       ],
       "narration": "You read the prayer aloud. The words fade in the dim light, leaving no impression."
     },
@@ -10054,6 +10419,12 @@
           {
             "type": "intentMatched",
             "signalId": "turn-machine-switch"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn-machine-switch",
+            "key": "withItemId",
+            "equals": "screwdriver"
           },
           {
             "type": "itemAt",
@@ -10106,6 +10477,12 @@
             "signalId": "turn-machine-switch"
           },
           {
+            "type": "intentArg",
+            "signalId": "turn-machine-switch",
+            "key": "withItemId",
+            "equals": "screwdriver"
+          },
+          {
             "type": "not",
             "condition": {
               "type": "itemAt",
@@ -10136,6 +10513,39 @@
         }
       ],
       "narration": "The machine clatters and whirs, but produces only a faint puff of greenish smoke. Whatever it's looking for, it isn't finding."
+    },
+    {
+      "$comment": "Catches turn-machine-switch with anything OTHER than the screwdriver named (or with the lid open). Emits the canonical 'switch is too small' refusal. Lower priority so machine-makes-diamond / machine-fails-no-coal win when applicable.",
+      "id": "machine-switch-wrong-tool",
+      "once": false,
+      "priority": -10,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "turn-machine-switch" },
+          { "type": "playerAt", "roomId": "machine-room" }
+        ]
+      },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "turn-machine-switch" }
+      ],
+      "narration": "The switch doesn't budge."
+    },
+    {
+      "$comment": "Bare-hand attempt at the machine switch. Fires on push-machine-switch (no-args customTool) — the LLM picks this when the player says 'push start' with no tool named. Canonical refusal: switch is too small for fingers.",
+      "id": "machine-switch-bare-hands",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "push-machine-switch" },
+          { "type": "playerAt", "roomId": "machine-room" }
+        ]
+      },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "push-machine-switch" }
+      ],
+      "narration": "The switch is too small to manipulate with human fingers — barely 1/16 by 1/4 of an inch."
     },
     {
       "$comment": "BASKET LOWERS. Triggered by the lower-basket intent at either shaft-room or lower-shaft, when the basket is currently raised. Moves the basket to lower-shaft and flips its position state. Items inside the basket follow it transitively (the engine traverses item-inside-item parentage). The intent is consumed so it can fire again on the next round-trip.",
@@ -10226,6 +10636,57 @@
         }
       ],
       "narration": "The chain creaks as you haul; the basket rises smoothly out of the depths and settles at the top of the shaft."
+    },
+    {
+      "$comment": "Enter-room cue for lower-shaft (Drafty Room). Fires after `go` lands the player here, gated on basket position. Uses the new built-in intent recording (intentMatched(go) + playerAt) to detect room entry. Surfaces the canonical 'basket overhead / at your feet' narration as a state-change CUE rather than relying on the basket's appearance variant — cues are more reliably woven by the LLM than view-embedded text. Consumes the go intent so the trigger doesn't ghost-fire on later in-room actions.",
+      "id": "lower-shaft-enter-look-up",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "go" },
+          { "type": "playerAt", "roomId": "lower-shaft" }
+        ]
+      },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "go" },
+        {
+          "type": "if",
+          "if": { "type": "itemState", "itemId": "basket", "key": "position", "equals": "raised" },
+          "then": [
+            { "type": "narrate", "text": "Far above you at the top of the shaft, the wicker basket sways gently on its chain — well out of reach." }
+          ]
+        },
+        {
+          "type": "if",
+          "if": { "type": "itemState", "itemId": "basket", "key": "position", "equals": "lowered" },
+          "then": [
+            { "type": "narrate", "text": "The wicker basket sits at your feet at the bottom of the shaft, the chain rising into darkness above." }
+          ]
+        }
+      ]
+    },
+    {
+      "$comment": "Symmetric enter-room cue for shaft-room. When player enters with basket lowered (chain dangles), surface the absence-cue. Default raised case needs no cue — room description + default basket appearance already cover it.",
+      "id": "shaft-room-enter-look-down",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "go" },
+          { "type": "playerAt", "roomId": "shaft-room" }
+        ]
+      },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "go" },
+        {
+          "type": "if",
+          "if": { "type": "itemState", "itemId": "basket", "key": "position", "equals": "lowered" },
+          "then": [
+            { "type": "narrate", "text": "The basket has been lowered out of sight; the chain disappears down into the shaft." }
+          ]
+        }
+      ]
     },
     {
       "$comment": "PUZZLE #9 DAM CONTROL PANEL — multi-step. YELLOW button enables bolt control (gate-flag). BROWN button disables it. With gate-flag set, TURN BOLT WITH WRENCH at dam-room toggles gates-open. Opening gates queues an 8-turn delay (low-tide-countdown). When countdown hits 0, low-tide flag flips → reservoir exits open.",
@@ -10392,6 +10853,22 @@
       "narration": "You press the viscous material against the pipe; it spreads and seals the leak with a satisfying squelch. The flow stops. The water level slowly recedes."
     },
     {
+      "$comment": "Bare-hand attempt at the leak. Hint-free thematic refusal — describes failure without pointing at the solution.",
+      "id": "leak-bare-hands",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "plug-leak-by-hand" },
+          { "type": "playerAt", "roomId": "maintenance-room" }
+        ]
+      },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "plug-leak-by-hand" }
+      ],
+      "narration": "Water sprays past your fingers, the pressure forcing your hand right back."
+    },
+    {
       "$comment": "Bolt toggles the gates open (when currently closed). Starts the 8-turn drain countdown. Gates on intentArg withItemId='wrench' so the player must explicitly name the wrench, not just have it in inventory.",
       "id": "bolt-opens-gates",
       "once": false,
@@ -10525,6 +11002,22 @@
       "narration": "The bolt doesn't budge — you'll need the right tool, in the right place, with the right control surface enabled."
     },
     {
+      "$comment": "Bare-hand attempt at the dam bolt. Fires on turn-dam-bolt-by-hand (no-args customTool) — the LLM picks this when the player says 'turn bolt' / 'twist bolt' with no tool named. Canonical refusal: bolt is heavy iron and held tight; bare hands won't budge it.",
+      "id": "dam-bolt-bare-hands",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "turn-dam-bolt-by-hand" },
+          { "type": "playerAt", "roomId": "dam-room" }
+        ]
+      },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "turn-dam-bolt-by-hand" }
+      ],
+      "narration": "The bolt is heavy iron and held tight in its socket. Your bare hands can't budge it."
+    },
+    {
       "$comment": "Tick the drain countdown each turn while gates are open and countdown > 0. Mirrors the lamp battery / grue tick patterns.",
       "id": "low-tide-tick",
       "afterAction": true,
@@ -10634,7 +11127,7 @@
       ]
     },
     {
-      "$comment": "PUZZLE #10 (bonus) EMPTY-HANDED COAL MINE — canonical: timber-room ↔ lower-shaft is a narrow squeeze that requires the player to carry NOTHING. Tracks inventoryCount in real time via two symmetric triggers; flag flips automatically on take/drop. The flag-gated exits (timber-room.west and lower-shaft's two return exits) open/close as a side effect. Player must drop the lit lamp before squeezing through; the lamp glows on the floor of the room they leave.",
+      "$comment": "PUZZLE #10 (bonus) EMPTY-HANDED COAL MINE — canonical: timber-room ↔ lower-shaft is a narrow squeeze that requires the player to carry NOTHING. Tracks inventoryCount in real time via two symmetric triggers; flag flips automatically on take/drop. The flag-gated exits (timber-room.west and lower-shaft's two return exits) open/close as a side effect. Player must drop the lit lamp before squeezing through; the lamp glows on the floor of the room they leave. The conditional narrate effects emit a one-shot squeeze-cue at the moment of transition (false → true) ONLY when the player is standing at one of the two relevant rooms — gives the player a directional hint without spoiling the mechanic, and stays silent everywhere else.",
       "id": "empty-handed-on",
       "once": false,
       "when": {
@@ -10663,6 +11156,20 @@
           "type": "setFlag",
           "key": "empty-handed",
           "value": true
+        },
+        {
+          "type": "if",
+          "if": { "type": "playerAt", "roomId": "timber-room" },
+          "then": [
+            { "type": "narrate", "text": "With your hands free, you think you might just be able to squeeze through the narrow passage to the west." }
+          ]
+        },
+        {
+          "type": "if",
+          "if": { "type": "playerAt", "roomId": "lower-shaft" },
+          "then": [
+            { "type": "narrate", "text": "With your hands free, you think you might just be able to squeeze back through the narrow passage." }
+          ]
         }
       ]
     },
@@ -10697,6 +11204,48 @@
           "value": false
         }
       ]
+    },
+    {
+      "$comment": "Thematic refusal when the player tries to go west out of timber-room while loaded. Hooks the built-in `go` action via the new intent-recording mechanism — gates on intentArg(go, direction=west) + playerAt(timber-room) + empty-handed=false. Consumes the matched intent so it doesn't re-fire next turn. The exit's `hidden: true` keeps the toggle invisible to the LLM; this trigger supplies the canonical refusal narration on attempt.",
+      "id": "timber-room-too-loaded",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "go" },
+          { "type": "intentArg", "signalId": "go", "key": "direction", "equals": "west" },
+          { "type": "playerAt", "roomId": "timber-room" },
+          { "type": "flag", "key": "empty-handed", "equals": false }
+        ]
+      },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "go" }
+      ],
+      "narration": "Your load is too great. The passage west narrows to a slit barely a person's width."
+    },
+    {
+      "$comment": "Symmetric refusal for the return trip: lower-shaft → out/east back to timber-room. Same pattern as timber-room-too-loaded but covers both directions players might use to leave the lower shaft.",
+      "id": "lower-shaft-too-loaded",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "go" },
+          {
+            "type": "or",
+            "any": [
+              { "type": "intentArg", "signalId": "go", "key": "direction", "equals": "east" },
+              { "type": "intentArg", "signalId": "go", "key": "direction", "equals": "out" }
+            ]
+          },
+          { "type": "playerAt", "roomId": "lower-shaft" },
+          { "type": "flag", "key": "empty-handed", "equals": false }
+        ]
+      },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "go" }
+      ],
+      "narration": "Your load is too great. The passage back narrows to a slit barely a person's width."
     },
     {
       "$comment": "BOAT INFLATE — pump turns the deflated boat into a seaworthy vehicle. The vehicle.enterableWhen on the item gates board()ing on this state automatically.",
@@ -10748,6 +11297,19 @@
         }
       ],
       "narration": "The boat hisses and swells into a sturdy yellow raft, ready for the river."
+    },
+    {
+      "$comment": "Bare-mouth attempt at inflating the boat. Hint-free thematic refusal.",
+      "id": "boat-bare-mouth",
+      "once": false,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "inflate-boat-by-mouth"
+      },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "inflate-boat-by-mouth" }
+      ],
+      "narration": "You blow until your head spins. The folded plastic doesn't budge."
     },
     {
       "$comment": "BOAT REPAIR — putty closes the puncture. Returns boat to deflated state (must be re-inflated). Putty consumed.",
