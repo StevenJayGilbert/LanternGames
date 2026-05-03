@@ -283,6 +283,19 @@
         "equals": true
       },
       "traverseBlockedMessage": "The grating is closed."
+    },
+    {
+      "$comment": "narrow-crack — replaces the prior pair of empty-handed-gated Exits between timber-room and lower-shaft. As a Passage, the crack is examineable and described in passagesHere on every relevant turn. The narrow description IS the canonical clue; refusal text and narratorNote are hint-free — never prescribe dropping inventory. Gating: traversableWhen reads the empty-handed flag (set/cleared by the inventory-watch trigger).",
+      "id": "narrow-crack",
+      "name": "narrow crack",
+      "description": "A jagged crack in the rock — barely wider than a person's shoulders, narrowing further as it bends out of sight.",
+      "narratorNote": "Describe the crack atmospherically as a feature of the rock — its narrowness is the canonical observation. ABSOLUTE PROHIBITIONS, no exceptions: (1) NEVER mention any inventory item by name in the same paragraph as the crack. (2) NEVER state that the player's current state, gear, load, or any specific possession is the reason for any obstacle related to the crack — even as a 'factual' aside. 'Too tight while carrying X' is forbidden; so is 'you wouldn't fit with all that gear', or 'if you weren't holding Y...'. (3) NEVER preemptively narrate the crack's traversal status when the player has not attempted to traverse it — if they walked through the room without trying to go through the crack, just mention the crack's existence and physical description. (4) NEVER speculate about future scenarios, hypothetical conditions, or what would let the player pass. The traverseBlockedMessage handles refusal narration when traversal is actually attempted; outside that one moment, the description alone does the work.",
+      "sides": [
+        { "roomId": "timber-room" },
+        { "roomId": "lower-shaft" }
+      ],
+      "traversableWhen": { "type": "flag", "key": "empty-handed", "equals": true },
+      "traverseBlockedMessage": "The crack pinches in tight against you. You can't fit through."
     }
   ],
   "rooms": [
@@ -836,7 +849,7 @@
       }
     },
     {
-      "$comment": "timber-room.west is hidden when blocked so the LLM doesn't see the exit toggle between turns and dramatize it ('the way is now open / blocked again'). The room description still tells the player about the narrow passage to the west; the empty-handed gate stays the canonical mechanic.",
+      "$comment": "timber-room.west traverses the narrow-crack passage to lower-shaft. Passage's traversableWhen handles the empty-handed gate; the passage's description gives the LLM atmospheric clue text without hinting at the solution.",
       "id": "timber-room",
       "state": {
         "dark": true
@@ -844,39 +857,20 @@
       "exits": {
         "west": {
           "to": "lower-shaft",
-          "hidden": true,
-          "when": {
-            "type": "flag",
-            "key": "empty-handed",
-            "equals": true
-          }
+          "passage": "narrow-crack"
         }
       }
     },
     {
-      "$comment": "lower-shaft return exits (out, east) hidden when blocked — same reasoning as timber-room.west.",
+      "$comment": "lower-shaft.east traverses the narrow-crack passage back to timber-room. Same passage as timber-room.west; gating happens at the passage level.",
       "id": "lower-shaft",
       "state": {
         "dark": true
       },
       "exits": {
-        "out": {
-          "to": "timber-room",
-          "hidden": true,
-          "when": {
-            "type": "flag",
-            "key": "empty-handed",
-            "equals": true
-          }
-        },
         "east": {
           "to": "timber-room",
-          "hidden": true,
-          "when": {
-            "type": "flag",
-            "key": "empty-handed",
-            "equals": true
-          }
+          "passage": "narrow-crack"
         }
       }
     },
@@ -10454,6 +10448,12 @@
           "to": "nowhere"
         },
         {
+          "type": "setItemState",
+          "itemId": "machine",
+          "key": "isOpen",
+          "value": true
+        },
+        {
           "type": "moveItem",
           "itemId": "diamond",
           "to": "machine-room"
@@ -10515,7 +10515,26 @@
       "narration": "The machine clatters and whirs, but produces only a faint puff of greenish smoke. Whatever it's looking for, it isn't finding."
     },
     {
-      "$comment": "Catches turn-machine-switch with anything OTHER than the screwdriver named (or with the lid open). Emits the canonical 'switch is too small' refusal. Lower priority so machine-makes-diamond / machine-fails-no-coal win when applicable.",
+      "$comment": "Failure case: TURN switch with screwdriver, but the machine lid is OPEN. Distinct narration from no-coal (which is lid-closed): smoke escapes the unsealed chamber, the run aborts. Hint-free.",
+      "id": "machine-fails-lid-open",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "turn-machine-switch" },
+          { "type": "intentArg", "signalId": "turn-machine-switch", "key": "withItemId", "equals": "screwdriver" },
+          { "type": "playerAt", "roomId": "machine-room" },
+          { "type": "hasItem", "itemId": "screwdriver" },
+          { "type": "itemState", "itemId": "machine", "key": "isOpen", "equals": true }
+        ]
+      },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "turn-machine-switch" }
+      ],
+      "narration": "The machine clatters into life. A plume of green smoke curls up out of the chamber, drifts into the room, and dissipates. The noise dwindles to silence."
+    },
+    {
+      "$comment": "Catches turn-machine-switch with anything OTHER than the screwdriver named (lid-open and no-coal cases are handled by their dedicated triggers above). Lower priority so the dedicated triggers win when applicable.",
       "id": "machine-switch-wrong-tool",
       "once": false,
       "priority": -10,

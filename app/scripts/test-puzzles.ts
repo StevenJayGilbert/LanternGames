@@ -282,6 +282,9 @@ console.log("\n=== #7 Coal → diamond ===");
   e.state.itemLocations.coal === "nowhere"
     ? pass("coal consumed (moved to nowhere)")
     : fail(`coal at ${e.state.itemLocations.coal}`);
+  e.state.itemStates.machine?.isOpen === true
+    ? pass("machine lid is open after success (matches 'the lid pops open' narration)")
+    : fail(`machine.isOpen = ${e.state.itemStates.machine?.isOpen}`);
 }
 
 // ----- Puzzle #7b: Bare-hand push-machine-switch must NOT fire the puzzle -----
@@ -329,6 +332,31 @@ console.log("\n=== #7c Machine switch refuses wrong tool ===");
   r.narrationCues.some((c) => c.includes("doesn't budge"))
     ? pass("wrong-tool turn-machine-switch → 'switch doesn't budge' refusal cue")
     : fail("expected switch-doesn't-budge refusal cue", JSON.stringify(r.narrationCues));
+}
+
+// ----- Puzzle #7d: Lid-open turn-machine-switch produces dedicated failure -----
+console.log("\n=== #7d Machine refuses with lid open ===");
+{
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "machine-room", screwdriver: "player",
+      coal: "machine", },
+    itemStates: {
+      ...e.state.itemStates,
+      machine: { ...(e.state.itemStates.machine ?? {}), isOpen: true },
+    },
+  };
+  const r = e.execute({ type: "recordIntent", signalId: "turn-machine-switch", args: { withItemId: "screwdriver" } });
+  e.state.itemLocations.coal === "machine"
+    ? pass("coal still in machine (lid-open did not consume)")
+    : fail(`coal at ${e.state.itemLocations.coal}`);
+  e.state.itemLocations.diamond === "nowhere"
+    ? pass("diamond still at nowhere (no diamond spawn)")
+    : fail(`diamond at ${e.state.itemLocations.diamond}`);
+  r.narrationCues.some((c) => c.includes("dissipates") || c.includes("chamber"))
+    ? pass("lid-open turn → dedicated escape-of-smoke refusal cue")
+    : fail("expected lid-open refusal cue", JSON.stringify(r.narrationCues));
 }
 
 // ----- Puzzle #9: Dam control panel -----

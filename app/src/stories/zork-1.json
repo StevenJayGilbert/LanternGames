@@ -2053,12 +2053,7 @@
         },
         "west": {
           "to": "lower-shaft",
-          "hidden": true,
-          "when": {
-            "type": "flag",
-            "key": "empty-handed",
-            "equals": true
-          }
+          "passage": "narrow-crack"
         }
       },
       "state": {
@@ -2075,7 +2070,6 @@
         },
         "out": {
           "to": "timber-room",
-          "hidden": true,
           "when": {
             "type": "flag",
             "key": "empty-handed",
@@ -2084,12 +2078,7 @@
         },
         "east": {
           "to": "timber-room",
-          "hidden": true,
-          "when": {
-            "type": "flag",
-            "key": "empty-handed",
-            "equals": true
-          }
+          "passage": "narrow-crack"
         }
       },
       "state": {
@@ -4063,6 +4052,26 @@
           "traverseBlockedMessage": "You can't get up there with what you're carrying."
         }
       ]
+    },
+    {
+      "id": "narrow-crack",
+      "name": "narrow crack",
+      "description": "A jagged crack in the rock — barely wider than a person's shoulders, narrowing further as it bends out of sight.",
+      "narratorNote": "Describe the crack atmospherically as a feature of the rock — its narrowness is the canonical observation. ABSOLUTE PROHIBITIONS, no exceptions: (1) NEVER mention any inventory item by name in the same paragraph as the crack. (2) NEVER state that the player's current state, gear, load, or any specific possession is the reason for any obstacle related to the crack — even as a 'factual' aside. 'Too tight while carrying X' is forbidden; so is 'you wouldn't fit with all that gear', or 'if you weren't holding Y...'. (3) NEVER preemptively narrate the crack's traversal status when the player has not attempted to traverse it — if they walked through the room without trying to go through the crack, just mention the crack's existence and physical description. (4) NEVER speculate about future scenarios, hypothetical conditions, or what would let the player pass. The traverseBlockedMessage handles refusal narration when traversal is actually attempted; outside that one moment, the description alone does the work.",
+      "sides": [
+        {
+          "roomId": "timber-room"
+        },
+        {
+          "roomId": "lower-shaft"
+        }
+      ],
+      "traversableWhen": {
+        "type": "flag",
+        "key": "empty-handed",
+        "equals": true
+      },
+      "traverseBlockedMessage": "The crack pinches in tight against you. You can't fit through."
     }
   ],
   "customTools": [
@@ -13108,6 +13117,12 @@
           "to": "nowhere"
         },
         {
+          "type": "setItemState",
+          "itemId": "machine",
+          "key": "isOpen",
+          "value": true
+        },
+        {
           "type": "moveItem",
           "itemId": "diamond",
           "to": "machine-room"
@@ -13166,6 +13181,46 @@
         }
       ],
       "narration": "The machine clatters and whirs, but produces only a faint puff of greenish smoke. Whatever it's looking for, it isn't finding."
+    },
+    {
+      "id": "machine-fails-lid-open",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "turn-machine-switch"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn-machine-switch",
+            "key": "withItemId",
+            "equals": "screwdriver"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "machine-room"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "screwdriver"
+          },
+          {
+            "type": "itemState",
+            "itemId": "machine",
+            "key": "isOpen",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "turn-machine-switch"
+        }
+      ],
+      "narration": "The machine clatters into life. A plume of green smoke curls up out of the chamber, drifts into the room, and dissipates. The noise dwindles to silence."
     },
     {
       "id": "machine-switch-wrong-tool",

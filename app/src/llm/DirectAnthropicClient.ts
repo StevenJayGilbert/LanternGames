@@ -25,6 +25,7 @@ const DEFAULT_MAX_TOKENS = 1024;
 // narrator strips them from player-facing narration.
 const REASONING_PREFIX = "[reasoning]";
 const VALIDATION_PREFIX = "[validation]";
+const NARRATION_VALIDATION_PREFIX = "[narration_validation]";
 
 export class DirectAnthropicClient implements LLMClient {
   private client: Anthropic;
@@ -93,6 +94,7 @@ export class DirectAnthropicClient implements LLMClient {
           const lower = trimmed.toLowerCase();
           let tag = "[Text block]";
           if (lower.startsWith(REASONING_PREFIX)) tag = "[Reasoning]";
+          else if (lower.startsWith(NARRATION_VALIDATION_PREFIX)) tag = "[NarrationValidation]";
           else if (lower.startsWith(VALIDATION_PREFIX)) tag = "[Validation]";
           debugLog("thinking", tag, trimmed);
         }

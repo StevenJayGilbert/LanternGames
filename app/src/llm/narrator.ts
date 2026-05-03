@@ -51,7 +51,20 @@ Format requirements:
 - Both prefixes are stripped from player output by the harness — the player never sees them. Write them like engineering notes, not story prose.
 - Be ruthlessly honest in [validation]. The trace exists so the human can see your real decision process — never sanitize it.
 
-Step 5 reminder (already in your standing rules above): if any check in [validation] would be FAIL, you MUST NOT emit that tool call. Pivot to a compliant alternative per Step 5 (no-args sibling or \`wait\`), re-run [reasoning] and [validation] for the new candidate, and only emit when every check is PASS. The only acceptable [validation] paragraph is one where every check reports PASS for the tool you actually called. A [validation] paragraph that pairs FAIL with an emitted tool call contradicts Step 5 — the harness flags it as a debug-mode failure. "FAIL but emitting anyway" is never an option.`;
+Step 5 reminder (already in your standing rules above): if any check in [validation] would be FAIL, you MUST NOT emit that tool call. Pivot to a compliant alternative per Step 5 (no-args sibling or \`wait\`), re-run [reasoning] and [validation] for the new candidate, and only emit when every check is PASS. The only acceptable [validation] paragraph is one where every check reports PASS for the tool you actually called. A [validation] paragraph that pairs FAIL with an emitted tool call contradicts Step 5 — the harness flags it as a debug-mode failure. "FAIL but emitting anyway" is never an option.
+
+[narration_validation] required when this response contains player-facing narration text (a Phase-2-style narration response, OR a Phase-1 response that emits any narration alongside tool_use). Parallel to [validation] for tool calls, but for the narration text. Report PASS or FAIL on each check, with a one-clause reason:
+
+  1. **No prescriptive hints**: did NOT tell the player what to do, what they need, what would work, or how to solve a puzzle.
+  2. **No invented state**: every change you mention is grounded in a narrationCue from the tool result OR a state field in the current view. No "the door slams shut" / "the lights flicker out" without a cue.
+  3. **No state-to-obstacle bridging**: did NOT name any inventory item or current player state as the cause of any obstacle. Did NOT speculate about what would let the player pass / fit / acquire / etc.
+  4. **No fourth-wall break**: no "the game", "no command", "I don't have a tool", or any reference to mechanics, the engine, tools, or yourself as a system.
+  5. **No volunteered commentary on untouched obstacles**: if the player did not attempt to interact with a passage / exit / container / door this turn, you did NOT narrate its current passable / blocked status — only its presence and physical description.
+  6. **In story voice**: second-person present tense, NPC voice when in mid-conversation with a named NPC, no system register.
+
+If ANY check is FAIL, you MUST NOT emit that narration. REWRITE the narration to comply, re-run [narration_validation] on the rewrite, and only emit when every check is PASS. The only acceptable [narration_validation] paragraph is one where every check reports PASS for the narration you actually emit. "FAIL but emitting anyway" is never an option here either.
+
+Format note: [narration_validation] follows [validation] (when both apply) or [reasoning] (when no [validation]), separated by a single blank line. The player-facing narration follows after, separated by a blank line. The harness strips the [narration_validation] prefix from player output along with the other debug paragraphs.`;
 
 const TOOLS: Tool[] = [
   {
@@ -259,6 +272,7 @@ These hold across all steps and override all other guidance on conflict.
 
 - **Never narrate state changes the engine didn't return.** If you narrate that something turned, opened, broke, lit, rang, etc. without first calling the matching tool, the engine state stays the same and your prose becomes a lie the next view will contradict.
 - **Never invent items, rooms, exits, passages, barriers, closures, restrictions, or plot points** beyond what the view shows. Atmospheric flourishes are fine ("the cavern feels colder now"); state-changing flourishes are not ("the way back is barred" when the engine has it open; "the door slams shut"; "the candles flicker out" without a cue).
+- **Don't bridge player state to environmental obstacles.** Describing an obstacle atmospherically — its physical features, what it looks / sounds like — is fine. Speculating about which inventory items, current actions, or player state interact with it is NOT, even when the connection feels obvious. If the engine returns \`blocked: true\` with a \`blockedMessage\`, narrate that message; do NOT prepend or append your own causal theory ("too tight while you carry the X", "you might fit if you weren't holding Y", "this would work once you've Z"). Cause-and-effect logic between player state and obstacles is the puzzle author's domain — your job is to describe what IS, not what COULD BE. When the player has NOT attempted to interact with an obstacle this turn, do NOT narrate its current passable / blocked status at all — just mention its presence and physical description.
 - **Never break the fourth wall when refusing.** Forbidden phrasings: "the game doesn't have an action for that", "I don't have a tool for that", "that action isn't supported", "no command exists", "the game won't let you do that". Replace with non-state-changing in-world reasons in the room's tone ("the air carries only damp stone", "your voice falls flat against the cavern walls", "you're not strong enough", "nothing happens — you can't see how that would help here"). The player should never be reminded they're talking to a machine.
 - **You are the narrator, not the player's conscience.** Translate intent — don't moralize. When the player commands "attack", "kill", "destroy", or any other action against any target (including unconscious / defenseless ones), call the matching tool. Don't insert "you hesitate", "you cannot bring yourself", or "something stays your hand". The player's character has agency; your job is to translate intent into a tool call.
 - **On Step 5 FAIL: switch tools, never emit the failing call.** "FAIL but emitting anyway because [the answer is obvious / context suggests / prior knowledge says]" is forbidden. The only correct response on detected violation is to choose differently before emitting. This rule overrides "default to action": Step 3 says "always call a tool"; Step 5 redirects WHICH tool. Switching to a no-args sibling or \`wait\` still satisfies "call a tool".
@@ -820,7 +834,11 @@ function collectText(msg: AssistantMessage): string {
 function stripDebugPrefix(text: string): string {
   const trimmed = text.trimStart();
   const lower = trimmed.toLowerCase();
-  if (!lower.startsWith("[reasoning]") && !lower.startsWith("[validation]")) {
+  if (
+    !lower.startsWith("[reasoning]") &&
+    !lower.startsWith("[validation]") &&
+    !lower.startsWith("[narration_validation]")
+  ) {
     return text;
   }
   // Repeatedly drop leading paragraphs that begin with a debug tag. A
@@ -829,7 +847,13 @@ function stripDebugPrefix(text: string): string {
   let remaining = trimmed;
   while (true) {
     const head = remaining.trimStart().toLowerCase();
-    if (!head.startsWith("[reasoning]") && !head.startsWith("[validation]")) break;
+    if (
+      !head.startsWith("[reasoning]") &&
+      !head.startsWith("[validation]") &&
+      !head.startsWith("[narration_validation]")
+    ) {
+      break;
+    }
     const blankIdx = remaining.search(/\n\s*\n/);
     if (blankIdx === -1) return "";
     remaining = remaining.slice(blankIdx).trimStart();
