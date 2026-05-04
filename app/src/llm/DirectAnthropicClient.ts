@@ -48,14 +48,20 @@ export class DirectAnthropicClient implements LLMClient {
     //      latest user message). This caches the growing conversation prefix so
     //      each turn reads the prior turn's history at ~10% of full input cost.
     //
-    // Without this, a typical mid-session turn pays full price on ~5K static
+    // TTL is "1h" (vs the default 5-minute ephemeral cache). Cache writes cost
+    // 2× input rate at 1h vs 1.25× at 5min, but the cache survives 12× longer —
+    // crucial when the player idles between turns (coffee break, multitasking).
+    // For a turn-based text adventure session that may span hours, 1h is the
+    // right tradeoff.
+    //
+    // Without caching, a typical mid-session turn pays full price on ~5K static
     // tokens (system + tools) plus the entire growing message history. With it,
-    // the first request writes the cache (~1.25× cost on the prefix), and every
-    // subsequent request within ~5min reads it (~10% cost). Per-turn cost drops
-    // from ~$0.05 to ~$0.01 on Haiku 4.5 in extended sessions.
+    // the first request writes the cache, and every subsequent request within
+    // 1 hour reads it at ~10% cost. Per-turn cost drops from ~$0.05 to ~$0.01
+    // on Haiku 4.5 in extended sessions.
     const systemBlocks: Anthropic.TextBlockParam[] | undefined =
       req.system !== undefined
-        ? [{ type: "text", text: req.system, cache_control: { type: "ephemeral" } }]
+        ? [{ type: "text", text: req.system, cache_control: { type: "ephemeral", ttl: "1h" } }]
         : undefined;
 
     let response;
@@ -63,7 +69,7 @@ export class DirectAnthropicClient implements LLMClient {
       response = await this.client.messages.create({
         model: this.model,
         max_tokens: req.maxTokens ?? DEFAULT_MAX_TOKENS,
-        cache_control: { type: "ephemeral" },
+        cache_control: { type: "ephemeral", ttl: "1h" },
         ...(systemBlocks && { system: systemBlocks }),
         messages: req.messages.map(toAnthropicMessage),
         ...(req.tools && req.tools.length > 0 && { tools: req.tools.map(toAnthropicTool) }),
@@ -171,7 +177,7 @@ function toAnthropicTool(t: Tool): Anthropic.Tool {
     name: t.name,
     description: t.description,
     input_schema: t.input_schema as Anthropic.Tool["input_schema"],
-    ...(t.cacheBreakpoint && { cache_control: { type: "ephemeral" } }),
+    ...(t.cacheBreakpoint && { cache_control: { type: "ephemeral", ttl: "1h" } }),
   };
 }
 
@@ -195,6 +201,12 @@ function toLLMError(err: unknown): LLMError {
         "Anthropic API is overloaded. Try again in a moment.",
         "overloaded",
         true,
+      );
+    }
+    if (err.status === 400 && /credit balance/i.test(err.message)) {
+      return new LLMError(
+        "Out of Anthropic API credits. Top up your account at https://console.anthropic.com/settings/billing, then try again.",
+        "insufficient_credits",
       );
     }
     if (err.status === 400 && /context|too long/i.test(err.message)) {

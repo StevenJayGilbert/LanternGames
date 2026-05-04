@@ -28,13 +28,16 @@ export type Atom = string | number | boolean;
 export type NumericExpr =
   | { kind: "literal"; value: number }
   | { kind: "flag"; key: string }                  // value of a numeric flag (0 if unset / not numeric)
-  | { kind: "passageState"; passageId: string; key: string }  // numeric value from a passage's state map (0 if unset)
-  | { kind: "itemState"; itemId: string; key: string }        // numeric value from an item's state map (0 if unset)
+  | { kind: "passageState"; passageId: IdRef; key: string }   // numeric value from a passage's state map (0 if unset)
+  | { kind: "itemState"; itemId: IdRef; key: string }         // numeric value from an item's state map (0 if unset)
   | { kind: "roomState"; roomId: string; key: string }        // numeric value from a room's state map (0 if unset)
   | { kind: "inventoryCount" }                     // items currently in inventory
   | { kind: "itemCountAt"; location: string }      // items whose location matches (roomId | itemId | "nowhere")
   | { kind: "matchedIntentsCount" }                // how many intent signals have been matched
-  | { kind: "visitedCount" };                      // how many distinct rooms have been visited
+  | { kind: "visitedCount" }                       // how many distinct rooms have been visited
+  | { kind: "inventoryWeight" }                    // sum of state.weight across all items currently in player's inventory (items without a numeric state.weight contribute 0). Useful for inventory-weight gates: takeableWhen: compare(add(inventoryWeight, itemState({fromArg:"self"}, "weight")), <=, flag(max-carry-weight)).
+  | { kind: "add"; left: NumericExpr; right: NumericExpr }    // sum of two NumericExprs
+  | { kind: "negate"; of: NumericExpr };                       // arithmetic negation (multiply by -1)
 
 // Future additions when weight/size land:
 //   | { kind: "inventoryWeight" }
@@ -101,8 +104,8 @@ export type Effect =
   | { type: "setPassageState"; passageId: IdRef; key: string; value: Atom }  // mutate passage state (passageId may be {fromArg: "..."} inside a tool handler)
   | { type: "setItemState"; itemId: IdRef; key: string; value: Atom }         // mutate item state (itemId may be {fromArg: "..."} inside a tool handler)
   | { type: "setRoomState"; roomId: string; key: string; value: Atom }        // mutate room state
-  | { type: "adjustFlag"; key: string; by: number }                           // signed delta on a numeric flag (treats unset as 0)
-  | { type: "adjustItemState"; itemId: string; key: string; by: number }      // signed delta on a numeric item-state value (treats unset as 0)
+  | { type: "adjustFlag"; key: string; by: number | NumericExpr }                  // signed delta on a numeric flag (treats unset as 0). `by` may be a literal or a NumericExpr evaluated against current state at effect-application time.
+  | { type: "adjustItemState"; itemId: IdRef; key: string; by: number | NumericExpr }  // signed delta on a numeric item-state value (treats unset as 0). itemId may be {fromArg} inside a tool handler; `by` may be a literal or a NumericExpr.
   | { type: "removeMatchedIntent"; signalId: string }                          // un-match an intent so its triggers don't re-fire forever
   | {
       // Roll a uniform random integer in [min, max] inclusive and write it
@@ -248,6 +251,16 @@ export interface Item {
   // Only consumed by the auto-gen pass — engine ignores them at runtime.
   openWhen?: Condition;
   closeWhen?: Condition;
+  // Optional gate on the built-in `take` action for this item. Modeled on
+  // Exit.when: evaluated AFTER the existing take checks (item exists, is
+  // accessible, not fixed, takeable). When false, take is rejected with
+  // `takeBlockedMessage` (or a generic refusal if not set). The condition
+  // evaluates with `{ self: <this item id> }` injected as args, so authors
+  // can use `{fromArg: "self"}` IdRefs inside the condition to reference
+  // the item's own state — useful for templated rules like inventory weight
+  // ("carry-weight + self.weight <= max-carry-weight").
+  takeableWhen?: Condition;
+  takeBlockedMessage?: string;
   container?: {
     capacity?: number;          // max items it can hold (omit for unlimited)
     // If set, contents are accessible (visible, takeable, putable) only when

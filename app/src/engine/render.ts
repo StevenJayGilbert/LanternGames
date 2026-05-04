@@ -177,6 +177,7 @@ function rejectionMessage(
     case "not-carrying": return `You're not carrying the ${item}.`;
     case "fixed-item": return `The ${item} is fixed in place.`;
     case "not-takeable": return `You can't take the ${item}.`;
+    case "take-blocked": return ctx.message ?? `You can't take the ${item} right now.`;
     case "no-such-direction": return `You can't go ${ctx.direction ?? "that way"} from here.`;
     case "exit-blocked": return ctx.message ?? `You can't go that way right now.`;
     case "broken-exit-target": return `(error: exit target "${ctx.message ?? "?"}" doesn't exist)`;

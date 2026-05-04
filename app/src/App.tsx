@@ -241,10 +241,15 @@ function App() {
     setLoading(true);
     try {
       const turn = await narrator.narrate(text);
-      const entries: TranscriptEntry[] = [{ kind: "narration", text: turn.text }];
-      if (turn.error && !turn.engineResult) {
-        entries.push({ kind: "error", text: turn.error });
-      }
+      // Total failure (no engineResult) → surface only the error entry. The
+      // narrator's turn.text wraps the same message in "[error: ...]"; pushing
+      // both produces a duplicate. Partial failure (engine succeeded but
+      // narration round-trip failed) keeps the narration entry so the player
+      // sees that something happened in-game.
+      const entries: TranscriptEntry[] =
+        turn.error && !turn.engineResult
+          ? [{ kind: "error", text: turn.error }]
+          : [{ kind: "narration", text: turn.text }];
       const transcriptAfterTurn = [...transcriptAfterInput, ...entries];
       setTranscript(transcriptAfterTurn);
       // Persist after every successful turn. If the LLM round-trip failed

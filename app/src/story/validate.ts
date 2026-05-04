@@ -1005,11 +1005,18 @@ function validateNumericExpr(
       if (typeof raw.location !== "string") err(`${path}.location`, "must be a string");
       return;
     case "passageState":
-      if (typeof raw.passageId !== "string") err(`${path}.passageId`, "must be a string");
+      // passageId may be a string OR an IdRef ({fromArg: "..."}) for tool-handler
+      // and built-in-action contexts that pre-substitute. Both are valid here;
+      // the substituter resolves before evaluation.
+      if (typeof raw.passageId !== "string" && !isIdRefShape(raw.passageId)) {
+        err(`${path}.passageId`, "must be a string or {fromArg: \"...\"}");
+      }
       if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
       return;
     case "itemState":
-      if (typeof raw.itemId !== "string") err(`${path}.itemId`, "must be a string");
+      if (typeof raw.itemId !== "string" && !isIdRefShape(raw.itemId)) {
+        err(`${path}.itemId`, "must be a string or {fromArg: \"...\"}");
+      }
       if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
       return;
     case "roomState":
@@ -1017,13 +1024,29 @@ function validateNumericExpr(
       if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
       return;
     case "inventoryCount":
+    case "inventoryWeight":
     case "matchedIntentsCount":
     case "visitedCount":
       // No additional fields.
       return;
+    case "add":
+      validateNumericExpr(raw.left, `${path}.left`, err);
+      validateNumericExpr(raw.right, `${path}.right`, err);
+      return;
+    case "negate":
+      validateNumericExpr(raw.of, `${path}.of`, err);
+      return;
     default:
       err(`${path}.kind`, `unknown numeric expression kind "${String(kind)}"`);
   }
+}
+
+// Is the value an IdRef shape: {fromArg: "..."}? Used to allow IdRef in fields
+// that may carry it inside tool-handler / built-in-action contexts. Validators
+// of those fields accept both string and this shape; the engine substitutes
+// before evaluation.
+function isIdRefShape(v: unknown): boolean {
+  return isObject(v) && typeof (v as { fromArg?: unknown }).fromArg === "string";
 }
 
 function validateEffect(
@@ -1109,16 +1132,26 @@ function validateEffect(
       return;
     case "adjustFlag":
       if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
-      if (typeof raw.by !== "number" || !Number.isFinite(raw.by)) {
-        err(`${path}.by`, "must be a finite number");
+      // `by` accepts a literal number OR a NumericExpr (for dynamic deltas
+      // computed against current state, e.g. adjusting a carry-weight flag
+      // by an item's state.weight).
+      if (typeof raw.by === "number") {
+        if (!Number.isFinite(raw.by)) err(`${path}.by`, "must be a finite number");
+      } else {
+        validateNumericExpr(raw.by, `${path}.by`, err);
       }
       return;
     case "adjustItemState":
-      if (typeof raw.itemId !== "string") err(`${path}.itemId`, "must be a string");
-      else if (itemIds.size && !itemIds.has(raw.itemId)) err(`${path}.itemId`, `unknown item "${raw.itemId}"`);
+      if (typeof raw.itemId !== "string" && !isIdRefShape(raw.itemId)) {
+        err(`${path}.itemId`, "must be a string or {fromArg: \"...\"}");
+      } else if (typeof raw.itemId === "string" && itemIds.size && !itemIds.has(raw.itemId)) {
+        err(`${path}.itemId`, `unknown item "${raw.itemId}"`);
+      }
       if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
-      if (typeof raw.by !== "number" || !Number.isFinite(raw.by)) {
-        err(`${path}.by`, "must be a finite number");
+      if (typeof raw.by === "number") {
+        if (!Number.isFinite(raw.by)) err(`${path}.by`, "must be a finite number");
+      } else {
+        validateNumericExpr(raw.by, `${path}.by`, err);
       }
       return;
     case "removeMatchedIntent":

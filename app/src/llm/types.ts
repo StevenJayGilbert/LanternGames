@@ -85,6 +85,7 @@ export type LLMErrorKind =
   | "network"
   | "overloaded"
   | "context_length"
+  | "insufficient_credits"
   | "unknown";
 
 export class LLMError extends Error {

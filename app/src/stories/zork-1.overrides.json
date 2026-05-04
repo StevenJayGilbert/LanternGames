@@ -12,6 +12,8 @@
     "player-health": 30,
     "global-turn-count": 0,
     "darkness-turns": 0,
+    "max-carry-weight": 100,
+    "$carryWeightComment": "Canonical Zork I LOAD-MAX is 100. Per-turn dynamic via NumericExpr.inventoryWeight (sum of state.weight on items in inventory). Items opt in by setting state.weight + takeableWhen referencing the takeable-weighable template's gate.",
     "attack-this-turn": false,
     "combat-engaged-with-troll": false,
     "combat-engaged-with-cyclops": false,
@@ -123,6 +125,31 @@
         "attack-bonus-add": 0,
         "attack-bonus-pct": 0
       }
+    },
+    "$takeable-weighable-comment": "Adds inventory-weight gating to a takeable item. The item's own state.weight (set per-instance) is summed via NumericExpr.inventoryWeight; takeableWhen rejects if (current inventory weight + this item's weight) would exceed flag(max-carry-weight). Self-reference uses {fromArg:'self'} which the engine injects on take. Note: items can only have one fromTemplate, so for items already templated (e.g. bladed-weapon), copy the takeableWhen + takeBlockedMessage inline instead of using fromTemplate.",
+    "takeable-weighable": {
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy."
     }
   },
   "passages": [
@@ -291,10 +318,18 @@
       "description": "A jagged crack in the rock — barely wider than a person's shoulders, narrowing further as it bends out of sight.",
       "narratorNote": "Describe the crack atmospherically as a feature of the rock — its narrowness is the canonical observation. ABSOLUTE PROHIBITIONS, no exceptions: (1) NEVER mention any inventory item by name in the same paragraph as the crack. (2) NEVER state that the player's current state, gear, load, or any specific possession is the reason for any obstacle related to the crack — even as a 'factual' aside. 'Too tight while carrying X' is forbidden; so is 'you wouldn't fit with all that gear', or 'if you weren't holding Y...'. (3) NEVER preemptively narrate the crack's traversal status when the player has not attempted to traverse it — if they walked through the room without trying to go through the crack, just mention the crack's existence and physical description. (4) NEVER speculate about future scenarios, hypothetical conditions, or what would let the player pass. The traverseBlockedMessage handles refusal narration when traversal is actually attempted; outside that one moment, the description alone does the work.",
       "sides": [
-        { "roomId": "timber-room" },
-        { "roomId": "lower-shaft" }
+        {
+          "roomId": "timber-room"
+        },
+        {
+          "roomId": "lower-shaft"
+        }
       ],
-      "traversableWhen": { "type": "flag", "key": "empty-handed", "equals": true },
+      "traversableWhen": {
+        "type": "flag",
+        "key": "empty-handed",
+        "equals": true
+      },
       "traverseBlockedMessage": "The crack pinches in tight against you. You can't fit through."
     }
   ],
@@ -302,11 +337,16 @@
     {
       "$comment": "Reservoir is the canonical missing room description — the ZIL routine walker didn't catch its M-LOOK branch. Default reads as the high-water state (player's first visit); low-tide variant reads as the drained mud-flat (post-dam-puzzle) and calls out the trunk treasure half-buried in the mud.",
       "id": "reservoir",
-      "description": "You are in a vast underground chamber, half-filled with cold dark water. The reservoir stretches north and south, fed from the north and drained by the dam to the south. The water laps gently at the walls.",
+      "description": "You are on what used to be a large lake, but which is now a large mud pile. There are \"shores\" to the north and south.",
       "variants": [
         {
-          "when": { "type": "flag", "key": "low-tide", "equals": true },
-          "text": "You are in a vast underground chamber. With the reservoir drained, the floor is a flat expanse of dark mud and silt — passable, if unpleasant. The chamber stretches north and south, fed from the north and drained by the dam to the south. Half-buried in the mud, an old wooden trunk gleams with what might be jewels."
+          "$comment": "Low-tide variant uses canonical Zork I reservoir text. Player can only be in this room when low-tide=true (entrance from both reservoir-south and reservoir-north is gated on low-tide). The base description is effectively unreachable but kept aligned for safety.",
+          "when": {
+            "type": "flag",
+            "key": "low-tide",
+            "equals": true
+          },
+          "text": "You are on what used to be a large lake, but which is now a large mud pile. There are \"shores\" to the north and south.\n\nLying half buried in the mud is an old trunk, bulging with jewels."
         }
       ]
     },
@@ -316,14 +356,22 @@
       "description": "You are in a long room on the south shore of a large lake, far too deep and wide for crossing. There is a path along the stream to the east or west, a steep pathway climbing southwest along the edge of a chasm, and a path leading into a canyon to the southeast.",
       "variants": [
         {
-          "when": { "type": "flag", "key": "low-tide", "equals": true },
+          "when": {
+            "type": "flag",
+            "key": "low-tide",
+            "equals": true
+          },
           "text": "You are at the south end of what was once a large lake. With the reservoir drained, the lake bed lies exposed — a stretch of dark mud, silt, and the occasional rusted relic. A path runs east and west; a steep pathway climbs southwest along the edge of a chasm; a canyon opens to the southeast. To the north, the dry bed leads into the reservoir proper."
         }
       ],
       "exits": {
         "north": {
           "to": "reservoir",
-          "when": { "type": "flag", "key": "low-tide", "equals": true },
+          "when": {
+            "type": "flag",
+            "key": "low-tide",
+            "equals": true
+          },
           "blockedMessage": "The reservoir is too deep and the water far too cold — you'd drown before reaching the other side."
         }
       }
@@ -334,7 +382,11 @@
       "description": "You are in a large cavernous room, the south of which is a wide, deep stream — the head of the reservoir. There is a slimy stairway leaving the room to the north.",
       "variants": [
         {
-          "when": { "type": "flag", "key": "low-tide", "equals": true },
+          "when": {
+            "type": "flag",
+            "key": "low-tide",
+            "equals": true
+          },
           "text": "You are in a large cavernous room. The southern half, formerly a wide, deep stream feeding the reservoir, is now reduced to a sluggish trickle through mud. A slimy stairway leaves the room to the north."
         }
       ]
@@ -345,11 +397,21 @@
       "description": "You are in the kitchen of the white house. A table seems to have been used recently for the preparation of food. A passage leads to the west and a dark staircase can be seen leading upward. A dark chimney leads down and to the east is a small window.",
       "variants": [
         {
-          "when": { "type": "passageState", "passageId": "kitchen-window", "key": "isOpen", "equals": true },
+          "when": {
+            "type": "passageState",
+            "passageId": "kitchen-window",
+            "key": "isOpen",
+            "equals": true
+          },
           "text": "You are in the kitchen of the white house. A table seems to have been used recently for the preparation of food. A passage leads to the west and a dark staircase can be seen leading upward. A dark chimney leads down and to the east is a small window which is open."
         },
         {
-          "when": { "type": "passageState", "passageId": "kitchen-window", "key": "isOpen", "equals": false },
+          "when": {
+            "type": "passageState",
+            "passageId": "kitchen-window",
+            "key": "isOpen",
+            "equals": false
+          },
           "text": "You are in the kitchen of the white house. A table seems to have been used recently for the preparation of food. A passage leads to the west and a dark staircase can be seen leading upward. A dark chimney leads down and to the east is a small window which is slightly ajar."
         }
       ],
@@ -440,16 +502,35 @@
       "state": {
         "dark": true
       },
+      "variants": [
+        {
+          "$comment": "Post-defeat description. troll-flag is set true by the troll-dies trigger; this variant overrides the base canonical description with explicit defeated-troll framing so the LLM can't fall back on genre priors that the troll is alive and blocking. Per canonical Zork, the troll's body vanishes on defeat — describing him only as 'gone' avoids the dead+body-gone contradiction the previous wording produced.",
+          "when": {
+            "type": "flag",
+            "key": "troll-flag",
+            "equals": true
+          },
+          "text": "This is a small room with passages to the east and south and a forbidding hole leading west. Bloodstains and deep scratches mar the walls. The troll is gone — only signs of the fight remain."
+        }
+      ],
       "exits": {
         "east": {
           "to": "ew-passage",
-          "when": { "type": "flag", "key": "troll-flag", "equals": true },
-          "blockedMessage": "The troll's axe swings wildly — you cannot pass while he stands here, very much alive."
+          "when": {
+            "type": "flag",
+            "key": "troll-flag",
+            "equals": true
+          },
+          "blockedMessage": "The troll, brandishing his bloody axe, blocks your way."
         },
         "west": {
           "to": "maze-1",
-          "when": { "type": "flag", "key": "troll-flag", "equals": true },
-          "blockedMessage": "The troll's axe swings wildly — you cannot pass while he stands here, very much alive."
+          "when": {
+            "type": "flag",
+            "key": "troll-flag",
+            "equals": true
+          },
+          "blockedMessage": "The troll, brandishing his bloody axe, blocks your way."
         }
       }
     },
@@ -641,12 +722,24 @@
           "when": {
             "type": "or",
             "any": [
-              { "type": "flag", "key": "echo-spoken", "equals": true },
+              {
+                "type": "flag",
+                "key": "echo-spoken",
+                "equals": true
+              },
               {
                 "type": "and",
                 "all": [
-                  { "type": "flag", "key": "low-tide", "equals": true },
-                  { "type": "flag", "key": "gates-open", "equals": false }
+                  {
+                    "type": "flag",
+                    "key": "low-tide",
+                    "equals": true
+                  },
+                  {
+                    "type": "flag",
+                    "key": "gates-open",
+                    "equals": false
+                  }
                 ]
               }
             ]
@@ -658,8 +751,16 @@
           "when": {
             "type": "and",
             "all": [
-              { "type": "flag", "key": "gates-open", "equals": true },
-              { "type": "flag", "key": "low-tide", "equals": false }
+              {
+                "type": "flag",
+                "key": "gates-open",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "low-tide",
+                "equals": false
+              }
             ]
           },
           "text": "This is a large room with a ceiling which cannot be detected from the ground. There is a narrow passage from east to west and a stone stairway leading upward. The room is unbearably loud — an ear-splitting torrent of water roars from somewhere unseen, drowning every other sense."
@@ -747,13 +848,22 @@
       "exits": {
         "up": {
           "to": "dome-room",
-          "when": { "type": "not", "condition": { "type": "always" } },
+          "when": {
+            "type": "not",
+            "condition": {
+              "type": "always"
+            }
+          },
           "blockedMessage": "The rope dangles overhead, but it ends some five feet above your head — too high to reach."
         }
       },
       "variants": [
         {
-          "when": { "type": "flag", "key": "dome-flag", "equals": true },
+          "when": {
+            "type": "flag",
+            "key": "dome-flag",
+            "equals": true
+          },
           "text": "This is a large room with a prominent doorway leading to a down staircase. Above you is a large dome, and a piece of rope descends from a wooden railing 20 feet up — the rope you tied, ending some five feet above your head. In the center of the room sits a white marble pedestal."
         }
       ]
@@ -765,7 +875,11 @@
       "variants": [
         {
           "$comment": "Post-exorcism (lld-flag=true): the spirits have fled; the gate is now genuinely passable.",
-          "when": { "type": "flag", "key": "lld-flag", "equals": true },
+          "when": {
+            "type": "flag",
+            "key": "lld-flag",
+            "equals": true
+          },
           "text": "You are outside a large gateway, on which is inscribed|| Abandon every hope all ye who enter here!|| The gate is open; through it you can see a desolation, with a pile of mangled bodies in one corner. The wailing voices have fallen silent — the spirits that barred your passage have fled. The way is clear."
         },
         {
@@ -773,27 +887,50 @@
           "when": {
             "type": "and",
             "all": [
-              { "type": "itemState", "itemId": "bell", "key": "rangAtHades", "equals": true },
-              { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true }
+              {
+                "type": "itemState",
+                "itemId": "bell",
+                "key": "rangAtHades",
+                "equals": true
+              },
+              {
+                "type": "itemState",
+                "itemId": "candles",
+                "key": "isLit",
+                "equals": true
+              }
             ]
           },
           "text": "You are outside a large gateway, on which is inscribed|| Abandon every hope all ye who enter here!|| Beyond the gate, a desolation, with a pile of mangled bodies in one corner. The bell lies on the ground where it fell, the red glow gone out of it. The candles burn with strange dancing flames. The spirits cower, trembling."
         },
         {
           "$comment": "Bell rang here, candles not currently lit. State description only.",
-          "when": { "type": "itemState", "itemId": "bell", "key": "rangAtHades", "equals": true },
+          "when": {
+            "type": "itemState",
+            "itemId": "bell",
+            "key": "rangAtHades",
+            "equals": true
+          },
           "text": "You are outside a large gateway, on which is inscribed|| Abandon every hope all ye who enter here!|| Beyond the gate, a desolation, with a pile of mangled bodies in one corner. The bell lies on the ground where it fell, the red glow gone out of it. The spirits stand paralyzed, watching you with the expression of long-forgotten terror."
         }
       ],
       "exits": {
         "in": {
           "to": "land-of-living-dead",
-          "when": { "type": "flag", "key": "lld-flag", "equals": true },
+          "when": {
+            "type": "flag",
+            "key": "lld-flag",
+            "equals": true
+          },
           "blockedMessage": "The evil spirits jeer and bar your passage — you cannot enter the Land of the Dead until they have been driven off."
         },
         "south": {
           "to": "land-of-living-dead",
-          "when": { "type": "flag", "key": "lld-flag", "equals": true },
+          "when": {
+            "type": "flag",
+            "key": "lld-flag",
+            "equals": true
+          },
           "blockedMessage": "The evil spirits jeer and bar your passage — you cannot enter the Land of the Dead until they have been driven off."
         }
       }
@@ -880,11 +1017,21 @@
       "description": "This is a large, cold room whose sole exit is to the north. In one corner there is a machine which is reminiscent of a clothes dryer. On its face is a switch which is labelled \"START\". The switch does not appear to be manipulable by any human hand (unless the fingers are about 1/16 by 1/4 inch). On the front of the machine is a large lid.",
       "variants": [
         {
-          "when": { "type": "itemState", "itemId": "machine", "key": "isOpen", "equals": true },
+          "when": {
+            "type": "itemState",
+            "itemId": "machine",
+            "key": "isOpen",
+            "equals": true
+          },
           "text": "This is a large, cold room whose sole exit is to the north. In one corner there is a machine which is reminiscent of a clothes dryer. On its face is a switch which is labelled \"START\". The switch does not appear to be manipulable by any human hand (unless the fingers are about 1/16 by 1/4 inch). On the front of the machine is a large lid, which is open."
         },
         {
-          "when": { "type": "itemState", "itemId": "machine", "key": "isOpen", "equals": false },
+          "when": {
+            "type": "itemState",
+            "itemId": "machine",
+            "key": "isOpen",
+            "equals": false
+          },
           "text": "This is a large, cold room whose sole exit is to the north. In one corner there is a machine which is reminiscent of a clothes dryer. On its face is a switch which is labelled \"START\". The switch does not appear to be manipulable by any human hand (unless the fingers are about 1/16 by 1/4 inch). On the front of the machine is a large lid, which is closed."
         }
       ]
@@ -895,12 +1042,20 @@
       "exits": {
         "east": {
           "to": "strange-passage",
-          "when": { "type": "flag", "key": "magic-flag", "equals": true },
+          "when": {
+            "type": "flag",
+            "key": "magic-flag",
+            "equals": true
+          },
           "blockedMessage": "The cyclops, a hulking giant, blocks the passage east, glowering hungrily down at you."
         },
         "up": {
           "to": "treasure-room",
-          "when": { "type": "flag", "key": "cyclops-flag", "equals": true },
+          "when": {
+            "type": "flag",
+            "key": "cyclops-flag",
+            "equals": true
+          },
           "blockedMessage": "The cyclops watches the staircase with his single fierce eye — you'd never get past him alive."
         }
       }
@@ -911,12 +1066,20 @@
       "exits": {
         "southwest": {
           "to": "stone-barrow",
-          "when": { "type": "flag", "key": "won-flag", "equals": true },
+          "when": {
+            "type": "flag",
+            "key": "won-flag",
+            "equals": true
+          },
           "blockedMessage": "The path to the barrow lies in shadow. It will not open to you yet."
         },
         "in": {
           "to": "stone-barrow",
-          "when": { "type": "flag", "key": "won-flag", "equals": true },
+          "when": {
+            "type": "flag",
+            "key": "won-flag",
+            "equals": true
+          },
           "blockedMessage": "The path to the barrow lies in shadow. It will not open to you yet."
         }
       }
@@ -927,11 +1090,21 @@
       "description": "You are behind the white house. A path leads into the forest to the east. In one corner of the house there is a small window.",
       "variants": [
         {
-          "when": { "type": "passageState", "passageId": "kitchen-window", "key": "isOpen", "equals": true },
+          "when": {
+            "type": "passageState",
+            "passageId": "kitchen-window",
+            "key": "isOpen",
+            "equals": true
+          },
           "text": "You are behind the white house. A path leads into the forest to the east. In one corner of the house there is a small window which is open."
         },
         {
-          "when": { "type": "passageState", "passageId": "kitchen-window", "key": "isOpen", "equals": false },
+          "when": {
+            "type": "passageState",
+            "passageId": "kitchen-window",
+            "key": "isOpen",
+            "equals": false
+          },
           "text": "You are behind the white house. A path leads into the forest to the east. In one corner of the house there is a small window which is slightly ajar."
         }
       ]
@@ -942,7 +1115,11 @@
       "description": "You are at the top of Aragain Falls, an enormous waterfall with a drop of about 450 feet. The only path here is on the north end.",
       "variants": [
         {
-          "when": { "type": "flag", "key": "rainbow-flag", "equals": true },
+          "when": {
+            "type": "flag",
+            "key": "rainbow-flag",
+            "equals": true
+          },
           "text": "You are at the top of Aragain Falls, an enormous waterfall with a drop of about 450 feet. The only path here is on the north end. A solid rainbow spans the falls."
         }
       ]
@@ -1018,7 +1195,11 @@
     },
     {
       "id": "water",
-      "description": "A measure of clear water, transparent and quite ordinary."
+      "description": "A measure of clear water, transparent and quite ordinary.",
+      "state": {
+        "weight": 4
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "ghosts",
@@ -1075,8 +1256,16 @@
           "when": {
             "type": "and",
             "all": [
-              { "type": "flag", "key": "gates-open", "equals": true },
-              { "type": "flag", "key": "low-tide", "equals": false }
+              {
+                "type": "flag",
+                "key": "gates-open",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "low-tide",
+                "equals": false
+              }
             ]
           },
           "text": "Flood Control Dam #3 — a vast concrete structure. The sluice gates are wide open; water roars through in a savage torrent. The reservoir level is visibly falling."
@@ -1086,8 +1275,16 @@
           "when": {
             "type": "and",
             "all": [
-              { "type": "flag", "key": "low-tide", "equals": true },
-              { "type": "flag", "key": "gates-open", "equals": false }
+              {
+                "type": "flag",
+                "key": "low-tide",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "gates-open",
+                "equals": false
+              }
             ]
           },
           "text": "Flood Control Dam #3 — a vast concrete structure. The reservoir behind it is drained to a mud-flat; with the sluice gates closed and the water gone, the dam stands eerily still."
@@ -1097,8 +1294,16 @@
           "when": {
             "type": "and",
             "all": [
-              { "type": "flag", "key": "gates-open", "equals": true },
-              { "type": "flag", "key": "low-tide", "equals": true }
+              {
+                "type": "flag",
+                "key": "gates-open",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "low-tide",
+                "equals": true
+              }
             ]
           },
           "text": "Flood Control Dam #3 — a vast concrete structure. The sluice gates are wide open and the reservoir is drained; only a thin trickle still passes through."
@@ -1123,7 +1328,11 @@
       "description": "A small green glass bubble — currently dark, evidently waiting for something.",
       "variants": [
         {
-          "when": { "type": "flag", "key": "gate-flag", "equals": true },
+          "when": {
+            "type": "flag",
+            "key": "gate-flag",
+            "equals": true
+          },
           "text": "A small green glass bubble, glowing steadily — the bolt control is live."
         }
       ]
@@ -1167,15 +1376,21 @@
     },
     {
       "id": "timbers",
-      "description": "A length of broken timber, splintered at one end and surprisingly heavy."
+      "description": "A length of broken timber, splintered at one end and surprisingly heavy.",
+      "state": {
+        "weight": 50
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "$comment": "Brass bell. state.rangAtHades is the persistent fact the LLD ritual gates on — set when bell is rung at entrance-to-hades. Bell heat is purely narrative (no isHot state); the bell-rings trigger's narration describes it becoming red-hot and dropping, but by next turn the player can pick it up freely.",
       "id": "bell",
       "description": "A small brass bell with a worn handle, polished smooth by use.",
       "state": {
-        "rangAtHades": false
-      }
+        "rangAtHades": false,
+        "weight": 10
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "bones",
@@ -1183,43 +1398,83 @@
     },
     {
       "id": "garlic",
-      "description": "A pungent clove of garlic, its papery skin crackling at the slightest touch."
+      "description": "A pungent clove of garlic, its papery skin crackling at the slightest touch.",
+      "state": {
+        "weight": 4
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "pump",
-      "description": "A small hand-held pump — the sort you'd use for a bicycle tire, or perhaps a folded raft."
+      "description": "A small hand-held pump — the sort you'd use for a bicycle tire, or perhaps a folded raft.",
+      "state": {
+        "weight": 10
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "putty",
-      "description": "A lump of viscous greyish material, evidently good for sealing a puncture or two."
+      "description": "A lump of viscous greyish material, evidently good for sealing a puncture or two.",
+      "state": {
+        "weight": 6
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "screwdriver",
-      "description": "A standard flat-head screwdriver, well-worn but serviceable."
+      "description": "A standard flat-head screwdriver, well-worn but serviceable.",
+      "state": {
+        "weight": 5
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "shovel",
-      "description": "A long-handled shovel, well-balanced for digging."
+      "description": "A long-handled shovel, well-balanced for digging.",
+      "state": {
+        "weight": 15
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "wrench",
-      "description": "A solid iron wrench, sized for a familiar bolt."
+      "description": "A solid iron wrench, sized for a familiar bolt.",
+      "state": {
+        "weight": 10
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "coal",
-      "description": "A small heap of dusty black coal — surprisingly heavy, and very dirty."
+      "description": "A small heap of dusty black coal — surprisingly heavy, and very dirty.",
+      "state": {
+        "weight": 15
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "emerald",
-      "description": "A flawless emerald the size of a small egg, its green depths catching every gleam of light. A treasure."
+      "description": "A flawless emerald the size of a small egg, its green depths catching every gleam of light. A treasure.",
+      "state": {
+        "weight": 6
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "scarab",
-      "description": "An exquisite scarab beetle carved from a single piece of jade and chased with gold. A treasure."
+      "description": "An exquisite scarab beetle carved from a single piece of jade and chased with gold. A treasure.",
+      "state": {
+        "weight": 7
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "bracelet",
-      "description": "A delicate bracelet set with sapphires, glittering even in dim light. A treasure."
+      "description": "A delicate bracelet set with sapphires, glittering even in dim light. A treasure.",
+      "state": {
+        "weight": 5
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "$comment": "Single physical basket suspended on a chain in the shaft. Initial position: raised at shaft-room. Lowered/raised by intent → basket-lowers / basket-raises triggers move the item between shaft-room and lower-shaft and toggle position state. Items put into the basket follow it transitively. Wicker construction = always open; openWhen/closeWhen suppressed. The chain spans both ends of the shaft, so the basket appearsIn lower-shaft as well as its current location — appearanceVariants give room-and-position-aware prose so the LLM doesn't hallucinate a basket from the room's chain mention. Default appearance handles the default case (player at shaft-room, basket raised).",
@@ -1227,7 +1482,9 @@
       "name": "large basket",
       "description": "A large wicker basket suspended from a chain that disappears upward into the darkness of the shaft.",
       "location": "shaft-room",
-      "appearsIn": ["lower-shaft"],
+      "appearsIn": [
+        "lower-shaft"
+      ],
       "fixed": true,
       "tags": [
         "container",
@@ -1242,11 +1499,15 @@
       },
       "openWhen": {
         "type": "not",
-        "condition": { "type": "always" }
+        "condition": {
+          "type": "always"
+        }
       },
       "closeWhen": {
         "type": "not",
-        "condition": { "type": "always" }
+        "condition": {
+          "type": "always"
+        }
       },
       "appearance": "A large wicker basket hangs from a heavy iron chain, suspended over the mouth of the shaft.",
       "appearanceVariants": [
@@ -1254,8 +1515,16 @@
           "when": {
             "type": "and",
             "all": [
-              { "type": "playerAt", "roomId": "lower-shaft" },
-              { "type": "itemState", "itemId": "basket", "key": "position", "equals": "raised" }
+              {
+                "type": "playerAt",
+                "roomId": "lower-shaft"
+              },
+              {
+                "type": "itemState",
+                "itemId": "basket",
+                "key": "position",
+                "equals": "raised"
+              }
             ]
           },
           "text": "Far above you at the top of the shaft, the wicker basket sways gently on its chain."
@@ -1264,8 +1533,16 @@
           "when": {
             "type": "and",
             "all": [
-              { "type": "playerAt", "roomId": "lower-shaft" },
-              { "type": "itemState", "itemId": "basket", "key": "position", "equals": "lowered" }
+              {
+                "type": "playerAt",
+                "roomId": "lower-shaft"
+              },
+              {
+                "type": "itemState",
+                "itemId": "basket",
+                "key": "position",
+                "equals": "lowered"
+              }
             ]
           },
           "text": "A large wicker basket rests at your feet, the chain rising into the shaft above."
@@ -1274,8 +1551,16 @@
           "when": {
             "type": "and",
             "all": [
-              { "type": "playerAt", "roomId": "shaft-room" },
-              { "type": "itemState", "itemId": "basket", "key": "position", "equals": "lowered" }
+              {
+                "type": "playerAt",
+                "roomId": "shaft-room"
+              },
+              {
+                "type": "itemState",
+                "itemId": "basket",
+                "key": "position",
+                "equals": "lowered"
+              }
             ]
           },
           "text": "The chain dangles down into the shaft. The basket has been lowered out of sight below."
@@ -1289,55 +1574,93 @@
       "appearance": "A large black book lies here, its cover closed.",
       "appearanceVariants": [
         {
-          "when": { "type": "itemState", "itemId": "book", "key": "isOpen", "equals": true },
+          "when": {
+            "type": "itemState",
+            "itemId": "book",
+            "key": "isOpen",
+            "equals": true
+          },
           "text": "A large black book lies here, held open to page 569."
         }
       ],
       "description": "A large black book bound in cracked leather. The cover is closed and weighty; the words within are not for the curious.",
       "variants": [
         {
-          "when": { "type": "itemState", "itemId": "book", "key": "isOpen", "equals": true },
+          "when": {
+            "type": "itemState",
+            "itemId": "book",
+            "key": "isOpen",
+            "equals": true
+          },
           "text": "A large black book bound in cracked leather, held open to page 569. The text is dense, archaic — a ritual prayer of some kind."
         }
       ],
       "state": {
-        "isOpen": false
+        "isOpen": false,
+        "weight": 10
       },
       "container": {
         "accessibleWhen": {
           "$comment": "Always false. Override fully replaces the auto-gen accessibleWhen (which gated on isOpen=true) — book is sacred-text, never has anything put into it. The null entries strip the inherited itemId/key/equals fields so the merged Condition is a clean { type: 'not', condition: { type: 'always' } }.",
           "type": "not",
-          "condition": { "type": "always" },
+          "condition": {
+            "type": "always"
+          },
           "itemId": null,
           "key": null,
           "equals": null
         },
         "accessBlockedMessage": "You'd really stuff something into a sacred ritual text? The pages are not for that."
-      }
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "sandwich-bag",
-      "description": "An elongated brown paper sack, smelling powerfully of hot peppers."
+      "description": "An elongated brown paper sack, smelling powerfully of hot peppers.",
+      "state": {
+        "weight": 9
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "chalice",
-      "description": "A silver chalice, intricately engraved with looping vines. A treasure."
+      "description": "A silver chalice, intricately engraved with looping vines. A treasure.",
+      "state": {
+        "weight": 10
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "trident",
-      "description": "Poseidon's own trident, carved from a single piece of crystal. A treasure."
+      "description": "Poseidon's own trident, carved from a single piece of crystal. A treasure.",
+      "state": {
+        "weight": 12
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "coffin",
-      "description": "The solid-gold coffin used for the burial of Ramses II — heavy, ornate, and worth a king's ransom. A treasure."
+      "description": "The solid-gold coffin used for the burial of Ramses II — heavy, ornate, and worth a king's ransom. A treasure.",
+      "state": {
+        "weight": 55
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "jade",
-      "description": "An exquisite jade figurine, carved with delicate features. A treasure."
+      "description": "An exquisite jade figurine, carved with delicate features. A treasure.",
+      "state": {
+        "weight": 10
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "burned-out-lantern",
-      "description": "A battered brass lantern, its battery long since drained dry."
+      "description": "A battered brass lantern, its battery long since drained dry.",
+      "state": {
+        "weight": 20
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "$comment": "Matchbook with 5 matches and a burn-state. The generic light(itemId=match) tool fires the match-strikes trigger, which consumes a match and starts a 2-turn countdown (match-burn-countdown flag). The candles-light trigger requires match.isLit==true (must use a burning match) and clears it. afterAction triggers tick the countdown and auto-extinguish on timeout. State key `isLit` is harmonized with lamp/candles/torch so the generic light/extinguish tools work uniformly.",
@@ -1345,34 +1668,58 @@
       "description": "A matchbook whose cover advertises FCD#3 in chipper bureaucratic prose.",
       "state": {
         "matchesRemaining": 5,
-        "isLit": false
-      }
+        "isLit": false,
+        "weight": 1
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "$comment": "Candles burn-time mirrors the lamp-battery model. Canonical Zork I: candles burn for ~230 turns once lit, then go out permanently (FLAMEBIT items in ZIL had finite fuses). state.isLit is set during extraction (candles start lit at south-temple altar). burnTurnsRemaining ticks down each turn while lit; when it hits 0 the candles-burn-out trigger force-extinguishes them. The candles-light-spent soft-fail blocks re-lighting once the wax is gone.",
       "id": "candles",
       "description": "A pair of long burning candles, dripping wax steadily.",
       "state": {
-        "burnTurnsRemaining": 230
-      }
+        "burnTurnsRemaining": 230,
+        "weight": 5
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "leaves",
-      "description": "A pile of dry leaves, gathered as if by wind."
+      "description": "A pile of dry leaves, gathered as if by wind.",
+      "state": {
+        "weight": 25
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "buoy",
-      "description": "A red metal buoy, weathered by long exposure — evidently a warning."
+      "description": "A red metal buoy, weathered by long exposure — evidently a warning.",
+      "state": {
+        "weight": 8
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "$comment": "Reservoir treasure. Half-buried in the mud at the bottom of the reservoir — only visible at low-tide (when the reservoir is drained).",
       "id": "trunk",
       "description": "An old wooden trunk, mud-caked and bulging with jewels. A treasure.",
-      "visibleWhen": { "type": "flag", "key": "low-tide", "equals": true }
+      "visibleWhen": {
+        "type": "flag",
+        "key": "low-tide",
+        "equals": true
+      },
+      "state": {
+        "weight": 35
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "tube",
-      "description": "A small metal tube of the sort that holds toothpaste — but its contents are something else entirely."
+      "description": "A small metal tube of the sort that holds toothpaste — but its contents are something else entirely.",
+      "state": {
+        "weight": 4
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "engravings",
@@ -1380,11 +1727,19 @@
     },
     {
       "id": "nest",
-      "description": "A small bird's nest, woven of twigs and grass."
+      "description": "A small bird's nest, woven of twigs and grass.",
+      "state": {
+        "weight": 4
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "canary",
-      "description": "A golden clockwork canary with ruby eyes and a silver beak. A crystal window below its left wing reveals intricate machinery; the mechanism appears to have wound down. A treasure."
+      "description": "A golden clockwork canary with ruby eyes and a silver beak. A crystal window below its left wing reveals intricate machinery; the mechanism appears to have wound down. A treasure.",
+      "state": {
+        "weight": 3
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "mirror-1",
@@ -1459,7 +1814,11 @@
         "condition": {
           "type": "always"
         }
-      }
+      },
+      "state": {
+        "weight": 6
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "$comment": "Brass lantern with battery. state.isLit governs whether it emits light (per the perceivable-light convention used by defaultVisibility). state.batteryTurns counts down each turn while lit; at 0 the lamp auto-extinguishes (lamp-runs-out tick trigger). Canonical Zork battery is ~330 turns.",
@@ -1472,8 +1831,10 @@
       ],
       "state": {
         "isLit": false,
-        "batteryTurns": 330
-      }
+        "batteryTurns": 330,
+        "weight": 15
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "$comment": "Troll for combat. fromTemplate gives him the shared troll personality + status state (unconscious/knocked-down/disarmed/hostile baseline) plus the enemy/troll/humanoid tags. Per-instance fields below: state.health (10) and the description.",
@@ -1507,15 +1868,23 @@
         "magical"
       ],
       "state": {
-        "damage": 5
+        "damage": 5,
+        "weight": 30
       },
       "variants": [
         {
           "when": {
             "type": "and",
             "all": [
-              { "type": "hasItem", "itemId": "sword" },
-              { "type": "anyPerceivableItemWith", "key": "hostile", "equals": true }
+              {
+                "type": "hasItem",
+                "itemId": "sword"
+              },
+              {
+                "type": "anyPerceivableItemWith",
+                "key": "hostile",
+                "equals": true
+              }
             ]
           },
           "text": "An elvish sword of great antiquity, the blade etched with fine runes — and presently glowing very brightly."
@@ -1524,13 +1893,42 @@
           "when": {
             "type": "and",
             "all": [
-              { "type": "hasItem", "itemId": "sword" },
-              { "type": "anyAdjacentRoomItemWith", "key": "hostile", "equals": true }
+              {
+                "type": "hasItem",
+                "itemId": "sword"
+              },
+              {
+                "type": "anyAdjacentRoomItemWith",
+                "key": "hostile",
+                "equals": true
+              }
             ]
           },
           "text": "An elvish sword of great antiquity, the blade etched with fine runes — and presently glowing with a faint blue light."
         }
-      ]
+      ],
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy."
     },
     {
       "$comment": "Rusty knife — feeble bladed weapon. fromTemplate provides shared bladed-weapon shape; tag 'knife' unioned in; damage 2.",
@@ -1540,9 +1938,32 @@
         "knife"
       ],
       "state": {
-        "damage": 2
+        "damage": 2,
+        "weight": 10
       },
-      "description": "A rusty knife, the blade pitted but still serviceable."
+      "description": "A rusty knife, the blade pitted but still serviceable.",
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy."
     },
     {
       "$comment": "Troll's axe. After the troll drops it (disarm outcome OR death), the player can pick it up and either swing it or throw it — different mode triggers, different outcome tables. fromTemplate gives shared bladed-weapon state; tags 'axe' and 'throwable' unioned in.",
@@ -1554,8 +1975,31 @@
         "throwable"
       ],
       "state": {
-        "damage": 6
-      }
+        "damage": 6,
+        "weight": 25
+      },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy."
     },
     {
       "$comment": "leaflet item id is 'advertisement' in the ZIL extraction (the mailbox leaflet that explains the game).",
@@ -1566,7 +2010,11 @@
         "paper",
         "carryable"
       ],
-      "description": "A small printed leaflet, the paper a little crumpled."
+      "description": "A small printed leaflet, the paper a little crumpled.",
+      "state": {
+        "weight": 2
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "$comment": "Nasty knife — the thief's weapon. Tag it as bladed so the class trigger covers it too if the player ever wields it.",
@@ -1576,9 +2024,32 @@
         "knife"
       ],
       "state": {
-        "damage": 2
+        "damage": 2,
+        "weight": 10
       },
-      "description": "A nasty-looking knife, the blade dull but evidently well-used."
+      "description": "A nasty-looking knife, the blade dull but evidently well-used.",
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy."
     },
     {
       "id": "lunch",
@@ -1587,7 +2058,11 @@
         "food",
         "carryable"
       ],
-      "description": "A hot pepper sandwich wrapped tightly in waxed paper. Smells fierce."
+      "description": "A hot pepper sandwich wrapped tightly in waxed paper. Smells fierce.",
+      "state": {
+        "weight": 9
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "bottle",
@@ -1598,7 +2073,11 @@
         "drink",
         "carryable"
       ],
-      "description": "A clear glass bottle, sealed at the neck."
+      "description": "A clear glass bottle, sealed at the neck.",
+      "state": {
+        "weight": 9
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "mailbox",
@@ -1694,8 +2173,16 @@
           "when": {
             "type": "and",
             "all": [
-              { "type": "itemAt", "itemId": "rope", "location": "dome-room" },
-              { "type": "flag", "key": "dome-flag", "equals": true }
+              {
+                "type": "itemAt",
+                "itemId": "rope",
+                "location": "dome-room"
+              },
+              {
+                "type": "flag",
+                "key": "dome-flag",
+                "equals": true
+              }
             ]
           },
           "text": "A rope is tied securely to the wooden railing here, descending into the darkness below."
@@ -1707,14 +2194,26 @@
           "when": {
             "type": "and",
             "all": [
-              { "type": "itemAt", "itemId": "rope", "location": "dome-room" },
-              { "type": "flag", "key": "dome-flag", "equals": true }
+              {
+                "type": "itemAt",
+                "itemId": "rope",
+                "location": "dome-room"
+              },
+              {
+                "type": "flag",
+                "key": "dome-flag",
+                "equals": true
+              }
             ]
           },
           "text": "A long coil of strong rope, currently tied to the wooden railing and descending into the darkness below. Taking the rope is the way to untie it."
         }
       ],
-      "narratorNote": "When the rope is at dome-room with dome-flag=true (tied), take(rope) is the canonical untie mechanic — the engine fires the untie-rope-on-take trigger, moves the rope into the player's inventory, and clears dome-flag. NEVER refuse a take with 'you must untie first' — taking IS untying. For player intents like 'untie rope', 'get the rope back', 'retrieve rope', or 'untie it' while the rope is tied, always call take(rope)."
+      "narratorNote": "When the rope is at dome-room with dome-flag=true (tied), take(rope) is the canonical untie mechanic — the engine fires the untie-rope-on-take trigger, moves the rope into the player's inventory, and clears dome-flag. NEVER refuse a take with 'you must untie first' — taking IS untying. For player intents like 'untie rope', 'get the rope back', 'retrieve rope', or 'untie it' while the rope is tied, always call take(rope).",
+      "state": {
+        "weight": 10
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "id": "rug",
@@ -1730,7 +2229,11 @@
       "tags": [
         "key",
         "carryable"
-      ]
+      ],
+      "state": {
+        "weight": 10
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "$comment": "Torch state.isLit defaults to true — canonical Zork: the torch is perpetually lit (it's wreathed in flame from the moment the player first sees it). The generic extinguish tool would normally flip it to false; the torch-extinguish-noop trigger reverses that and narrates a refusal. Existing puzzle triggers (gas-room-explodes, burn-leaves) check torch.isLit, which now resolves correctly from the start.",
@@ -1743,8 +2246,10 @@
       ],
       "description": "A flaming torch, the haft carved from ivory and the head wreathed in clean flame. A treasure.",
       "state": {
-        "isLit": true
-      }
+        "isLit": true,
+        "weight": 25
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "$comment": "Maze treasure. Listed in win condition; tagging it 'treasure' lets future score-counter triggers walk all treasure-tagged items rather than enumerate by id.",
@@ -1754,7 +2259,11 @@
         "valuable",
         "carryable"
       ],
-      "description": "An old leather bag, bulging with coins. A treasure."
+      "description": "An old leather bag, bulging with coins. A treasure.",
+      "state": {
+        "weight": 15
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "$comment": "Land of the Living Dead treasure. The crystal skull of an ancient adventurer.",
@@ -1765,7 +2274,11 @@
         "carryable",
         "fragile"
       ],
-      "description": "A beautifully carved crystal skull, grinning at you rather nastily. A treasure."
+      "description": "A beautifully carved crystal skull, grinning at you rather nastily. A treasure.",
+      "state": {
+        "weight": 10
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "$comment": "Echo-room treasure. Hidden in canonical Zork until the loud-room is silent. Two silencing paths: (a) say 'echo' (easter egg, sets echo-spoken=true), or (b) drain reservoir via dam controls and close gates (low-tide AND NOT gates-open). Visible in EITHER state.",
@@ -1778,17 +2291,33 @@
       "visibleWhen": {
         "type": "or",
         "any": [
-          { "type": "flag", "key": "echo-spoken", "equals": true },
+          {
+            "type": "flag",
+            "key": "echo-spoken",
+            "equals": true
+          },
           {
             "type": "and",
             "all": [
-              { "type": "flag", "key": "low-tide", "equals": true },
-              { "type": "flag", "key": "gates-open", "equals": false }
+              {
+                "type": "flag",
+                "key": "low-tide",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "gates-open",
+                "equals": false
+              }
             ]
           }
         ]
       },
-      "description": "A heavy platinum bar, dense and gleaming dully. A treasure."
+      "description": "A heavy platinum bar, dense and gleaming dully. A treasure.",
+      "state": {
+        "weight": 20
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "$comment": "Rainbow treasure. INVISIBLE in canonical Zork until the player waves the sceptre at end-of-rainbow. We adapt via visibleWhen on rainbow-flag.",
@@ -1803,7 +2332,11 @@
         "key": "rainbow-flag",
         "equals": true
       },
-      "description": "A heavy iron pot brimming with gold coins. A treasure."
+      "description": "A heavy iron pot brimming with gold coins. A treasure.",
+      "state": {
+        "weight": 15
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "$comment": "NEW item appended via mergeItems — diamond produced by the coal-machine puzzle. Starts at 'nowhere'; the machine-trigger moves it to the machine on success.",
@@ -1816,7 +2349,11 @@
         "treasure",
         "valuable",
         "carryable"
-      ]
+      ],
+      "state": {
+        "weight": 25
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "$comment": "NEW item appended via mergeItems — brass bauble delivered by the songbird when the canary is wound in a forest room. Starts at 'nowhere'; the canary-sings-for-bauble trigger moves it to the player's room (or to 'path' if winding from up-a-tree).",
@@ -1829,7 +2366,11 @@
         "treasure",
         "valuable",
         "carryable"
-      ]
+      ],
+      "state": {
+        "weight": 8
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "$comment": "Tag scepter as a weapon so the inventoryHasTag(weapon) check on the boat catches it. Canonical Zork includes SCEPTRE in the boat-puncture list because it has WEAPONBIT — the magic boat treats it as sharp. Description rewritten state-neutrally (canonical 'is in the coffin' is positional and contradicts the description once taken). 'Every color of the rainbow' is the puzzle hint pointing to the wave-sceptre-at-rainbow solution.",
@@ -1840,7 +2381,11 @@
         "treasure",
         "valuable",
         "carryable"
-      ]
+      ],
+      "state": {
+        "weight": 3
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "$comment": "Tag thief's stiletto as a weapon (canonical Zork has it in WEAPONBIT). Used for the boat-puncture check.",
@@ -1850,7 +2395,11 @@
         "weapon",
         "bladed",
         "carryable"
-      ]
+      ],
+      "state": {
+        "weight": 10
+      },
+      "fromTemplate": "takeable-weighable"
     },
     {
       "$comment": "Make the inflatable boat a real engine vehicle. state.inflation: 'deflated' (default) | 'inflated' | 'punctured'. The vehicle.enterableWhen gate ensures players can only board the inflated form. mobile=true so the boat travels with the player on go() — drifts downstream with the current.",
@@ -1860,7 +2409,8 @@
         "carryable"
       ],
       "state": {
-        "inflation": "deflated"
+        "inflation": "deflated",
+        "weight": 20
       },
       "vehicle": {
         "mobile": true,
@@ -1872,7 +2422,36 @@
         },
         "enterBlockedMessage": "The boat is a flat pile of plastic — it'd need to be inflated first."
       },
-      "description": "A folded square of yellow plastic with a small valve attached — clearly intended to be inflated."
+      "description": "A folded square of yellow plastic with a small valve attached — clearly intended to be inflated.",
+      "fromTemplate": "takeable-weighable"
+    },
+    {
+      "id": "map",
+      "fromTemplate": "takeable-weighable",
+      "state": {
+        "weight": 5
+      }
+    },
+    {
+      "id": "guide",
+      "fromTemplate": "takeable-weighable",
+      "state": {
+        "weight": 5
+      }
+    },
+    {
+      "id": "owners-manual",
+      "fromTemplate": "takeable-weighable",
+      "state": {
+        "weight": 5
+      }
+    },
+    {
+      "id": "painting",
+      "fromTemplate": "takeable-weighable",
+      "state": {
+        "weight": 15
+      }
     }
   ],
   "$customToolsComment": "Custom tools are author-defined LLM tools. Each becomes a tool the narrator can call directly with typed args. Handlers do the generic state mutation (open sets isOpen=true on any item with that state key); per-puzzle special cases are layered on as triggers that match on intentMatched + intentArg. open/close/break here replace the dozens of per-item intents that the auto-gen used to emit.",
@@ -2204,24 +2783,47 @@
       "args": {
         "type": "object",
         "properties": {
-          "itemId": { "type": "string", "description": "id of the item to light" }
+          "itemId": {
+            "type": "string",
+            "description": "id of the item to light"
+          }
         },
-        "required": ["itemId"]
+        "required": [
+          "itemId"
+        ]
       },
       "alwaysAvailable": true,
       "handler": {
         "preconditions": [
           {
-            "when": { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } },
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
             "failedNarration": "You don't see {arg.itemId.name} here."
           },
           {
-            "when": { "type": "itemHasStateKey", "itemId": { "fromArg": "itemId" }, "key": "isLit" },
+            "when": {
+              "type": "itemHasStateKey",
+              "itemId": {
+                "fromArg": "itemId"
+              },
+              "key": "isLit"
+            },
             "failedNarration": "{arg.itemId.name} isn't something you can light."
           }
         ],
         "effects": [
-          { "type": "setItemState", "itemId": { "fromArg": "itemId" }, "key": "isLit", "value": true }
+          {
+            "type": "setItemState",
+            "itemId": {
+              "fromArg": "itemId"
+            },
+            "key": "isLit",
+            "value": true
+          }
         ],
         "successNarration": ""
       }
@@ -2233,24 +2835,47 @@
       "args": {
         "type": "object",
         "properties": {
-          "itemId": { "type": "string", "description": "id of the item to extinguish" }
+          "itemId": {
+            "type": "string",
+            "description": "id of the item to extinguish"
+          }
         },
-        "required": ["itemId"]
+        "required": [
+          "itemId"
+        ]
       },
       "alwaysAvailable": true,
       "handler": {
         "preconditions": [
           {
-            "when": { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } },
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
             "failedNarration": "You don't see {arg.itemId.name} here."
           },
           {
-            "when": { "type": "itemHasStateKey", "itemId": { "fromArg": "itemId" }, "key": "isLit" },
+            "when": {
+              "type": "itemHasStateKey",
+              "itemId": {
+                "fromArg": "itemId"
+              },
+              "key": "isLit"
+            },
             "failedNarration": "{arg.itemId.name} isn't something you can extinguish."
           }
         ],
         "effects": [
-          { "type": "setItemState", "itemId": { "fromArg": "itemId" }, "key": "isLit", "value": false }
+          {
+            "type": "setItemState",
+            "itemId": {
+              "fromArg": "itemId"
+            },
+            "key": "isLit",
+            "value": false
+          }
         ],
         "successNarration": ""
       }
@@ -2328,7 +2953,10 @@
       "handler": {
         "preconditions": [
           {
-            "when": { "type": "playerAt", "roomId": "timber-room" },
+            "when": {
+              "type": "playerAt",
+              "roomId": "timber-room"
+            },
             "failedNarration": "There's nothing here you could call rubble."
           }
         ],
@@ -2365,19 +2993,34 @@
       "args": {
         "type": "object",
         "properties": {
-          "itemId": { "type": "string", "description": "id of the item to read" }
+          "itemId": {
+            "type": "string",
+            "description": "id of the item to read"
+          }
         },
-        "required": ["itemId"]
+        "required": [
+          "itemId"
+        ]
       },
       "alwaysAvailable": true,
       "handler": {
         "preconditions": [
           {
-            "when": { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } },
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
             "failedNarration": "You don't see {arg.itemId.name} here."
           },
           {
-            "when": { "type": "itemReadable", "itemId": { "fromArg": "itemId" } },
+            "when": {
+              "type": "itemReadable",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
             "failedNarration": "{arg.itemId.name} has nothing to read."
           }
         ],
@@ -2392,7 +3035,10 @@
       "handler": {
         "preconditions": [
           {
-            "when": { "type": "hasItem", "itemId": "book" },
+            "when": {
+              "type": "hasItem",
+              "itemId": "book"
+            },
             "failedNarration": "You don't have the black book to flip through."
           }
         ],
@@ -2411,7 +3057,9 @@
             "description": "the id of the tool the player literally named in their input (must come from the player's stated words — do not assume from inventory or context)"
           }
         },
-        "required": ["withItemId"]
+        "required": [
+          "withItemId"
+        ]
       }
     },
     {
@@ -2471,7 +3119,9 @@
             "description": "the id of the tool the player literally named in their input (must come from the player's stated words — do not assume from inventory or context)"
           }
         },
-        "required": ["withItemId"]
+        "required": [
+          "withItemId"
+        ]
       }
     },
     {
@@ -3609,7 +4259,12 @@
           },
           {
             "type": "not",
-            "condition": { "type": "itemState", "itemId": "painting", "key": "broken", "equals": true }
+            "condition": {
+              "type": "itemState",
+              "itemId": "painting",
+              "key": "broken",
+              "equals": true
+            }
           }
         ]
       },
@@ -4245,12 +4900,23 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "hasItem", "itemId": "rope" },
-          { "type": "flag", "key": "dome-flag", "equals": true }
+          {
+            "type": "hasItem",
+            "itemId": "rope"
+          },
+          {
+            "type": "flag",
+            "key": "dome-flag",
+            "equals": true
+          }
         ]
       },
       "effects": [
-        { "type": "setFlag", "key": "dome-flag", "value": false }
+        {
+          "type": "setFlag",
+          "key": "dome-flag",
+          "value": false
+        }
       ],
       "narration": "As you take the rope, it slips free of the railing."
     },
@@ -5747,20 +6413,46 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "light" },
-          { "type": "intentArg", "signalId": "light", "key": "itemId", "equals": "lamp" },
-          { "type": "hasItem", "itemId": "lamp" },
-          { "type": "itemState", "itemId": "lamp", "key": "isLit", "equals": true },
+          {
+            "type": "intentMatched",
+            "signalId": "light"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "light",
+            "key": "itemId",
+            "equals": "lamp"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "lamp"
+          },
+          {
+            "type": "itemState",
+            "itemId": "lamp",
+            "key": "isLit",
+            "equals": true
+          },
           {
             "type": "compare",
-            "left": { "kind": "itemState", "itemId": "lamp", "key": "batteryTurns" },
+            "left": {
+              "kind": "itemState",
+              "itemId": "lamp",
+              "key": "batteryTurns"
+            },
             "op": ">",
-            "right": { "kind": "literal", "value": 0 }
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
           }
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "light" }
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "light"
+        }
       ],
       "narration": "The brass lantern flickers on, casting a warm glow.",
       "once": false
@@ -5772,21 +6464,52 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "light" },
-          { "type": "intentArg", "signalId": "light", "key": "itemId", "equals": "lamp" },
-          { "type": "hasItem", "itemId": "lamp" },
-          { "type": "itemState", "itemId": "lamp", "key": "isLit", "equals": true },
+          {
+            "type": "intentMatched",
+            "signalId": "light"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "light",
+            "key": "itemId",
+            "equals": "lamp"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "lamp"
+          },
+          {
+            "type": "itemState",
+            "itemId": "lamp",
+            "key": "isLit",
+            "equals": true
+          },
           {
             "type": "compare",
-            "left": { "kind": "itemState", "itemId": "lamp", "key": "batteryTurns" },
+            "left": {
+              "kind": "itemState",
+              "itemId": "lamp",
+              "key": "batteryTurns"
+            },
             "op": "<=",
-            "right": { "kind": "literal", "value": 0 }
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
           }
         ]
       },
       "effects": [
-        { "type": "setItemState", "itemId": "lamp", "key": "isLit", "value": false },
-        { "type": "removeMatchedIntent", "signalId": "light" }
+        {
+          "type": "setItemState",
+          "itemId": "lamp",
+          "key": "isLit",
+          "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "light"
+        }
       ],
       "narration": "The lantern's battery is dead. Nothing happens.",
       "once": false
@@ -5797,13 +6520,29 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "extinguish" },
-          { "type": "intentArg", "signalId": "extinguish", "key": "itemId", "equals": "lamp" },
-          { "type": "itemState", "itemId": "lamp", "key": "isLit", "equals": false }
+          {
+            "type": "intentMatched",
+            "signalId": "extinguish"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "extinguish",
+            "key": "itemId",
+            "equals": "lamp"
+          },
+          {
+            "type": "itemState",
+            "itemId": "lamp",
+            "key": "isLit",
+            "equals": false
+          }
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "extinguish" }
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "extinguish"
+        }
       ],
       "narration": "The lantern goes dark.",
       "once": false
@@ -5875,17 +6614,34 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true },
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": true
+          },
           {
             "type": "compare",
-            "left": { "kind": "itemState", "itemId": "candles", "key": "burnTurnsRemaining" },
+            "left": {
+              "kind": "itemState",
+              "itemId": "candles",
+              "key": "burnTurnsRemaining"
+            },
             "op": ">",
-            "right": { "kind": "literal", "value": 0 }
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
           }
         ]
       },
       "effects": [
-        { "type": "adjustItemState", "itemId": "candles", "key": "burnTurnsRemaining", "by": -1 }
+        {
+          "type": "adjustItemState",
+          "itemId": "candles",
+          "key": "burnTurnsRemaining",
+          "by": -1
+        }
       ]
     },
     {
@@ -5896,17 +6652,34 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true },
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": true
+          },
           {
             "type": "compare",
-            "left": { "kind": "itemState", "itemId": "candles", "key": "burnTurnsRemaining" },
+            "left": {
+              "kind": "itemState",
+              "itemId": "candles",
+              "key": "burnTurnsRemaining"
+            },
             "op": "<=",
-            "right": { "kind": "literal", "value": 0 }
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
           }
         ]
       },
       "effects": [
-        { "type": "setItemState", "itemId": "candles", "key": "isLit", "value": false }
+        {
+          "type": "setItemState",
+          "itemId": "candles",
+          "key": "isLit",
+          "value": false
+        }
       ],
       "narration": "Your candles have burned down to nothing — the flames sputter and die."
     },
@@ -10092,41 +10865,88 @@
       "effects": [
         {
           "type": "if",
-          "if": { "type": "hasItem", "itemId": "bell" },
+          "if": {
+            "type": "hasItem",
+            "itemId": "bell"
+          },
           "then": [
             {
               "type": "if",
-              "if": { "type": "playerAt", "roomId": "entrance-to-hades" },
+              "if": {
+                "type": "playerAt",
+                "roomId": "entrance-to-hades"
+              },
               "then": [
-                { "type": "setItemState", "itemId": "bell", "key": "rangAtHades", "value": true },
-                { "type": "moveItem", "itemId": "bell", "to": "entrance-to-hades" },
+                {
+                  "type": "setItemState",
+                  "itemId": "bell",
+                  "key": "rangAtHades",
+                  "value": true
+                },
+                {
+                  "type": "moveItem",
+                  "itemId": "bell",
+                  "to": "entrance-to-hades"
+                },
                 {
                   "type": "if",
                   "if": {
                     "type": "and",
                     "all": [
-                      { "type": "hasItem", "itemId": "candles" },
-                      { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true }
+                      {
+                        "type": "hasItem",
+                        "itemId": "candles"
+                      },
+                      {
+                        "type": "itemState",
+                        "itemId": "candles",
+                        "key": "isLit",
+                        "equals": true
+                      }
                     ]
                   },
                   "then": [
-                    { "type": "setItemState", "itemId": "candles", "key": "isLit", "value": false },
-                    { "type": "moveItem", "itemId": "candles", "to": "entrance-to-hades" },
-                    { "type": "narrate", "text": "In your confusion, the candles drop to the ground (and they are out)." }
+                    {
+                      "type": "setItemState",
+                      "itemId": "candles",
+                      "key": "isLit",
+                      "value": false
+                    },
+                    {
+                      "type": "moveItem",
+                      "itemId": "candles",
+                      "to": "entrance-to-hades"
+                    },
+                    {
+                      "type": "narrate",
+                      "text": "In your confusion, the candles drop to the ground (and they are out)."
+                    }
                   ]
                 },
-                { "type": "narrate", "text": "The bell suddenly becomes red hot and falls to the ground. The wraiths, as if paralyzed, stop their jeering and slowly turn to face you. On their ashen faces, the expression of a long-forgotten terror takes shape." }
+                {
+                  "type": "narrate",
+                  "text": "The bell suddenly becomes red hot and falls to the ground. The wraiths, as if paralyzed, stop their jeering and slowly turn to face you. On their ashen faces, the expression of a long-forgotten terror takes shape."
+                }
               ],
               "else": [
-                { "type": "narrate", "text": "The bell tolls — a deep, hollow note that hangs in the air for a long moment, then fades." }
+                {
+                  "type": "narrate",
+                  "text": "The bell tolls — a deep, hollow note that hangs in the air for a long moment, then fades."
+                }
               ]
             }
           ],
           "else": [
-            { "type": "narrate", "text": "There's no bell in your hand." }
+            {
+              "type": "narrate",
+              "text": "There's no bell in your hand."
+            }
           ]
         },
-        { "type": "removeMatchedIntent", "signalId": "ring-bell" }
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "ring-bell"
+        }
       ]
     },
     {
@@ -10135,18 +10955,53 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "read" },
-          { "type": "intentArg", "signalId": "read", "key": "itemId", "equals": "book" },
-          { "type": "playerAt", "roomId": "entrance-to-hades" },
-          { "type": "hasItem", "itemId": "book" },
-          { "type": "itemState", "itemId": "bell", "key": "rangAtHades", "equals": true },
-          { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true },
-          { "type": "flag", "key": "lld-flag", "equals": false }
+          {
+            "type": "intentMatched",
+            "signalId": "read"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "read",
+            "key": "itemId",
+            "equals": "book"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "entrance-to-hades"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "book"
+          },
+          {
+            "type": "itemState",
+            "itemId": "bell",
+            "key": "rangAtHades",
+            "equals": true
+          },
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": true
+          },
+          {
+            "type": "flag",
+            "key": "lld-flag",
+            "equals": false
+          }
         ]
       },
       "effects": [
-        { "type": "setFlag", "key": "lld-flag", "value": true },
-        { "type": "removeMatchedIntent", "signalId": "read" }
+        {
+          "type": "setFlag",
+          "key": "lld-flag",
+          "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "read"
+        }
       ],
       "narration": "Each word of the prayer reverberates through the hall in a deafening confusion. As the last word fades, a voice, loud and commanding, speaks: \"Begone, fiends!\" A heart-stopping scream fills the cavern, and the spirits, sensing a greater power, flee through the walls.",
       "once": true
@@ -10157,22 +11012,57 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "light" },
-          { "type": "intentArg", "signalId": "light", "key": "itemId", "equals": "match" },
-          { "type": "hasItem", "itemId": "match" },
-          { "type": "itemState", "itemId": "match", "key": "isLit", "equals": true },
+          {
+            "type": "intentMatched",
+            "signalId": "light"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "light",
+            "key": "itemId",
+            "equals": "match"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "match"
+          },
+          {
+            "type": "itemState",
+            "itemId": "match",
+            "key": "isLit",
+            "equals": true
+          },
           {
             "type": "compare",
-            "left": { "kind": "itemState", "itemId": "match", "key": "matchesRemaining" },
+            "left": {
+              "kind": "itemState",
+              "itemId": "match",
+              "key": "matchesRemaining"
+            },
             "op": ">",
-            "right": { "kind": "literal", "value": 0 }
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
           }
         ]
       },
       "effects": [
-        { "type": "adjustItemState", "itemId": "match", "key": "matchesRemaining", "by": -1 },
-        { "type": "setFlag", "key": "match-burn-countdown", "value": 3 },
-        { "type": "removeMatchedIntent", "signalId": "light" }
+        {
+          "type": "adjustItemState",
+          "itemId": "match",
+          "key": "matchesRemaining",
+          "by": -1
+        },
+        {
+          "type": "setFlag",
+          "key": "match-burn-countdown",
+          "value": 3
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "light"
+        }
       ],
       "narration": "One of the matches starts to burn.",
       "once": false
@@ -10184,21 +11074,52 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "light" },
-          { "type": "intentArg", "signalId": "light", "key": "itemId", "equals": "match" },
-          { "type": "hasItem", "itemId": "match" },
-          { "type": "itemState", "itemId": "match", "key": "isLit", "equals": true },
+          {
+            "type": "intentMatched",
+            "signalId": "light"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "light",
+            "key": "itemId",
+            "equals": "match"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "match"
+          },
+          {
+            "type": "itemState",
+            "itemId": "match",
+            "key": "isLit",
+            "equals": true
+          },
           {
             "type": "compare",
-            "left": { "kind": "itemState", "itemId": "match", "key": "matchesRemaining" },
+            "left": {
+              "kind": "itemState",
+              "itemId": "match",
+              "key": "matchesRemaining"
+            },
             "op": "<=",
-            "right": { "kind": "literal", "value": 0 }
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
           }
         ]
       },
       "effects": [
-        { "type": "setItemState", "itemId": "match", "key": "isLit", "value": false },
-        { "type": "removeMatchedIntent", "signalId": "light" }
+        {
+          "type": "setItemState",
+          "itemId": "match",
+          "key": "isLit",
+          "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "light"
+        }
       ],
       "narration": "The matchbook is empty — you've burned all your matches.",
       "once": false
@@ -10209,22 +11130,58 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "light" },
-          { "type": "intentArg", "signalId": "light", "key": "itemId", "equals": "candles" },
-          { "type": "hasItem", "itemId": "candles" },
-          { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true },
-          { "type": "itemState", "itemId": "match", "key": "isLit", "equals": true },
+          {
+            "type": "intentMatched",
+            "signalId": "light"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "light",
+            "key": "itemId",
+            "equals": "candles"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "candles"
+          },
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": true
+          },
+          {
+            "type": "itemState",
+            "itemId": "match",
+            "key": "isLit",
+            "equals": true
+          },
           {
             "type": "compare",
-            "left": { "kind": "itemState", "itemId": "candles", "key": "burnTurnsRemaining" },
+            "left": {
+              "kind": "itemState",
+              "itemId": "candles",
+              "key": "burnTurnsRemaining"
+            },
             "op": ">",
-            "right": { "kind": "literal", "value": 0 }
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
           }
         ]
       },
       "effects": [
-        { "type": "setItemState", "itemId": "match", "key": "isLit", "value": false },
-        { "type": "removeMatchedIntent", "signalId": "light" }
+        {
+          "type": "setItemState",
+          "itemId": "match",
+          "key": "isLit",
+          "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "light"
+        }
       ],
       "narration": "You touch the burning match to the candles, lighting them.",
       "once": false
@@ -10236,16 +11193,45 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "light" },
-          { "type": "intentArg", "signalId": "light", "key": "itemId", "equals": "candles" },
-          { "type": "hasItem", "itemId": "candles" },
-          { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true },
-          { "type": "itemState", "itemId": "match", "key": "isLit", "equals": false }
+          {
+            "type": "intentMatched",
+            "signalId": "light"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "light",
+            "key": "itemId",
+            "equals": "candles"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "candles"
+          },
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": true
+          },
+          {
+            "type": "itemState",
+            "itemId": "match",
+            "key": "isLit",
+            "equals": false
+          }
         ]
       },
       "effects": [
-        { "type": "setItemState", "itemId": "candles", "key": "isLit", "value": false },
-        { "type": "removeMatchedIntent", "signalId": "light" }
+        {
+          "type": "setItemState",
+          "itemId": "candles",
+          "key": "isLit",
+          "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "light"
+        }
       ],
       "narration": "You have nothing burning to light them with.",
       "once": false
@@ -10257,21 +11243,52 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "light" },
-          { "type": "intentArg", "signalId": "light", "key": "itemId", "equals": "candles" },
-          { "type": "hasItem", "itemId": "candles" },
-          { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true },
+          {
+            "type": "intentMatched",
+            "signalId": "light"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "light",
+            "key": "itemId",
+            "equals": "candles"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "candles"
+          },
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": true
+          },
           {
             "type": "compare",
-            "left": { "kind": "itemState", "itemId": "candles", "key": "burnTurnsRemaining" },
+            "left": {
+              "kind": "itemState",
+              "itemId": "candles",
+              "key": "burnTurnsRemaining"
+            },
             "op": "<=",
-            "right": { "kind": "literal", "value": 0 }
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
           }
         ]
       },
       "effects": [
-        { "type": "setItemState", "itemId": "candles", "key": "isLit", "value": false },
-        { "type": "removeMatchedIntent", "signalId": "light" }
+        {
+          "type": "setItemState",
+          "itemId": "candles",
+          "key": "isLit",
+          "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "light"
+        }
       ],
       "narration": "The candles are spent — only stubs of wax remain. There's nothing left to light.",
       "once": false
@@ -10282,13 +11299,29 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "extinguish" },
-          { "type": "intentArg", "signalId": "extinguish", "key": "itemId", "equals": "candles" },
-          { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": false }
+          {
+            "type": "intentMatched",
+            "signalId": "extinguish"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "extinguish",
+            "key": "itemId",
+            "equals": "candles"
+          },
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": false
+          }
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "extinguish" }
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "extinguish"
+        }
       ],
       "narration": "You blow out the candles.",
       "once": false
@@ -10299,14 +11332,35 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "extinguish" },
-          { "type": "intentArg", "signalId": "extinguish", "key": "itemId", "equals": "torch" },
-          { "type": "itemState", "itemId": "torch", "key": "isLit", "equals": false }
+          {
+            "type": "intentMatched",
+            "signalId": "extinguish"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "extinguish",
+            "key": "itemId",
+            "equals": "torch"
+          },
+          {
+            "type": "itemState",
+            "itemId": "torch",
+            "key": "isLit",
+            "equals": false
+          }
         ]
       },
       "effects": [
-        { "type": "setItemState", "itemId": "torch", "key": "isLit", "value": true },
-        { "type": "removeMatchedIntent", "signalId": "extinguish" }
+        {
+          "type": "setItemState",
+          "itemId": "torch",
+          "key": "isLit",
+          "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "extinguish"
+        }
       ],
       "narration": "The flames cling to the torch — it can't be extinguished.",
       "once": false
@@ -10319,11 +11373,32 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "light" },
-          { "type": "intentArg", "signalId": "light", "key": "itemId", "equals": "candles" },
-          { "type": "playerAt", "roomId": "entrance-to-hades" },
-          { "type": "itemState", "itemId": "bell", "key": "rangAtHades", "equals": true },
-          { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true }
+          {
+            "type": "intentMatched",
+            "signalId": "light"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "light",
+            "key": "itemId",
+            "equals": "candles"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "entrance-to-hades"
+          },
+          {
+            "type": "itemState",
+            "itemId": "bell",
+            "key": "rangAtHades",
+            "equals": true
+          },
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": true
+          }
         ]
       },
       "effects": [],
@@ -10337,12 +11412,32 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "itemState", "itemId": "match", "key": "isLit", "equals": true },
-          { "type": "compare", "left": { "kind": "flag", "key": "match-burn-countdown" }, "op": ">", "right": { "kind": "literal", "value": 0 } }
+          {
+            "type": "itemState",
+            "itemId": "match",
+            "key": "isLit",
+            "equals": true
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "match-burn-countdown"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
         ]
       },
       "effects": [
-        { "type": "adjustFlag", "key": "match-burn-countdown", "by": -1 }
+        {
+          "type": "adjustFlag",
+          "key": "match-burn-countdown",
+          "by": -1
+        }
       ]
     },
     {
@@ -10353,12 +11448,33 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "itemState", "itemId": "match", "key": "isLit", "equals": true },
-          { "type": "compare", "left": { "kind": "flag", "key": "match-burn-countdown" }, "op": "<=", "right": { "kind": "literal", "value": 0 } }
+          {
+            "type": "itemState",
+            "itemId": "match",
+            "key": "isLit",
+            "equals": true
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "match-burn-countdown"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
         ]
       },
       "effects": [
-        { "type": "setItemState", "itemId": "match", "key": "isLit", "value": false }
+        {
+          "type": "setItemState",
+          "itemId": "match",
+          "key": "isLit",
+          "value": false
+        }
       ],
       "narration": "The match has gone out."
     },
@@ -10370,15 +11486,37 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "read" },
-          { "type": "intentArg", "signalId": "read", "key": "itemId", "equals": "book" },
-          { "type": "playerAt", "roomId": "entrance-to-hades" },
-          { "type": "hasItem", "itemId": "book" },
-          { "type": "itemState", "itemId": "bell", "key": "rangAtHades", "equals": false }
+          {
+            "type": "intentMatched",
+            "signalId": "read"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "read",
+            "key": "itemId",
+            "equals": "book"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "entrance-to-hades"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "book"
+          },
+          {
+            "type": "itemState",
+            "itemId": "bell",
+            "key": "rangAtHades",
+            "equals": false
+          }
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "read" }
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "read"
+        }
       ],
       "narration": "You read the prayer aloud. The words have no power; the spirits jeer."
     },
@@ -10390,16 +11528,43 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "read" },
-          { "type": "intentArg", "signalId": "read", "key": "itemId", "equals": "book" },
-          { "type": "playerAt", "roomId": "entrance-to-hades" },
-          { "type": "hasItem", "itemId": "book" },
-          { "type": "itemState", "itemId": "bell", "key": "rangAtHades", "equals": true },
-          { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": false }
+          {
+            "type": "intentMatched",
+            "signalId": "read"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "read",
+            "key": "itemId",
+            "equals": "book"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "entrance-to-hades"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "book"
+          },
+          {
+            "type": "itemState",
+            "itemId": "bell",
+            "key": "rangAtHades",
+            "equals": true
+          },
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": false
+          }
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "read" }
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "read"
+        }
       ],
       "narration": "You read the prayer aloud. The words fade in the dim light, leaving no impression."
     },
@@ -10521,15 +11686,37 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "turn-machine-switch" },
-          { "type": "intentArg", "signalId": "turn-machine-switch", "key": "withItemId", "equals": "screwdriver" },
-          { "type": "playerAt", "roomId": "machine-room" },
-          { "type": "hasItem", "itemId": "screwdriver" },
-          { "type": "itemState", "itemId": "machine", "key": "isOpen", "equals": true }
+          {
+            "type": "intentMatched",
+            "signalId": "turn-machine-switch"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn-machine-switch",
+            "key": "withItemId",
+            "equals": "screwdriver"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "machine-room"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "screwdriver"
+          },
+          {
+            "type": "itemState",
+            "itemId": "machine",
+            "key": "isOpen",
+            "equals": true
+          }
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "turn-machine-switch" }
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "turn-machine-switch"
+        }
       ],
       "narration": "The machine clatters into life. A plume of green smoke curls up out of the chamber, drifts into the room, and dissipates. The noise dwindles to silence."
     },
@@ -10541,12 +11728,21 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "turn-machine-switch" },
-          { "type": "playerAt", "roomId": "machine-room" }
+          {
+            "type": "intentMatched",
+            "signalId": "turn-machine-switch"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "machine-room"
+          }
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "turn-machine-switch" }
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "turn-machine-switch"
+        }
       ],
       "narration": "The switch doesn't budge."
     },
@@ -10557,12 +11753,21 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "push-machine-switch" },
-          { "type": "playerAt", "roomId": "machine-room" }
+          {
+            "type": "intentMatched",
+            "signalId": "push-machine-switch"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "machine-room"
+          }
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "push-machine-switch" }
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "push-machine-switch"
+        }
       ],
       "narration": "The switch is too small to manipulate with human fingers — barely 1/16 by 1/4 of an inch."
     },
@@ -10580,8 +11785,14 @@
           {
             "type": "or",
             "any": [
-              { "type": "playerAt", "roomId": "shaft-room" },
-              { "type": "playerAt", "roomId": "lower-shaft" }
+              {
+                "type": "playerAt",
+                "roomId": "shaft-room"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "lower-shaft"
+              }
             ]
           },
           {
@@ -10625,8 +11836,14 @@
           {
             "type": "or",
             "any": [
-              { "type": "playerAt", "roomId": "shaft-room" },
-              { "type": "playerAt", "roomId": "lower-shaft" }
+              {
+                "type": "playerAt",
+                "roomId": "shaft-room"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "lower-shaft"
+              }
             ]
           },
           {
@@ -10663,24 +11880,49 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "go" },
-          { "type": "playerAt", "roomId": "lower-shaft" }
+          {
+            "type": "intentMatched",
+            "signalId": "go"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "lower-shaft"
+          }
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "go" },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "go"
+        },
         {
           "type": "if",
-          "if": { "type": "itemState", "itemId": "basket", "key": "position", "equals": "raised" },
+          "if": {
+            "type": "itemState",
+            "itemId": "basket",
+            "key": "position",
+            "equals": "raised"
+          },
           "then": [
-            { "type": "narrate", "text": "Far above you at the top of the shaft, the wicker basket sways gently on its chain — well out of reach." }
+            {
+              "type": "narrate",
+              "text": "Far above you at the top of the shaft, the wicker basket sways gently on its chain — well out of reach."
+            }
           ]
         },
         {
           "type": "if",
-          "if": { "type": "itemState", "itemId": "basket", "key": "position", "equals": "lowered" },
+          "if": {
+            "type": "itemState",
+            "itemId": "basket",
+            "key": "position",
+            "equals": "lowered"
+          },
           "then": [
-            { "type": "narrate", "text": "The wicker basket sits at your feet at the bottom of the shaft, the chain rising into darkness above." }
+            {
+              "type": "narrate",
+              "text": "The wicker basket sits at your feet at the bottom of the shaft, the chain rising into darkness above."
+            }
           ]
         }
       ]
@@ -10692,17 +11934,34 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "go" },
-          { "type": "playerAt", "roomId": "shaft-room" }
+          {
+            "type": "intentMatched",
+            "signalId": "go"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "shaft-room"
+          }
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "go" },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "go"
+        },
         {
           "type": "if",
-          "if": { "type": "itemState", "itemId": "basket", "key": "position", "equals": "lowered" },
+          "if": {
+            "type": "itemState",
+            "itemId": "basket",
+            "key": "position",
+            "equals": "lowered"
+          },
           "then": [
-            { "type": "narrate", "text": "The basket has been lowered out of sight; the chain disappears down into the shaft." }
+            {
+              "type": "narrate",
+              "text": "The basket has been lowered out of sight; the chain disappears down into the shaft."
+            }
           ]
         }
       ]
@@ -10773,24 +12032,51 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "push-red-button" },
-          { "type": "playerAt", "roomId": "maintenance-room" }
+          {
+            "type": "intentMatched",
+            "signalId": "push-red-button"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "maintenance-room"
+          }
         ]
       },
       "effects": [
         {
           "type": "if",
-          "if": { "type": "flag", "key": "maintenance-lights", "equals": true },
+          "if": {
+            "type": "flag",
+            "key": "maintenance-lights",
+            "equals": true
+          },
           "then": [
-            { "type": "setFlag", "key": "maintenance-lights", "value": false },
-            { "type": "narrate", "text": "Click. The maintenance-room lights flicker out. After a moment they flicker back on — a self-resetting safety circuit, evidently." }
+            {
+              "type": "setFlag",
+              "key": "maintenance-lights",
+              "value": false
+            },
+            {
+              "type": "narrate",
+              "text": "Click. The maintenance-room lights flicker out. After a moment they flicker back on — a self-resetting safety circuit, evidently."
+            }
           ],
           "else": [
-            { "type": "setFlag", "key": "maintenance-lights", "value": true },
-            { "type": "narrate", "text": "Click. The maintenance-room lights flicker." }
+            {
+              "type": "setFlag",
+              "key": "maintenance-lights",
+              "value": true
+            },
+            {
+              "type": "narrate",
+              "text": "Click. The maintenance-room lights flicker."
+            }
           ]
         },
-        { "type": "removeMatchedIntent", "signalId": "push-red-button" }
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "push-red-button"
+        }
       ]
     },
     {
@@ -10800,15 +12086,36 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "push-blue-button" },
-          { "type": "playerAt", "roomId": "maintenance-room" },
-          { "type": "flag", "key": "leak-active", "equals": false }
+          {
+            "type": "intentMatched",
+            "signalId": "push-blue-button"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "maintenance-room"
+          },
+          {
+            "type": "flag",
+            "key": "leak-active",
+            "equals": false
+          }
         ]
       },
       "effects": [
-        { "type": "setFlag", "key": "leak-active", "value": true },
-        { "type": "setFlag", "key": "leak-flood-counter", "value": 5 },
-        { "type": "removeMatchedIntent", "signalId": "push-blue-button" }
+        {
+          "type": "setFlag",
+          "key": "leak-active",
+          "value": true
+        },
+        {
+          "type": "setFlag",
+          "key": "leak-flood-counter",
+          "value": 5
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "push-blue-button"
+        }
       ],
       "narration": "There is a rumbling sound and a stream of water appears to burst from the east wall of the room (apparently, a leak has occurred in a pipe). The water level begins to rise."
     },
@@ -10820,13 +12127,35 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "flag", "key": "leak-active", "equals": true },
-          { "type": "playerAt", "roomId": "maintenance-room" },
-          { "type": "compare", "left": { "kind": "flag", "key": "leak-flood-counter" }, "op": ">", "right": { "kind": "literal", "value": 0 } }
+          {
+            "type": "flag",
+            "key": "leak-active",
+            "equals": true
+          },
+          {
+            "type": "playerAt",
+            "roomId": "maintenance-room"
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "leak-flood-counter"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
         ]
       },
       "effects": [
-        { "type": "adjustFlag", "key": "leak-flood-counter", "by": -1 }
+        {
+          "type": "adjustFlag",
+          "key": "leak-flood-counter",
+          "by": -1
+        }
       ]
     },
     {
@@ -10837,9 +12166,27 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "flag", "key": "leak-active", "equals": true },
-          { "type": "playerAt", "roomId": "maintenance-room" },
-          { "type": "compare", "left": { "kind": "flag", "key": "leak-flood-counter" }, "op": "<=", "right": { "kind": "literal", "value": 0 } }
+          {
+            "type": "flag",
+            "key": "leak-active",
+            "equals": true
+          },
+          {
+            "type": "playerAt",
+            "roomId": "maintenance-room"
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "leak-flood-counter"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
         ]
       },
       "effects": [
@@ -10857,17 +12204,45 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "plug-leak-with-putty" },
-          { "type": "playerAt", "roomId": "maintenance-room" },
-          { "type": "hasItem", "itemId": "putty" },
-          { "type": "flag", "key": "leak-active", "equals": true }
+          {
+            "type": "intentMatched",
+            "signalId": "plug-leak-with-putty"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "maintenance-room"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "putty"
+          },
+          {
+            "type": "flag",
+            "key": "leak-active",
+            "equals": true
+          }
         ]
       },
       "effects": [
-        { "type": "setFlag", "key": "leak-active", "value": false },
-        { "type": "setFlag", "key": "leak-flood-counter", "value": 0 },
-        { "type": "moveItem", "itemId": "putty", "to": "nowhere" },
-        { "type": "removeMatchedIntent", "signalId": "plug-leak-with-putty" }
+        {
+          "type": "setFlag",
+          "key": "leak-active",
+          "value": false
+        },
+        {
+          "type": "setFlag",
+          "key": "leak-flood-counter",
+          "value": 0
+        },
+        {
+          "type": "moveItem",
+          "itemId": "putty",
+          "to": "nowhere"
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "plug-leak-with-putty"
+        }
       ],
       "narration": "You press the viscous material against the pipe; it spreads and seals the leak with a satisfying squelch. The flow stops. The water level slowly recedes."
     },
@@ -10878,12 +12253,21 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "plug-leak-by-hand" },
-          { "type": "playerAt", "roomId": "maintenance-room" }
+          {
+            "type": "intentMatched",
+            "signalId": "plug-leak-by-hand"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "maintenance-room"
+          }
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "plug-leak-by-hand" }
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "plug-leak-by-hand"
+        }
       ],
       "narration": "Water sprays past your fingers, the pressure forcing your hand right back."
     },
@@ -11011,12 +12395,21 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "turn-dam-bolt" },
-          { "type": "playerAt", "roomId": "dam-room" }
+          {
+            "type": "intentMatched",
+            "signalId": "turn-dam-bolt"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "dam-room"
+          }
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "turn-dam-bolt" }
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "turn-dam-bolt"
+        }
       ],
       "narration": "The bolt doesn't budge — you'll need the right tool, in the right place, with the right control surface enabled."
     },
@@ -11027,12 +12420,21 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "turn-dam-bolt-by-hand" },
-          { "type": "playerAt", "roomId": "dam-room" }
+          {
+            "type": "intentMatched",
+            "signalId": "turn-dam-bolt-by-hand"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "dam-room"
+          }
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "turn-dam-bolt-by-hand" }
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "turn-dam-bolt-by-hand"
+        }
       ],
       "narration": "The bolt is heavy iron and held tight in its socket. Your bare hands can't budge it."
     },
@@ -11119,13 +12521,36 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "flag", "key": "low-tide", "equals": true },
-          { "type": "flag", "key": "gates-open", "equals": false },
-          { "type": "compare", "left": { "kind": "flag", "key": "reservoir-refill-countdown" }, "op": ">", "right": { "kind": "literal", "value": 0 } }
+          {
+            "type": "flag",
+            "key": "low-tide",
+            "equals": true
+          },
+          {
+            "type": "flag",
+            "key": "gates-open",
+            "equals": false
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "reservoir-refill-countdown"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
         ]
       },
       "effects": [
-        { "type": "adjustFlag", "key": "reservoir-refill-countdown", "by": -1 }
+        {
+          "type": "adjustFlag",
+          "key": "reservoir-refill-countdown",
+          "by": -1
+        }
       ]
     },
     {
@@ -11136,13 +12561,36 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "flag", "key": "low-tide", "equals": true },
-          { "type": "flag", "key": "gates-open", "equals": false },
-          { "type": "compare", "left": { "kind": "flag", "key": "reservoir-refill-countdown" }, "op": "<=", "right": { "kind": "literal", "value": 0 } }
+          {
+            "type": "flag",
+            "key": "low-tide",
+            "equals": true
+          },
+          {
+            "type": "flag",
+            "key": "gates-open",
+            "equals": false
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "reservoir-refill-countdown"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
         ]
       },
       "effects": [
-        { "type": "setFlag", "key": "low-tide", "value": false }
+        {
+          "type": "setFlag",
+          "key": "low-tide",
+          "value": false
+        }
       ]
     },
     {
@@ -11178,16 +12626,28 @@
         },
         {
           "type": "if",
-          "if": { "type": "playerAt", "roomId": "timber-room" },
+          "if": {
+            "type": "playerAt",
+            "roomId": "timber-room"
+          },
           "then": [
-            { "type": "narrate", "text": "With your hands free, you think you might just be able to squeeze through the narrow passage to the west." }
+            {
+              "type": "narrate",
+              "text": "With your hands free, you think you might just be able to squeeze through the narrow passage to the west."
+            }
           ]
         },
         {
           "type": "if",
-          "if": { "type": "playerAt", "roomId": "lower-shaft" },
+          "if": {
+            "type": "playerAt",
+            "roomId": "lower-shaft"
+          },
           "then": [
-            { "type": "narrate", "text": "With your hands free, you think you might just be able to squeeze back through the narrow passage." }
+            {
+              "type": "narrate",
+              "text": "With your hands free, you think you might just be able to squeeze back through the narrow passage."
+            }
           ]
         }
       ]
@@ -11231,14 +12691,32 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "go" },
-          { "type": "intentArg", "signalId": "go", "key": "direction", "equals": "west" },
-          { "type": "playerAt", "roomId": "timber-room" },
-          { "type": "flag", "key": "empty-handed", "equals": false }
+          {
+            "type": "intentMatched",
+            "signalId": "go"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "go",
+            "key": "direction",
+            "equals": "west"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "timber-room"
+          },
+          {
+            "type": "flag",
+            "key": "empty-handed",
+            "equals": false
+          }
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "go" }
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "go"
+        }
       ],
       "narration": "Your load is too great. The passage west narrows to a slit barely a person's width."
     },
@@ -11249,20 +12727,43 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "go" },
+          {
+            "type": "intentMatched",
+            "signalId": "go"
+          },
           {
             "type": "or",
             "any": [
-              { "type": "intentArg", "signalId": "go", "key": "direction", "equals": "east" },
-              { "type": "intentArg", "signalId": "go", "key": "direction", "equals": "out" }
+              {
+                "type": "intentArg",
+                "signalId": "go",
+                "key": "direction",
+                "equals": "east"
+              },
+              {
+                "type": "intentArg",
+                "signalId": "go",
+                "key": "direction",
+                "equals": "out"
+              }
             ]
           },
-          { "type": "playerAt", "roomId": "lower-shaft" },
-          { "type": "flag", "key": "empty-handed", "equals": false }
+          {
+            "type": "playerAt",
+            "roomId": "lower-shaft"
+          },
+          {
+            "type": "flag",
+            "key": "empty-handed",
+            "equals": false
+          }
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "go" }
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "go"
+        }
       ],
       "narration": "Your load is too great. The passage back narrows to a slit barely a person's width."
     },
@@ -11326,7 +12827,10 @@
         "signalId": "inflate-boat-by-mouth"
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "inflate-boat-by-mouth" }
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "inflate-boat-by-mouth"
+        }
       ],
       "narration": "You blow until your head spins. The folded plastic doesn't budge."
     },
@@ -11607,7 +13111,7 @@
         ]
       },
       "effects": [
-                {
+        {
           "type": "moveItem",
           "itemId": "inflatable-boat",
           "to": "river-2"
@@ -11650,7 +13154,7 @@
         ]
       },
       "effects": [
-                {
+        {
           "type": "moveItem",
           "itemId": "inflatable-boat",
           "to": "river-3"
@@ -11693,7 +13197,7 @@
         ]
       },
       "effects": [
-                {
+        {
           "type": "moveItem",
           "itemId": "inflatable-boat",
           "to": "river-4"
@@ -11736,7 +13240,7 @@
         ]
       },
       "effects": [
-                {
+        {
           "type": "moveItem",
           "itemId": "inflatable-boat",
           "to": "river-5"
@@ -11795,22 +13299,41 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "playerAt", "roomId": "gas-room" },
+          {
+            "type": "playerAt",
+            "roomId": "gas-room"
+          },
           {
             "type": "or",
             "any": [
               {
                 "type": "and",
                 "all": [
-                  { "type": "hasItem", "itemId": "torch" },
-                  { "type": "itemState", "itemId": "torch", "key": "isLit", "equals": true }
+                  {
+                    "type": "hasItem",
+                    "itemId": "torch"
+                  },
+                  {
+                    "type": "itemState",
+                    "itemId": "torch",
+                    "key": "isLit",
+                    "equals": true
+                  }
                 ]
               },
               {
                 "type": "and",
                 "all": [
-                  { "type": "hasItem", "itemId": "candles" },
-                  { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true }
+                  {
+                    "type": "hasItem",
+                    "itemId": "candles"
+                  },
+                  {
+                    "type": "itemState",
+                    "itemId": "candles",
+                    "key": "isLit",
+                    "equals": true
+                  }
                 ]
               }
             ]
@@ -11832,14 +13355,38 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "itemAt", "itemId": "egg", "location": "up-a-tree" },
-          { "type": "itemState", "itemId": "egg", "key": "isOpen", "equals": false }
+          {
+            "type": "itemAt",
+            "itemId": "egg",
+            "location": "up-a-tree"
+          },
+          {
+            "type": "itemState",
+            "itemId": "egg",
+            "key": "isOpen",
+            "equals": false
+          }
         ]
       },
       "effects": [
-        { "type": "setItemState", "itemId": "egg", "key": "isOpen", "value": true },
-        { "type": "setItemState", "itemId": "egg", "key": "broken", "value": true },
-        { "type": "setItemState", "itemId": "canary", "key": "broken", "value": true }
+        {
+          "type": "setItemState",
+          "itemId": "egg",
+          "key": "isOpen",
+          "value": true
+        },
+        {
+          "type": "setItemState",
+          "itemId": "egg",
+          "key": "broken",
+          "value": true
+        },
+        {
+          "type": "setItemState",
+          "itemId": "canary",
+          "key": "broken",
+          "value": true
+        }
       ],
       "narration": "The egg hits the wooden floor of the branches with a sharp crack. The shell splits apart, exposing the clockwork canary — but its delicate mechanism is now hopelessly mangled."
     },
@@ -11851,20 +13398,46 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "wind-canary" },
-          { "type": "hasItem", "itemId": "canary" },
+          {
+            "type": "intentMatched",
+            "signalId": "wind-canary"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "canary"
+          },
           {
             "type": "not",
-            "condition": { "type": "itemState", "itemId": "canary", "key": "broken", "equals": true }
+            "condition": {
+              "type": "itemState",
+              "itemId": "canary",
+              "key": "broken",
+              "equals": true
+            }
           },
           {
             "type": "or",
             "any": [
-              { "type": "playerAt", "roomId": "forest-1" },
-              { "type": "playerAt", "roomId": "forest-2" },
-              { "type": "playerAt", "roomId": "forest-3" },
-              { "type": "playerAt", "roomId": "path" },
-              { "type": "playerAt", "roomId": "up-a-tree" }
+              {
+                "type": "playerAt",
+                "roomId": "forest-1"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "forest-2"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "forest-3"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "path"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "up-a-tree"
+              }
             ]
           }
         ]
@@ -11872,25 +13445,65 @@
       "effects": [
         {
           "type": "if",
-          "if": { "type": "playerAt", "roomId": "forest-1" },
-          "then": [{ "type": "moveItem", "itemId": "bauble", "to": "forest-1" }],
+          "if": {
+            "type": "playerAt",
+            "roomId": "forest-1"
+          },
+          "then": [
+            {
+              "type": "moveItem",
+              "itemId": "bauble",
+              "to": "forest-1"
+            }
+          ],
           "else": [
             {
               "type": "if",
-              "if": { "type": "playerAt", "roomId": "forest-2" },
-              "then": [{ "type": "moveItem", "itemId": "bauble", "to": "forest-2" }],
+              "if": {
+                "type": "playerAt",
+                "roomId": "forest-2"
+              },
+              "then": [
+                {
+                  "type": "moveItem",
+                  "itemId": "bauble",
+                  "to": "forest-2"
+                }
+              ],
               "else": [
                 {
                   "type": "if",
-                  "if": { "type": "playerAt", "roomId": "forest-3" },
-                  "then": [{ "type": "moveItem", "itemId": "bauble", "to": "forest-3" }],
+                  "if": {
+                    "type": "playerAt",
+                    "roomId": "forest-3"
+                  },
+                  "then": [
+                    {
+                      "type": "moveItem",
+                      "itemId": "bauble",
+                      "to": "forest-3"
+                    }
+                  ],
                   "else": [
                     {
                       "type": "if",
-                      "if": { "type": "playerAt", "roomId": "path" },
-                      "then": [{ "type": "moveItem", "itemId": "bauble", "to": "path" }],
+                      "if": {
+                        "type": "playerAt",
+                        "roomId": "path"
+                      },
+                      "then": [
+                        {
+                          "type": "moveItem",
+                          "itemId": "bauble",
+                          "to": "path"
+                        }
+                      ],
                       "else": [
-                        { "type": "moveItem", "itemId": "bauble", "to": "path" }
+                        {
+                          "type": "moveItem",
+                          "itemId": "bauble",
+                          "to": "path"
+                        }
                       ]
                     }
                   ]
@@ -11899,7 +13512,10 @@
             }
           ]
         },
-        { "type": "removeMatchedIntent", "signalId": "wind-canary" }
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "wind-canary"
+        }
       ],
       "narration": "The canary chirps, slightly off-key, an aria from a forgotten opera. From out of the greenery flies a lovely songbird. It perches on a limb just over your head and opens its beak to sing. As it does so a beautiful brass bauble drops from its mouth, bounces off the top of your head, and lands glimmering in the grass. As the canary winds down, the songbird flies away."
     },
@@ -11911,16 +13527,30 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "wind-canary" },
-          { "type": "hasItem", "itemId": "canary" }
+          {
+            "type": "intentMatched",
+            "signalId": "wind-canary"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "canary"
+          }
         ]
       },
       "effects": [
         {
           "type": "if",
-          "if": { "type": "itemState", "itemId": "canary", "key": "broken", "equals": true },
+          "if": {
+            "type": "itemState",
+            "itemId": "canary",
+            "key": "broken",
+            "equals": true
+          },
           "then": [
-            { "type": "narrate", "text": "There is an unpleasant grinding noise from inside the canary." }
+            {
+              "type": "narrate",
+              "text": "There is an unpleasant grinding noise from inside the canary."
+            }
           ],
           "else": [
             {
@@ -11928,23 +13558,47 @@
               "if": {
                 "type": "or",
                 "any": [
-                  { "type": "playerAt", "roomId": "forest-1" },
-                  { "type": "playerAt", "roomId": "forest-2" },
-                  { "type": "playerAt", "roomId": "forest-3" },
-                  { "type": "playerAt", "roomId": "path" },
-                  { "type": "playerAt", "roomId": "up-a-tree" }
+                  {
+                    "type": "playerAt",
+                    "roomId": "forest-1"
+                  },
+                  {
+                    "type": "playerAt",
+                    "roomId": "forest-2"
+                  },
+                  {
+                    "type": "playerAt",
+                    "roomId": "forest-3"
+                  },
+                  {
+                    "type": "playerAt",
+                    "roomId": "path"
+                  },
+                  {
+                    "type": "playerAt",
+                    "roomId": "up-a-tree"
+                  }
                 ]
               },
               "then": [
-                { "type": "narrate", "text": "The canary chirps blithely, but the songbird does not return." }
+                {
+                  "type": "narrate",
+                  "text": "The canary chirps blithely, but the songbird does not return."
+                }
               ],
               "else": [
-                { "type": "narrate", "text": "The canary chirps, but its song carries little weight here." }
+                {
+                  "type": "narrate",
+                  "text": "The canary chirps, but its song carries little weight here."
+                }
               ]
             }
           ]
         },
-        { "type": "removeMatchedIntent", "signalId": "wind-canary" }
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "wind-canary"
+        }
       ]
     },
     {
@@ -11956,7 +13610,11 @@
         "location": "inventory"
       },
       "effects": [
-        { "type": "adjustFlag", "key": "score", "by": 1 }
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 1
+        }
       ],
       "narration": "(You note the brass bauble's worth — +1 point. Your score is now {flag.score}.)",
       "once": true
@@ -11967,13 +13625,29 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "itemAt", "itemId": "bauble", "location": "trophy-case" },
-          { "type": "flag", "key": "bauble-deposited", "equals": false }
+          {
+            "type": "itemAt",
+            "itemId": "bauble",
+            "location": "trophy-case"
+          },
+          {
+            "type": "flag",
+            "key": "bauble-deposited",
+            "equals": false
+          }
         ]
       },
       "effects": [
-        { "type": "adjustFlag", "key": "score", "by": 6 },
-        { "type": "setFlag", "key": "bauble-deposited", "value": true }
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 6
+        },
+        {
+          "type": "setFlag",
+          "key": "bauble-deposited",
+          "value": true
+        }
       ],
       "narration": "The brass bauble joins the trophy case's collection. (+6 points; your score is now {flag.score}.)",
       "once": false
@@ -11992,12 +13666,24 @@
               "location": "trophy-case"
             }
           },
-          { "type": "flag", "key": "bauble-deposited", "equals": true }
+          {
+            "type": "flag",
+            "key": "bauble-deposited",
+            "equals": true
+          }
         ]
       },
       "effects": [
-        { "type": "adjustFlag", "key": "score", "by": -6 },
-        { "type": "setFlag", "key": "bauble-deposited", "value": false }
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": -6
+        },
+        {
+          "type": "setFlag",
+          "key": "bauble-deposited",
+          "value": false
+        }
       ],
       "narration": "(The brass bauble leaves the trophy case. -6 points; your score is now {flag.score}.)",
       "once": false
@@ -12009,8 +13695,14 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "brush-teeth-with-putty" },
-          { "type": "hasItem", "itemId": "putty" }
+          {
+            "type": "intentMatched",
+            "signalId": "brush-teeth-with-putty"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "putty"
+          }
         ]
       },
       "effects": [
@@ -12028,23 +13720,45 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "burn-leaves" },
-          { "type": "hasItem", "itemId": "leaves" },
+          {
+            "type": "intentMatched",
+            "signalId": "burn-leaves"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "leaves"
+          },
           {
             "type": "or",
             "any": [
               {
                 "type": "and",
                 "all": [
-                  { "type": "hasItem", "itemId": "torch" },
-                  { "type": "itemState", "itemId": "torch", "key": "isLit", "equals": true }
+                  {
+                    "type": "hasItem",
+                    "itemId": "torch"
+                  },
+                  {
+                    "type": "itemState",
+                    "itemId": "torch",
+                    "key": "isLit",
+                    "equals": true
+                  }
                 ]
               },
               {
                 "type": "and",
                 "all": [
-                  { "type": "hasItem", "itemId": "candles" },
-                  { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true }
+                  {
+                    "type": "hasItem",
+                    "itemId": "candles"
+                  },
+                  {
+                    "type": "itemState",
+                    "itemId": "candles",
+                    "key": "isLit",
+                    "equals": true
+                  }
                 ]
               }
             ]
@@ -12067,8 +13781,16 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "flag", "key": "attack-this-turn", "equals": true },
-          { "type": "flag", "key": "attack-weapon", "equals": "rusty-knife" }
+          {
+            "type": "flag",
+            "key": "attack-this-turn",
+            "equals": true
+          },
+          {
+            "type": "flag",
+            "key": "attack-weapon",
+            "equals": "rusty-knife"
+          }
         ]
       },
       "effects": [
@@ -12086,8 +13808,14 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "leap-down" },
-          { "type": "playerAt", "roomId": "up-a-tree" }
+          {
+            "type": "intentMatched",
+            "signalId": "leap-down"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "up-a-tree"
+          }
         ]
       },
       "effects": [
@@ -12105,12 +13833,21 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "leap-down" },
+          {
+            "type": "intentMatched",
+            "signalId": "leap-down"
+          },
           {
             "type": "or",
             "any": [
-              { "type": "playerAt", "roomId": "canyon-view" },
-              { "type": "playerAt", "roomId": "cliff-middle" }
+              {
+                "type": "playerAt",
+                "roomId": "canyon-view"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "cliff-middle"
+              }
             ]
           }
         ]
@@ -12130,23 +13867,45 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "burn-book" },
-          { "type": "hasItem", "itemId": "book" },
+          {
+            "type": "intentMatched",
+            "signalId": "burn-book"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "book"
+          },
           {
             "type": "or",
             "any": [
               {
                 "type": "and",
                 "all": [
-                  { "type": "hasItem", "itemId": "candles" },
-                  { "type": "itemState", "itemId": "candles", "key": "isLit", "equals": true }
+                  {
+                    "type": "hasItem",
+                    "itemId": "candles"
+                  },
+                  {
+                    "type": "itemState",
+                    "itemId": "candles",
+                    "key": "isLit",
+                    "equals": true
+                  }
                 ]
               },
               {
                 "type": "and",
                 "all": [
-                  { "type": "hasItem", "itemId": "torch" },
-                  { "type": "itemState", "itemId": "torch", "key": "isLit", "equals": true }
+                  {
+                    "type": "hasItem",
+                    "itemId": "torch"
+                  },
+                  {
+                    "type": "itemState",
+                    "itemId": "torch",
+                    "key": "isLit",
+                    "equals": true
+                  }
                 ]
               }
             ]
@@ -12168,8 +13927,14 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "mung-bodies" },
-          { "type": "playerAt", "roomId": "entrance-to-hades" }
+          {
+            "type": "intentMatched",
+            "signalId": "mung-bodies"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "entrance-to-hades"
+          }
         ]
       },
       "effects": [
@@ -12187,12 +13952,21 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "attack-self" },
+          {
+            "type": "intentMatched",
+            "signalId": "attack-self"
+          },
           {
             "type": "or",
             "any": [
-              { "type": "inventoryHasTag", "tag": "weapon" },
-              { "type": "inventoryHasTag", "tag": "bladed" }
+              {
+                "type": "inventoryHasTag",
+                "tag": "weapon"
+              },
+              {
+                "type": "inventoryHasTag",
+                "tag": "bladed"
+              }
             ]
           }
         ]
@@ -12228,20 +14002,42 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "dig-beach" },
-          { "type": "playerAt", "roomId": "sandy-beach" },
-          { "type": "hasItem", "itemId": "shovel" },
+          {
+            "type": "intentMatched",
+            "signalId": "dig-beach"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "sandy-beach"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "shovel"
+          },
           {
             "type": "compare",
-            "left": { "kind": "flag", "key": "beach-dig-count" },
+            "left": {
+              "kind": "flag",
+              "key": "beach-dig-count"
+            },
             "op": "<",
-            "right": { "kind": "literal", "value": 3 }
+            "right": {
+              "kind": "literal",
+              "value": 3
+            }
           }
         ]
       },
       "effects": [
-        { "type": "adjustFlag", "key": "beach-dig-count", "by": 1 },
-        { "type": "removeMatchedIntent", "signalId": "dig-beach" }
+        {
+          "type": "adjustFlag",
+          "key": "beach-dig-count",
+          "by": 1
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "dig-beach"
+        }
       ],
       "narration": "You dig deeper into the loose sand. The hole grows."
     },
@@ -12253,14 +14049,29 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "dig-beach" },
-          { "type": "playerAt", "roomId": "sandy-beach" },
-          { "type": "hasItem", "itemId": "shovel" },
+          {
+            "type": "intentMatched",
+            "signalId": "dig-beach"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "sandy-beach"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "shovel"
+          },
           {
             "type": "compare",
-            "left": { "kind": "flag", "key": "beach-dig-count" },
+            "left": {
+              "kind": "flag",
+              "key": "beach-dig-count"
+            },
             "op": ">=",
-            "right": { "kind": "literal", "value": 3 }
+            "right": {
+              "kind": "literal",
+              "value": 3
+            }
           }
         ]
       },
@@ -12279,16 +14090,29 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "mung-painting" },
+          {
+            "type": "intentMatched",
+            "signalId": "mung-painting"
+          },
           {
             "type": "or",
             "any": [
-              { "type": "hasItem", "itemId": "painting" },
+              {
+                "type": "hasItem",
+                "itemId": "painting"
+              },
               {
                 "type": "and",
                 "all": [
-                  { "type": "playerAt", "roomId": "living-room" },
-                  { "type": "itemAt", "itemId": "painting", "location": "trophy-case" }
+                  {
+                    "type": "playerAt",
+                    "roomId": "living-room"
+                  },
+                  {
+                    "type": "itemAt",
+                    "itemId": "painting",
+                    "location": "trophy-case"
+                  }
                 ]
               }
             ]
@@ -12296,8 +14120,16 @@
         ]
       },
       "effects": [
-        { "type": "setItemState", "itemId": "painting", "key": "broken", "value": true },
-        { "type": "removeMatchedIntent", "signalId": "mung-painting" }
+        {
+          "type": "setItemState",
+          "itemId": "painting",
+          "key": "broken",
+          "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "mung-painting"
+        }
       ],
       "narration": "You shred the canvas into ribbons. Whatever it depicted, it depicts no longer — the painting is now worthless."
     },
@@ -12308,13 +14140,25 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "mung-sceptre" },
-          { "type": "hasItem", "itemId": "sceptre" },
+          {
+            "type": "intentMatched",
+            "signalId": "mung-sceptre"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "sceptre"
+          },
           {
             "type": "or",
             "any": [
-              { "type": "playerAt", "roomId": "end-of-rainbow" },
-              { "type": "playerAt", "roomId": "aragain-falls" }
+              {
+                "type": "playerAt",
+                "roomId": "end-of-rainbow"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "aragain-falls"
+              }
             ]
           }
         ]
@@ -12334,19 +14178,49 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "swim-river" },
+          {
+            "type": "intentMatched",
+            "signalId": "swim-river"
+          },
           {
             "type": "or",
             "any": [
-              { "type": "playerAt", "roomId": "river-1" },
-              { "type": "playerAt", "roomId": "river-2" },
-              { "type": "playerAt", "roomId": "river-3" },
-              { "type": "playerAt", "roomId": "river-4" },
-              { "type": "playerAt", "roomId": "river-5" },
-              { "type": "playerAt", "roomId": "dam-base" },
-              { "type": "playerAt", "roomId": "white-cliffs-north" },
-              { "type": "playerAt", "roomId": "white-cliffs-south" },
-              { "type": "playerAt", "roomId": "sandy-beach" }
+              {
+                "type": "playerAt",
+                "roomId": "river-1"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "river-2"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "river-3"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "river-4"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "river-5"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "dam-base"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "white-cliffs-north"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "white-cliffs-south"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "sandy-beach"
+              }
             ]
           }
         ]
@@ -12364,20 +14238,37 @@
       "id": "sword-glow-tick",
       "afterAction": true,
       "once": false,
-      "when": { "type": "hasItem", "itemId": "sword" },
+      "when": {
+        "type": "hasItem",
+        "itemId": "sword"
+      },
       "effects": [
         {
           "type": "if",
-          "if": { "type": "anyPerceivableItemWith", "key": "hostile", "equals": true },
+          "if": {
+            "type": "anyPerceivableItemWith",
+            "key": "hostile",
+            "equals": true
+          },
           "then": [
-            { "type": "narrate", "text": "Your sword is glowing very brightly." }
+            {
+              "type": "narrate",
+              "text": "Your sword is glowing very brightly."
+            }
           ],
           "else": [
             {
               "type": "if",
-              "if": { "type": "anyAdjacentRoomItemWith", "key": "hostile", "equals": true },
+              "if": {
+                "type": "anyAdjacentRoomItemWith",
+                "key": "hostile",
+                "equals": true
+              },
               "then": [
-                { "type": "narrate", "text": "Your sword is glowing with a faint blue glow." }
+                {
+                  "type": "narrate",
+                  "text": "Your sword is glowing with a faint blue glow."
+                }
               ]
             }
           ]
@@ -12392,18 +14283,33 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "playerAt", "roomId": "loud-room" },
+          {
+            "type": "playerAt",
+            "roomId": "loud-room"
+          },
           {
             "type": "not",
             "condition": {
               "type": "or",
               "any": [
-                { "type": "flag", "key": "echo-spoken", "equals": true },
+                {
+                  "type": "flag",
+                  "key": "echo-spoken",
+                  "equals": true
+                },
                 {
                   "type": "and",
                   "all": [
-                    { "type": "flag", "key": "low-tide", "equals": true },
-                    { "type": "flag", "key": "gates-open", "equals": false }
+                    {
+                      "type": "flag",
+                      "key": "low-tide",
+                      "equals": true
+                    },
+                    {
+                      "type": "flag",
+                      "key": "gates-open",
+                      "equals": false
+                    }
                   ]
                 }
               ]
@@ -12416,47 +14322,96 @@
           "type": "if",
           "if": {
             "type": "compare",
-            "left": { "kind": "flag", "key": "loud-room-ticks" },
+            "left": {
+              "kind": "flag",
+              "key": "loud-room-ticks"
+            },
             "op": "==",
-            "right": { "kind": "literal", "value": 0 }
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
           },
           "then": [
-            { "type": "setFlag", "key": "loud-room-ticks", "value": 1 },
-            { "type": "narrate", "text": "The roar is unbearable — your head is already pounding. You won't last another moment in here unless you can silence the noise." }
+            {
+              "type": "setFlag",
+              "key": "loud-room-ticks",
+              "value": 1
+            },
+            {
+              "type": "narrate",
+              "text": "The roar is unbearable — your head is already pounding. You won't last another moment in here unless you can silence the noise."
+            }
           ],
           "else": [
-            { "type": "setFlagRandom", "key": "_loud-eject-roll", "min": 0, "max": 2 },
+            {
+              "type": "setFlagRandom",
+              "key": "_loud-eject-roll",
+              "min": 0,
+              "max": 2
+            },
             {
               "type": "if",
               "if": {
                 "type": "compare",
-                "left": { "kind": "flag", "key": "_loud-eject-roll" },
+                "left": {
+                  "kind": "flag",
+                  "key": "_loud-eject-roll"
+                },
                 "op": "==",
-                "right": { "kind": "literal", "value": 0 }
+                "right": {
+                  "kind": "literal",
+                  "value": 0
+                }
               },
               "then": [
-                { "type": "moveItem", "itemId": "player", "to": "damp-cave" }
+                {
+                  "type": "moveItem",
+                  "itemId": "player",
+                  "to": "damp-cave"
+                }
               ],
               "else": [
                 {
                   "type": "if",
                   "if": {
                     "type": "compare",
-                    "left": { "kind": "flag", "key": "_loud-eject-roll" },
+                    "left": {
+                      "kind": "flag",
+                      "key": "_loud-eject-roll"
+                    },
                     "op": "==",
-                    "right": { "kind": "literal", "value": 1 }
+                    "right": {
+                      "kind": "literal",
+                      "value": 1
+                    }
                   },
                   "then": [
-                    { "type": "moveItem", "itemId": "player", "to": "round-room" }
+                    {
+                      "type": "moveItem",
+                      "itemId": "player",
+                      "to": "round-room"
+                    }
                   ],
                   "else": [
-                    { "type": "moveItem", "itemId": "player", "to": "deep-canyon" }
+                    {
+                      "type": "moveItem",
+                      "itemId": "player",
+                      "to": "deep-canyon"
+                    }
                   ]
                 }
               ]
             },
-            { "type": "setFlag", "key": "loud-room-ticks", "value": 0 },
-            { "type": "narrate", "text": "It is unbearably loud here, with an ear-splitting roar seeming to come from all around you. There is a pounding in your head which won't stop. With a tremendous effort, you scramble out of the room." }
+            {
+              "type": "setFlag",
+              "key": "loud-room-ticks",
+              "value": 0
+            },
+            {
+              "type": "narrate",
+              "text": "It is unbearably loud here, with an ear-splitting roar seeming to come from all around you. There is a pounding in your head which won't stop. With a tremendous effort, you scramble out of the room."
+            }
           ]
         }
       ]
@@ -12469,12 +14424,33 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "not", "condition": { "type": "playerAt", "roomId": "loud-room" } },
-          { "type": "compare", "left": { "kind": "flag", "key": "loud-room-ticks" }, "op": ">", "right": { "kind": "literal", "value": 0 } }
+          {
+            "type": "not",
+            "condition": {
+              "type": "playerAt",
+              "roomId": "loud-room"
+            }
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "loud-room-ticks"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
         ]
       },
       "effects": [
-        { "type": "setFlag", "key": "loud-room-ticks", "value": 0 }
+        {
+          "type": "setFlag",
+          "key": "loud-room-ticks",
+          "value": 0
+        }
       ]
     }
   ]

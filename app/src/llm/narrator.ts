@@ -370,7 +370,7 @@ export class Narrator {
     // dropped per-turn content so much that a 100-message history is still
     // small (~10K tokens). Higher cap means we trim less often, which matters
     // because trimming invalidates Anthropic's prompt cache (see trimHistory).
-    this.maxHistoryMessages = opts.maxHistoryMessages ?? 100;
+    this.maxHistoryMessages = opts.maxHistoryMessages ?? 300;
   }
 
   // Snapshot of the current message history (for persistence). Returns a copy
@@ -582,13 +582,15 @@ export class Narrator {
   // message off the front of the history shifts all subsequent byte offsets,
   // invalidating the entire cached message-prefix on the next request. The old
   // implementation trimmed 1-3 messages every turn once over the cap → cache
-  // invalidated EVERY TURN → ~5× cost regression. Trimming in chunks of 30
-  // pays the cache cost once per ~30 turns instead.
+  // invalidated EVERY TURN → ~5× cost regression. Trimming in chunks of 90
+  // pays the cache cost once per ~30 turns instead (each player turn adds
+  // ~3 messages, so 90 / 3 = ~30-turn cache-bust interval). Paired with the
+  // 300-message ceiling for ~100 turns of context retained at steady state.
   //
   // Drop snaps to a clean turn boundary so we never strand a tool_result
   // without its corresponding tool_use (which Anthropic rejects as malformed).
   private trimHistory(): void {
-    const TRIM_CHUNK = 30;
+    const TRIM_CHUNK = 90;
     if (this.history.length < this.maxHistoryMessages + TRIM_CHUNK) return;
 
     const before = this.history.length;

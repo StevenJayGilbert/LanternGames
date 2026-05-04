@@ -209,6 +209,20 @@ function take(state: GameState, story: Story, itemId: string): ActionResult {
   if (!item.takeable) {
     return { state, event: reject("not-takeable", { itemId: item.id }), ok: false };
   }
+  // takeableWhen — declarative gate on this take action. Modeled on
+  // Exit.when: condition checked BEFORE the state mutation. Inject `self`
+  // as the item id so the condition can reference the item's own state via
+  // `{fromArg: "self"}` IdRefs (used by templated rules like inventory weight).
+  if (item.takeableWhen) {
+    const substituted = substituteCondition(item.takeableWhen, { self: item.id });
+    if (substituted !== null && !evaluateCondition(substituted, state, story)) {
+      return {
+        state,
+        event: reject("take-blocked", { itemId: item.id, message: item.takeBlockedMessage }),
+        ok: false,
+      };
+    }
+  }
   return {
     state: {
       ...state,

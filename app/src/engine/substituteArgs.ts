@@ -1,15 +1,15 @@
-// Resolve {fromArg: "name"} placeholders in Conditions and Effects to literal
-// strings using the args of a tool call. Used by the handler dispatcher
-// before evaluating preconditions or applying effects, so the rest of the
-// engine never has to deal with IdRefs.
+// Resolve {fromArg: "name"} placeholders in Conditions, Effects, and
+// NumericExprs to literal strings using the args of a tool call. Used by the
+// handler dispatcher before evaluating preconditions or applying effects, so
+// the rest of the engine never has to deal with IdRefs.
 //
-// The substitution is shallow-typed: schema-wise only a few id fields are
-// IdRef (Condition.itemState.itemId, Condition.itemAccessible.itemId,
-// Condition.itemHasStateKey.itemId, Condition.itemReadable.itemId, Effect.setItemState.itemId). We cover
-// those explicitly. Adding new IdRef fields means widening the schema arm
-// AND adding a case here.
+// Built-in actions also call this — e.g. `take` substitutes `self: itemId` so
+// authored takeableWhen conditions can reference the item being taken via
+// `{fromArg: "self"}`.
+//
+// Adding new IdRef fields to the schema means adding a case here.
 
-import type { Condition, Effect, IdRef } from "../story/schema";
+import type { Condition, Effect, IdRef, NumericExpr } from "../story/schema";
 
 type Args = Record<string, unknown>;
 
@@ -21,6 +21,38 @@ function resolveIdRef(ref: IdRef, args: Args): string | null {
   // this Condition/Effect" which gracefully degrades rather than crashing.
   console.warn(`[substituteArgs] arg "${ref.fromArg}" is not a string:`, value);
   return null;
+}
+
+// Walk a NumericExpr tree; substitute IdRefs in the kinds that have them.
+// Returns null if any required substitution fails.
+export function substituteNumericExpr(expr: NumericExpr, args: Args): NumericExpr | null {
+  switch (expr.kind) {
+    case "itemState": {
+      const id = resolveIdRef(expr.itemId, args);
+      if (id === null) return null;
+      return { ...expr, itemId: id };
+    }
+    case "passageState": {
+      const id = resolveIdRef(expr.passageId, args);
+      if (id === null) return null;
+      return { ...expr, passageId: id };
+    }
+    case "add": {
+      const left = substituteNumericExpr(expr.left, args);
+      if (left === null) return null;
+      const right = substituteNumericExpr(expr.right, args);
+      if (right === null) return null;
+      return { kind: "add", left, right };
+    }
+    case "negate": {
+      const of = substituteNumericExpr(expr.of, args);
+      if (of === null) return null;
+      return { kind: "negate", of };
+    }
+    default:
+      // No IdRef fields in this kind.
+      return expr;
+  }
 }
 
 // Walk a Condition tree; substitute IdRefs in arms that have them.
@@ -61,6 +93,13 @@ export function substituteCondition(c: Condition, args: Args): Condition | null 
       const id = resolveIdRef(c.passageId, args);
       if (id === null) return null;
       return { ...c, passageId: id };
+    }
+    case "compare": {
+      const left = substituteNumericExpr(c.left, args);
+      if (left === null) return null;
+      const right = substituteNumericExpr(c.right, args);
+      if (right === null) return null;
+      return { ...c, left, right };
     }
     case "and": {
       const subs: Condition[] = [];
@@ -103,6 +142,20 @@ export function substituteEffect(e: Effect, args: Args): Effect | null {
       const id = resolveIdRef(e.passageId, args);
       if (id === null) return null;
       return { ...e, passageId: id };
+    }
+    case "adjustFlag": {
+      // `by` may be a literal number or a NumericExpr possibly containing IdRefs.
+      if (typeof e.by === "number") return e;
+      const by = substituteNumericExpr(e.by, args);
+      if (by === null) return null;
+      return { ...e, by };
+    }
+    case "adjustItemState": {
+      const id = resolveIdRef(e.itemId, args);
+      if (id === null) return null;
+      const by = typeof e.by === "number" ? e.by : substituteNumericExpr(e.by, args);
+      if (by === null) return null;
+      return { ...e, itemId: id, by };
     }
     case "if": {
       // Substitute inside the condition AND both effect arms.

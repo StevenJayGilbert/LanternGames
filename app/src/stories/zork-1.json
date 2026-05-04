@@ -404,7 +404,7 @@
             "key": "troll-flag",
             "equals": true
           },
-          "blockedMessage": "The troll's axe swings wildly — you cannot pass while he stands here, very much alive."
+          "blockedMessage": "The troll, brandishing his bloody axe, blocks your way."
         },
         "west": {
           "to": "maze-1",
@@ -413,12 +413,22 @@
             "key": "troll-flag",
             "equals": true
           },
-          "blockedMessage": "The troll's axe swings wildly — you cannot pass while he stands here, very much alive."
+          "blockedMessage": "The troll, brandishing his bloody axe, blocks your way."
         }
       },
       "state": {
         "dark": true
-      }
+      },
+      "variants": [
+        {
+          "when": {
+            "type": "flag",
+            "key": "troll-flag",
+            "equals": true
+          },
+          "text": "This is a small room with passages to the east and south and a forbidding hole leading west. Bloodstains and deep scratches mar the walls. The troll is gone — only signs of the fight remain."
+        }
+      ]
     },
     {
       "id": "east-of-chasm",
@@ -936,7 +946,7 @@
     {
       "id": "reservoir",
       "name": "Reservoir",
-      "description": "You are in a vast underground chamber, half-filled with cold dark water. The reservoir stretches north and south, fed from the north and drained by the dam to the south. The water laps gently at the walls.",
+      "description": "You are on what used to be a large lake, but which is now a large mud pile. There are \"shores\" to the north and south.",
       "exits": {
         "north": {
           "to": "reservoir-north"
@@ -958,7 +968,7 @@
             "key": "low-tide",
             "equals": true
           },
-          "text": "You are in a vast underground chamber. With the reservoir drained, the floor is a flat expanse of dark mud and silt — passable, if unpleasant. The chamber stretches north and south, fed from the north and drained by the dam to the south. Half-buried in the mud, an old wooden trunk gleams with what might be jewels."
+          "text": "You are on what used to be a large lake, but which is now a large mud pile. There are \"shores\" to the north and south.\n\nLying half buried in the mud is an old trunk, bulging with jewels."
         }
       ]
     },
@@ -2331,7 +2341,32 @@
       "name": "quantity of water",
       "description": "A measure of clear water, transparent and quite ordinary.",
       "location": "bottle",
-      "takeable": true
+      "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 4
+      }
     },
     {
       "id": "ghosts",
@@ -2346,12 +2381,37 @@
       "description": "A beautifully carved crystal skull, grinning at you rather nastily. A treasure.",
       "location": "land-of-living-dead",
       "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "tags": [
         "treasure",
         "valuable",
         "carryable",
         "fragile"
-      ]
+      ],
+      "state": {
+        "weight": 10
+      }
     },
     {
       "id": "lunch",
@@ -2359,11 +2419,36 @@
       "description": "A hot pepper sandwich wrapped tightly in waxed paper. Smells fierce.",
       "location": "sandwich-bag",
       "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "tags": [
         "consumable",
         "food",
         "carryable"
-      ]
+      ],
+      "state": {
+        "weight": 9
+      }
     },
     {
       "id": "bat",
@@ -2380,8 +2465,31 @@
       "description": "A small brass bell with a worn handle, polished smooth by use.",
       "location": "north-temple",
       "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "state": {
-        "rangAtHades": false
+        "rangAtHades": false,
+        "weight": 10
       }
     },
     {
@@ -2401,8 +2509,31 @@
         "weapon-stuck": false,
         "attack-bonus-add": 0,
         "attack-bonus-pct": 0,
-        "damage": 6
-      }
+        "damage": 6,
+        "weight": 25
+      },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy."
     },
     {
       "id": "bolt",
@@ -2449,7 +2580,8 @@
       "location": "altar",
       "takeable": true,
       "state": {
-        "isOpen": false
+        "isOpen": false,
+        "weight": 10
       },
       "container": {
         "accessibleWhen": {
@@ -2463,6 +2595,28 @@
       "readable": {
         "text": "Commandment #12592| | Oh ye who go about saying unto each: \"Hello sailor\":| Dost thou know the magnitude of thy sin before the gods?| Yea, verily, thou shalt be ground between two stones.| Shall the angry gods cast thy body into the whirlpool?| Surely, thy eye shall be put out with a sharp stick!| Even unto the ends of the earth shalt thou wander and| Unto the land of the dead shalt thou be sent at last.| Surely thou shalt repent of thy cunning."
       },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "appearance": "A large black book lies here, its cover closed.",
       "appearanceVariants": [
         {
@@ -2493,19 +2647,69 @@
       "description": "An ancient Egyptian sceptre, ornamented with bands of enamel in every color of the rainbow. The shaft tapers to a sharp point.",
       "location": "coffin",
       "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "tags": [
         "weapon",
         "treasure",
         "valuable",
         "carryable"
-      ]
+      ],
+      "state": {
+        "weight": 3
+      }
     },
     {
       "id": "timbers",
       "name": "broken timber",
       "description": "A length of broken timber, splintered at one end and surprisingly heavy.",
       "location": "timber-room",
-      "takeable": true
+      "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 50
+      }
     },
     {
       "id": "slide",
@@ -2545,7 +2749,8 @@
       "location": "kitchen-table",
       "takeable": true,
       "state": {
-        "isOpen": false
+        "isOpen": false,
+        "weight": 9
       },
       "container": {
         "capacity": 9,
@@ -2556,7 +2761,29 @@
           "equals": true
         },
         "accessBlockedMessage": "The brown sack is closed."
-      }
+      },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy."
     },
     {
       "id": "tool-chest",
@@ -2652,7 +2879,8 @@
       "location": "treasure-room",
       "takeable": true,
       "state": {
-        "isOpen": false
+        "isOpen": false,
+        "weight": 10
       },
       "container": {
         "capacity": 5,
@@ -2663,21 +2891,93 @@
           "equals": true
         },
         "accessBlockedMessage": "The chalice is closed."
-      }
+      },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy."
     },
     {
       "id": "garlic",
       "name": "clove of garlic",
       "description": "A pungent clove of garlic, its papery skin crackling at the slightest touch.",
       "location": "sandwich-bag",
-      "takeable": true
+      "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 4
+      }
     },
     {
       "id": "trident",
       "name": "crystal trident",
       "description": "Poseidon's own trident, carved from a single piece of crystal. A treasure.",
       "location": "atlantis-room",
-      "takeable": true
+      "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 12
+      }
     },
     {
       "id": "cyclops",
@@ -2796,7 +3096,8 @@
       "location": "kitchen-table",
       "takeable": true,
       "state": {
-        "isOpen": false
+        "isOpen": false,
+        "weight": 9
       },
       "container": {
         "capacity": 4,
@@ -2808,6 +3109,28 @@
         },
         "accessBlockedMessage": "The glass bottle is closed."
       },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "tags": [
         "container",
         "consumable",
@@ -2833,7 +3156,8 @@
       "location": "egypt-room",
       "takeable": true,
       "state": {
-        "isOpen": false
+        "isOpen": false,
+        "weight": 55
       },
       "container": {
         "capacity": 35,
@@ -2844,21 +3168,93 @@
           "equals": true
         },
         "accessBlockedMessage": "The gold coffin is closed."
-      }
+      },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy."
     },
     {
       "id": "pump",
       "name": "hand-held air pump",
       "description": "A small hand-held pump — the sort you'd use for a bicycle tire, or perhaps a folded raft.",
       "location": "reservoir-north",
-      "takeable": true
+      "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 10
+      }
     },
     {
       "id": "jade",
       "name": "jade figurine",
       "description": "An exquisite jade figurine, carved with delicate features. A treasure.",
       "location": "bat-room",
-      "takeable": true
+      "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 10
+      }
     },
     {
       "id": "knife",
@@ -2876,8 +3272,31 @@
         "weapon-stuck": false,
         "attack-bonus-add": 0,
         "attack-bonus-pct": 0,
-        "damage": 2
-      }
+        "damage": 2,
+        "weight": 10
+      },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy."
     },
     {
       "id": "bones",
@@ -2891,7 +3310,32 @@
       "name": "burned-out lantern",
       "description": "A battered brass lantern, its battery long since drained dry.",
       "location": "maze-5",
-      "takeable": true
+      "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 20
+      }
     },
     {
       "id": "bag-of-coins",
@@ -2899,11 +3343,36 @@
       "description": "An old leather bag, bulging with coins. A treasure.",
       "location": "maze-5",
       "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "tags": [
         "treasure",
         "valuable",
         "carryable"
-      ]
+      ],
+      "state": {
+        "weight": 15
+      }
     },
     {
       "id": "lamp",
@@ -2914,8 +3383,31 @@
       "lightSource": {},
       "state": {
         "isLit": false,
-        "batteryTurns": 330
+        "batteryTurns": 330,
+        "weight": 15
       },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "appearance": "A battery-powered brass lantern.",
       "tags": [
         "light-source",
@@ -2928,7 +3420,32 @@
       "name": "large emerald",
       "description": "A flawless emerald the size of a small egg, its green depths catching every gleam of light. A treasure.",
       "location": "buoy",
-      "takeable": true
+      "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 6
+      }
     },
     {
       "id": "advertisement",
@@ -2939,12 +3456,37 @@
       "readable": {
         "text": "\"WELCOME TO ZORK!| | ZORK is a game of adventure, danger, and low cunning. In it you will explore some of the most amazing territory ever seen by mortals. No computer should be without one!\""
       },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "appearance": "A small printed leaflet.",
       "tags": [
         "readable",
         "paper",
         "carryable"
-      ]
+      ],
+      "state": {
+        "weight": 2
+      }
     },
     {
       "id": "leak",
@@ -3006,9 +3548,32 @@
       "readable": {
         "text": "| (Close cover before striking)| | YOU too can make BIG MONEY in the exciting field of PAPER SHUFFLING!| | Mr. Anderson of Muddle, Mass. says: \"Before I took this course I was a lowly bit twiddler. Now with what I learned at GUE Tech I feel really important and can obfuscate and confuse with the best.\"| | Dr. Blank had this to say: \"Ten short days ago all I could look forward to was a dead-end job as a doctor. Now I have a promising future and make really big Zorkmids.\"| | GUE Tech can't promise these fantastic results to everyone. But when you earn your degree from GUE Tech, your future will be brighter."
       },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "state": {
         "matchesRemaining": 5,
-        "isLit": false
+        "isLit": false,
+        "weight": 1
       }
     },
     {
@@ -3050,7 +3615,32 @@
       "name": "painting",
       "description": "Fortunately, there is still one chance for you to be a vandal, for on the far wall is a painting of unparalleled beauty.",
       "location": "gallery",
-      "takeable": true
+      "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 15
+      }
     },
     {
       "id": "candles",
@@ -3061,8 +3651,31 @@
       "lightSource": {},
       "state": {
         "isLit": true,
-        "burnTurnsRemaining": 230
-      }
+        "burnTurnsRemaining": 230,
+        "weight": 5
+      },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy."
     },
     {
       "id": "bodies",
@@ -3079,7 +3692,32 @@
       "name": "pile of leaves",
       "description": "A pile of dry leaves, gathered as if by wind.",
       "location": "grating-clearing",
-      "takeable": true
+      "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 25
+      }
     },
     {
       "id": "inflatable-boat",
@@ -3087,12 +3725,35 @@
       "description": "A folded square of yellow plastic with a small valve attached — clearly intended to be inflated.",
       "location": "dam-base",
       "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "tags": [
         "vehicle",
         "carryable"
       ],
       "state": {
-        "inflation": "deflated"
+        "inflation": "deflated",
+        "weight": 20
       },
       "vehicle": {
         "mobile": true,
@@ -3111,6 +3772,28 @@
       "description": "A heavy platinum bar, dense and gleaming dully. A treasure.",
       "location": "loud-room",
       "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "tags": [
         "treasure",
         "valuable",
@@ -3140,6 +3823,9 @@
             ]
           }
         ]
+      },
+      "state": {
+        "weight": 20
       }
     },
     {
@@ -3148,6 +3834,28 @@
       "description": "A heavy iron pot brimming with gold coins. A treasure.",
       "location": "end-of-rainbow",
       "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "tags": [
         "treasure",
         "valuable",
@@ -3157,6 +3865,9 @@
         "type": "flag",
         "key": "rainbow-flag",
         "equals": true
+      },
+      "state": {
+        "weight": 15
       }
     },
     {
@@ -3219,7 +3930,8 @@
       "location": "river-4",
       "takeable": true,
       "state": {
-        "isOpen": false
+        "isOpen": false,
+        "weight": 8
       },
       "container": {
         "capacity": 20,
@@ -3230,7 +3942,29 @@
           "equals": true
         },
         "accessBlockedMessage": "The red buoy is closed."
-      }
+      },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy."
     },
     {
       "id": "rope",
@@ -3238,6 +3972,28 @@
       "description": "A long coil of strong rope.",
       "location": "attic",
       "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "tags": [
         "tool",
         "carryable"
@@ -3283,7 +4039,10 @@
           "text": "A long coil of strong rope, currently tied to the wooden railing and descending into the darkness below. Taking the rope is the way to untie it."
         }
       ],
-      "narratorNote": "When the rope is at dome-room with dome-flag=true (tied), take(rope) is the canonical untie mechanic — the engine fires the untie-rope-on-take trigger, moves the rope into the player's inventory, and clears dome-flag. NEVER refuse a take with 'you must untie first' — taking IS untying. For player intents like 'untie rope', 'get the rope back', 'retrieve rope', or 'untie it' while the rope is tied, always call take(rope)."
+      "narratorNote": "When the rope is at dome-room with dome-flag=true (tied), take(rope) is the canonical untie mechanic — the engine fires the untie-rope-on-take trigger, moves the rope into the player's inventory, and clears dome-flag. NEVER refuse a take with 'you must untie first' — taking IS untying. For player intents like 'untie rope', 'get the rope back', 'retrieve rope', or 'untie it' while the rope is tied, always call take(rope).",
+      "state": {
+        "weight": 10
+      }
     },
     {
       "id": "rusty-knife",
@@ -3301,8 +4060,31 @@
         "weapon-stuck": false,
         "attack-bonus-add": 0,
         "attack-bonus-pct": 0,
-        "damage": 2
-      }
+        "damage": 2,
+        "weight": 10
+      },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy."
     },
     {
       "id": "sand",
@@ -3316,14 +4098,64 @@
       "name": "sapphire-encrusted bracelet",
       "description": "A delicate bracelet set with sapphires, glittering even in dim light. A treasure.",
       "location": "gas-room",
-      "takeable": true
+      "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 5
+      }
     },
     {
       "id": "screwdriver",
       "name": "screwdriver",
       "description": "A standard flat-head screwdriver, well-worn but serviceable.",
       "location": "maintenance-room",
-      "takeable": true
+      "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 5
+      }
     },
     {
       "id": "keys",
@@ -3331,24 +4163,99 @@
       "description": "A skeleton key of dark iron, deeply worn — clearly very old.",
       "location": "maze-5",
       "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "tags": [
         "key",
         "carryable"
-      ]
+      ],
+      "state": {
+        "weight": 10
+      }
     },
     {
       "id": "shovel",
       "name": "shovel",
       "description": "A long-handled shovel, well-balanced for digging.",
       "location": "sandy-beach",
-      "takeable": true
+      "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 15
+      }
     },
     {
       "id": "coal",
       "name": "small pile of coal",
       "description": "A small heap of dusty black coal — surprisingly heavy, and very dirty.",
       "location": "dead-end-5",
-      "takeable": true
+      "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 15
+      }
     },
     {
       "id": "ladder",
@@ -3365,7 +4272,32 @@
       "name": "beautiful jeweled scarab",
       "description": "An exquisite scarab beetle carved from a single piece of jade and chased with gold. A treasure.",
       "location": "sandy-cave",
-      "takeable": true
+      "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 7
+      }
     },
     {
       "id": "large-bag",
@@ -3380,11 +4312,36 @@
       "description": "A slim, wickedly pointed stiletto — the thief's signature weapon.",
       "location": "thief",
       "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "tags": [
         "weapon",
         "bladed",
         "carryable"
-      ]
+      ],
+      "state": {
+        "weight": 10
+      }
     },
     {
       "id": "machine-switch",
@@ -3411,7 +4368,8 @@
         "weapon-stuck": false,
         "attack-bonus-add": 0,
         "attack-bonus-pct": 0,
-        "damage": 5
+        "damage": 5,
+        "weight": 30
       },
       "appearance": "An elvish sword of great antiquity, blade etched with fine runes.",
       "variants": [
@@ -3449,7 +4407,29 @@
           },
           "text": "An elvish sword of great antiquity, the blade etched with fine runes — and presently glowing with a faint blue light."
         }
-      ]
+      ],
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy."
     },
     {
       "id": "map",
@@ -3459,6 +4439,31 @@
       "takeable": true,
       "readable": {
         "text": "The map shows a forest with three clearings. The largest clearing contains a house. Three paths leave the large clearing. One of these paths, leading southwest, is marked \"To Stone Barrow\"."
+      },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 5
       }
     },
     {
@@ -3522,8 +4527,31 @@
       "takeable": true,
       "lightSource": {},
       "state": {
-        "isLit": true
+        "isLit": true,
+        "weight": 25
       },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "tags": [
         "light-source",
         "treasure",
@@ -3539,6 +4567,31 @@
       "takeable": true,
       "readable": {
         "text": "\"\tFlood Control Dam #3| | FCD#3 was constructed in year 783 of the Great Underground Empire to harness the mighty Frigid River. This work was supported by a grant of 37 million zorkmids from your omnipotent local tyrant Lord Dimwit Flathead the Excessive. This impressive structure is composed of 370,000 cubic feet of concrete, is 256 feet tall at the center, and 193 feet wide at the top. The lake created behind the dam has a volume of 1.7 billion cubic feet, an area of 12 million square feet, and a shore line of 36 thousand feet.| | The construction of FCD#3 took 112 days from ground breaking to the dedication. It required a work force of 384 slaves, 34 slave drivers, 12 engineers, 2 turtle doves, and a partridge in a pear tree. The work was managed by a command team composed of 2345 bureaucrats, 2347 secretaries (at least two of whom could type), 12,256 paper shufflers, 52,469 rubber stampers, 245,193 red tape processors, and nearly one million dead trees.| | We will now point out some of the more interesting features of FCD#3 as we conduct you on a guided tour of the facilities:| | 1) You start your tour here in the Dam Lobby. You will notice on your right that...."
+      },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 5
       }
     },
     {
@@ -3570,10 +4623,35 @@
       "description": "An old wooden trunk, mud-caked and bulging with jewels. A treasure.",
       "location": "reservoir",
       "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "visibleWhen": {
         "type": "flag",
         "key": "low-tide",
         "equals": true
+      },
+      "state": {
+        "weight": 35
       }
     },
     {
@@ -3583,7 +4661,8 @@
       "location": "maintenance-room",
       "takeable": true,
       "state": {
-        "isOpen": false
+        "isOpen": false,
+        "weight": 4
       },
       "container": {
         "capacity": 7,
@@ -3597,14 +4676,61 @@
       },
       "readable": {
         "text": "---> Frobozz Magic Gunk Company <---| All-Purpose Gunk"
-      }
+      },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy."
     },
     {
       "id": "putty",
       "name": "viscous material",
       "description": "A lump of viscous greyish material, evidently good for sealing a puncture or two.",
       "location": "tube",
-      "takeable": true
+      "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 6
+      }
     },
     {
       "id": "engravings",
@@ -3623,6 +4749,31 @@
       "takeable": true,
       "readable": {
         "text": "Congratulations!| | You are the privileged owner of ZORK I: The Great Underground Empire, a self-contained and self-maintaining universe. If used and maintained in accordance with normal operating practices for small universes, ZORK will provide many months of trouble-free operation."
+      },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 5
       }
     },
     {
@@ -3651,7 +4802,32 @@
       "name": "wrench",
       "description": "A solid iron wrench, sized for a familiar bolt.",
       "location": "maintenance-room",
-      "takeable": true
+      "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 10
+      }
     },
     {
       "id": "control-panel",
@@ -3667,7 +4843,8 @@
       "location": "up-a-tree",
       "takeable": true,
       "state": {
-        "isOpen": true
+        "isOpen": true,
+        "weight": 4
       },
       "container": {
         "capacity": 20,
@@ -3678,7 +4855,29 @@
           "equals": true
         },
         "accessBlockedMessage": "The bird's nest is closed."
-      }
+      },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy."
     },
     {
       "id": "egg",
@@ -3687,7 +4886,8 @@
       "location": "nest",
       "takeable": true,
       "state": {
-        "isOpen": false
+        "isOpen": false,
+        "weight": 6
       },
       "container": {
         "capacity": 6,
@@ -3699,6 +4899,28 @@
         },
         "accessBlockedMessage": "The jewel-encrusted egg is closed."
       },
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "tags": [
         "treasure",
         "fragile",
@@ -3724,7 +4946,32 @@
       "name": "golden clockwork canary",
       "description": "A golden clockwork canary with ruby eyes and a silver beak. A crystal window below its left wing reveals intricate machinery; the mechanism appears to have wound down. A treasure.",
       "location": "egg",
-      "takeable": true
+      "takeable": true,
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
+      "state": {
+        "weight": 3
+      }
     },
     {
       "id": "stairs",
@@ -3846,6 +5093,28 @@
       "narratorNote": "The basket is a freight elevator on a chain. It can only be moved by 'lower basket' or 'raise basket' (use the lower-basket / raise-basket intents). It cannot be picked up or carried; nor can it be opened or closed (it has no lid). Treat it as a fixed feature whose only state is up vs. down. The chain spans both ends of the shaft, so the basket is perceivable from BOTH shaft-room and lower-shaft, but with different prose: from above you see it (or its absence), from below you see it overhead (or at your feet)."
     },
     {
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "id": "diamond",
       "name": "huge diamond",
       "description": "A magnificent flawless diamond, gleaming with inner fire.",
@@ -3855,9 +5124,34 @@
         "treasure",
         "valuable",
         "carryable"
-      ]
+      ],
+      "state": {
+        "weight": 25
+      }
     },
     {
+      "takeableWhen": {
+        "type": "compare",
+        "left": {
+          "kind": "add",
+          "left": {
+            "kind": "inventoryWeight"
+          },
+          "right": {
+            "kind": "itemState",
+            "itemId": {
+              "fromArg": "self"
+            },
+            "key": "weight"
+          }
+        },
+        "op": "<=",
+        "right": {
+          "kind": "flag",
+          "key": "max-carry-weight"
+        }
+      },
+      "takeBlockedMessage": "Your load is too heavy.",
       "id": "bauble",
       "name": "beautiful brass bauble",
       "description": "A small, glittering brass bauble — surprisingly heavy for its size. A treasure.",
@@ -3867,7 +5161,10 @@
         "treasure",
         "valuable",
         "carryable"
-      ]
+      ],
+      "state": {
+        "weight": 8
+      }
     }
   ],
   "passages": [
@@ -15944,6 +17241,7 @@
     "player-health": 30,
     "global-turn-count": 0,
     "darkness-turns": 0,
+    "max-carry-weight": 100,
     "attack-this-turn": false,
     "combat-engaged-with-troll": false,
     "combat-engaged-with-cyclops": false,

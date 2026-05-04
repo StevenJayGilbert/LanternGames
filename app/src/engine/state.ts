@@ -583,10 +583,21 @@ export function evaluateNumericExpr(expr: NumericExpr, state: GameState): number
       return typeof v === "number" ? v : 0;
     }
     case "passageState": {
+      // expr.passageId is IdRef. Substitution should have happened upstream;
+      // an unsubstituted {fromArg} object means a code path forgot to call
+      // the substituter. Fall back to 0 with a warning rather than crashing.
+      if (typeof expr.passageId !== "string") {
+        console.warn(`[evaluateNumericExpr] passageState.passageId is unsubstituted IdRef:`, expr.passageId);
+        return 0;
+      }
       const v = state.passageStates[expr.passageId]?.[expr.key];
       return typeof v === "number" ? v : 0;
     }
     case "itemState": {
+      if (typeof expr.itemId !== "string") {
+        console.warn(`[evaluateNumericExpr] itemState.itemId is unsubstituted IdRef:`, expr.itemId);
+        return 0;
+      }
       const v = state.itemStates[expr.itemId]?.[expr.key];
       return typeof v === "number" ? v : 0;
     }
@@ -596,6 +607,16 @@ export function evaluateNumericExpr(expr: NumericExpr, state: GameState): number
     }
     case "inventoryCount":
       return countItemsAt(state, PLAYER_ITEM_ID);
+    case "inventoryWeight": {
+      let total = 0;
+      for (const [id, loc] of Object.entries(state.itemLocations)) {
+        if (id === PLAYER_ITEM_ID) continue;
+        if (loc !== PLAYER_ITEM_ID) continue;
+        const w = state.itemStates[id]?.weight;
+        if (typeof w === "number") total += w;
+      }
+      return total;
+    }
     case "itemCountAt":
       // Resolve the legacy "inventory" alias.
       return countItemsAt(state, resolveLocation(expr.location));
@@ -603,6 +624,10 @@ export function evaluateNumericExpr(expr: NumericExpr, state: GameState): number
       return state.matchedIntents.length;
     case "visitedCount":
       return state.visitedRooms.length;
+    case "add":
+      return evaluateNumericExpr(expr.left, state) + evaluateNumericExpr(expr.right, state);
+    case "negate":
+      return -evaluateNumericExpr(expr.of, state);
   }
 }
 
@@ -690,13 +715,23 @@ export function applyEffect(state: GameState, e: Effect, story?: Story): GameSta
     }
     case "adjustFlag": {
       const cur = state.flags[e.key];
-      const n = (typeof cur === "number" ? cur : 0) + e.by;
+      // `by` is either a literal number or a NumericExpr; evaluate the latter
+      // against current state at effect-application time.
+      const delta = typeof e.by === "number" ? e.by : evaluateNumericExpr(e.by, state);
+      const n = (typeof cur === "number" ? cur : 0) + delta;
       return { ...state, flags: { ...state.flags, [e.key]: n } };
     }
     case "adjustItemState": {
+      // adjustItemState.itemId may be IdRef; substitution upstream should
+      // have resolved it. If it's still {fromArg}, log and skip the mutation.
+      if (typeof e.itemId !== "string") {
+        console.warn(`[applyEffect] adjustItemState.itemId is unsubstituted IdRef:`, e.itemId);
+        return state;
+      }
       const current = state.itemStates[e.itemId] ?? {};
       const cur = current[e.key];
-      const n = (typeof cur === "number" ? cur : 0) + e.by;
+      const delta = typeof e.by === "number" ? e.by : evaluateNumericExpr(e.by, state);
+      const n = (typeof cur === "number" ? cur : 0) + delta;
       return {
         ...state,
         itemStates: {
@@ -892,9 +927,14 @@ export function visibleExits(
 
     // Choose blockedMessage: story-authored exit message > passage-supplied
     // blocked message > undefined (renderer/LLM fall back to a generic line).
-    const blockedMessage =
-      exit.blockedMessage ??
-      (!passageOk ? passageBlockedMessage : undefined);
+    // ONLY surface blockedMessage when the exit is actually blocked. Otherwise
+    // the canonical refusal text leaks into the view JSON and the LLM
+    // pattern-matches against it — narrating a passable exit as blocked using
+    // its own authored refusal prose. (See troll-room post-defeat and
+    // reservoir-south at low-tide for symptomatic transcripts.)
+    const blockedMessage = !open
+      ? exit.blockedMessage ?? (!passageOk ? passageBlockedMessage : undefined)
+      : undefined;
 
     out.push([
       dir,

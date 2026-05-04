@@ -742,6 +742,138 @@ console.log("\n=== #13 score view + rank tier ===");
     : fail(`view.score.max = ${v.score?.max}`);
 }
 
+// ----- NumericExpr arithmetic + inventoryWeight -----
+console.log("\n=== NumericExpr arithmetic + inventoryWeight ===");
+{
+  const { evaluateNumericExpr } = await import("../src/engine/state");
+  const e = newEngine();
+  e.state = { ...e.state, flags: { ...e.state.flags, "x": 5, "y": 10 } };
+
+  const lit = evaluateNumericExpr({ kind: "literal", value: 7 }, e.state);
+  lit === 7 ? pass("literal evaluates to 7") : fail(`literal got ${lit}`);
+
+  const sum = evaluateNumericExpr(
+    { kind: "add", left: { kind: "flag", key: "x" }, right: { kind: "flag", key: "y" } },
+    e.state,
+  );
+  sum === 15 ? pass("add(flag(x)=5, flag(y)=10) = 15") : fail(`add got ${sum}`);
+
+  const neg = evaluateNumericExpr({ kind: "negate", of: { kind: "flag", key: "x" } }, e.state);
+  neg === -5 ? pass("negate(flag(x)=5) = -5") : fail(`negate got ${neg}`);
+
+  // inventoryWeight: synthesize two items in inventory with weights.
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, lamp: "player", sword: "player" },
+    itemStates: {
+      ...e.state.itemStates,
+      lamp: { ...(e.state.itemStates.lamp ?? {}), weight: 15 },
+      sword: { ...(e.state.itemStates.sword ?? {}), weight: 30 },
+    },
+  };
+  const w = evaluateNumericExpr({ kind: "inventoryWeight" }, e.state);
+  w === 45 ? pass("inventoryWeight(lamp=15, sword=30) = 45") : fail(`inventoryWeight got ${w}`);
+
+  // Items at "nowhere" or in rooms don't count.
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, axe: "troll-room" },
+    itemStates: {
+      ...e.state.itemStates,
+      axe: { ...(e.state.itemStates.axe ?? {}), weight: 25 },
+    },
+  };
+  const w2 = evaluateNumericExpr({ kind: "inventoryWeight" }, e.state);
+  w2 === 45 ? pass("inventoryWeight excludes items not in inventory") : fail(`got ${w2}`);
+}
+
+// ----- adjustFlag.by accepts NumericExpr -----
+console.log("\n=== adjustFlag.by NumericExpr deltas ===");
+{
+  const { applyEffect } = await import("../src/engine/state");
+  const e = newEngine();
+  e.state = { ...e.state, flags: { ...e.state.flags, "score": 100, "bonus": 5 } };
+
+  // Literal still works (backwards compatible).
+  const s1 = applyEffect(e.state, { type: "adjustFlag", key: "score", by: 10 });
+  s1.flags.score === 110 ? pass("adjustFlag literal by: 10 → score 110") : fail(`got ${s1.flags.score}`);
+
+  // NumericExpr by — adjust score by flag(bonus).
+  const s2 = applyEffect(e.state, {
+    type: "adjustFlag",
+    key: "score",
+    by: { kind: "flag", key: "bonus" },
+  });
+  s2.flags.score === 105 ? pass("adjustFlag by NumericExpr flag(bonus)=5 → score 105") : fail(`got ${s2.flags.score}`);
+
+  // Composite: by add(flag(bonus), literal(2)) = 7
+  const s3 = applyEffect(e.state, {
+    type: "adjustFlag",
+    key: "score",
+    by: { kind: "add", left: { kind: "flag", key: "bonus" }, right: { kind: "literal", value: 2 } },
+  });
+  s3.flags.score === 107 ? pass("adjustFlag by add(flag(bonus), 2) → score 107") : fail(`got ${s3.flags.score}`);
+
+  // Negate: by negate(flag(bonus)) = -5
+  const s4 = applyEffect(e.state, {
+    type: "adjustFlag",
+    key: "score",
+    by: { kind: "negate", of: { kind: "flag", key: "bonus" } },
+  });
+  s4.flags.score === 95 ? pass("adjustFlag by negate(flag(bonus)) → score 95") : fail(`got ${s4.flags.score}`);
+}
+
+// ----- takeableWhen rejection (inventory-weight gate) -----
+console.log("\n=== takeableWhen rejects when carry-weight would exceed cap ===");
+{
+  // Mutate the story for this test: give the lamp a takeableWhen that rejects
+  // when total weight would exceed max-carry-weight, plus state.weight.
+  const testStory = JSON.parse(JSON.stringify(story));
+  const lamp = testStory.items.find((i: { id: string }) => i.id === "lamp");
+  lamp.state = { ...(lamp.state ?? {}), weight: 15 };
+  lamp.takeableWhen = {
+    type: "compare",
+    left: {
+      kind: "add",
+      left: { kind: "inventoryWeight" },
+      right: { kind: "itemState", itemId: { fromArg: "self" }, key: "weight" },
+    },
+    op: "<=",
+    right: { kind: "flag", key: "max-carry-weight" },
+  };
+  lamp.takeBlockedMessage = "Your load is too heavy.";
+  // Sword too — to make total weight exceed cap when both held + lamp attempted.
+  const sword = testStory.items.find((i: { id: string }) => i.id === "sword");
+  sword.state = { ...(sword.state ?? {}), weight: 30 };
+
+  const { Engine: TestEngine } = await import("../src/engine/engine");
+  const te = new TestEngine(testStory);
+  // Player at living-room (lamp's location is irrelevant for this test;
+  // we'll move the lamp to the player's room directly).
+  te.state = {
+    ...te.state,
+    itemLocations: { ...te.state.itemLocations, player: "living-room", lamp: "living-room", sword: "player" },
+    flags: { ...te.state.flags, "max-carry-weight": 40 },
+  };
+  // Sword (30) is in inventory; lamp (15) attempt: 30 + 15 = 45 > 40 → reject.
+  const r = te.execute({ type: "take", itemId: "lamp" });
+  r.ok === false &&
+    r.event.type === "rejected" &&
+    (r.event as { reason?: string }).reason === "take-blocked"
+    ? pass("take(lamp) rejected with reason 'take-blocked' when over cap")
+    : fail(`event=${JSON.stringify(r.event)}`);
+  te.state.itemLocations.lamp === "living-room"
+    ? pass("lamp stayed in room (take did not commit)")
+    : fail(`lamp at ${te.state.itemLocations.lamp}`);
+
+  // Now raise the cap and retry — should succeed.
+  te.state = { ...te.state, flags: { ...te.state.flags, "max-carry-weight": 100 } };
+  const r2 = te.execute({ type: "take", itemId: "lamp" });
+  r2.ok === true && te.state.itemLocations.lamp === "player"
+    ? pass("take(lamp) succeeds when cap is raised")
+    : fail(`event=${JSON.stringify(r2.event)} loc=${te.state.itemLocations.lamp}`);
+}
+
 // ----- Done -----
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

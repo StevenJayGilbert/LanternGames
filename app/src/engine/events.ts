@@ -36,6 +36,7 @@ export type RejectionReason =
   | "not-carrying"        // for drop / put
   | "fixed-item"          // can't take scenery
   | "not-takeable"
+  | "take-blocked"        // for take: item's takeableWhen condition is false (e.g. inventory weight cap)
   | "no-such-direction"   // current room has no exit in this direction
   | "exit-blocked"        // exit exists but its `when` condition is false
   | "broken-exit-target"  // exit points to a nonexistent room (validator should catch)
