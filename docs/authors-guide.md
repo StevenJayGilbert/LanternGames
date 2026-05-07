@@ -252,18 +252,41 @@ The biggest schema. Items model takeable objects, scenery, NPCs, containers, lig
 }
 ```
 
-### `appearance` vs `description` vs `variants` vs `appearanceVariants`
+### `appearance` vs `description` vs `variants` vs `appearanceVariants` vs `nameVariants`
 
-These four fields confuse first-time authors. The distinction:
+These five fields confuse first-time authors. The distinction:
 
 | Field | Surfaced when | Use for |
 |---|---|---|
+| `name` | Everywhere the item label appears (view, inventory, rejection text, narration substitution) | The canonical short label ("brass lantern"). |
+| `nameVariants` | Same as name, when state-conditional | State-aware label — e.g. folded boat ↔ "magic boat" ↔ "deflated boat". |
 | `description` | Player runs `examine` | The "look closely" text. Rich, detailed. |
 | `variants` | Same as description, when state-conditional | State-aware examine text (sword-glowing-in-presence-of-enemies). |
 | `appearance` | Player is in the same room (every turn) | A short room-presence line ("A brass lantern sits on the floor"). |
 | `appearanceVariants` | Same as appearance, when state-conditional | State-aware room-presence ("dark and cold" vs "glows steadily"). |
 
-Don't confuse them. The LLM uses `appearance` to weave the item into the room narration ("you see X here"); it uses `description` to answer `examine X`.
+Don't confuse them. The LLM uses `appearance` to weave the item into the room narration ("you see X here"); it uses `description` to answer `examine X`. Use `nameVariants` only when the item's *identity* shifts with state (a folded plastic boat becomes a "magic boat" once inflated); for cosmetic state changes that don't change the noun, prefer `appearanceVariants`.
+
+#### Recipe: when an item's identity changes with state
+
+```jsonc
+{
+  "id": "vase",
+  "name": "porcelain vase",
+  "nameVariants": [
+    { "when": { "type": "itemState", "itemId": "vase", "key": "broken", "equals": true },
+      "name": "vase shards" }
+  ],
+  "appearance": "A delicate porcelain vase rests on the pedestal.",
+  "appearanceVariants": [
+    { "when": { "type": "itemState", "itemId": "vase", "key": "broken", "equals": true },
+      "text": "Shards of broken porcelain are scattered across the floor." }
+  ],
+  "state": { "broken": false }
+}
+```
+
+The parser keyword-matches against every name (canonical + all variants), so the player can refer to "vase" or "shards" in either state and the engine resolves to the same id.
 
 ### `location` — where the item starts
 

@@ -64,7 +64,6 @@ Style
 
 Echoes of the original
 - Don't paraphrase canonical text — when the engine returns the canonical room or item description, prefer it as-is unless the situation demands flourish.
-- Routine action confirmations should be brief and flat: "Taken." / "Dropped." / "The lamp is now on." Don't pad them.
 - The world is the Great Underground Empire. Treasures, trolls, thieves, and grues live here. If the player wanders into total darkness without a light source, channel the famous warning: it is pitch black; you are likely to be eaten by a grue.
 
 Discipline

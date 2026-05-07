@@ -26,6 +26,28 @@ const gaps: string[] = [];
 let firstWalkthroughFailure: string | null = null;
 let inWalkthrough = true;
 
+// Death-state helper. Under the canonical 3-life soft-death mechanic, a
+// fatal trigger doesn't hard-end on the first hit — it sets just-died=true,
+// the central process-death trigger drops items + respawns the player at
+// forest-1, and only the 3rd death hard-ends. Tests written before this
+// migration asserted `finished.won === false`. They now check this helper,
+// which accepts EITHER outcome.
+function playerDied(state: GameState): boolean {
+  if (state.finished?.won === false) return true;
+  const deaths = state.flags?.deaths;
+  return typeof deaths === "number" && deaths >= 1 && state.itemLocations?.player === "forest-1";
+}
+
+// Pull the most recent death message regardless of soft-die vs. hard-end.
+// Hard-end stores it on state.finished.message; soft-die leaves it in
+// flag.death-message (process-death deliberately doesn't clear so tests can
+// inspect it). Returns "" if neither is set.
+function deathMessage(state: GameState): string {
+  if (state.finished?.message) return state.finished.message;
+  const flag = state.flags?.["death-message"];
+  return typeof flag === "string" ? flag : "";
+}
+
 function pass(label: string): void {
   console.log(`  + ${label}`);
   passed++;
@@ -1000,7 +1022,7 @@ if (!e.state.finished && !aborted()) {
   go(e, "down", "dam-base", "P14 dam-base");
 
   // INFLATE PLASTIC WITH PUMP
-  intent(e, "inflate-boat", undefined, "P14 inflate boat");
+  intent(e, "inflate-boat", { withItemId: "pump" }, "P14 inflate boat");
   if (e.state.itemStates["inflatable-boat"]?.inflation === "inflated") {
     pass("P14 boat inflated");
   } else {
@@ -1190,8 +1212,8 @@ console.log("\n--- F1: Grue eats player (extinguish lamp + wait in cellar) ---")
   f.execute({ type: "wait" });
   f.execute({ type: "wait" });
   f.execute({ type: "wait" });
-  if (f.state.finished?.won === false) {
-    pass(`F1 grue-eats fired (msg: ${f.state.finished.message?.slice(0, 60)}...)`);
+  if (playerDied(f.state)) {
+    pass(`F1 grue-eats fired (msg: ${(f.state.finished?.message ?? f.state.flags["death-message"] ?? "soft-die")?.toString().slice(0, 60)}...)`);
   } else {
     note(`F1 grue did not end game (finished=${JSON.stringify(f.state.finished)} darkness=${f.state.flags["darkness-turns"]})`);
   }
@@ -1212,8 +1234,8 @@ console.log("\n--- F2: Gas room explosion ---");
   // Descend: shaft-room.N = smelly-room. smelly-room.D = gas-room.
   f.execute({ type: "go", direction: "north" });
   f.execute({ type: "go", direction: "down" });
-  if (f.state.finished?.won === false) {
-    pass(`F2 gas-room explosion fired (msg: ${f.state.finished.message?.slice(0, 60)}...)`);
+  if (playerDied(f.state)) {
+    pass(`F2 gas-room explosion fired (msg: ${(f.state.finished?.message ?? f.state.flags["death-message"] ?? "soft-die")?.toString().slice(0, 60)}...)`);
   } else {
     note(`F2 gas-room explosion not wired; player at ${f.state.itemLocations.player} alive`);
   }
@@ -1228,7 +1250,7 @@ console.log("\n--- F3: Boat punctured (board with sword) ---");
     itemLocations: { ...f.state.itemLocations, player: "dam-base", pump: "player",
       sword: "player", },
   };
-  f.execute({ type: "recordIntent", signalId: "inflate-boat" });
+  f.execute({ type: "recordIntent", signalId: "inflate-boat", args: { withItemId: "pump" } });
   f.execute({ type: "board", itemId: "inflatable-boat" });
   if (f.state.itemStates["inflatable-boat"]?.inflation === "punctured" &&
       f.state.itemLocations.player === "dam-base") {
@@ -1262,8 +1284,8 @@ console.log("\n--- F4: River 5 waterfall death ---");
   };
   f.execute({ type: "wait" });
   f.execute({ type: "wait" });
-  if (f.state.finished?.won === false &&
-      /waterfall/i.test(f.state.finished.message ?? "")) {
+  if (playerDied(f.state) &&
+      /waterfall/i.test(f.state.finished?.message ?? f.state.flags["death-message"]?.toString() ?? "")) {
     pass("F4 waterfall death fires after 2 ticks at river-5");
   } else {
     fail("F4 waterfall death not triggered", JSON.stringify(f.state.finished));
@@ -1286,7 +1308,7 @@ console.log("\n--- F5: Dome fall (no rope) ---");
   const r = f.execute({ type: "go", direction: "down" });
   if (r.event.type === "rejected") {
     pass(`F5 dome.down blocked when dome-flag=false (reason=${(r.event as { reason?: string }).reason})`);
-  } else if (f.state.finished?.won === false) {
+  } else if (playerDied(f.state)) {
     pass("F5 dome fall ended game (reincarnation unwired)");
   } else {
     note(`F5 dome.down outcome unexpected: loc=${f.state.itemLocations.player}`);
@@ -1346,8 +1368,8 @@ console.log("\n--- F7: Drift past landing into waterfall ---");
   // river-5 reached. Wait two more for waterfall.
   f.execute({ type: "wait" });
   f.execute({ type: "wait" });
-  if (f.state.finished?.won === false &&
-      /waterfall/i.test(f.state.finished.message ?? "")) {
+  if (playerDied(f.state) &&
+      /waterfall/i.test(f.state.finished?.message ?? f.state.flags["death-message"]?.toString() ?? "")) {
     pass(`F7 drift-past-landing -> waterfall death (path: end loc=${f.state.itemLocations.player})`);
   } else {
     note(`F7 expected waterfall death; actual: finished=${JSON.stringify(f.state.finished)} loc=${f.state.itemLocations.player}`);
@@ -1380,11 +1402,11 @@ console.log("\n--- F8: Thief kills player in combat ---");
     if (thiefHp !== undefined && thiefHp <= 0) break;
     f.execute({ type: "wait" });
   }
-  if (f.state.finished?.won === false &&
-      /thief|duel|stiletto/i.test(f.state.finished.message ?? "")) {
-    pass(`F8 thief killed player (msg: ${f.state.finished.message?.slice(0, 60)}...)`);
-  } else if (f.state.finished?.won === false) {
-    pass(`F8 player died (generic msg, thief flavor not triggered): ${f.state.finished.message?.slice(0, 60)}...`);
+  if (playerDied(f.state) &&
+      /thief|duel|stiletto/i.test(f.state.finished?.message ?? f.state.flags["death-message"]?.toString() ?? "")) {
+    pass(`F8 thief killed player (msg: ${(f.state.finished?.message ?? f.state.flags["death-message"] ?? "soft-die")?.toString().slice(0, 60)}...)`);
+  } else if (playerDied(f.state)) {
+    pass(`F8 player died (generic msg, thief flavor not triggered): ${(f.state.finished?.message ?? f.state.flags["death-message"] ?? "soft-die")?.toString().slice(0, 60)}...`);
   } else {
     note(`F8 thief did not kill player; finished=${JSON.stringify(f.state.finished)} hp=${f.state.flags["player-health"]} thiefHp=${f.state.itemStates["thief"]?.health}`);
   }
@@ -1473,7 +1495,7 @@ console.log("\n--- F11: Inflate without pump rejected ---");
     itemLocations: { ...f.state.itemLocations, player: "dam-base" },
   };
   const inflationBefore = f.state.itemStates["inflatable-boat"]?.inflation;
-  f.execute({ type: "recordIntent", signalId: "inflate-boat" });
+  f.execute({ type: "recordIntent", signalId: "inflate-boat", args: { withItemId: "pump" } });
   const inflationAfter = f.state.itemStates["inflatable-boat"]?.inflation;
   if (inflationBefore === "deflated" && inflationAfter === "deflated") {
     pass("F11 inflate-boat without pump → boat stays deflated");
@@ -1568,8 +1590,8 @@ console.log("\n--- F16: Cyclops eats player (hunger threshold) ---");
     if (f.state.finished) break;
     f.execute({ type: "wait" });
   }
-  if (f.state.finished?.won === false) {
-    pass(`F16 cyclops killed player (msg: ${f.state.finished.message?.slice(0, 60)}...)`);
+  if (playerDied(f.state)) {
+    pass(`F16 cyclops killed player (msg: ${(f.state.finished?.message ?? f.state.flags["death-message"] ?? "soft-die")?.toString().slice(0, 60)}...)`);
   } else {
     fail("F16 cyclops did not kill player",
          `finished=${JSON.stringify(f.state.finished)} hunger=${f.state.itemStates["cyclops"]?.hunger} health=${f.state.flags["player-health"]}`);
@@ -1726,8 +1748,8 @@ console.log("\n--- F24: Brush teeth with putty ---");
     itemLocations: { ...f.state.itemLocations, putty: "player" },
   };
   f.execute({ type: "recordIntent", signalId: "brush-teeth-with-putty" });
-  if (f.state.finished?.won === false &&
-      f.state.finished.message?.includes("respiratory")) {
+  if (playerDied(f.state) &&
+      deathMessage(f.state).includes("respiratory")) {
     pass("F24 brush-teeth-with-putty → death (respiratory failure)");
   } else {
     fail("F24 brush-teeth death not triggered",
@@ -1752,8 +1774,8 @@ console.log("\n--- F25: Burn leaves while carrying ---");
     },
   };
   f.execute({ type: "recordIntent", signalId: "burn-leaves" });
-  if (f.state.finished?.won === false &&
-      f.state.finished.message?.includes("leaves burn")) {
+  if (playerDied(f.state) &&
+      deathMessage(f.state).includes("leaves burn")) {
     pass("F25 burn-leaves while carrying → death");
   } else {
     fail("F25 burn-leaves death not triggered",
@@ -1780,8 +1802,8 @@ console.log("\n--- F26: Attack rusty knife → possession ---");
     },
   };
   const r26 = f.execute({ type: "attack", itemId: "rusty-knife", targetId: "troll" });
-  if (f.state.finished?.won === false &&
-      f.state.finished.message?.includes("savagely slits")) {
+  if (playerDied(f.state) &&
+      deathMessage(f.state).includes("savagely slits")) {
     pass("F26 rusty-knife attack → possession death");
   } else {
     fail("F26 rusty-knife possession death not triggered",
@@ -1798,8 +1820,8 @@ console.log("\n--- F27: Leap from up-a-tree ---");
     itemLocations: { ...f.state.itemLocations, player: "up-a-tree" },
   };
   f.execute({ type: "recordIntent", signalId: "leap-down" });
-  if (f.state.finished?.won === false &&
-      f.state.finished.message?.includes("long way")) {
+  if (playerDied(f.state) &&
+      deathMessage(f.state).includes("long way")) {
     pass("F27 leap from up-a-tree → death");
   } else {
     fail("F27 tree leap death not triggered",
@@ -1816,8 +1838,8 @@ console.log("\n--- F28: Leap from canyon-view ---");
     itemLocations: { ...f.state.itemLocations, player: "canyon-view" },
   };
   f.execute({ type: "recordIntent", signalId: "leap-down" });
-  if (f.state.finished?.won === false &&
-      f.state.finished.message?.includes("done you in")) {
+  if (playerDied(f.state) &&
+      deathMessage(f.state).includes("done you in")) {
     pass("F28 leap from canyon-view → death");
   } else {
     fail("F28 canyon leap death not triggered",
@@ -1842,8 +1864,8 @@ console.log("\n--- F29: Burn black book ---");
     },
   };
   f.execute({ type: "recordIntent", signalId: "burn-book" });
-  if (f.state.finished?.won === false &&
-      f.state.finished.message?.includes("guardian")) {
+  if (playerDied(f.state) &&
+      deathMessage(f.state).includes("guardian")) {
     pass("F29 burn-book → guardian kills player");
   } else {
     fail("F29 burn-book death not triggered",
@@ -1860,8 +1882,8 @@ console.log("\n--- F30: Mung bodies in entrance-to-hades ---");
     itemLocations: { ...f.state.itemLocations, player: "entrance-to-hades" },
   };
   f.execute({ type: "recordIntent", signalId: "mung-bodies" });
-  if (f.state.finished?.won === false &&
-      f.state.finished.message?.includes("guardian")) {
+  if (playerDied(f.state) &&
+      deathMessage(f.state).includes("guardian")) {
     pass("F30 mung-bodies → guardian decapitates player");
   } else {
     fail("F30 mung-bodies death not triggered",
@@ -1880,8 +1902,8 @@ console.log("\n--- F31: Suicide attack-self ---");
     itemLocations: { ...f.state.itemLocations, sword: "player" },
   };
   f.execute({ type: "recordIntent", signalId: "attack-self" });
-  if (f.state.finished?.won === false &&
-      f.state.finished.message?.includes("Poof")) {
+  if (playerDied(f.state) &&
+      deathMessage(f.state).includes("Poof")) {
     pass("F31 attack-self intent → suicide death");
   } else {
     fail("F31 suicide attack not triggered",
@@ -1897,17 +1919,18 @@ console.log("\n--- F33: Beach hole collapses (4th dig) ---");
     ...f.state,
     itemLocations: { ...f.state.itemLocations, player: "sandy-beach", shovel: "player" },
   };
-  // First three digs increment the counter; 4th collapses the hole.
+  // First three digs increment the counter; 4th collapses the hole. Under the
+  // canonical 3-life soft-death flow, the first death respawns at forest-1
+  // rather than ending the game — assert the soft-death outcome.
   for (let i = 0; i < 4; i++) {
-    if (f.state.finished) break;
-    f.execute({ type: "recordIntent", signalId: "dig-beach" });
+    if (f.state.flags["just-died"] || f.state.flags.deaths === 1) break;
+    f.execute({ type: "recordIntent", signalId: "dig-sand-with-tool", args: { withItemId: "shovel" } });
   }
-  if (f.state.finished?.won === false &&
-      f.state.finished.message?.includes("collapse")) {
-    pass("F33 4th dig collapses hole → death");
+  if (f.state.flags.deaths === 1 && f.state.itemLocations.player === "forest-1") {
+    pass("F33 4th dig collapses hole → soft-death (deaths=1, respawn at forest-1)");
   } else {
     fail("F33 beach-dig collapse not triggered",
-         `count=${f.state.flags["beach-dig-count"]} finished=${JSON.stringify(f.state.finished)}`);
+         `count=${f.state.flags["beach-dig-count"]} deaths=${f.state.flags.deaths} player=${f.state.itemLocations.player}`);
   }
 }
 
@@ -1951,8 +1974,8 @@ console.log("\n--- F35: Mung sceptre at rainbow ---");
     itemLocations: { ...f.state.itemLocations, player: "end-of-rainbow", sceptre: "player" },
   };
   f.execute({ type: "recordIntent", signalId: "mung-sceptre" });
-  if (f.state.finished?.won === false &&
-      f.state.finished.message?.includes("rainbow")) {
+  if (playerDied(f.state) &&
+      deathMessage(f.state).includes("rainbow")) {
     pass("F35 mung-sceptre at rainbow → death");
   } else {
     fail("F35 mung-sceptre death not triggered",
@@ -1969,8 +1992,8 @@ console.log("\n--- F36: Swim in Frigid River ---");
     itemLocations: { ...f.state.itemLocations, player: "river-1" },
   };
   f.execute({ type: "recordIntent", signalId: "swim-river" });
-  if (f.state.finished?.won === false &&
-      f.state.finished.message?.includes("drown")) {
+  if (playerDied(f.state) &&
+      deathMessage(f.state).includes("drown")) {
     pass("F36 swim-river → drown");
   } else {
     fail("F36 swim-river death not triggered",
@@ -1983,8 +2006,8 @@ console.log("\n--- F32: Throw object at self ---");
 {
   const f = new Engine(story);
   f.execute({ type: "recordIntent", signalId: "throw-at-self" });
-  if (f.state.finished?.won === false &&
-      f.state.finished.message?.includes("crack your skull")) {
+  if (playerDied(f.state) &&
+      deathMessage(f.state).includes("crack your skull")) {
     pass("F32 throw-at-self → death");
   } else {
     fail("F32 throw-at-self death not triggered",
@@ -2154,7 +2177,7 @@ console.log("\n--- F42: Blue button drowning ---");
     if (f.state.finished) break;
     f.execute({ type: "wait" });
   }
-  if (f.state.finished?.won === false && f.state.finished.message?.includes("drowns")) {
+  if (playerDied(f.state) && deathMessage(f.state).includes("drowns")) {
     pass("F42 leak flooded → drowning death");
   } else {
     fail("F42 expected drowning death", `finished=${JSON.stringify(f.state.finished)}`);

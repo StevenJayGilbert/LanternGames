@@ -99,8 +99,8 @@ export type Condition =
 // Effects mutate GameState. Triggers fire effects when their `when` becomes true.
 export type Effect =
   | { type: "setFlag"; key: string; value: Atom }
-  | { type: "moveItem"; itemId: string; to: string }       // roomId | itemId | "player" | "inventory" (legacy alias for "player") | "nowhere". Moving the "player" item updates currentRoom; if the destination is a room, visitedRooms is updated.
-  | { type: "moveItemsFrom"; from: string; to: string }    // bulk: every item currently at `from` moves to `to`. Generic primitive for "container empties": NPC dies and drops everything; trophy case shatters; bag torn open. `from`/`to` are roomId | itemId | "player" | "inventory" | "nowhere".
+  | { type: "moveItem"; itemId: string; to: string }       // roomId | itemId | "player" | "inventory" (legacy alias for "player") | "nowhere" | "<current-room>" (sentinel resolved at effect-application time to the player's current room id; falls back to "nowhere" if the chain is broken). Moving the "player" item updates currentRoom; if the destination is a room, visitedRooms is updated.
+  | { type: "moveItemsFrom"; from: string; to: string }    // bulk: every item currently at `from` moves to `to`. Generic primitive for "container empties": NPC dies and drops everything; trophy case shatters; bag torn open. `from`/`to` are roomId | itemId | "player" | "inventory" | "nowhere" | "<current-room>" (sentinel resolved at effect-application time).
   | { type: "setPassageState"; passageId: IdRef; key: string; value: Atom }  // mutate passage state (passageId may be {fromArg: "..."} inside a tool handler)
   | { type: "setItemState"; itemId: IdRef; key: string; value: Atom }         // mutate item state (itemId may be {fromArg: "..."} inside a tool handler)
   | { type: "setRoomState"; roomId: string; key: string; value: Atom }        // mutate room state
@@ -145,6 +145,15 @@ export interface TextVariant {
   text: string;
 }
 
+// Like TextVariant, but for the item's display name (parallel to TextVariant
+// for description / appearance). First match wins, else falls back to
+// item.name. Generic — any item whose identity changes with state can use
+// it (e.g. a folded boat → magic boat → punctured boat).
+export interface NameVariant {
+  when: Condition;
+  name: string;
+}
+
 export interface Exit {
   to: string;                   // target room id
   when?: Condition;             // if present, exit is usable only when condition is true
@@ -183,6 +192,11 @@ export interface Room {
 export interface Item {
   id: string;
   name: string;                 // canonical display name shown in inventory and narration
+  // State-conditional display names. Same shape semantics as `variants` /
+  // `appearanceVariants`; first match wins, else falls back to `name`.
+  // Used everywhere the engine renders the item's label — view, render,
+  // narration `{arg.X.name}` substitution, parser keyword fallback.
+  nameVariants?: NameVariant[];
   // Short room-presence line — one sentence describing what the player would
   // notice glancing at the room. Surfaced in ItemView.appearance every turn the
   // item is in the current room. Optional; without it, items don't get a

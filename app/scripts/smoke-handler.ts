@@ -355,5 +355,38 @@ console.log("\n=== removeMatchedIntent clears args ===");
     : fail(`args still: ${JSON.stringify(e.state.matchedIntentArgs)}`);
 }
 
+// ----- <current-room> sentinel resolves at effect-application time -----
+console.log("\n=== <current-room> sentinel ===");
+{
+  const e = new Engine(zork as unknown as Story);
+  e.state = {
+    ...e.state,
+    itemLocations: {
+      ...e.state.itemLocations,
+      player: "gallery",
+      sword: "player",
+      lamp: "player",
+    },
+  };
+  const { applyEffect: applySentinelEffect } = await import("../src/engine/state");
+  const after = applySentinelEffect(
+    e.state,
+    { type: "moveItemsFrom", from: "player", to: "<current-room>" },
+    zork as unknown as Story,
+  );
+  after.itemLocations.sword === "gallery" && after.itemLocations.lamp === "gallery"
+    ? pass("moveItemsFrom <current-room> drops carried items at the player's room")
+    : fail(`sword=${after.itemLocations.sword} lamp=${after.itemLocations.lamp}`);
+
+  const after2 = applySentinelEffect(
+    e.state,
+    { type: "moveItem", itemId: "sword", to: "<current-room>" },
+    zork as unknown as Story,
+  );
+  after2.itemLocations.sword === "gallery"
+    ? pass("moveItem <current-room> places item at the player's room")
+    : fail(`sword at ${after2.itemLocations.sword}`);
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

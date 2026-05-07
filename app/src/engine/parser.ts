@@ -102,17 +102,29 @@ function needItem(
 function findItemId(query: string, story: Story): string | null {
   const q = query.trim().toLowerCase();
   if (!q) return null;
-  // Exact id or name match first.
+  // Exact id or name match first. Tests both the canonical name and any
+  // nameVariants[].name (without evaluating their conditions) so the player
+  // can refer to the item by any of its possible labels regardless of state.
   for (const item of story.items) {
     if (item.id.toLowerCase() === q) return item.id;
-    if (item.name.toLowerCase() === q) return item.id;
+    for (const name of allItemNames(item)) {
+      if (name.toLowerCase() === q) return item.id;
+    }
   }
   // Fall back to last-token match (e.g. "small brass key" matches name "key").
   const lastWord = q.split(/\s+/).pop()!;
   for (const item of story.items) {
-    if (item.name.toLowerCase().split(/\s+/).pop() === lastWord) return item.id;
+    for (const name of allItemNames(item)) {
+      if (name.toLowerCase().split(/\s+/).pop() === lastWord) return item.id;
+    }
   }
   return null;
+}
+
+function allItemNames(item: Story["items"][number]): string[] {
+  const names = [item.name];
+  for (const v of item.nameVariants ?? []) names.push(v.name);
+  return names;
 }
 
 function capitalize(s: string): string {

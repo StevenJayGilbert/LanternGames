@@ -43,6 +43,22 @@ A "Re-entering Plan Mode" reminder supersedes whatever task is in flight. If a s
 
 If the user asserts you are in plan mode and your context doesn't show it, default to the user's assertion. They may be seeing UI signals you can't. Switch to read-only and ask for confirmation before continuing.
 
+### 5. Re-enter plan mode after every code-change task
+
+When a task that involved a state-changing tool call (Edit, Write, mutating Bash, anything that touches files or shell state) reaches a natural stopping point — final summary written, tests green, awaiting the user's next instruction — call `EnterPlanMode` before yielding the turn. The next user instruction lands in plan mode and starts with explicit alignment.
+
+This applies to:
+- Multi-step refactors and feature work, even if the user said "go ahead and do it" upfront — re-enter plan mode at the end, not between sub-steps the user already approved.
+- Bug fixes that involved an Edit / Write.
+- Test additions, doc updates, save migrations.
+
+This does NOT apply to:
+- Pure research / Q&A turns (no edits this turn).
+- Single-call read-only lookups ("what does X do?", "where is Y wired?").
+- Mid-task progress when more edits remain — only at the end.
+
+If the user explicitly tells me to stay in execute mode for a follow-up sequence ("don't re-plan, just continue"), respect that and skip the call. Plan-mode entry is a request, not an enforcement; the user can always decline and continue in execute mode.
+
 ## Supporting docs
 
 | Doc | What it's for |

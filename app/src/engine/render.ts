@@ -7,16 +7,16 @@
 //
 // It is NOT the canonical view-layer for the game. The LLM is.
 
-import type { Story } from "../story/schema";
+import type { GameState, Story } from "../story/schema";
 import type { ActionEvent, RejectionReason } from "./events";
 import type { EngineResult } from "./engine";
 import type { WorldView } from "./view";
-import { itemById, passageById } from "./state";
+import { itemById, passageById, resolveItemName } from "./state";
 
-export function renderResult(result: EngineResult, story: Story): string {
+export function renderResult(result: EngineResult, story: Story, state: GameState): string {
   const lines: string[] = [];
 
-  const eventText = renderEvent(result.event, story);
+  const eventText = renderEvent(result.event, story, state);
   if (eventText) lines.push(eventText);
 
   // For look, the room view IS the result.
@@ -119,7 +119,7 @@ function renderItemLabel(item: ItemViewLite & { state?: Record<string, unknown> 
   return item.name;
 }
 
-function renderEvent(event: ActionEvent, story: Story): string {
+function renderEvent(event: ActionEvent, story: Story, state: GameState): string {
   switch (event.type) {
     case "looked":
     case "inventoried":
@@ -131,30 +131,31 @@ function renderEvent(event: ActionEvent, story: Story): string {
     case "examined":
       return event.description;
     case "took":
-      return `Taken: ${nameOf(story, event.itemId)}.`;
+      return `Taken: ${nameOf(story, state, event.itemId)}.`;
     case "dropped":
-      return `Dropped: ${nameOf(story, event.itemId)}.`;
+      return `Dropped: ${nameOf(story, state, event.itemId)}.`;
     case "put":
-      return `You put the ${nameOf(story, event.itemId)} into the ${nameOf(story, event.targetId)}.`;
+      return `You put the ${nameOf(story, state, event.itemId)} into the ${nameOf(story, state, event.targetId)}.`;
     case "waited":
       return "Time passes.";
     case "attacked":
       return ""; // narration is provided by combat triggers; engine fallback is silent
     case "boarded":
-      return `You climb aboard the ${nameOf(story, event.itemId)}.`;
+      return `You climb aboard the ${nameOf(story, state, event.itemId)}.`;
     case "disembarked":
-      return `You step out of the ${nameOf(story, event.itemId)}.`;
+      return `You step out of the ${nameOf(story, state, event.itemId)}.`;
     case "rejected":
-      return renderRejection(event, story);
+      return renderRejection(event, story, state);
   }
 }
 
 function renderRejection(
   event: Extract<ActionEvent, { type: "rejected" }>,
   story: Story,
+  state: GameState,
 ): string {
-  const itemName = event.itemId ? nameOf(story, event.itemId) : null;
-  const targetName = event.targetId ? nameOf(story, event.targetId) : null;
+  const itemName = event.itemId ? nameOf(story, state, event.itemId) : null;
+  const targetName = event.targetId ? nameOf(story, state, event.targetId) : null;
   return rejectionMessage(event.reason, {
     itemName,
     targetName,
@@ -197,7 +198,10 @@ function rejectionMessage(
 }
 
 // Polymorphic name lookup — id may refer to an item OR a door, since action
-// tools dispatch over both kinds.
-function nameOf(story: Story, id: string): string {
-  return itemById(story, id)?.name ?? passageById(story, id)?.name ?? id;
+// tools dispatch over both kinds. Items run through resolveItemName so the
+// label reflects the live state (e.g. inflated boat → "magic boat").
+function nameOf(story: Story, state: GameState, id: string): string {
+  const item = itemById(story, id);
+  if (item) return resolveItemName(item, state, story);
+  return passageById(story, id)?.name ?? id;
 }

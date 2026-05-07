@@ -145,7 +145,8 @@ The engine's most expansive schema. Items model takeable objects, scenery, NPCs 
 | Field | Type | Purpose |
 |---|---|---|
 | `id` | string | Unique across items AND passages (shared id namespace). |
-| `name` | string | Display name shown in inventory and narration. |
+| `name` | string | Display name shown in inventory and narration. Falls back if `nameVariants` doesn't match. |
+| `nameVariants` | `{ when: Condition, name: string }[]` | State-conditional display-name overrides. First match wins; falls back to `name`. Used everywhere the engine renders the item label (view, parser keyword fallback, `{arg.X.name}` substitution, rejection messages). Use when an item's identity changes with state — e.g. folded boat ↔ magic boat ↔ deflated boat. |
 | `description` | string | Shown by `examine`. Authoritative "look closely" text. |
 | `variants` | [TextVariant](#text-variants)[] | State-conditional `description` overrides. Used by `examine`. |
 | `appearance` | string | Short room-presence line. Surfaced in the view's `itemsHere[i].appearance` every turn the item is in the room. Authoring guideline: 1 sentence. |

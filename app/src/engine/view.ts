@@ -23,6 +23,7 @@ import {
   playerVehicleId,
   resolveItemAppearance,
   resolveItemDescription,
+  resolveItemName,
   resolveRoomDescription,
   roomById,
   visibleExits,
@@ -287,7 +288,7 @@ function toPassageView(passage: Passage, state: GameState, story: Story): Passag
 }
 
 function toItemView(item: Item, state: GameState, story: Story): ItemView {
-  const view: ItemView = { id: item.id, name: item.name };
+  const view: ItemView = { id: item.id, name: resolveItemName(item, state, story) };
   if (item.fixed) view.fixed = true;
   if (item.tags && item.tags.length > 0) view.tags = item.tags;
   if (item.personality) view.personality = item.personality;
@@ -332,7 +333,7 @@ function toItemView(item: Item, state: GameState, story: Story): ItemView {
   const loc = state.itemLocations[item.id];
   const parent = itemById(story, loc);
   if (parent) {
-    view.containedIn = { id: parent.id, name: parent.name, relation: "in" };
+    view.containedIn = { id: parent.id, name: resolveItemName(parent, state, story), relation: "in" };
   }
 
   return view;

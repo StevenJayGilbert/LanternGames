@@ -45,7 +45,7 @@ export function runEngineSmoke(): boolean {
     for (const step of SCRIPT) {
       const result = engine.execute(step.action);
       const header = `▸ ${step.label}  [ok=${result.ok}, event=${result.event.type}]`;
-      const body = renderResult(result, story);
+      const body = renderResult(result, story, engine.state);
       console.info(header + (body ? "\n" + body : ""));
       if (result.triggersFired.length > 0) {
         console.info(`  triggers fired: ${result.triggersFired.join(", ")}`);

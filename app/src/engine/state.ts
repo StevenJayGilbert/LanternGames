@@ -32,9 +32,30 @@ export const PLAYER_ITEM_ID = "player";
 // should prefer PLAYER_ITEM_ID; resolveLocation maps either to the canonical
 // id.
 const LEGACY_INVENTORY_ALIAS = "inventory";
+// Sentinel resolved at effect-application time to the player's current room
+// id. Lets a story author write generic "drop here" / "teleport here" effects
+// without enumerating every possible room. Falls back to "nowhere" if the
+// player's location chain is broken at evaluation time.
+const CURRENT_ROOM_SENTINEL = "<current-room>";
 
 export function resolveLocation(loc: string): string {
   return loc === LEGACY_INVENTORY_ALIAS ? PLAYER_ITEM_ID : loc;
+}
+
+// State-aware resolver. Same as resolveLocation but additionally swaps the
+// "<current-room>" sentinel for the player's current room id (or "nowhere"
+// if the chain is broken). Use at effect-application sites that touch the
+// itemLocations map; not needed where the location is consumed only as a
+// match key (since the sentinel string never appears in saved state).
+export function resolveLocationDynamic(
+  loc: string,
+  state: GameState,
+  story: Story | undefined,
+): string {
+  if (loc === CURRENT_ROOM_SENTINEL) {
+    return story ? (currentRoomId(state, story) ?? "nowhere") : "nowhere";
+  }
+  return resolveLocation(loc);
 }
 
 // Walk the parent chain from the player item to the deepest room ancestor.
@@ -647,8 +668,8 @@ export function applyEffect(state: GameState, e: Effect, story?: Story): GameSta
     case "setFlag":
       return { ...state, flags: { ...state.flags, [e.key]: e.value } };
     case "moveItem": {
-      // Resolve the legacy "inventory" alias on the destination.
-      const to = resolveLocation(e.to);
+      // Resolve "inventory" legacy alias and "<current-room>" sentinel.
+      const to = resolveLocationDynamic(e.to, state, story);
       const next = { ...state.itemLocations, [e.itemId]: to };
       // If this is the player moving to a room, update visitedRooms. If
       // moving the player into a vehicle/NPC/etc., the room they're
@@ -664,9 +685,10 @@ export function applyEffect(state: GameState, e: Effect, story?: Story): GameSta
     case "moveItemsFrom": {
       // Bulk: every item currently at `from` moves to `to`. No-op for items
       // not at `from`. Iterates state.itemLocations once. Both `from` and
-      // `to` resolve the legacy "inventory" alias.
-      const from = resolveLocation(e.from);
-      const to = resolveLocation(e.to);
+      // `to` resolve the legacy "inventory" alias and the "<current-room>"
+      // sentinel.
+      const from = resolveLocationDynamic(e.from, state, story);
+      const to = resolveLocationDynamic(e.to, state, story);
       const next: Record<string, string> = { ...state.itemLocations };
       for (const [id, loc] of Object.entries(state.itemLocations)) {
         if (loc === from) next[id] = to;
@@ -877,6 +899,20 @@ export function resolveItemAppearance(
     if (evaluateCondition(variant.when, state, story)) return variant.text;
   }
   return item.appearance;
+}
+
+// Resolve the display name. Walks nameVariants first, then falls back to
+// item.name. Used everywhere the engine renders the item's label so the
+// view stays honest when an item's identity changes with state.
+export function resolveItemName(
+  item: Item,
+  state: GameState,
+  story: Story,
+): string {
+  for (const variant of item.nameVariants ?? []) {
+    if (evaluateCondition(variant.when, state, story)) return variant.name;
+  }
+  return item.name;
 }
 
 // Filter exits to those currently visible to the player. `hidden: true` exits

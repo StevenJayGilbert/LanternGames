@@ -31,6 +31,10 @@ export type ValidationResult =
 // refactor; "inventory" is kept as a legacy alias the engine normalizes at
 // load-time. Both are valid as `location` / `to` / `from` values.
 const SPECIAL_LOCATIONS = new Set(["inventory", "player", "nowhere"]);
+// Effect-only sentinel resolved at effect-application time. Valid in
+// moveItem.to / moveItemsFrom.{from,to} but NOT in Item.location (which
+// is read at game-start, before the player's location is meaningful).
+const DYNAMIC_LOCATION_SENTINELS = new Set(["<current-room>"]);
 
 export function validateStory(input: unknown): ValidationResult {
   const errors: ValidationError[] = [];
@@ -321,6 +325,23 @@ function validateItem(
         if (typeof v.text !== "string") err(`${path}.appearanceVariants[${i}].text`, "must be a string");
         if (v.when === undefined) err(`${path}.appearanceVariants[${i}].when`, "missing condition");
         else validateCondition(v.when, `${path}.appearanceVariants[${i}].when`, roomIds, itemIds, new Set(), err);
+      });
+    }
+  }
+
+  // nameVariants: state-conditional display-name overrides. Parallel to
+  // appearanceVariants, but the variant payload is `name`, not `text`.
+  if ("nameVariants" in raw && raw.nameVariants !== undefined) {
+    if (!Array.isArray(raw.nameVariants)) {
+      err(`${path}.nameVariants`, "must be an array");
+    } else {
+      raw.nameVariants.forEach((v, i) => {
+        if (!isObject(v)) return err(`${path}.nameVariants[${i}]`, "must be an object");
+        if (typeof v.name !== "string" || v.name.length === 0) {
+          err(`${path}.nameVariants[${i}].name`, "must be a non-empty string");
+        }
+        if (v.when === undefined) err(`${path}.nameVariants[${i}].when`, "missing condition");
+        else validateCondition(v.when, `${path}.nameVariants[${i}].when`, roomIds, itemIds, new Set(), err);
       });
     }
   }
@@ -1069,12 +1090,13 @@ function validateEffect(
       if (typeof raw.to !== "string") err(`${path}.to`, "must be a string");
       else if (
         !SPECIAL_LOCATIONS.has(raw.to) &&
+        !DYNAMIC_LOCATION_SENTINELS.has(raw.to) &&
         !roomIds.has(raw.to) &&
         !(itemIds.size > 0 && itemIds.has(raw.to))
       ) {
         err(
           `${path}.to`,
-          `unknown destination "${raw.to}" (must be a roomId, an itemId, "inventory", or "nowhere")`,
+          `unknown destination "${raw.to}" (must be a roomId, an itemId, "inventory", "nowhere", or "<current-room>")`,
         );
       } else if (
         typeof raw.itemId === "string" &&
@@ -1093,12 +1115,13 @@ function validateEffect(
         }
         if (
           !SPECIAL_LOCATIONS.has(v) &&
+          !DYNAMIC_LOCATION_SENTINELS.has(v) &&
           !roomIds.has(v) &&
           !(itemIds.size > 0 && itemIds.has(v))
         ) {
           err(
             `${path}.${which}`,
-            `unknown location "${v}" (must be a roomId, an itemId, "inventory", or "nowhere")`,
+            `unknown location "${v}" (must be a roomId, an itemId, "inventory", "nowhere", or "<current-room>")`,
           );
         }
       };

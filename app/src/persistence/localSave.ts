@@ -43,7 +43,33 @@ import { currentRoomId, PLAYER_ITEM_ID } from "../engine/state";
 // v11: Adds the canonical candle burn-time mechanic (mirrors the lamp's
 // battery model). New tick triggers drain candles each turn while lit.
 //   - itemStates.candles.burnTurnsRemaining defaults to 230 (canonical Zork CANDLES-FUSE)
-const SAVE_VERSION = 12;
+// v12: Inventory weight mechanic.
+//   - flags["max-carry-weight"] defaults to 100 (canonical Zork I LOAD-MAX)
+//   - itemStates[id].weight backfilled per Zork I SIZE values for each
+//     takeable item.
+// v13: Adds the canonical "tan label" item (attached to the magic boat's
+// valve). The item exists in story-data with location "nowhere"; the
+// boat-inflates trigger moves it onto the boat on first inflation. Old
+// saves had no entry for it under itemLocations, so the trigger's
+// itemAt(tan-label, "nowhere") guard never fired.
+//   - itemLocations["tan-label"] defaults to "nowhere"
+// v14: Tan-label refactored to live inside the boat from game-start. Boat
+// gains a container.accessibleWhen gate so the label is hidden when
+// deflated and visible when inflated. The boat-inflates trigger no longer
+// moves the label. Old saves with the label at "nowhere" (never inflated
+// the boat) get the label seeded to "inflatable-boat"; saves where the
+// player already inflated the boat have the label at "inflatable-boat"
+// already and nothing changes.
+//   - itemLocations["tan-label"]: "nowhere" → "inflatable-boat" (only when
+//     currently "nowhere"; preserves any other placement)
+// v15: Canonical Zork 3-life soft-death mechanic. Three new flags drive
+// the central process-death trigger; previously-fatal triggers no longer
+// hard-end on first hit but instead drop items, respawn at forest-1, and
+// hard-end only on the third death.
+//   - flags.deaths defaults to 0
+//   - flags.just-died defaults to false
+//   - flags.death-message defaults to ""
+const SAVE_VERSION = 15;
 const LEGACY_SAVE_VERSION = 5;
 const V6_SAVE_VERSION = 6;
 const V7_SAVE_VERSION = 7;
@@ -51,6 +77,9 @@ const V8_SAVE_VERSION = 8;
 const V9_SAVE_VERSION = 9;
 const V10_SAVE_VERSION = 10;
 const V11_SAVE_VERSION = 11;
+const V12_SAVE_VERSION = 12;
+const V13_SAVE_VERSION = 13;
+const V14_SAVE_VERSION = 14;
 const PREFIX = "lanterngames_save_v" + SAVE_VERSION + "_";
 const LEGACY_PREFIX = "lanterngames_save_v" + LEGACY_SAVE_VERSION + "_";
 const V6_PREFIX = "lanterngames_save_v" + V6_SAVE_VERSION + "_";
@@ -59,6 +88,9 @@ const V8_PREFIX = "lanterngames_save_v" + V8_SAVE_VERSION + "_";
 const V9_PREFIX = "lanterngames_save_v" + V9_SAVE_VERSION + "_";
 const V10_PREFIX = "lanterngames_save_v" + V10_SAVE_VERSION + "_";
 const V11_PREFIX = "lanterngames_save_v" + V11_SAVE_VERSION + "_";
+const V12_PREFIX = "lanterngames_save_v" + V12_SAVE_VERSION + "_";
+const V13_PREFIX = "lanterngames_save_v" + V13_SAVE_VERSION + "_";
+const V14_PREFIX = "lanterngames_save_v" + V14_SAVE_VERSION + "_";
 
 // Transcript entry types — shared between App.tsx (display) and localSave
 // (persistence) so neither side has to redeclare or guess the shape.
@@ -125,8 +157,55 @@ export function loadSession(storyId: string, slot: SaveSlot): SavedSession | nul
       const parsed = JSON.parse(raw) as unknown;
       if (isValidSession(parsed, storyId)) return parsed;
     }
-    // v11 fallback: try the v11 key. v11→v12 backfills max-carry-weight=100
-    // and per-item state.weight for the inventory-weight mechanic.
+    // v14 fallback: try the v14 key. v14→v15 seeds the three new
+    // death-mechanic flags (deaths, just-died, death-message).
+    const v14Raw = localStorage.getItem(v14KeyForSlot(storyId, slot));
+    if (v14Raw) {
+      const migrated = migrateV14Session(JSON.parse(v14Raw) as unknown, storyId);
+      if (migrated) {
+        try {
+          localStorage.setItem(key(storyId, slot), JSON.stringify(migrated));
+          localStorage.removeItem(v14KeyForSlot(storyId, slot));
+        } catch {
+          // ignore write failures — migration retries next load
+        }
+        return migrated;
+      }
+    }
+    // v13 fallback: try the v13 key. v13→v15 reseats the tan-label inside
+    // the boat (boat now exposes contents via container.accessibleWhen
+    // gated on inflation, replacing the v13 first-inflation move trigger)
+    // and seeds the v15 death-mechanic flags.
+    const v13Raw = localStorage.getItem(v13KeyForSlot(storyId, slot));
+    if (v13Raw) {
+      const migrated = migrateV13Session(JSON.parse(v13Raw) as unknown, storyId);
+      if (migrated) {
+        try {
+          localStorage.setItem(key(storyId, slot), JSON.stringify(migrated));
+          localStorage.removeItem(v13KeyForSlot(storyId, slot));
+        } catch {
+          // ignore write failures — migration retries next load
+        }
+        return migrated;
+      }
+    }
+    // v12 fallback: try the v12 key. v12→v14 backfills tan-label inside
+    // the boat for the new container-gated label perception.
+    const v12Raw = localStorage.getItem(v12KeyForSlot(storyId, slot));
+    if (v12Raw) {
+      const migrated = migrateV12Session(JSON.parse(v12Raw) as unknown, storyId);
+      if (migrated) {
+        try {
+          localStorage.setItem(key(storyId, slot), JSON.stringify(migrated));
+          localStorage.removeItem(v12KeyForSlot(storyId, slot));
+        } catch {
+          // ignore write failures — migration retries next load
+        }
+        return migrated;
+      }
+    }
+    // v11 fallback: try the v11 key. v11→v13 backfills max-carry-weight=100,
+    // per-item state.weight, and the tan-label location.
     const v11Raw = localStorage.getItem(v11KeyForSlot(storyId, slot));
     if (v11Raw) {
       const migrated = migrateV11Session(JSON.parse(v11Raw) as unknown, storyId);
@@ -243,7 +322,7 @@ export function loadSession(storyId: string, slot: SaveSlot): SavedSession | nul
   }
 }
 
-// Cumulative v8 → v11 backfill. Applies all state-shape changes accumulated
+// Cumulative v8 → v14 backfill. Applies all state-shape changes accumulated
 // after v8 shipped, so any earlier-version migration can chain through this
 // to land at the current SAVE_VERSION.
 //
@@ -264,10 +343,30 @@ export function loadSession(storyId: string, slot: SaveSlot): SavedSession | nul
 //   - itemStates[id].weight for each takeable item (per zork-1.overrides
 //     state.weight values; matches the canonical Zork I SIZE properties)
 //
+// v13 additions:
+//   - itemLocations["tan-label"] (default "nowhere" — boat-inflates trigger
+//     moves it onto the boat on first inflation)
+//
+// v14 additions:
+//   - itemLocations["tan-label"]: "nowhere" → "inflatable-boat" — the label
+//     now lives inside the boat from game-start; the boat's container
+//     accessibleWhen gate keeps it hidden until inflation. Saves where the
+//     label was already moved to "inflatable-boat" (player inflated on v13)
+//     are preserved; only the default-"nowhere" case gets reseated.
+//
+// v15 additions:
+//   - flags.deaths (default 0)
+//   - flags.just-died (default false)
+//   - flags.death-message (default "")
+// Drives the central process-death trigger introduced this version; old
+// saves get the three flags seeded so any subsequent fatal event triggers
+// the soft-death flow instead of dangling on undefined state.
+//
 // Saved values win where present; missing keys get the defaults.
-function applyV12Backfill(es: Record<string, unknown>): Record<string, unknown> {
+function applyV15Backfill(es: Record<string, unknown>): Record<string, unknown> {
   const itemStates = (es.itemStates as Record<string, Record<string, unknown>> | undefined) ?? {};
   const flags = (es.flags as Record<string, unknown> | undefined) ?? {};
+  const itemLocations = (es.itemLocations as Record<string, unknown> | undefined) ?? {};
   const migratedItemStates: Record<string, Record<string, unknown>> = { ...itemStates };
 
   const matchPrev = itemStates["match"] ?? {};
@@ -322,14 +421,97 @@ function applyV12Backfill(es: Record<string, unknown>): Record<string, unknown> 
   const migratedFlags: Record<string, unknown> = {
     "match-burn-countdown": 0,
     "max-carry-weight": 100,
+    "deaths": 0,
+    "just-died": false,
+    "death-message": "",
     ...flags,
   };
-  return { ...es, itemStates: migratedItemStates, flags: migratedFlags };
+
+  // v14: tan-label lives inside the boat from game-start. Old saves either
+  // (a) never had the label seeded — set it to inflatable-boat so the
+  // container.accessibleWhen gate reveals it on inflation; or (b) had the
+  // label at "nowhere" because the v13 boat-inflates trigger never fired —
+  // also seat it inside the boat. Saves where the player already inflated
+  // (label at "inflatable-boat") or moved it elsewhere are preserved.
+  const existingLabelLoc = itemLocations["tan-label"];
+  const migratedItemLocations: Record<string, unknown> = {
+    ...itemLocations,
+    "tan-label":
+      existingLabelLoc === undefined || existingLabelLoc === "nowhere"
+        ? "inflatable-boat"
+        : existingLabelLoc,
+  };
+  return {
+    ...es,
+    itemStates: migratedItemStates,
+    flags: migratedFlags,
+    itemLocations: migratedItemLocations,
+  };
 }
 
-// v11 → v12 migration. Backfills max-carry-weight=100 + per-item state.weight
-// for the inventory weight mechanic. Older saves continue to land at v12 via
-// applyV12Backfill (which contains all backfills v8 → v12).
+// v14 → v15 migration. Seeds the three new death-mechanic flags
+// (deaths=0, just-died=false, death-message="") so the central
+// process-death trigger has well-defined values when it next fires.
+function migrateV14Session(v: unknown, storyId: string): SavedSession | null {
+  if (!v || typeof v !== "object") return null;
+  const r = v as Record<string, unknown>;
+  if (r.version !== V14_SAVE_VERSION) return null;
+  if (r.storyId !== storyId) return null;
+  if (!r.engineState || typeof r.engineState !== "object") return null;
+  const es = r.engineState as Record<string, unknown>;
+  return {
+    version: SAVE_VERSION,
+    storyId,
+    engineState: applyV15Backfill(es) as unknown as GameState,
+    narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
+    transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
+    inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
+    savedAt: typeof r.savedAt === "number" ? r.savedAt : Date.now(),
+  };
+}
+
+// v13 → v15 migration. Reseats the tan-label inside the boat for the new
+// container-gated label perception, plus the v15 death-mechanic flags.
+function migrateV13Session(v: unknown, storyId: string): SavedSession | null {
+  if (!v || typeof v !== "object") return null;
+  const r = v as Record<string, unknown>;
+  if (r.version !== V13_SAVE_VERSION) return null;
+  if (r.storyId !== storyId) return null;
+  if (!r.engineState || typeof r.engineState !== "object") return null;
+  const es = r.engineState as Record<string, unknown>;
+  return {
+    version: SAVE_VERSION,
+    storyId,
+    engineState: applyV15Backfill(es) as unknown as GameState,
+    narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
+    transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
+    inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
+    savedAt: typeof r.savedAt === "number" ? r.savedAt : Date.now(),
+  };
+}
+
+// v12 → v14 migration. Same as the v13 migration plus the v13 backfill —
+// applyV15Backfill chains all prior backfills.
+function migrateV12Session(v: unknown, storyId: string): SavedSession | null {
+  if (!v || typeof v !== "object") return null;
+  const r = v as Record<string, unknown>;
+  if (r.version !== V12_SAVE_VERSION) return null;
+  if (r.storyId !== storyId) return null;
+  if (!r.engineState || typeof r.engineState !== "object") return null;
+  const es = r.engineState as Record<string, unknown>;
+  return {
+    version: SAVE_VERSION,
+    storyId,
+    engineState: applyV15Backfill(es) as unknown as GameState,
+    narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
+    transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
+    inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
+    savedAt: typeof r.savedAt === "number" ? r.savedAt : Date.now(),
+  };
+}
+
+// v11 → v13 migration. Backfills max-carry-weight=100 + per-item state.weight
+// for the inventory weight mechanic, plus the v13 tan-label location.
 function migrateV11Session(v: unknown, storyId: string): SavedSession | null {
   if (!v || typeof v !== "object") return null;
   const r = v as Record<string, unknown>;
@@ -340,7 +522,7 @@ function migrateV11Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV12Backfill(es) as unknown as GameState,
+    engineState: applyV15Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -360,7 +542,7 @@ function migrateV10Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV12Backfill(es) as unknown as GameState,
+    engineState: applyV15Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -380,7 +562,7 @@ function migrateV9Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV12Backfill(es) as unknown as GameState,
+    engineState: applyV15Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -388,7 +570,7 @@ function migrateV9Session(v: unknown, storyId: string): SavedSession | null {
   };
 }
 
-// v8 → v10 migration. Backfills the new state fields per applyV12Backfill.
+// v8 → v10 migration. Backfills the new state fields per applyV15Backfill.
 function migrateV8Session(v: unknown, storyId: string): SavedSession | null {
   if (!v || typeof v !== "object") return null;
   const r = v as Record<string, unknown>;
@@ -399,7 +581,7 @@ function migrateV8Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV12Backfill(es) as unknown as GameState,
+    engineState: applyV15Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -420,7 +602,7 @@ function migrateV7Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV12Backfill(stripped) as unknown as GameState,
+    engineState: applyV15Backfill(stripped) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -439,7 +621,7 @@ function migrateV6Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV12Backfill(r.engineState as Record<string, unknown>) as unknown as GameState,
+    engineState: applyV15Backfill(r.engineState as Record<string, unknown>) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -482,7 +664,7 @@ function migrateV5Session(v: unknown, storyId: string): SavedSession | null {
     lastExamineShown: _le,
     ...rest
   } = es;
-  const migratedEngineState = applyV12Backfill({
+  const migratedEngineState = applyV15Backfill({
     ...rest,
     itemLocations: nextItemLocations,
   }) as unknown as GameState;
@@ -526,6 +708,18 @@ function v11KeyForSlot(storyId: string, slot: SaveSlot): string {
   return V11_PREFIX + storyId + "_" + (slot === "quick" ? "quick" : "slot" + slot);
 }
 
+function v12KeyForSlot(storyId: string, slot: SaveSlot): string {
+  return V12_PREFIX + storyId + "_" + (slot === "quick" ? "quick" : "slot" + slot);
+}
+
+function v13KeyForSlot(storyId: string, slot: SaveSlot): string {
+  return V13_PREFIX + storyId + "_" + (slot === "quick" ? "quick" : "slot" + slot);
+}
+
+function v14KeyForSlot(storyId: string, slot: SaveSlot): string {
+  return V14_PREFIX + storyId + "_" + (slot === "quick" ? "quick" : "slot" + slot);
+}
+
 export function clearSession(storyId: string, slot: SaveSlot): void {
   try {
     localStorage.removeItem(key(storyId, slot));
@@ -533,6 +727,9 @@ export function clearSession(storyId: string, slot: SaveSlot): void {
     // lingered, loadSession would migrate-and-restore them on the next read,
     // and the user would see the slot "uncleared" / the LLM would resurrect
     // old narration history after a "new game".
+    localStorage.removeItem(v14KeyForSlot(storyId, slot));
+    localStorage.removeItem(v13KeyForSlot(storyId, slot));
+    localStorage.removeItem(v12KeyForSlot(storyId, slot));
     localStorage.removeItem(v11KeyForSlot(storyId, slot));
     localStorage.removeItem(v10KeyForSlot(storyId, slot));
     localStorage.removeItem(v9KeyForSlot(storyId, slot));

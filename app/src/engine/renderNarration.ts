@@ -14,7 +14,7 @@
 // as the original handler renderer behavior).
 
 import type { Atom, GameState, Story } from "../story/schema";
-import { itemById, passageById } from "./state";
+import { itemById, passageById, resolveItemName } from "./state";
 import { computeRank } from "./rank";
 
 export function renderNarration(
@@ -39,7 +39,7 @@ export function renderNarration(
     if (typeof value !== "string") return String(value ?? "");
     if (field === "id") return value;
     const item = itemById(story, value);
-    if (item) return item.name;
+    if (item) return resolveItemName(item, state, story);
     const passage = passageById(story, value);
     if (passage) return passage.name;
     return value;

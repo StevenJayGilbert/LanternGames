@@ -5,7 +5,7 @@
   "author": "Marc Blanc, Dave Lebling, et al. (Infocom, 1980)",
   "description": "The original underground adventure. Source code released under MIT by Microsoft (Nov 2025). This is an LLM-narrated port — the engine is ours, the world is Infocom's.",
   "intro": "ZORK I: The Great Underground Empire\nInfocom interactive fiction — a fantasy story.\nCopyright (c) 1981 Infocom, Inc. Source code released under MIT license, Microsoft 2025.",
-  "systemPromptOverride": "This is Zork I, the original 1980 Infocom underground adventure. Narrate in the spirit of the canonical Infocom prose:\n\nVoice\n- Terse, dry, slightly archaic. Direct without flourish.\n- Atmospheric for dark caves, ancient ruins, and moments of dread; matter-of-fact for routine actions.\n- Occasionally wry, never breaking the fourth wall.\n\nStyle\n- Short concrete sentences. Two or three is usually enough; a single sentence is often better.\n- Second person, present tense (\"You see…\"). Never \"I\" or \"we\".\n- Plain language. No modern slang, no emoji, no exclamation marks except for genuine peril or surprise.\n- The player is \"you,\" sometimes \"the adventurer.\"\n\nEchoes of the original\n- Don't paraphrase canonical text — when the engine returns the canonical room or item description, prefer it as-is unless the situation demands flourish.\n- Routine action confirmations should be brief and flat: \"Taken.\" / \"Dropped.\" / \"The lamp is now on.\" Don't pad them.\n- The world is the Great Underground Empire. Treasures, trolls, thieves, and grues live here. If the player wanders into total darkness without a light source, channel the famous warning: it is pitch black; you are likely to be eaten by a grue.\n\nDiscipline\n- Never invent items, rooms, exits, or events the engine hasn't surfaced.\n- If the engine rejects an action, refuse in character — don't pretend it succeeded.\n- Treat trademarked references gently: this port runs on the MIT-licensed source; the \"ZORK\" brand isn't ours, so don't lean on the trademark in narration.\n\nNPC interaction (story-specific tools)\n- This story exposes NPC verb tools like `talk-to-troll`, `talk-to-cyclops`, `feed-cyclops`, `cyclops-magic-word`. When the player engages an NPC conversationally (\"insult the troll\", \"shout at the cyclops\", \"bargain with the thief\"), call the matching tool BEFORE narrating the dialogue. The tool call lets author triggers fire (aggravation, befriending, mood shifts). Then narrate the NPC's response in character using its `personality` field.\n- Examples of player phrasing → tool: \"kill troll\" → `attack(troll, sword)` if armed; \"say ulysses\" / \"shout odysseus\" at the cyclops → `cyclops-magic-word()`; \"give the lunch and water to the cyclops\" → `feed-cyclops()`.\n\nScore\n- The view includes a `score` field (current / max / moves / rank). Don't volunteer it unless the player asks (\"score\", \"how am I doing?\", etc.) — when they do, call the `score` tool. The engine emits the canonical \"Your score is N (total of M), in K moves. This gives you the rank of RANK.\" sentence; pass it through verbatim.\n- When narration cues mention \"+N points\" or \"-N points\", weave them naturally into your prose — they're already authored.",
+  "systemPromptOverride": "This is Zork I, the original 1980 Infocom underground adventure. Narrate in the spirit of the canonical Infocom prose:\n\nVoice\n- Terse, dry, slightly archaic. Direct without flourish.\n- Atmospheric for dark caves, ancient ruins, and moments of dread; matter-of-fact for routine actions.\n- Occasionally wry, never breaking the fourth wall.\n\nStyle\n- Short concrete sentences. Two or three is usually enough; a single sentence is often better.\n- Second person, present tense (\"You see…\"). Never \"I\" or \"we\".\n- Plain language. No modern slang, no emoji, no exclamation marks except for genuine peril or surprise.\n- The player is \"you,\" sometimes \"the adventurer.\"\n\nEchoes of the original\n- Don't paraphrase canonical text — when the engine returns the canonical room or item description, prefer it as-is unless the situation demands flourish.\n- The world is the Great Underground Empire. Treasures, trolls, thieves, and grues live here. If the player wanders into total darkness without a light source, channel the famous warning: it is pitch black; you are likely to be eaten by a grue.\n\nDiscipline\n- Never invent items, rooms, exits, or events the engine hasn't surfaced.\n- If the engine rejects an action, refuse in character — don't pretend it succeeded.\n- Treat trademarked references gently: this port runs on the MIT-licensed source; the \"ZORK\" brand isn't ours, so don't lean on the trademark in narration.\n\nNPC interaction (story-specific tools)\n- This story exposes NPC verb tools like `talk-to-troll`, `talk-to-cyclops`, `feed-cyclops`, `cyclops-magic-word`. When the player engages an NPC conversationally (\"insult the troll\", \"shout at the cyclops\", \"bargain with the thief\"), call the matching tool BEFORE narrating the dialogue. The tool call lets author triggers fire (aggravation, befriending, mood shifts). Then narrate the NPC's response in character using its `personality` field.\n- Examples of player phrasing → tool: \"kill troll\" → `attack(troll, sword)` if armed; \"say ulysses\" / \"shout odysseus\" at the cyclops → `cyclops-magic-word()`; \"give the lunch and water to the cyclops\" → `feed-cyclops()`.\n\nScore\n- The view includes a `score` field (current / max / moves / rank). Don't volunteer it unless the player asks (\"score\", \"how am I doing?\", etc.) — when they do, call the `score` tool. The engine emits the canonical \"Your score is N (total of M), in K moves. This gives you the rank of RANK.\" sentence; pass it through verbatim.\n- When narration cues mention \"+N points\" or \"-N points\", weave them naturally into your prose — they're already authored.",
   "startRoom": "west-of-house",
   "rooms": [
     {
@@ -1758,7 +1758,7 @@
     {
       "id": "sandy-beach",
       "name": "Sandy Beach",
-      "description": "You are on a large sandy beach on the east shore of the river, which is flowing quickly by. A path runs beside the river to the south here, and a passage is partially buried in sand to the northeast.\n\n[DEV NOTE: dig-with-shovel scarab puzzle is unwired. The scarab is currently visible without digging — canonical Zork required four DIG WITH SHOVEL actions to unbury it.]",
+      "description": "You are on a large sandy beach on the east shore of the river, which is flowing quickly by. A path runs beside the river to the south here, and a passage is partially buried in sand to the northeast.",
       "exits": {
         "northeast": {
           "to": "sandy-cave"
@@ -1771,7 +1771,7 @@
     {
       "id": "sandy-cave",
       "name": "Sandy Cave",
-      "description": "This is a sand-filled cave whose exit is to the southwest.\n\n[DEV NOTE: dig-with-shovel scarab puzzle is unwired. The scarab is currently visible here without digging — canonical Zork required four DIG WITH SHOVEL actions to unbury it.]",
+      "description": "This is a sand-filled cave whose exit is to the southwest.",
       "exits": {
         "southwest": {
           "to": "sandy-beach"
@@ -3722,7 +3722,7 @@
     {
       "id": "inflatable-boat",
       "name": "pile of plastic",
-      "description": "A folded square of yellow plastic with a small valve attached — clearly intended to be inflated.",
+      "description": "There is a folded pile of plastic here which has a small valve attached.",
       "location": "dam-base",
       "takeable": true,
       "takeableWhen": {
@@ -3763,8 +3763,58 @@
           "key": "inflation",
           "equals": "inflated"
         },
-        "enterBlockedMessage": "The boat is a flat pile of plastic — it'd need to be inflated first."
-      }
+        "enterBlockedMessage": "The pile of plastic has no inside to step into."
+      },
+      "container": {
+        "accessibleWhen": {
+          "type": "itemState",
+          "itemId": "inflatable-boat",
+          "key": "inflation",
+          "equals": "inflated"
+        },
+        "accessBlockedMessage": "The boat is folded shut — there's no inside to reach."
+      },
+      "appearance": "There is a folded pile of plastic here which has a small valve attached.",
+      "appearanceVariants": [
+        {
+          "when": {
+            "type": "itemState",
+            "itemId": "inflatable-boat",
+            "key": "inflation",
+            "equals": "inflated"
+          },
+          "text": "There is a magic boat here."
+        },
+        {
+          "when": {
+            "type": "itemState",
+            "itemId": "inflatable-boat",
+            "key": "inflation",
+            "equals": "punctured"
+          },
+          "text": "A deflated boat lies here, riddled with a fresh tear."
+        }
+      ],
+      "nameVariants": [
+        {
+          "when": {
+            "type": "itemState",
+            "itemId": "inflatable-boat",
+            "key": "inflation",
+            "equals": "inflated"
+          },
+          "name": "magic boat"
+        },
+        {
+          "when": {
+            "type": "itemState",
+            "itemId": "inflatable-boat",
+            "key": "inflation",
+            "equals": "punctured"
+          },
+          "name": "deflated boat"
+        }
+      ]
     },
     {
       "id": "bar",
@@ -3964,7 +4014,8 @@
           "key": "max-carry-weight"
         }
       },
-      "takeBlockedMessage": "Your load is too heavy."
+      "takeBlockedMessage": "Your load is too heavy.",
+      "appearance": "There is a red buoy here (probably a warning)."
     },
     {
       "id": "rope",
@@ -4295,6 +4346,11 @@
         }
       },
       "takeBlockedMessage": "Your load is too heavy.",
+      "visibleWhen": {
+        "type": "flag",
+        "key": "scarab-uncovered",
+        "equals": true
+      },
       "state": {
         "weight": 7
       }
@@ -5165,6 +5221,19 @@
       "state": {
         "weight": 8
       }
+    },
+    {
+      "id": "tan-label",
+      "name": "tan label",
+      "description": "A piece of tan cardboard, the size of a luggage tag, attached by a string to the valve of the boat.",
+      "location": "inflatable-boat",
+      "fixed": true,
+      "tags": [
+        "readable"
+      ],
+      "readable": {
+        "text": "!!!!  FROBOZZ MAGIC BOAT COMPANY  !!!!\n\nHello, Sailor!\n\nInstructions for use:\n  To get into boat, say \"Board\".\n  To leave boat, say \"Disembark\".\n  To get into a body of water, say \"Launch\".\n  To get to shore, say \"Land\" or the direction in which\n  you want to maneuver the boat.\n\nGuarantee:\n  This boat is guaranteed against all defects in parts\n  and workmanship for a period of 76 milliseconds from\n  date of purchase or until first used, whichever\n  comes first.\n\nWarning:\n  This boat is made of plastic.  Good Luck!"
+      }
     }
   ],
   "passages": [
@@ -5839,8 +5908,24 @@
       "alwaysAvailable": true
     },
     {
-      "id": "dig-beach",
-      "description": "Player digs in the sand on the beach (with the shovel or by hand)."
+      "id": "dig-sand-with-tool",
+      "description": "ONLY call when the player's input contains a literal tool name (e.g. 'dig sand WITH SHOVEL', 'use shovel to dig', 'apply shovel to sand'). If the input does NOT contain a literal tool name, DO NOT call this tool — call dig-sand instead. Inputs like 'dig', 'dig sand', 'dig the hole', 'dig deeper' do NOT name a tool — route those to dig-sand. NEVER auto-fill withItemId from inventory or context.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "withItemId": {
+            "type": "string",
+            "description": "the id of the tool the player literally named in their input (must come from the player's stated words — do not assume from inventory or context)"
+          }
+        },
+        "required": [
+          "withItemId"
+        ]
+      }
+    },
+    {
+      "id": "dig-sand",
+      "description": "DEFAULT tool when the player has NOT named a tool. Player tries to dig, scoop, scrape, hollow out, excavate, or otherwise excavate sandy ground — beach, cave, or anywhere else — without naming a tool. Examples: 'dig', 'dig the sand', 'dig a hole', 'dig deeper', 'scoop sand'. If the player names a tool (shovel, hands, etc.), use dig-sand-with-tool instead."
     },
     {
       "id": "clear-rubble",
@@ -6011,7 +6096,19 @@
     },
     {
       "id": "inflate-boat",
-      "description": "ONLY call when the player's input contains a literal tool name (e.g. 'inflate boat WITH pump', 'use the pump on the boat', 'pump up the raft'). If the input does NOT contain a literal tool name, DO NOT call this tool — call inflate-boat-by-mouth instead. Inputs like 'inflate the boat', 'blow up the boat', 'fill the raft', 'expand the boat' do NOT name a tool — route those to inflate-boat-by-mouth."
+      "description": "ONLY call when the player's input contains a literal tool name (e.g. 'inflate boat WITH pump', 'use the pump on the boat', 'pump up the raft'). If the input does NOT contain a literal tool name, DO NOT call this tool — call inflate-boat-by-mouth instead. Inputs like 'inflate the boat', 'blow up the boat', 'fill the raft', 'expand the boat' do NOT name a tool — route those to inflate-boat-by-mouth. NEVER auto-fill withItemId from inventory or context.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "withItemId": {
+            "type": "string",
+            "description": "the id of the tool the player literally named in their input (must come from the player's stated words — do not assume from inventory or context)"
+          }
+        },
+        "required": [
+          "withItemId"
+        ]
+      }
     },
     {
       "id": "inflate-boat-by-mouth",
@@ -6027,6 +6124,93 @@
     }
   ],
   "triggers": [
+    {
+      "id": "process-death",
+      "once": false,
+      "priority": 1000,
+      "when": {
+        "type": "flag",
+        "key": "just-died",
+        "equals": true
+      },
+      "effects": [
+        {
+          "type": "narrate",
+          "text": "**** You have died ****\n\n{flag.death-message}"
+        },
+        {
+          "type": "adjustFlag",
+          "key": "deaths",
+          "by": 1
+        },
+        {
+          "type": "moveItemsFrom",
+          "from": "player",
+          "to": "<current-room>"
+        },
+        {
+          "type": "setItemState",
+          "itemId": "lamp",
+          "key": "isLit",
+          "value": false
+        },
+        {
+          "type": "setItemState",
+          "itemId": "torch",
+          "key": "isLit",
+          "value": false
+        },
+        {
+          "type": "setItemState",
+          "itemId": "candles",
+          "key": "isLit",
+          "value": false
+        },
+        {
+          "type": "if",
+          "if": {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "deaths"
+            },
+            "op": ">=",
+            "right": {
+              "kind": "literal",
+              "value": 3
+            }
+          },
+          "then": [
+            {
+              "type": "setFlag",
+              "key": "just-died",
+              "value": false
+            },
+            {
+              "type": "endGame",
+              "won": false,
+              "message": "**** You are dead ****\n\nThe Land of the Living Dead opens to receive you. As you cross its threshold, the air thickens with the murmur of those who came before — adventurers, fools, the unlucky. You take your place among them."
+            }
+          ],
+          "else": [
+            {
+              "type": "narrate",
+              "text": "From a great distance, an unseen voice intones: \"Adventurer, you have not yet earned the deepest dark.\" A hand you cannot see takes you up."
+            },
+            {
+              "type": "moveItem",
+              "itemId": "player",
+              "to": "forest-1"
+            },
+            {
+              "type": "setFlag",
+              "key": "just-died",
+              "value": false
+            }
+          ]
+        }
+      ]
+    },
     {
       "id": "score-solve-dam",
       "when": {
@@ -9190,9 +9374,14 @@
           "value": true
         },
         {
-          "type": "endGame",
-          "won": false,
-          "message": "**** You have died ****\n\nYour breath rattles, and you slump beside the pile of bones. You have joined its inhabitants."
+          "type": "setFlag",
+          "key": "death-message",
+          "value": "Your breath rattles, and you slump beside the pile of bones. You have joined its inhabitants."
+        },
+        {
+          "type": "setFlag",
+          "key": "just-died",
+          "value": true
         }
       ]
     },
@@ -9229,9 +9418,14 @@
           "value": true
         },
         {
-          "type": "endGame",
-          "won": false,
-          "message": "**** You have died ****\n\nYour wounds overcome you, and the world fades to black."
+          "type": "setFlag",
+          "key": "death-message",
+          "value": "Your wounds overcome you, and the world fades to black."
+        },
+        {
+          "type": "setFlag",
+          "key": "just-died",
+          "value": true
         }
       ]
     },
@@ -9632,9 +9826,14 @@
       },
       "effects": [
         {
-          "type": "endGame",
-          "won": false,
-          "message": "Oh, no! You have walked into the slavering fangs of a lurking grue!"
+          "type": "setFlag",
+          "key": "death-message",
+          "value": "Oh, no! You have walked into the slavering fangs of a lurking grue!"
+        },
+        {
+          "type": "setFlag",
+          "key": "just-died",
+          "value": true
         }
       ]
     },
@@ -12546,9 +12745,14 @@
           "value": true
         },
         {
-          "type": "endGame",
-          "won": false,
-          "message": "**** You have died ****\n\nThe thief, a man of culture, regrets the unpleasantness — but a duel is a duel. He wipes the stiletto on his cloak and is gone."
+          "type": "setFlag",
+          "key": "death-message",
+          "value": "The thief, a man of culture, regrets the unpleasantness — but a duel is a duel. He wipes the stiletto on his cloak and is gone."
+        },
+        {
+          "type": "setFlag",
+          "key": "just-died",
+          "value": true
         }
       ]
     },
@@ -14979,9 +15183,14 @@
       },
       "effects": [
         {
-          "type": "endGame",
-          "won": false,
-          "message": "**** You have died ****\n\nThe water reaches the ceiling and drowns you in the small space. You should have plugged that leak."
+          "type": "setFlag",
+          "key": "death-message",
+          "value": "The water reaches the ceiling and drowns you in the small space. You should have plugged that leak."
+        },
+        {
+          "type": "setFlag",
+          "key": "just-died",
+          "value": true
         }
       ]
     },
@@ -15552,21 +15761,17 @@
             "signalId": "inflate-boat"
           },
           {
-            "type": "or",
-            "any": [
-              {
-                "type": "itemAt",
-                "itemId": "inflatable-boat",
-                "location": "dam-base"
-              },
-              {
-                "type": "hasItem",
-                "itemId": "inflatable-boat"
-              }
-            ]
+            "type": "intentArg",
+            "signalId": "inflate-boat",
+            "key": "withItemId",
+            "equals": "pump"
           },
           {
-            "type": "hasItem",
+            "type": "itemAccessible",
+            "itemId": "inflatable-boat"
+          },
+          {
+            "type": "itemAccessible",
             "itemId": "pump"
           },
           {
@@ -15590,6 +15795,31 @@
         }
       ],
       "narration": "The boat hisses and swells into a sturdy yellow raft, ready for the river."
+    },
+    {
+      "id": "inflate-boat-wrong-tool",
+      "once": false,
+      "priority": -10,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "inflate-boat"
+          },
+          {
+            "type": "itemAccessible",
+            "itemId": "inflatable-boat"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "inflate-boat"
+        }
+      ],
+      "narration": "That isn't going to inflate anything."
     },
     {
       "id": "boat-bare-mouth",
@@ -15617,14 +15847,18 @@
             "signalId": "repair-boat-with-putty"
           },
           {
+            "type": "itemAccessible",
+            "itemId": "inflatable-boat"
+          },
+          {
+            "type": "itemAccessible",
+            "itemId": "putty"
+          },
+          {
             "type": "itemState",
             "itemId": "inflatable-boat",
             "key": "inflation",
             "equals": "punctured"
-          },
-          {
-            "type": "hasItem",
-            "itemId": "putty"
           }
         ]
       },
@@ -15648,7 +15882,7 @@
       "narration": "You smear the putty over the gash. With a final hiss the rip seals; the boat is patched, deflated, and ready to inflate again. The tube of putty is now empty."
     },
     {
-      "id": "boat-launches",
+      "id": "boat-launches-from-dam-base",
       "once": false,
       "when": {
         "type": "and",
@@ -15687,6 +15921,84 @@
       "narration": "You shove off. The current catches the boat and carries you out onto the Frigid River."
     },
     {
+      "id": "boat-launches-from-sandy-beach",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "launch-boat"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "sandy-beach"
+          },
+          {
+            "type": "inVehicle",
+            "itemId": "inflatable-boat"
+          },
+          {
+            "type": "itemState",
+            "itemId": "inflatable-boat",
+            "key": "inflation",
+            "equals": "inflated"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "moveItem",
+          "itemId": "inflatable-boat",
+          "to": "river-4"
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "launch-boat"
+        }
+      ],
+      "narration": "You push off the sand. The current takes hold and the boat slips back into the river."
+    },
+    {
+      "id": "boat-launches-from-white-cliffs-north",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "launch-boat"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "white-cliffs-north"
+          },
+          {
+            "type": "inVehicle",
+            "itemId": "inflatable-boat"
+          },
+          {
+            "type": "itemState",
+            "itemId": "inflatable-boat",
+            "key": "inflation",
+            "equals": "inflated"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "moveItem",
+          "itemId": "inflatable-boat",
+          "to": "river-3"
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "launch-boat"
+        }
+      ],
+      "narration": "You shove off the narrow strip of beach. The river takes the boat downstream."
+    },
+    {
       "id": "weapon-in-vehicle-punctures-boat",
       "once": false,
       "priority": 100,
@@ -15711,17 +16023,62 @@
           "value": "punctured"
         },
         {
-          "type": "moveItem",
-          "itemId": "inflatable-boat",
-          "to": "dam-base"
-        },
-        {
-          "type": "moveItem",
-          "itemId": "player",
-          "to": "dam-base"
+          "type": "if",
+          "if": {
+            "type": "or",
+            "any": [
+              {
+                "type": "playerAt",
+                "roomId": "river-1"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "river-2"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "river-3"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "river-4"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "river-5"
+              }
+            ]
+          },
+          "then": [
+            {
+              "type": "setFlag",
+              "key": "death-message",
+              "value": "Something sharp pierces the boat. The plastic shrieks and the river takes you — icy, fast, irresistible. You are pulled under and do not surface."
+            },
+            {
+              "type": "setFlag",
+              "key": "just-died",
+              "value": true
+            }
+          ],
+          "else": [
+            {
+              "type": "moveItem",
+              "itemId": "inflatable-boat",
+              "to": "dam-base"
+            },
+            {
+              "type": "moveItem",
+              "itemId": "player",
+              "to": "dam-base"
+            },
+            {
+              "type": "narrate",
+              "text": "Something sharp slips — the boat hisses, sputters, and collapses to a useless pile of plastic. You're spat out onto the riverbank at the foot of the dam."
+            }
+          ]
         }
-      ],
-      "narration": "Something sharp slips — the boat hisses, sputters, and collapses to a useless pile of plastic. You're spat out onto the riverbank at the foot of the dam."
+      ]
     },
     {
       "id": "river-1-tick",
@@ -16051,9 +16408,14 @@
       },
       "effects": [
         {
-          "type": "endGame",
-          "won": false,
-          "message": "**** You have died ****\n\nUnfortunately, the magic boat doesn't provide any protection from the rocks and boulders one meets at the bottom of waterfalls. Including this one. Aragain Falls roars its indifference."
+          "type": "setFlag",
+          "key": "death-message",
+          "value": "Unfortunately, the magic boat doesn't provide any protection from the rocks and boulders one meets at the bottom of waterfalls. Including this one. Aragain Falls roars its indifference."
+        },
+        {
+          "type": "setFlag",
+          "key": "just-died",
+          "value": true
         }
       ]
     },
@@ -16107,9 +16469,14 @@
       },
       "effects": [
         {
-          "type": "endGame",
-          "won": false,
-          "message": "**** You have died ****\n\nOh dear. You seem to have ignited the coal gas. It's great for blowing up dimwitted adventurers who wander into a coal mine with an open flame."
+          "type": "setFlag",
+          "key": "death-message",
+          "value": "Oh dear. You seem to have ignited the coal gas. It's great for blowing up dimwitted adventurers who wander into a coal mine with an open flame."
+        },
+        {
+          "type": "setFlag",
+          "key": "just-died",
+          "value": true
         }
       ]
     },
@@ -16465,9 +16832,14 @@
       },
       "effects": [
         {
-          "type": "endGame",
-          "won": false,
-          "message": "**** You have died ****\n\nWell, you seem to have been brushing your teeth with some sort of glue. As a result, your mouth gets glued together (with your nose), and you die of respiratory failure."
+          "type": "setFlag",
+          "key": "death-message",
+          "value": "Well, you seem to have been brushing your teeth with some sort of glue. As a result, your mouth gets glued together (with your nose), and you die of respiratory failure."
+        },
+        {
+          "type": "setFlag",
+          "key": "just-died",
+          "value": true
         }
       ]
     },
@@ -16524,9 +16896,14 @@
       },
       "effects": [
         {
-          "type": "endGame",
-          "won": false,
-          "message": "**** You have died ****\n\nThe leaves burn, and so do you."
+          "type": "setFlag",
+          "key": "death-message",
+          "value": "The leaves burn, and so do you."
+        },
+        {
+          "type": "setFlag",
+          "key": "just-died",
+          "value": true
         }
       ]
     },
@@ -16551,9 +16928,14 @@
       },
       "effects": [
         {
-          "type": "endGame",
-          "won": false,
-          "message": "**** You have died ****\n\nAs the knife approaches its victim, your mind is submerged by an overmastering will. Slowly, your hand turns, until the rusty blade is an inch from your neck. The knife seems to sing as it savagely slits your throat."
+          "type": "setFlag",
+          "key": "death-message",
+          "value": "As the knife approaches its victim, your mind is submerged by an overmastering will. Slowly, your hand turns, until the rusty blade is an inch from your neck. The knife seems to sing as it savagely slits your throat."
+        },
+        {
+          "type": "setFlag",
+          "key": "just-died",
+          "value": true
         }
       ]
     },
@@ -16575,9 +16957,14 @@
       },
       "effects": [
         {
-          "type": "endGame",
-          "won": false,
-          "message": "**** You have died ****\n\nIt's a long way down. You hit hard."
+          "type": "setFlag",
+          "key": "death-message",
+          "value": "It's a long way down. You hit hard."
+        },
+        {
+          "type": "setFlag",
+          "key": "just-died",
+          "value": true
         }
       ]
     },
@@ -16608,9 +16995,14 @@
       },
       "effects": [
         {
-          "type": "endGame",
-          "won": false,
-          "message": "**** You have died ****\n\nIt's a shame the leap you just attempted has done you in."
+          "type": "setFlag",
+          "key": "death-message",
+          "value": "It's a shame the leap you just attempted has done you in."
+        },
+        {
+          "type": "setFlag",
+          "key": "just-died",
+          "value": true
         }
       ]
     },
@@ -16667,9 +17059,14 @@
       },
       "effects": [
         {
-          "type": "endGame",
-          "won": false,
-          "message": "**** You have died ****\n\nAt the moment the flame touches the book, a guardian materializes from the shadows. With a single, terrible gesture he reduces you to a fine ash."
+          "type": "setFlag",
+          "key": "death-message",
+          "value": "At the moment the flame touches the book, a guardian materializes from the shadows. With a single, terrible gesture he reduces you to a fine ash."
+        },
+        {
+          "type": "setFlag",
+          "key": "just-died",
+          "value": true
         }
       ]
     },
@@ -16691,9 +17088,14 @@
       },
       "effects": [
         {
-          "type": "endGame",
-          "won": false,
-          "message": "**** You have died ****\n\nA guardian materializes from the gloom. He shakes his head sadly, then places your own head on a sharp pole at the entrance to the temple."
+          "type": "setFlag",
+          "key": "death-message",
+          "value": "A guardian materializes from the gloom. He shakes his head sadly, then places your own head on a sharp pole at the entrance to the temple."
+        },
+        {
+          "type": "setFlag",
+          "key": "just-died",
+          "value": true
         }
       ]
     },
@@ -16724,9 +17126,14 @@
       },
       "effects": [
         {
-          "type": "endGame",
-          "won": false,
-          "message": "**** You have died ****\n\nIf you insist...Poof, you're dead!"
+          "type": "setFlag",
+          "key": "death-message",
+          "value": "If you insist...Poof, you're dead!"
+        },
+        {
+          "type": "setFlag",
+          "key": "just-died",
+          "value": true
         }
       ]
     },
@@ -16739,9 +17146,14 @@
       },
       "effects": [
         {
-          "type": "endGame",
-          "won": false,
-          "message": "**** You have died ****\n\nThe momentum of your throw carries you backward; you crack your skull on the ground. Quite an achievement."
+          "type": "setFlag",
+          "key": "death-message",
+          "value": "The momentum of your throw carries you backward; you crack your skull on the ground. Quite an achievement."
+        },
+        {
+          "type": "setFlag",
+          "key": "just-died",
+          "value": true
         }
       ]
     },
@@ -16753,7 +17165,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "dig-beach"
+            "signalId": "dig-sand-with-tool"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "dig-sand-with-tool",
+            "key": "withItemId",
+            "equals": "shovel"
           },
           {
             "type": "playerAt",
@@ -16785,7 +17203,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "dig-beach"
+          "signalId": "dig-sand-with-tool"
         }
       ],
       "narration": "You dig deeper into the loose sand. The hole grows."
@@ -16799,7 +17217,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "dig-beach"
+            "signalId": "dig-sand-with-tool"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "dig-sand-with-tool",
+            "key": "withItemId",
+            "equals": "shovel"
           },
           {
             "type": "playerAt",
@@ -16825,11 +17249,344 @@
       },
       "effects": [
         {
-          "type": "endGame",
-          "won": false,
-          "message": "**** You have died ****\n\nThe walls of the hole collapse around you, smothering you in cold, wet sand."
+          "type": "setFlag",
+          "key": "death-message",
+          "value": "The walls of the hole collapse around you, smothering you in cold, wet sand."
+        },
+        {
+          "type": "setFlag",
+          "key": "just-died",
+          "value": true
         }
       ]
+    },
+    {
+      "id": "cave-dig-stage-1",
+      "once": false,
+      "priority": 50,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "dig-sand-with-tool"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "dig-sand-with-tool",
+            "key": "withItemId",
+            "equals": "shovel"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "sandy-cave"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "shovel"
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "cave-dig-count"
+            },
+            "op": "==",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "cave-dig-count",
+          "by": 1
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "dig-sand-with-tool"
+        }
+      ],
+      "narration": "(with the shovel)\nYou seem to be digging a hole here."
+    },
+    {
+      "id": "cave-dig-stage-2",
+      "once": false,
+      "priority": 50,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "dig-sand-with-tool"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "dig-sand-with-tool",
+            "key": "withItemId",
+            "equals": "shovel"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "sandy-cave"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "shovel"
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "cave-dig-count"
+            },
+            "op": "==",
+            "right": {
+              "kind": "literal",
+              "value": 1
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "cave-dig-count",
+          "by": 1
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "dig-sand-with-tool"
+        }
+      ],
+      "narration": "(with the shovel)\nThe hole is getting deeper, but that's about it."
+    },
+    {
+      "id": "cave-dig-stage-3",
+      "once": false,
+      "priority": 50,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "dig-sand-with-tool"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "dig-sand-with-tool",
+            "key": "withItemId",
+            "equals": "shovel"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "sandy-cave"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "shovel"
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "cave-dig-count"
+            },
+            "op": "==",
+            "right": {
+              "kind": "literal",
+              "value": 2
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "cave-dig-count",
+          "by": 1
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "dig-sand-with-tool"
+        }
+      ],
+      "narration": "(with the shovel)\nYou are surrounded by a wall of sand on all sides."
+    },
+    {
+      "id": "cave-dig-stage-4",
+      "once": false,
+      "priority": 50,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "dig-sand-with-tool"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "dig-sand-with-tool",
+            "key": "withItemId",
+            "equals": "shovel"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "sandy-cave"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "shovel"
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "cave-dig-count"
+            },
+            "op": "==",
+            "right": {
+              "kind": "literal",
+              "value": 3
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "cave-dig-count",
+          "by": 1
+        },
+        {
+          "type": "setFlag",
+          "key": "scarab-uncovered",
+          "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "dig-sand-with-tool"
+        }
+      ],
+      "narration": "(with the shovel)\nYou can see a scarab here in the sand."
+    },
+    {
+      "id": "cave-dig-saturated",
+      "once": false,
+      "priority": 50,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "dig-sand-with-tool"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "dig-sand-with-tool",
+            "key": "withItemId",
+            "equals": "shovel"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "sandy-cave"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "shovel"
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "cave-dig-count"
+            },
+            "op": ">=",
+            "right": {
+              "kind": "literal",
+              "value": 4
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "dig-sand-with-tool"
+        }
+      ],
+      "narration": "(with the shovel)\nThe hole is as deep as it'll go without bringing the cave down on your head."
+    },
+    {
+      "id": "dig-sand-wrong-tool",
+      "once": false,
+      "priority": -10,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "dig-sand-with-tool"
+          },
+          {
+            "type": "or",
+            "any": [
+              {
+                "type": "playerAt",
+                "roomId": "sandy-beach"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "sandy-cave"
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "dig-sand-with-tool"
+        }
+      ],
+      "narration": "That isn't going to dig much sand."
+    },
+    {
+      "id": "dig-bare-hands",
+      "once": false,
+      "priority": 1,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "dig-sand"
+          },
+          {
+            "type": "or",
+            "any": [
+              {
+                "type": "playerAt",
+                "roomId": "sandy-beach"
+              },
+              {
+                "type": "playerAt",
+                "roomId": "sandy-cave"
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "dig-sand"
+        }
+      ],
+      "narration": "Digging with your bare hands won't get you very far."
     },
     {
       "id": "mung-painting-destroys-it",
@@ -16911,9 +17668,14 @@
       },
       "effects": [
         {
-          "type": "endGame",
-          "won": false,
-          "message": "**** You have died ****\n\nThe sceptre snaps in your hands. With it, the rainbow that bridged the falls fades and dissolves; you hang for a moment in empty mist before plummeting to the rocks below."
+          "type": "setFlag",
+          "key": "death-message",
+          "value": "The sceptre snaps in your hands. With it, the rainbow that bridged the falls fades and dissolves; you hang for a moment in empty mist before plummeting to the rocks below."
+        },
+        {
+          "type": "setFlag",
+          "key": "just-died",
+          "value": true
         }
       ]
     },
@@ -16972,9 +17734,14 @@
       },
       "effects": [
         {
-          "type": "endGame",
-          "won": false,
-          "message": "**** You have died ****\n\nThe Frigid River lives up to its name. The currents catch you and drag you under within seconds; you drown before you can struggle to the surface."
+          "type": "setFlag",
+          "key": "death-message",
+          "value": "The Frigid River lives up to its name. The currents catch you and drag you under within seconds; you drown before you can struggle to the surface."
+        },
+        {
+          "type": "setFlag",
+          "key": "just-died",
+          "value": true
         }
       ]
     },
@@ -17274,6 +18041,11 @@
     "empty-handed": true,
     "river-tick-counter": 0,
     "beach-dig-count": 0,
+    "cave-dig-count": 0,
+    "scarab-uncovered": false,
+    "deaths": 0,
+    "just-died": false,
+    "death-message": "",
     "score": 0,
     "max-score": 357,
     "skull-deposited": false,

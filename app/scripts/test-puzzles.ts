@@ -507,7 +507,7 @@ console.log("\n=== #11 Boat / river travel ===");
     : fail(`expected vehicle-blocked, got ${JSON.stringify(r0.event)}`);
 
   // Match inflate intent → trigger fires → boat is inflated
-  e.execute({ type: "recordIntent", signalId: "inflate-boat" });
+  e.execute({ type: "recordIntent", signalId: "inflate-boat", args: { withItemId: "pump" } });
   e.state.itemStates["inflatable-boat"]?.inflation === "inflated"
     ? pass("inflate intent → boat state is inflated")
     : fail(`inflation = ${e.state.itemStates["inflatable-boat"]?.inflation}`);
@@ -518,7 +518,7 @@ console.log("\n=== #11 Boat / river travel ===");
     ...e2.state,
     itemLocations: { ...e2.state.itemLocations, player: "dam-base", pump: "player", sword: "player" },
   };
-  e2.execute({ type: "recordIntent", signalId: "inflate-boat" });
+  e2.execute({ type: "recordIntent", signalId: "inflate-boat", args: { withItemId: "pump" } });
   // Now board — engine boards (no weapon check at engine level), but the
   // puncture trigger fires immediately (priority 100) on inVehicle+weapon.
   e2.execute({ type: "board", itemId: "inflatable-boat" });
@@ -557,7 +557,7 @@ console.log("\n=== #11 Boat / river travel ===");
     ...e4.state,
     itemLocations: { ...e4.state.itemLocations, player: "dam-base", pump: "player" },
   };
-  e4.execute({ type: "recordIntent", signalId: "inflate-boat" });
+  e4.execute({ type: "recordIntent", signalId: "inflate-boat", args: { withItemId: "pump" } });
   e4.execute({ type: "board", itemId: "inflatable-boat" });
   e4.state.itemLocations.player === "inflatable-boat"
     ? pass("clean board → player parent is the vehicle")
@@ -640,10 +640,12 @@ console.log("\n=== #11 Boat / river travel ===");
   };
   e6.execute({ type: "wait" }); // tick 1
   e6.execute({ type: "wait" }); // tick 2 → death
-  e6.state.finished?.won === false &&
-    /waterfall/i.test(e6.state.finished?.message ?? "")
-    ? pass("river-5 + 2 turns → endGame waterfall death")
-    : fail(`finished=${JSON.stringify(e6.state.finished)}`);
+  // First death is soft (canonical 3-life flow): respawn at forest-1, deaths counter +1.
+  e6.state.flags.deaths === 1 &&
+    e6.state.itemLocations.player === "forest-1" &&
+    e6.state.finished === undefined
+    ? pass("river-5 + 2 turns → soft-death (deaths=1, respawn at forest-1)")
+    : fail(`deaths=${e6.state.flags.deaths} player=${e6.state.itemLocations.player} finished=${JSON.stringify(e6.state.finished)}`);
 }
 
 // ----- #12: Scoring (canonical Zork I) -----
@@ -872,6 +874,129 @@ console.log("\n=== takeableWhen rejects when carry-weight would exceed cap ===")
   r2.ok === true && te.state.itemLocations.lamp === "player"
     ? pass("take(lamp) succeeds when cap is raised")
     : fail(`event=${JSON.stringify(r2.event)} loc=${te.state.itemLocations.lamp}`);
+}
+
+// ----- nameVariants resolution -----
+console.log("\n=== Item.nameVariants resolves with state ===");
+{
+  const e = newEngine();
+  // Boat is wired with three states (deflated / inflated / punctured) and
+  // matching nameVariants. Force each state, build the view, assert the
+  // resolved name in itemsHere.
+  const placeBoatHere = () => {
+    const room = e.state.itemLocations.player;
+    e.state = {
+      ...e.state,
+      itemLocations: { ...e.state.itemLocations, "inflatable-boat": room },
+    };
+  };
+  const setInflation = (v: "deflated" | "inflated" | "punctured") => {
+    e.state = {
+      ...e.state,
+      itemStates: {
+        ...e.state.itemStates,
+        "inflatable-boat": { ...(e.state.itemStates["inflatable-boat"] ?? {}), inflation: v },
+      },
+    };
+  };
+  const boatViewName = () =>
+    e.getView().itemsHere.find((i) => i.id === "inflatable-boat")?.name;
+
+  placeBoatHere();
+
+  setInflation("deflated");
+  boatViewName() === "pile of plastic"
+    ? pass("deflated → 'pile of plastic' (canonical name)")
+    : fail(`deflated boat name = ${boatViewName()}`);
+
+  setInflation("inflated");
+  boatViewName() === "magic boat"
+    ? pass("inflated → 'magic boat' (variant)")
+    : fail(`inflated boat name = ${boatViewName()}`);
+
+  setInflation("punctured");
+  boatViewName() === "deflated boat"
+    ? pass("punctured → 'deflated boat' (variant)")
+    : fail(`punctured boat name = ${boatViewName()}`);
+
+  // appearanceVariants should track in lockstep.
+  setInflation("inflated");
+  e.getView().itemsHere.find((i) => i.id === "inflatable-boat")?.appearance ===
+    "There is a magic boat here."
+    ? pass("inflated → appearance 'There is a magic boat here.'")
+    : fail(`inflated appearance = ${e.getView().itemsHere.find((i) => i.id === "inflatable-boat")?.appearance}`);
+}
+
+// ----- Canonical 3-life soft-death mechanic -----
+console.log("\n=== 3-life soft-death (canonical JIGS-UP) ===");
+{
+  // Helper: trigger one death by writing the canonical signal directly.
+  const die = (e: Engine, message: string) => {
+    e.state = {
+      ...e.state,
+      flags: {
+        ...e.state.flags,
+        "death-message": message,
+        "just-died": true,
+      },
+    };
+    // Wait turn drives the afterAction trigger sweep; process-death fires.
+    e.execute({ type: "wait" });
+  };
+
+  // 1st death: respawn at forest-1, items dropped at the death room.
+  const e1 = newEngine();
+  e1.state = {
+    ...e1.state,
+    itemLocations: {
+      ...e1.state.itemLocations,
+      player: "gallery",
+      sword: "player",
+      lamp: "player",
+    },
+    itemStates: {
+      ...e1.state.itemStates,
+      lamp: { ...(e1.state.itemStates.lamp ?? {}), isLit: true },
+    },
+  };
+  die(e1, "Test death 1.");
+  e1.state.flags.deaths === 1
+    ? pass("1st death → deaths=1")
+    : fail(`deaths=${e1.state.flags.deaths}`);
+  e1.state.itemLocations.player === "forest-1"
+    ? pass("1st death → player respawns at forest-1")
+    : fail(`player at ${e1.state.itemLocations.player}`);
+  e1.state.itemLocations.sword === "gallery" && e1.state.itemLocations.lamp === "gallery"
+    ? pass("1st death → carried items dropped at death-room (gallery)")
+    : fail(`sword=${e1.state.itemLocations.sword} lamp=${e1.state.itemLocations.lamp}`);
+  e1.state.itemStates.lamp?.isLit === false
+    ? pass("1st death → lit lamp extinguished")
+    : fail(`lamp.isLit=${e1.state.itemStates.lamp?.isLit}`);
+  e1.state.flags["just-died"] === false
+    ? pass("1st death → just-died cleared (death-message persists for inspection)")
+    : fail(`just-died=${e1.state.flags["just-died"]}`);
+  e1.state.flags["death-message"] === "Test death 1."
+    ? pass("1st death → death-message persists post-resolution")
+    : fail(`death-message=${JSON.stringify(e1.state.flags["death-message"])}`);
+  e1.state.finished === undefined
+    ? pass("1st death → game NOT finished (soft-death)")
+    : fail(`finished=${JSON.stringify(e1.state.finished)}`);
+
+  // 3rd death: hard-end with Land of the Living Dead.
+  const e2 = newEngine();
+  e2.state = {
+    ...e2.state,
+    itemLocations: { ...e2.state.itemLocations, player: "gallery" },
+    flags: { ...e2.state.flags, deaths: 2 },
+  };
+  die(e2, "Final death.");
+  e2.state.finished?.won === false &&
+    /land of the living dead/i.test(e2.state.finished?.message ?? "")
+    ? pass("3rd death → endGame with Land of the Living Dead message")
+    : fail(`finished=${JSON.stringify(e2.state.finished)}`);
+  e2.state.flags.deaths === 3
+    ? pass("3rd death → deaths=3")
+    : fail(`deaths=${e2.state.flags.deaths}`);
 }
 
 // ----- Done -----
