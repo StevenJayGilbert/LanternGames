@@ -1781,7 +1781,7 @@
     {
       "id": "aragain-falls",
       "name": "Aragain Falls",
-      "description": "You are at the top of Aragain Falls, an enormous waterfall with a drop of about 450 feet. The only path here is on the north end.",
+      "description": "You are at the top of Aragain Falls, an enormous waterfall with a drop of about 450 feet. The only path here is on the north end. A solid rainbow spans the falls.",
       "exits": {
         "west": {
           "to": "on-rainbow",
@@ -1802,17 +1802,7 @@
             "equals": true
           }
         }
-      },
-      "variants": [
-        {
-          "when": {
-            "type": "flag",
-            "key": "rainbow-flag",
-            "equals": true
-          },
-          "text": "You are at the top of Aragain Falls, an enormous waterfall with a drop of about 450 feet. The only path here is on the north end. A solid rainbow spans the falls."
-        }
-      ]
+      }
     },
     {
       "id": "on-rainbow",

@@ -486,6 +486,16 @@ if (!e.state.finished && !aborted()) {
       putItem(e, itm, "trophy-case");
     }
   }
+  // Inventory-weight management: thief is dead, knife (10) and keys (10)
+  // are no longer needed (knife was for combat; keys were for the cyclops
+  // puzzle in P5). Drop both here to free 20 weight for the LLD ritual
+  // load (bell + candles + book) at P10 and the bracelet/coal at P11+.
+  if (e.state.itemLocations["knife"] === "player") {
+    dropItem(e, "knife");
+  }
+  if (e.state.itemLocations["keys"] === "player") {
+    dropItem(e, "keys");
+  }
 }
 const s_post_thief = snapshot(e);
 
@@ -521,6 +531,9 @@ if (!e.state.finished && !aborted()) {
   intent(e, "wind-canary", undefined, "P7 wind canary");
   assertItemAt(e, "bauble", "path", "P7 bauble dropped at path");
   takeItem(e, "bauble", "P7 take bauble");
+  // Canary stays in inventory; it gets deposited at the trophy case
+  // during the P12.5 mid-game sweep along with the other coal-mine
+  // treasures. Garlic stays in inventory for the bat puzzle (P11).
 }
 
 // ----- Phase 8: Dam puzzle -----
@@ -572,6 +585,11 @@ if (!e.state.finished && !aborted()) {
   assertFlag(e, "low-tide", true, "P8 low-tide reached");
 
   dropItem(e, "wrench");
+  // Inventory-weight management: tour guidebook is optional per canonical
+  // walkthrough. Drop it now to free 5 weight before P10's bell+candles+book.
+  if (e.state.itemLocations["guide"] === "player") {
+    dropItem(e, "guide");
+  }
 }
 const s_dam_solved = snapshot(e);
 
@@ -599,6 +617,13 @@ if (!e.state.finished && !aborted()) {
     fail("P9 lamp still lit", JSON.stringify(e.state.itemStates["lamp"]));
   }
   go(e, "down", "north-temple", "P9");
+
+  // Inventory-weight management: drop the empty toothpaste tube (4 weight).
+  // Putty was already removed earlier; the tube has no further use. Match
+  // stays in inventory for the LLD ritual at P10 (LIGHT MATCH → CANDLES).
+  if (e.state.itemLocations["tube"] === "player") {
+    dropItem(e, "tube");
+  }
 }
 const s_dome_torch = snapshot(e);
 
@@ -652,6 +677,14 @@ if (!e.state.finished && !aborted()) {
   }
   intent(e, "read", { itemId: "book" }, "P10 read book ritual");
   assertFlag(e, "lld-flag", true, "P10 ritual completes");
+  // Canonical post-exorcism (walkthrough.txt:226): "DROP CANDLES AND
+  // MATCHES AND BOOK". Spirits dispersed; the ritual artifacts are
+  // dead weight from here on (and the candles are about to expire
+  // anyway). Frees 16 weight (book 10 + match 1 + candles 5 — though
+  // candles may already be dropped earlier in the fail-and-recover path).
+  if (e.state.itemLocations["candles"] === "player") dropItem(e, "candles");
+  if (e.state.itemLocations["match"] === "player") dropItem(e, "match");
+  if (e.state.itemLocations["book"] === "player") dropItem(e, "book");
   go(e, "south", "land-of-living-dead", "P10 LLD");
   takeItem(e, "skull", "P10 skull");
 
@@ -810,7 +843,7 @@ if (!e.state.finished && !aborted()) {
   intent(e, "open", { itemId: "machine" }, "P12 open machine lid");
   putItem(e, "coal", "machine");
   intent(e, "close", { itemId: "machine" }, "P12 close lid");
-  intent(e, "turn-machine-switch", undefined, "P12 turn switch");
+  intent(e, "turn-machine-switch", { withItemId: "screwdriver" }, "P12 turn switch");
   // diamond should appear at machine-room
   assertItemAt(e, "diamond", "machine-room", "P12 diamond produced");
   intent(e, "open", { itemId: "machine" }, "P12 reopen lid");
@@ -860,13 +893,18 @@ if (!e.state.finished && !aborted()) {
     fail("P12 basket did not ascend",
          `loc=${e.state.itemLocations["basket"]} pos=${e.state.itemStates["basket"]?.position}`);
   }
-  // Take diamond and torch from the now-raised basket back at shaft-room.
+  // Take diamond first, then offload weight before taking the torch.
+  // Diamond (25) + torch (25) plus lamp (15) + coal (15) + bracelet (5)
+  // exceeds the 100-weight cap, so drop the coal (mine-puzzle artifact,
+  // no further use) and lamp (torch covers light) before the torch take.
   takeItem(e, "diamond", "P12 diamond from basket");
-  takeItem(e, "torch", "P12 torch from basket");
-  // Drop lamp per walkthrough (with diamond+torch, lamp not needed).
+  if (e.state.itemLocations["coal"] === "player") {
+    dropItem(e, "coal");
+  }
   if (e.state.itemLocations["lamp"] === "player") {
     dropItem(e, "lamp");
   }
+  takeItem(e, "torch", "P12 torch from basket");
 }
 
 // ----- Phase 13: Loud room echo + reservoir + rainbow + sceptre -----
@@ -882,8 +920,11 @@ if (!e.state.finished && !aborted()) {
   go(e, "down", "cellar", "P13 slide");
   go(e, "up", "living-room", "P13 emerge");
 
-  // Deposit treasures gathered so far. Per walkthrough: PUT ALL TREASURES EXCEPT TORCH.
-  for (const itm of ["chalice", "skull", "jade", "diamond", "bracelet"]) {
+  // Deposit treasures gathered so far. Per walkthrough: PUT ALL TREASURES
+  // EXCEPT TORCH. Bauble was picked up in P7 wind and never deposited;
+  // include it in this sweep so it doesn't accumulate weight through
+  // P13's reservoir/atlantis run.
+  for (const itm of ["chalice", "skull", "jade", "diamond", "bracelet", "bauble", "canary"]) {
     if (e.state.itemLocations[itm] === "player") {
       putItem(e, itm, "trophy-case");
     }
@@ -911,10 +952,27 @@ if (!e.state.finished && !aborted()) {
   go(e, "north", "chasm-room", "P13");
   go(e, "northeast", "reservoir-south", "P13");
   go(e, "north", "reservoir", "P13 drained reservoir");
+  // Inventory-weight management: bat puzzle is past. Garlic + screwdriver
+  // (machine puzzle is also done) are no longer needed; drop both before
+  // the heavy trunk pickup (trunk is 35 weight).
+  if (e.state.itemLocations["garlic"] === "player") {
+    dropItem(e, "garlic");
+  }
+  if (e.state.itemLocations["screwdriver"] === "player") {
+    dropItem(e, "screwdriver");
+  }
   takeItem(e, "trunk", "P13 trunk");
   go(e, "north", "reservoir-north", "P13");
   go(e, "north", "atlantis-room", "P13");
+  // Atlantis-room is lit; drop torch briefly to make room for the trident
+  // (12 weight), then take it back — the return trip passes through dark
+  // rooms (chasm-room, ew-passage) and the lamp was dropped at shaft-room
+  // in P12, so the lit torch is the only grue protection.
+  if (e.state.itemLocations["torch"] === "player") {
+    dropItem(e, "torch");
+  }
   takeItem(e, "trident", "P13 trident");
+  takeItem(e, "torch", "P13 retake torch (need light for return trip)");
   // Back to living-room: S, S, S, SW, SW.
   go(e, "south", "reservoir-north", "P13");
   go(e, "south", "reservoir", "P13");
@@ -996,7 +1054,12 @@ if (!e.state.finished && !aborted()) {
   go(e, "west", "east-of-house", "P14");
   go(e, "west", "kitchen", "P14");
   go(e, "west", "living-room", "P14");
-  for (const itm of ["sceptre", "pot-of-gold"]) {
+  // Canonical post-rainbow deposit (walkthrough.txt:290): "PUT ALL
+  // TREASURES EXCEPT TORCH IN CASE". Includes the coffin (55 weight!) —
+  // taken in P13 from egypt-room and never deposited prior to this. Coffin
+  // is the single heaviest item in the game; carrying it into the boat
+  // phase blows past the cap on the emerald pickup at sandy-beach.
+  for (const itm of ["sceptre", "pot-of-gold", "coffin"]) {
     if (e.state.itemLocations[itm] === "player") {
       putItem(e, itm, "trophy-case");
     }
@@ -1107,8 +1170,13 @@ const s_pre_boat_drift = snapshot(e);
   // walkthrough: DIG SAND with shovel to get scarab. Take shovel first.
   takeItem(e, "shovel", "P14 shovel");
   go(e, "northeast", "sandy-cave", "P14 sandy-cave");
-  // Story note says scarab is currently visible without digging (puzzle unwired).
-  takeItem(e, "scarab", "P14 scarab (puzzle unwired - directly takeable)");
+  // Sandy-cave dig puzzle: 4 explicit shovel-dig actions uncover the
+  // scarab (cave-dig-stage-1..4 + scarab.visibleWhen gated on
+  // scarab-uncovered flag). Tool-name pattern requires withItemId="shovel".
+  for (let i = 0; i < 4; i++) {
+    e.execute({ type: "recordIntent", signalId: "dig-sand-with-tool", args: { withItemId: "shovel" } });
+  }
+  takeItem(e, "scarab", "P14 scarab (uncovered by 4 digs)");
   go(e, "southwest", "sandy-beach", "P14");
   dropItem(e, "shovel");
 
@@ -1223,14 +1291,19 @@ console.log("\n--- F1: Grue eats player (extinguish lamp + wait in cellar) ---")
 console.log("\n--- F2: Gas room explosion ---");
 {
   const f = new Engine(story, JSON.parse(JSON.stringify(s_pre_gas_room)));
-  // Take torch back into inventory (which is lit). In the snapshot the torch
-  // is inside the basket at shaft-room (loaded at end of P11 setup).
-  if (f.state.itemLocations["torch"] === "basket") {
-    f.state = {
-      ...f.state,
-      itemLocations: { ...f.state.itemLocations, torch: "player" },
-    };
-  }
+  // Defensive setup: regardless of where the upstream walkthrough left the
+  // player and what state the torch is in, force the F2-relevant slice:
+  // player at shaft-room, lit torch in pocket. This makes the descent path
+  // shaft-room → smelly-room → gas-room deterministic + tests the actual
+  // gas-room-explodes trigger gate (lit open flame in gas-room).
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "shaft-room", torch: "player" },
+    itemStates: {
+      ...f.state.itemStates,
+      torch: { ...(f.state.itemStates["torch"] ?? {}), isLit: true },
+    },
+  };
   // Descend: shaft-room.N = smelly-room. smelly-room.D = gas-room.
   f.execute({ type: "go", direction: "north" });
   f.execute({ type: "go", direction: "down" });
