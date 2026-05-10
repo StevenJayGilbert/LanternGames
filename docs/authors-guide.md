@@ -532,9 +532,11 @@ For "this counter is greater than N" patterns, use `compare` with a NumericExpr:
 
 NumericExpr kinds: `literal`, `flag`, `passageState`, `itemState`, `roomState`, `inventoryCount`, `itemCountAt`, `matchedIntentsCount`, `visitedCount`. Operators: `==`, `!=`, `<`, `<=`, `>`, `>=`.
 
-## IdRef — referencing args inside a tool handler
+## IdRef — referencing args dynamically
 
-Inside a customTool handler, you can write `{ fromArg: "itemId" }` instead of a hardcoded id, and the engine substitutes the call's args at runtime:
+Two ways to template an id field instead of hardcoding a literal string. They look similar, apply in different places, and combine to make most generic patterns expressible without engine changes.
+
+**Inside a customTool handler — `{ fromArg }`.** Write the arg name and the dispatcher substitutes the call's args before the precondition or effect runs:
 
 ```jsonc
 "preconditions": [
@@ -545,9 +547,30 @@ Inside a customTool handler, you can write `{ fromArg: "itemId" }` instead of a 
 ]
 ```
 
-This is what makes generic verbs possible. One handler, any item.
+This is what makes generic verbs possible — one `light` handler that lights any flammable item, one `read` handler that reads any readable. Built-ins can also use it: `take` injects `{ self: itemId }`, so an item's `takeableWhen` can reference the item being taken via `{ fromArg: "self" }` (used by inventory-weight gating).
 
-Outside handlers, use plain string ids.
+**Inside a trigger — `{ fromIntent }`.** Reference args of an intent matched earlier this turn. Useful for hooking into a built-in action and acting on whatever target the player named:
+
+```jsonc
+{
+  "id": "items-fall-from-tree",
+  "when": {
+    "type": "and",
+    "all": [
+      { "type": "intentMatched", "signalId": "drop" },
+      { "type": "playerAt", "roomId": "up-a-tree" }
+    ]
+  },
+  "effects": [
+    { "type": "moveItem", "itemId": { "fromIntent": "drop", "key": "itemId" }, "to": "path" },
+    { "type": "removeMatchedIntent", "signalId": "drop" }
+  ]
+}
+```
+
+This trigger fires when the player drops *anything* at up-a-tree and moves it to the path below — without enumerating every possible item. Gate on `intentMatched(signalId)` so the args are guaranteed populated when the effect runs. See the cookbook recipe ["Items dropped here fall to another room"](#items-dropped-here-fall-to-another-room) for the full pattern with a layered item-specific trigger on top.
+
+**Outside handlers and triggers**, use plain string ids.
 
 ---
 
@@ -1392,6 +1415,63 @@ This needs the **built-in intent recording** mechanism: `intentMatched("go") + i
 ```
 
 The trigger fires whether the engine accepted or refused the `go` action — built-in intents record on dispatch regardless of success. With the exit `hidden: true`, the engine returns "no-such-direction" rejection, and this trigger supplies the canonical thematic refusal cue.
+
+## Items dropped here fall to another room
+
+**Puzzle**: when the player drops anything at `up-a-tree`, it should fall through the branches and land at `path` below. Canonical Zork I behavior; also the right model for pits, balconies, wells, cliffs, anywhere the floor isn't where dropped things end up.
+
+The hook is a trigger gating on `intentMatched("drop")` plus `playerAt(<the room>)`. The effect uses `{ fromIntent: "drop", key: "itemId" }` to dynamically reference whichever item the player just dropped — no per-item enumeration:
+
+```jsonc
+{
+  "id": "items-fall-from-tree",
+  "once": false,
+  "when": {
+    "type": "and",
+    "all": [
+      { "type": "intentMatched", "signalId": "drop" },
+      { "type": "playerAt", "roomId": "up-a-tree" }
+    ]
+  },
+  "effects": [
+    { "type": "moveItem", "itemId": { "fromIntent": "drop", "key": "itemId" }, "to": "path" },
+    { "type": "removeMatchedIntent", "signalId": "drop" }
+  ],
+  "narration": "It falls through the branches to the forest path below."
+}
+```
+
+The engine's drop action runs first and places the item at the player's current room (`up-a-tree`); the trigger fires immediately after and relocates it to `path`. Net effect: dropped items skip the tree-floor and land on the path.
+
+**Layering an item-specific consequence.** The egg in canonical Zork shatters when dropped from the tree, breaking the canary inside. Add a higher-priority trigger that runs *before* the generic mover so its broken-state effects apply while the drop intent is still live:
+
+```jsonc
+{
+  "id": "egg-breaks-on-tree-drop",
+  "once": false,
+  "priority": 10,
+  "when": {
+    "type": "and",
+    "all": [
+      { "type": "intentMatched", "signalId": "drop" },
+      { "type": "intentArg", "signalId": "drop", "key": "itemId", "equals": "egg" },
+      { "type": "playerAt", "roomId": "up-a-tree" },
+      { "type": "not", "condition": { "type": "itemState", "itemId": "egg", "key": "broken", "equals": true } }
+    ]
+  },
+  "effects": [
+    { "type": "setItemState", "itemId": "egg", "key": "isOpen", "value": true },
+    { "type": "setItemState", "itemId": "egg", "key": "broken", "value": true },
+    { "type": "setItemState", "itemId": "canary", "key": "broken", "value": true },
+    { "type": "moveItem", "itemId": "canary", "to": "path" }
+  ],
+  "narration": "The egg hits the path with a sharp crack. The shell splits apart, exposing the broken clockwork canary tangled in the wreckage."
+}
+```
+
+Priority 10 fires before the generic priority-0 trigger so broken-state effects land while `intentMatched("drop")` is still set. The generic trigger then runs, moves the (now-broken) egg to `path`, and consumes the intent. The canary is moved explicitly because containers don't auto-spill — once `egg.broken=true` the canary's "inside the egg" location is canonically wrong (the shell is split open), so we relocate it alongside.
+
+**The general pattern**: hook into any built-in or custom action by gating a trigger on `intentMatched(<verb>)` and using `{fromIntent}` in effects to reference the action's target. Works for `drop`, `take`, `attack`, `examine`, `go`, or any author-defined customTool. Layer item-specific triggers on top with higher priority for per-target consequences.
 
 ## Enter-room cue
 

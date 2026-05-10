@@ -450,9 +450,9 @@
       }
     },
     {
-      "$comment": "living-room.down: ZIL declares the trap-door from cellar's side (cellar.up → living-room), but the descent direction from the living room itself is buried in routine logic the mechanical extractor skips. Add it explicitly so the player can actually descend through the open trap door. visibleWhen hides the exit until the rug is moved (so 'down' isn't even listed as a direction). Description: author rewrite — drop the gothic-lettering canon (felt out of place), name the kitchen behind the east doorway and the front door behind the west door (permanently nailed shut from west-of-house's side too).",
+      "$comment": "living-room.down: ZIL declares the trap-door from cellar's side (cellar.up → living-room), but the descent direction from the living room itself is buried in routine logic the mechanical extractor skips. Add it explicitly so the player can actually descend through the open trap door. visibleWhen hides the exit until the rug is moved (so 'down' isn't even listed as a direction). Description: author rewrite — drop the gothic-lettering canon (felt out of place), name the kitchen behind the east doorway and the front door behind the west door (permanently nailed shut from west-of-house's side too). Rug is a separate item with its own state-aware description; the engine view lists it under itemsHere, so it's intentionally absent from the room prose to avoid contradicting the rug's variant text post-move.",
       "id": "living-room",
-      "description": "You are in the living room. To the east, a doorway opens into the kitchen. To the west is the front door, nailed shut. A trophy case stands against one wall, and a large oriental rug lies in the center of the room.",
+      "description": "You are in the living room. To the east, a doorway opens into the kitchen. To the west is the front door, nailed shut. A trophy case stands against one wall.",
       "exits": {
         "down": {
           "to": "cellar",
@@ -466,33 +466,110 @@
       }
     },
     {
-      "$comment": "white-cliffs-north: ZIL gates south + west on flag(deflate) — the canonical 'you're on foot, not in the raft' check for the unwired magic-boat puzzle. Since deflate is never set, both exits are permanently blocked, soft-locking the player who walks east from damp-cave (which has NO matching gate, so entry is one-way). Strip the gates so the beach is navigable on foot. When the boat puzzle eventually lands, re-add the gating with the proper boat-state condition.",
+      "$comment": "white-cliffs-north: a beach landing for the river-3 west exit. Tagged terrain=water (boat-allowed) so the boat's enterableWhen accepts it. Beach-internal exits (south to white-cliffs-south) and beach-to-land exits (west to damp-cave) are foot-only — the boat doesn't slide along narrow shores or fit through cave passages. The original ZIL gated these on a deflate flag; we gate on inVehicle(boat) instead, since the player either rode here in the boat (must disembark to walk the beach) or arrived on foot from damp-cave (no boat to worry about).",
       "id": "white-cliffs-north",
+      "state": { "terrain": "water" },
       "exits": {
         "south": {
-          "to": "white-cliffs-south"
+          "to": "white-cliffs-south",
+          "when": { "type": "not", "condition": { "type": "inVehicle", "itemId": "inflatable-boat" } },
+          "blockedMessage": "The boat does not float on land."
         },
         "west": {
-          "to": "damp-cave"
+          "to": "damp-cave",
+          "when": { "type": "not", "condition": { "type": "inVehicle", "itemId": "inflatable-boat" } },
+          "blockedMessage": "The boat does not float on land."
         }
       }
     },
     {
-      "$comment": "white-cliffs-south: same deflate-flag soft-lock as north. Ungate so the player can walk back north along the beach.",
+      "$comment": "white-cliffs-south: same beach + boat-gating shape as white-cliffs-north.",
       "id": "white-cliffs-south",
+      "state": { "terrain": "water" },
       "exits": {
         "north": {
-          "to": "white-cliffs-north"
+          "to": "white-cliffs-north",
+          "when": { "type": "not", "condition": { "type": "inVehicle", "itemId": "inflatable-boat" } },
+          "blockedMessage": "The boat does not float on land."
         }
       }
     },
     {
+      "$comment": "sandy-beach: east-shore landing for river-4. terrain=water tag enables boat boarding here. Both exits (northeast to sandy-cave, south to shore) are foot-only — the boat is too unwieldy off the river itself.",
       "id": "sandy-beach",
-      "description": "You are on a large sandy beach on the east shore of the river, which is flowing quickly by. A path runs beside the river to the south here, and a passage is partially buried in sand to the northeast."
+      "description": "You are on a large sandy beach on the east shore of the river, which is flowing quickly by. A path runs beside the river to the south here, and a passage is partially buried in sand to the northeast.",
+      "state": { "terrain": "water" },
+      "exits": {
+        "northeast": {
+          "to": "sandy-cave",
+          "when": { "type": "not", "condition": { "type": "inVehicle", "itemId": "inflatable-boat" } },
+          "blockedMessage": "The boat does not float on land."
+        },
+        "south": {
+          "to": "shore",
+          "when": { "type": "not", "condition": { "type": "inVehicle", "itemId": "inflatable-boat" } },
+          "blockedMessage": "The boat does not float on land."
+        }
+      }
     },
     {
       "id": "sandy-cave",
       "description": "This is a sand-filled cave whose exit is to the southwest."
+    },
+    {
+      "$comment": "dam-base: boat's home. terrain=water tag enables boarding here. Exits north + up (to dam-room) are foot-only.",
+      "id": "dam-base",
+      "state": { "terrain": "water" },
+      "exits": {
+        "north": {
+          "to": "dam-room",
+          "when": { "type": "not", "condition": { "type": "inVehicle", "itemId": "inflatable-boat" } },
+          "blockedMessage": "The boat does not float on land."
+        },
+        "up": {
+          "to": "dam-room",
+          "when": { "type": "not", "condition": { "type": "inVehicle", "itemId": "inflatable-boat" } },
+          "blockedMessage": "The boat does not float on land."
+        }
+      }
+    },
+    {
+      "$comment": "river-1: terrain=water tag. All exits (west/land to dam-base, down to river-2) are river-allowed; no exit gates needed.",
+      "id": "river-1",
+      "state": { "terrain": "water" }
+    },
+    {
+      "id": "river-2",
+      "state": { "terrain": "water" }
+    },
+    {
+      "id": "river-3",
+      "state": { "terrain": "water" }
+    },
+    {
+      "id": "river-4",
+      "state": { "terrain": "water" }
+    },
+    {
+      "id": "river-5",
+      "state": { "terrain": "water" }
+    },
+    {
+      "$comment": "shore: canonical landing point at river-5/east. terrain=water tag enables boat boarding here, but both shore exits (north to sandy-beach, south to aragain-falls) are foot-only — beach travel above the water is too narrow for the boat, and piloting over the falls is its own kind of bad.",
+      "id": "shore",
+      "state": { "terrain": "water" },
+      "exits": {
+        "north": {
+          "to": "sandy-beach",
+          "when": { "type": "not", "condition": { "type": "inVehicle", "itemId": "inflatable-boat" } },
+          "blockedMessage": "The boat does not float on land."
+        },
+        "south": {
+          "to": "aragain-falls",
+          "when": { "type": "not", "condition": { "type": "inVehicle", "itemId": "inflatable-boat" } },
+          "blockedMessage": "The boat does not float on land."
+        }
+      }
     },
     {
       "$comment": "DARK ROOMS: canonical Zork I dark rooms get state.dark=true. Combined with the player having no perceivable lit light source, this satisfies the story-level darkness condition (defaultVisibility) and triggers the pitch-black sharedVariant + the grue tick triggers below.",
@@ -1042,17 +1119,17 @@
       ]
     },
     {
-      "$comment": "Cyclops-room: the cyclops blocks east (his hunger / rage gate via magic-flag) and up (the staircase, gate via cyclops-flag — fled). Override adds blockedMessages for both.",
+      "$comment": "Cyclops-room: 'up' is the staircase, gated on cyclops-flag (cyclops appeased by either magic word OR feed). 'east' is the cyclops-shaped hole in the wall — gated on magic-flag and HIDDEN until then, since canonically there is no east exit before the cyclops smashes through (the canonical room LDESC says 'This room has an exit on the northwest, and a staircase leading up.' — east is not mentioned). After magic-flag the hole appears and leads to strange-passage / living-room shortcut. The fed path (cyclops-flag=true, magic-flag=false) leaves east hidden because no wall break occurred.",
       "id": "cyclops-room",
       "exits": {
         "east": {
           "to": "strange-passage",
+          "hidden": true,
           "when": {
             "type": "flag",
             "key": "magic-flag",
             "equals": true
-          },
-          "blockedMessage": "The cyclops, a hulking giant, blocks the passage east, glowering hungrily down at you."
+          }
         },
         "up": {
           "to": "treasure-room",
@@ -1738,7 +1815,14 @@
     {
       "id": "canary",
       "description": "A golden clockwork canary with ruby eyes and a silver beak. A crystal window below its left wing reveals intricate machinery; the mechanism appears to have wound down. A treasure.",
+      "variants": [
+        {
+          "when": { "type": "itemState", "itemId": "canary", "key": "broken", "equals": true },
+          "text": "The golden clockwork canary lies still — mechanism crushed, ruby eyes dulled, silver beak bent out of true, mainspring snapped."
+        }
+      ],
       "state": {
+        "broken": false,
         "weight": 3
       },
       "fromTemplate": "takeable-weighable"
@@ -1796,7 +1880,7 @@
       }
     },
     {
-      "$comment": "Egg puzzle: the clasp is too delicate for direct opening. Suppress the auto-gen 'open egg' intent (openWhen: never) and let the give-egg-to-songbird intent + trigger handle opening. Force-opening (smashing) destroys the canary inside — that's a future trigger.",
+      "$comment": "Egg puzzle: the clasp is too delicate for direct opening. Force-opening damages both egg and canary — handled by open-egg-destroys-canary / break-egg-destroys-canary triggers. State-aware variants describe the egg post-open and post-break. No narratorNote needed — the close customTool's broken-gate precondition refuses close on a broken egg in story voice, so the narrator doesn't need to invent close-failure flavor.",
       "id": "egg",
       "tags": [
         "treasure",
@@ -1804,20 +1888,35 @@
         "container",
         "valuable"
       ],
-      "narratorNote": "The egg, once opened, cannot be closed again. The clasp is delicate filigree; once sprung, it bends out of true and refuses to seat. If the player tries to close it, narrate the failure in flavor — the clasp is a one-shot mechanism, the gold inlay has buckled, the tiny hinge-pin was lost into the songbird's beak (or thief's pocket), etc. Pick a silly-but-period-appropriate reason; never say 'the engine doesn't allow it.'",
-      "openWhen": {
-        "type": "not",
-        "condition": {
-          "type": "always"
-        }
+      "container": {
+        "capacity": 6,
+        "accessibleWhen": {
+          "type": "and",
+          "all": [
+            { "type": "itemState", "itemId": "egg", "key": "isOpen", "equals": true },
+            { "type": "not", "condition": { "type": "itemState", "itemId": "egg", "key": "broken", "equals": true } }
+          ]
+        },
+        "accessBlockedMessage": "The jewel-encrusted egg is closed."
       },
-      "closeWhen": {
-        "type": "not",
-        "condition": {
-          "type": "always"
+      "variants": [
+        {
+          "when": { "type": "itemState", "itemId": "egg", "key": "broken", "equals": true },
+          "text": "The jewel-encrusted egg has been crushed — clasp bent, gold inlay buckled, the broken clockwork canary tangled visibly in the cracked shell."
+        },
+        {
+          "when": {
+            "type": "and",
+            "all": [
+              { "type": "itemState", "itemId": "egg", "key": "isOpen", "equals": true },
+              { "type": "not", "condition": { "type": "itemState", "itemId": "egg", "key": "broken", "equals": true } }
+            ]
+          },
+          "text": "The jewel-encrusted egg has been opened cleanly along its delicate clasp, revealing the hollow within."
         }
-      },
+      ],
       "state": {
+        "broken": false,
         "weight": 6
       },
       "fromTemplate": "takeable-weighable"
@@ -2220,6 +2319,12 @@
     {
       "id": "rug",
       "description": "A heavy oriental carpet covers the center of the floor, oddly out of place. Something about its position invites curiosity.",
+      "variants": [
+        {
+          "when": { "type": "flag", "key": "rug-moved-flag", "equals": true },
+          "text": "The heavy oriental carpet has been pulled to one side of the room, revealing the trap door it concealed."
+        }
+      ],
       "tags": [
         "scenery",
         "fixed"
@@ -2429,12 +2534,13 @@
       "vehicle": {
         "mobile": true,
         "enterableWhen": {
-          "type": "itemState",
-          "itemId": "inflatable-boat",
-          "key": "inflation",
-          "equals": "inflated"
+          "type": "and",
+          "all": [
+            { "type": "itemState", "itemId": "inflatable-boat", "key": "inflation", "equals": "inflated" },
+            { "type": "currentRoomState", "key": "terrain", "equals": "water" }
+          ]
         },
-        "enterBlockedMessage": "The pile of plastic has no inside to step into."
+        "enterBlockedMessage": "The boat needs to be inflated and on water before you can board it."
       },
       "container": {
         "accessibleWhen": {
@@ -2617,7 +2723,7 @@
       }
     },
     {
-      "$comment": "Close handler — symmetric to open. Same item-or-passage polymorphism.",
+      "$comment": "Close handler — symmetric to open. Same item-or-passage polymorphism. Broken-gate precondition makes broken-but-open items unclosable; refusal stays in story voice ('is too bent out of true to close') so the narrator doesn't have to invent close-failure flavor for items like the post-force-open egg.",
       "id": "close",
       "description": "Player closes, shuts, latches, lids, or otherwise closes an item or passage (door, window, lid, etc.).",
       "args": {
@@ -2700,6 +2806,20 @@
               ]
             },
             "failedNarration": "{arg.itemId.name} is already closed."
+          },
+          {
+            "when": {
+              "type": "not",
+              "condition": {
+                "type": "itemState",
+                "itemId": {
+                  "fromArg": "itemId"
+                },
+                "key": "broken",
+                "equals": true
+              }
+            },
+            "failedNarration": "{arg.itemId.name} is too bent out of true to close."
           }
         ],
         "effects": [
@@ -2762,12 +2882,15 @@
           },
           {
             "when": {
-              "type": "itemState",
-              "itemId": {
-                "fromArg": "itemId"
-              },
-              "key": "broken",
-              "equals": false
+              "type": "not",
+              "condition": {
+                "type": "itemState",
+                "itemId": {
+                  "fromArg": "itemId"
+                },
+                "key": "broken",
+                "equals": true
+              }
             },
             "failedNarration": "{arg.itemId.name} is already broken."
           }
@@ -2811,9 +2934,39 @@
       "description": "Player says, shouts, whispers, or invokes 'Ulysses', 'Odysseus', or otherwise utters the magic word that terrifies the cyclops."
     },
     {
-      "$comment": "Cyclops feed alternative. Give him the hot pepper sandwich (lunch) and water bottle. He eats, drinks, and falls asleep. Sets cyclops-flag (no longer blocking) but NOT magic-flag (no wall smash — slept, didn't flee). Different aftermath than the magic word.",
+      "$comment": "Cyclops feed. One item per call (matches the canonical Zork pattern: GIVE LUNCH, then GIVE BOTTLE). Handler refuses if the item isn't in inventory or the player isn't at cyclops-room. Per-item triggers (cyclops-eats-lunch, cyclops-drinks-bottle) consume the item and acknowledge; once both have been given, cyclops-falls-asleep sets cyclops-flag. Catchall (cyclops-rejects-feed) handles non-lunch/non-bottle items. Sets cyclops-flag (no longer blocking) but NOT magic-flag (no wall smash — he slept, didn't flee).",
       "id": "feed-cyclops",
-      "description": "Player gives, offers, or hands the cyclops the lunch (hot pepper sandwich) and the bottle of water — feeding and watering him."
+      "description": "Player gives, offers, or hands the cyclops a single item — feeding him. Pass the id of one item from inventory. The cyclops needs both food (the lunch / hot pepper sandwich) and drink (the bottle of water) before he sleeps; one item per call.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the single item being given to the cyclops, from inventory"
+          }
+        },
+        "required": [
+          "itemId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": { "fromArg": "itemId" }
+            },
+            "failedNarration": "You don't have {arg.itemId.name}."
+          },
+          {
+            "when": { "type": "playerAt", "roomId": "cyclops-room" },
+            "failedNarration": "There is no cyclops here to feed."
+          }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
     },
     {
       "$comment": "Pray at the altar in south-temple. Teleports the player to forest-1 (canonical Zork: prayer at the altar transports the adventurer back to the surface).",
@@ -5118,6 +5271,7 @@
       "once": true
     },
     {
+      "$comment": "Magic word (Ulysses / Odysseus) — cyclops panics, smashes east wall, flees. Sets cyclops-flag (gone) AND magic-flag (east passage now open to living-room). Also clears combat-engaged-with-cyclops for hygiene; the attacks-player gate already fails because cyclops is at 'nowhere', but stale engagement state should not persist.",
       "id": "cyclops-flees",
       "when": {
         "type": "and",
@@ -5149,6 +5303,11 @@
           "value": true
         },
         {
+          "type": "setFlag",
+          "key": "combat-engaged-with-cyclops",
+          "value": false
+        },
+        {
           "type": "moveItem",
           "itemId": "cyclops",
           "to": "nowhere"
@@ -5158,52 +5317,88 @@
       "once": true
     },
     {
-      "id": "cyclops-fed",
+      "$comment": "Feed lunch to cyclops — one of two halves of the peaceful resolution. Priority 10; consumes the matched intent so the catchall (cyclops-rejects-feed) doesn't also fire. Gate on not(fedLunch) prevents double-feeding. Doesn't set cyclops-flag — that happens in cyclops-falls-asleep once both halves are done.",
+      "id": "cyclops-eats-lunch",
+      "once": false,
+      "priority": 10,
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "feed-cyclops"
-          },
-          {
-            "type": "playerAt",
-            "roomId": "cyclops-room"
-          },
-          {
-            "type": "flag",
-            "key": "cyclops-flag",
-            "equals": false
-          },
-          {
-            "type": "hasItem",
-            "itemId": "lunch"
-          },
-          {
-            "type": "hasItem",
-            "itemId": "bottle"
-          }
+          { "type": "intentMatched", "signalId": "feed-cyclops" },
+          { "type": "intentArg", "signalId": "feed-cyclops", "key": "itemId", "equals": "lunch" },
+          { "type": "playerAt", "roomId": "cyclops-room" },
+          { "type": "hasItem", "itemId": "lunch" },
+          { "type": "not", "condition": { "type": "flag", "key": "cyclops-flag", "equals": true } },
+          { "type": "not", "condition": { "type": "itemState", "itemId": "cyclops", "key": "fedLunch", "equals": true } }
         ]
       },
       "effects": [
-        {
-          "type": "setFlag",
-          "key": "cyclops-flag",
-          "value": true
-        },
-        {
-          "type": "moveItem",
-          "itemId": "lunch",
-          "to": "nowhere"
-        },
-        {
-          "type": "moveItem",
-          "itemId": "bottle",
-          "to": "nowhere"
-        }
+        { "type": "moveItem", "itemId": "lunch", "to": "nowhere" },
+        { "type": "setItemState", "itemId": "cyclops", "key": "fedLunch", "value": true },
+        { "type": "removeMatchedIntent", "signalId": "feed-cyclops" }
       ],
-      "narration": "The cyclops devours the sandwich in two bites and drains the bottle. Within moments his single eye droops, and he slumps against the wall, snoring thunderously. The staircase is no longer guarded.",
-      "once": true
+      "narration": "The cyclops snatches the sandwich and devours it in two bites. He grunts approvingly — but the pepper has him thirsty now."
+    },
+    {
+      "$comment": "Mirror of cyclops-eats-lunch for the bottle.",
+      "id": "cyclops-drinks-bottle",
+      "once": false,
+      "priority": 10,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "feed-cyclops" },
+          { "type": "intentArg", "signalId": "feed-cyclops", "key": "itemId", "equals": "bottle" },
+          { "type": "playerAt", "roomId": "cyclops-room" },
+          { "type": "hasItem", "itemId": "bottle" },
+          { "type": "not", "condition": { "type": "flag", "key": "cyclops-flag", "equals": true } },
+          { "type": "not", "condition": { "type": "itemState", "itemId": "cyclops", "key": "fedBottle", "equals": true } }
+        ]
+      },
+      "effects": [
+        { "type": "moveItem", "itemId": "bottle", "to": "nowhere" },
+        { "type": "setItemState", "itemId": "cyclops", "key": "fedBottle", "value": true },
+        { "type": "removeMatchedIntent", "signalId": "feed-cyclops" }
+      ],
+      "narration": "The cyclops drains the bottle in one long pull, water running down his beard. He smacks his lips — but he's still hungry."
+    },
+    {
+      "$comment": "Sleep the cyclops once both halves of the meal are in. Priority 5 so it fires AFTER the eats/drinks triggers in the same iteration (fedLunch + fedBottle are both true by then). Same final state as cyclops-flees: cyclops-flag set, unconscious, combat cleared. magic-flag intentionally NOT set on the fed path (no wall break — staircase up only, no living-room shortcut east).",
+      "id": "cyclops-falls-asleep",
+      "once": true,
+      "priority": 5,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "itemState", "itemId": "cyclops", "key": "fedLunch", "equals": true },
+          { "type": "itemState", "itemId": "cyclops", "key": "fedBottle", "equals": true },
+          { "type": "not", "condition": { "type": "flag", "key": "cyclops-flag", "equals": true } }
+        ]
+      },
+      "effects": [
+        { "type": "setFlag", "key": "cyclops-flag", "value": true },
+        { "type": "setItemState", "itemId": "cyclops", "key": "unconscious", "value": true },
+        { "type": "setFlag", "key": "combat-engaged-with-cyclops", "value": false }
+      ],
+      "narration": "Sated and slaked, the cyclops slumps against the wall and begins snoring thunderously. The staircase is no longer guarded."
+    },
+    {
+      "$comment": "Catchall: feed-cyclops invoked with an item the cyclops doesn't want (anything not lunch/bottle). The eats/drinks triggers consume the intent on success; this only fires if neither did. removeMatchedIntent so it doesn't bleed into next turn. once:false — player can keep trying.",
+      "id": "cyclops-rejects-feed",
+      "once": false,
+      "priority": 0,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "feed-cyclops" },
+          { "type": "playerAt", "roomId": "cyclops-room" },
+          { "type": "not", "condition": { "type": "flag", "key": "cyclops-flag", "equals": true } }
+        ]
+      },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "feed-cyclops" }
+      ],
+      "narration": "The cyclops sniffs whatever you offered, snorts, and shoves it back at you with a hungry glower."
     },
     {
       "$comment": "Consume the intent so the player can pray again later from the temple. Without removeMatchedIntent the trigger would re-fire every turn after the first prayer (matchedIntents persists), teleporting the player on every action.",
@@ -6446,7 +6641,7 @@
       ]
     },
     {
-      "$comment": "Generic player-death gate. Any trigger that drains player-health below zero ends the game with this catchall message — UNLESS a more specific death trigger (priority > 0, gated on context) consumes the event by setting flag('death-handled')=true. The message is intentionally context-free so it works for cyclops, troll, grue (oh no — actually grue has its own endGame), thief, or any future hostile.",
+      "$comment": "Generic player-death gate. Any trigger that drains player-health below zero ends the game with this catchall message — UNLESS a more specific death trigger (priority > 0, gated on context) consumes the event by setting flag('death-handled')=true. The message is intentionally context-free so it works for cyclops, troll, grue (oh no — actually grue has its own endGame), thief, or any future hostile. The death-message setFlag is wrapped in an `if` so a specific killer (e.g. cyclops-attacks-player) that already wrote a flavored line into death-message wins; the catchall only supplies its generic message when nothing else has.",
       "id": "player-killed",
       "afterAction": true,
       "once": true,
@@ -6478,7 +6673,13 @@
           "key": "death-handled",
           "value": true
         },
-        { "type": "setFlag", "key": "death-message", "value": "Your wounds overcome you, and the world fades to black." },
+        {
+          "type": "if",
+          "if": { "type": "flag", "key": "death-message", "equals": "" },
+          "then": [
+            { "type": "setFlag", "key": "death-message", "value": "Your wounds overcome you, and the world fades to black." }
+          ]
+        },
         { "type": "setFlag", "key": "just-died", "value": true }
       ]
     },
@@ -7256,6 +7457,11 @@
               "type": "adjustFlag",
               "key": "player-health",
               "by": -4
+            },
+            {
+              "type": "setFlag",
+              "key": "death-message",
+              "value": "The cyclops's hand catches you across the temple. Your vision swims, then fades."
             }
           ],
           "else": [
@@ -7282,6 +7488,11 @@
                   "type": "adjustFlag",
                   "key": "player-health",
                   "by": -10
+                },
+                {
+                  "type": "setFlag",
+                  "key": "death-message",
+                  "value": "The cyclops's fist pounds you into the wall — and you do not get up."
                 }
               ],
               "else": [
@@ -7308,6 +7519,11 @@
                       "type": "adjustFlag",
                       "key": "player-health",
                       "by": -15
+                    },
+                    {
+                      "type": "setFlag",
+                      "key": "death-message",
+                      "value": "The cyclops squeezes. Ribs crack. Then the rest of you."
                     }
                   ],
                   "else": [
@@ -7334,6 +7550,11 @@
                           "type": "adjustFlag",
                           "key": "player-health",
                           "by": -100
+                        },
+                        {
+                          "type": "setFlag",
+                          "key": "death-message",
+                          "value": "The cyclops's massive fingers find your throat. The stars behind your eyes go out."
                         }
                       ],
                       "else": [
@@ -10287,6 +10508,48 @@
       ],
       "$canaryComment": "Canary's location stays at 'egg' — container parentage is transitive in the engine, so when the open egg moves into the thief's pocket the canary travels with it; when thief-dies later moves the egg back to treasure-room, the canary follows. The egg arrives open, so take(canary) traverses the open container.",
       "narration": "The thief takes the egg between two long fingers, examines it, and gives a small approving smile. With an audible click the clasp yields. He pockets the egg, canary and all. 'A pleasure, as always.'"
+    },
+    {
+      "$comment": "Force-break the egg (smash / crush / break) — destroys the canary inside. Mirror of egg-falls-from-tree but for explicit break-verb attempts in any room; the canonical Zork I 'sickening crunching noise' outcome. Both items get state.broken=true; egg.isOpen flips to true (broken == open for take semantics). The thief-opens-egg gate prevents retroactively destroying a thief-extracted canary. Variants on the egg/canary items render the post-break description. once:false is explicit — engine's default for once is true, so we must override. Idempotency comes from the not(broken=true) gate plus removeMatchedIntent(break) in the effects, both of which prevent re-fire after the first successful run; relying on those instead of once:true means a stale firedTriggers entry from any prior buggy run can't lock the trigger out forever.",
+      "id": "break-egg-destroys-canary",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "break" },
+          { "type": "intentArg", "signalId": "break", "key": "itemId", "equals": "egg" },
+          { "type": "itemAccessible", "itemId": "egg" },
+          { "type": "not", "condition": { "type": "itemState", "itemId": "egg", "key": "broken", "equals": true } },
+          { "type": "not", "condition": { "type": "triggerFired", "triggerId": "thief-opens-egg" } }
+        ]
+      },
+      "effects": [
+        { "type": "setItemState", "itemId": "egg", "key": "broken", "value": true },
+        { "type": "setItemState", "itemId": "canary", "key": "broken", "value": true },
+        { "type": "setItemState", "itemId": "egg", "key": "isOpen", "value": true },
+        { "type": "removeMatchedIntent", "signalId": "break" }
+      ],
+      "narration": "There is a sickening crunching noise. The egg's clasp gives way, and the bird inside is silenced under the wreckage."
+    },
+    {
+      "$comment": "Player force-opens the egg directly — canonical Zork I 'indelicate handling' outcome: opens AND damages both egg and canary inside. Layered after the open handler's 'You open the jewel-encrusted egg.' success cue. Gate clauses: (1) intentMatched(open) + (2) intentArg target=egg + (3) not(broken=true) for undefined-tolerance + (4) not triggerFired(thief-opens-egg) so the trigger only fires on the player's force path, not after the thief has already cleanly extracted the canary. once:false is explicit — engine's default for once is true, so we must override. Idempotency comes from the not(broken=true) gate plus removeMatchedIntent(open) in the effects; relying on those instead of once:true means a stale firedTriggers entry can't lock the trigger out forever.",
+      "id": "open-egg-destroys-canary",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "open" },
+          { "type": "intentArg", "signalId": "open", "key": "itemId", "equals": "egg" },
+          { "type": "not", "condition": { "type": "itemState", "itemId": "egg", "key": "broken", "equals": true } },
+          { "type": "not", "condition": { "type": "triggerFired", "triggerId": "thief-opens-egg" } }
+        ]
+      },
+      "effects": [
+        { "type": "setItemState", "itemId": "egg", "key": "broken", "value": true },
+        { "type": "setItemState", "itemId": "canary", "key": "broken", "value": true },
+        { "type": "removeMatchedIntent", "signalId": "open" }
+      ],
+      "narration": "Your indelicate handling bends the egg's clasp out of true and buckles the gold inlay. The clockwork bird inside is mangled — silver beak crumpled, ruby eyes scratched, fine wires kinked beyond use."
     },
     {
       "$comment": "PUZZLE #2 COFFIN AT ALTAR — canonical: SOUTH-TEMPLE-FCN sets COFFIN-CURE = NOT(coffin in inventory) every turn at south-temple. We mirror with two symmetric triggers — one to set the flag when player arrives without coffin, one to clear it if they re-pick up the coffin. The down→tiny-cave exit unblocks/re-blocks dynamically.",
@@ -13340,7 +13603,7 @@
           "value": 0
         }
       ],
-      "narration": "The current sweeps you forward; the roar of falling water fills your ears. This is your last chance to land — east to the sandy beach!"
+      "narration": "The current sweeps you forward. The roar of falling water fills your ears."
     },
     {
       "$comment": "RIVER-5 WATERFALL DEATH — at river-5 with counter >= 2, player goes over Aragain Falls. Threshold same as the others (2 ticks of grace). Player has one full turn at river-5 to escape east → shore.",
@@ -13432,46 +13695,44 @@
       ]
     },
     {
-      "$comment": "F6 — Drop egg in up-a-tree. Shell cracks open in place; clockwork canary mechanism is mangled. Both treasures become 'broken' — still depositable but the canary can no longer sing for the bauble. Guarded by isOpen=false so songbird/thief-opened eggs (already open) don't re-trigger.",
-      "id": "egg-falls-from-tree",
-      "once": true,
+      "$comment": "F6a — Egg dropped from up-a-tree shatters and breaks the canary inside. Priority 10 — fires before items-fall-from-tree (priority 0) so the broken-state effects run while the drop intent is still live; the canary spills out of the cracked shell to the path below. once:false; idempotency from not(broken=true). Mutex with thief-opens-egg per the open/break triggers.",
+      "id": "egg-breaks-on-tree-drop",
+      "once": false,
+      "priority": 10,
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "itemAt",
-            "itemId": "egg",
-            "location": "up-a-tree"
-          },
-          {
-            "type": "itemState",
-            "itemId": "egg",
-            "key": "isOpen",
-            "equals": false
-          }
+          { "type": "intentMatched", "signalId": "drop" },
+          { "type": "intentArg", "signalId": "drop", "key": "itemId", "equals": "egg" },
+          { "type": "playerAt", "roomId": "up-a-tree" },
+          { "type": "not", "condition": { "type": "itemState", "itemId": "egg", "key": "broken", "equals": true } },
+          { "type": "not", "condition": { "type": "triggerFired", "triggerId": "thief-opens-egg" } }
         ]
       },
       "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "egg",
-          "key": "isOpen",
-          "value": true
-        },
-        {
-          "type": "setItemState",
-          "itemId": "egg",
-          "key": "broken",
-          "value": true
-        },
-        {
-          "type": "setItemState",
-          "itemId": "canary",
-          "key": "broken",
-          "value": true
-        }
+        { "type": "setItemState", "itemId": "egg", "key": "isOpen", "value": true },
+        { "type": "setItemState", "itemId": "egg", "key": "broken", "value": true },
+        { "type": "setItemState", "itemId": "canary", "key": "broken", "value": true },
+        { "type": "moveItem", "itemId": "canary", "to": "path" }
       ],
-      "narration": "The egg hits the wooden floor of the branches with a sharp crack. The shell splits apart, exposing the clockwork canary — but its delicate mechanism is now hopelessly mangled."
+      "narration": "The egg hits the path with a sharp crack. The shell splits apart, exposing the broken clockwork canary tangled in the wreckage."
+    },
+    {
+      "$comment": "Items dropped at up-a-tree fall through the branches to the forest path below. Generic — works for ANY item the player drops here (egg, lamp, garlic, weapons, anything in inventory). Uses the {fromIntent} IdRef to resolve which item was dropped from state.matchedIntentArgs.drop.itemId. Priority 0 (default) — fires AFTER egg-breaks-on-tree-drop (priority 10) so the egg's broken-state effects run first. removeMatchedIntent(drop) consumes the intent so the trigger doesn't re-fire on subsequent ticks.",
+      "id": "items-fall-from-tree",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "drop" },
+          { "type": "playerAt", "roomId": "up-a-tree" }
+        ]
+      },
+      "effects": [
+        { "type": "moveItem", "itemId": { "fromIntent": "drop", "key": "itemId" }, "to": "path" },
+        { "type": "removeMatchedIntent", "signalId": "drop" }
+      ],
+      "narration": "It falls through the branches to the forest path below."
     },
     {
       "$comment": "P7 — WIND CANARY in any forest room → songbird drops the brass bauble. Canonical CANARY-OBJECT routine: requires intact canary in inventory and a forest room (forest-1, forest-2, forest-3, path, up-a-tree). At up-a-tree the bauble lands at path (falls through the branches). once:true makes this fire exactly once across the game, matching the ZIL SING-SONG flag.",

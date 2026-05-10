@@ -999,6 +999,175 @@ console.log("\n=== 3-life soft-death (canonical JIGS-UP) ===");
     : fail(`deaths=${e2.state.flags.deaths}`);
 }
 
+// ----- Force-open egg destroys canary (canonical "indelicate handling") -----
+console.log("\n=== open egg destroys canary ===");
+{
+  const e = newEngine();
+  e.state.itemStates.egg?.broken === false
+    ? pass("fresh state: egg.broken === false (initial-state seeded)")
+    : fail(`egg.broken = ${JSON.stringify(e.state.itemStates.egg?.broken)}`);
+  e.state.itemStates.canary?.broken === false
+    ? pass("fresh state: canary.broken === false")
+    : fail(`canary.broken = ${JSON.stringify(e.state.itemStates.canary?.broken)}`);
+
+  // Player carries the closed egg; force-open it.
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "west-of-house", egg: "player" },
+  };
+  e.execute({ type: "recordIntent", signalId: "open", args: { itemId: "egg" } });
+
+  e.state.itemStates.egg?.broken === true
+    ? pass("egg.broken === true after open")
+    : fail(`egg.broken = ${JSON.stringify(e.state.itemStates.egg?.broken)}`);
+  e.state.itemStates.canary?.broken === true
+    ? pass("canary.broken === true after open")
+    : fail(`canary.broken = ${JSON.stringify(e.state.itemStates.canary?.broken)}`);
+  e.state.firedTriggers.includes("open-egg-destroys-canary")
+    ? pass("open-egg-destroys-canary fired")
+    : fail("trigger did not fire", JSON.stringify(e.state.firedTriggers.filter((t) => /egg|canary/.test(t))));
+
+  // Close handler refuses a broken egg — engine-enforced, no LLM flavor needed.
+  const closeResult = e.execute({ type: "recordIntent", signalId: "close", args: { itemId: "egg" } });
+  e.state.itemStates.egg?.isOpen === true
+    ? pass("close handler refuses broken egg (isOpen stays true)")
+    : fail(`isOpen flipped to ${e.state.itemStates.egg?.isOpen}`);
+  closeResult.narrationCues.some((c) => /too bent out of true to close/.test(c))
+    ? pass("close-refusal cue mentions 'bent out of true'")
+    : fail(`cues = ${JSON.stringify(closeResult.narrationCues)}`);
+}
+
+// ----- Thief-opens-egg blocks the force-open trigger -----
+console.log("\n=== thief-opens-egg blocks force-open ===");
+{
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "west-of-house", egg: "player" },
+    firedTriggers: [...e.state.firedTriggers, "thief-opens-egg"],
+  };
+  e.execute({ type: "recordIntent", signalId: "open", args: { itemId: "egg" } });
+
+  !e.state.firedTriggers.includes("open-egg-destroys-canary")
+    ? pass("open-egg-destroys-canary suppressed when thief-opens-egg already fired")
+    : fail("trigger fired despite thief-opens-egg gate");
+  // Canary still intact (whatever the thief left behind is the thief's problem).
+  e.state.itemStates.canary?.broken === false
+    ? pass("canary still intact in thief-already-opened scenario")
+    : fail(`canary.broken = ${JSON.stringify(e.state.itemStates.canary?.broken)}`);
+}
+
+// ----- Stale firedTriggers entry must NOT block force-open (once:true relaxed) -----
+console.log("\n=== open-egg-destroys-canary fires despite stale firedTriggers ===");
+{
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "west-of-house", egg: "player" },
+    firedTriggers: [...e.state.firedTriggers, "open-egg-destroys-canary"],
+  };
+  e.execute({ type: "recordIntent", signalId: "open", args: { itemId: "egg" } });
+  e.state.itemStates.egg?.broken === true
+    ? pass("trigger fires despite stale firedTriggers entry (no once:true lockout)")
+    : fail(`egg.broken = ${JSON.stringify(e.state.itemStates.egg?.broken)}`);
+}
+
+// ----- Live-scenario reproduction: open egg from nest at up-a-tree -----
+console.log("\n=== open egg from nest at up-a-tree (live-scenario reproduction) ===");
+{
+  const e = newEngine();
+  e.execute({ type: "go", direction: "north" });
+  e.execute({ type: "go", direction: "north" });
+  e.execute({ type: "go", direction: "up" });
+
+  console.log("  pre-open state:", {
+    playerAt: e.state.itemLocations.player,
+    eggAt: e.state.itemLocations.egg,
+    eggState: e.state.itemStates.egg,
+    nestState: e.state.itemStates.nest,
+    matchedIntents: e.state.matchedIntents,
+    firedTriggers_relevant: e.state.firedTriggers.filter((t) => /egg|canary|thief/.test(t)),
+  });
+
+  const result = e.execute({ type: "recordIntent", signalId: "open", args: { itemId: "egg" } });
+
+  console.log("  post-open cues:", result.narrationCues);
+  console.log("  post-open triggersFired:", result.triggersFired);
+  console.log("  post-open state:", {
+    eggIsOpen: e.state.itemStates.egg?.isOpen,
+    eggBroken: e.state.itemStates.egg?.broken,
+    canaryBroken: e.state.itemStates.canary?.broken,
+    matchedIntents: e.state.matchedIntents,
+    matchedArg_open: e.state.matchedIntentArgs?.open,
+    firedTriggers_relevant: e.state.firedTriggers.filter((t) => /egg|canary|thief/.test(t)),
+  });
+
+  e.state.itemStates.egg?.broken === true
+    ? pass("LIVE-SCENARIO: trigger fires when egg opened from nest at up-a-tree")
+    : fail("trigger DID NOT fire — see post-open dumps above for diagnosis");
+}
+
+// ----- Drop-from-tree: items fall to the path below (generic primitive) -----
+console.log("\n=== drop from up-a-tree → items fall to path ===");
+{
+  // Walk to up-a-tree carrying the lamp; drop the lamp; assert it lands at path.
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, lamp: "player" },
+  };
+  e.execute({ type: "go", direction: "north" });
+  e.execute({ type: "go", direction: "north" });
+  e.execute({ type: "go", direction: "up" });
+  const result = e.execute({ type: "drop", itemId: "lamp" });
+
+  e.state.itemLocations.lamp === "path"
+    ? pass("dropped lamp lands at path (not up-a-tree)")
+    : fail(`lamp at ${e.state.itemLocations.lamp}`);
+  result.triggersFired.includes("items-fall-from-tree")
+    ? pass("items-fall-from-tree fired")
+    : fail("trigger did not fire");
+  result.triggersFired.includes("egg-breaks-on-tree-drop")
+    ? fail("egg-breaks fired on lamp drop (should only fire for egg)")
+    : pass("egg-breaks did NOT fire on non-egg drop");
+}
+
+// ----- Drop egg from tree: shell breaks, canary spills out, both at path -----
+console.log("\n=== drop egg from up-a-tree → both shatter onto path ===");
+{
+  const e = newEngine();
+  // Walk to up-a-tree, take egg from nest, then drop it.
+  e.execute({ type: "go", direction: "north" });
+  e.execute({ type: "go", direction: "north" });
+  e.execute({ type: "go", direction: "up" });
+  e.execute({ type: "take", itemId: "egg" });
+  e.state.itemLocations.egg === "player"
+    ? pass("setup: egg in player inventory")
+    : fail(`egg at ${e.state.itemLocations.egg}`);
+
+  const result = e.execute({ type: "drop", itemId: "egg" });
+
+  e.state.itemLocations.egg === "path"
+    ? pass("dropped egg lands at path")
+    : fail(`egg at ${e.state.itemLocations.egg}`);
+  e.state.itemLocations.canary === "path"
+    ? pass("canary spilled out onto path")
+    : fail(`canary at ${e.state.itemLocations.canary}`);
+  e.state.itemStates.egg?.broken === true
+    ? pass("egg broken=true")
+    : fail(`egg.broken = ${e.state.itemStates.egg?.broken}`);
+  e.state.itemStates.canary?.broken === true
+    ? pass("canary broken=true")
+    : fail(`canary.broken = ${e.state.itemStates.canary?.broken}`);
+  e.state.itemStates.egg?.isOpen === true
+    ? pass("egg isOpen=true")
+    : fail(`egg.isOpen = ${e.state.itemStates.egg?.isOpen}`);
+  result.triggersFired.includes("egg-breaks-on-tree-drop") &&
+    result.triggersFired.includes("items-fall-from-tree")
+    ? pass("both egg-breaks-on-tree-drop and items-fall-from-tree fired")
+    : fail(`triggersFired = ${JSON.stringify(result.triggersFired)}`);
+}
+
 // ----- Done -----
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

@@ -388,13 +388,45 @@ NumericExpr is **evaluated lazily** on every condition eval. There is no `random
 
 ## IdRef
 
-Inside a customTool handler, id fields can be templated with the call's args:
+Three variants:
+
+```ts
+type IdRef =
+  | string                                       // literal item / passage id
+  | { fromArg: string }                          // pulled from a tool-handler's call args
+  | { fromIntent: string; key: string };         // pulled from state.matchedIntentArgs[signalId][key]
+```
+
+**`{ fromArg }` — handler context.** Inside a customTool handler's preconditions or effects, write `{ fromArg: "<argName>" }` instead of a hardcoded id. The dispatcher substitutes the call's args before evaluation:
 
 ```jsonc
 { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } }
 ```
 
-`IdRef = string | { fromArg: string }`. The runtime substitutes args eagerly before evaluation, so by the time a Condition or Effect reaches an evaluator the IdRef has been resolved to a string. **Outside handlers, all id fields should be plain strings.**
+Built-ins also use this — e.g. `take` injects `{ self: itemId }` so `takeableWhen` can reference the item being taken via `{ fromArg: "self" }`.
+
+**`{ fromIntent }` — trigger context.** Inside a trigger's effects (and the conditions of nested `if`-effects), write `{ fromIntent: "<signalId>", key: "<argName>" }` to dynamically reference args of an intent matched earlier this turn. Used to write generic hooks like "the item the player just dropped":
+
+```jsonc
+{
+  "id": "items-fall-from-tree",
+  "when": {
+    "type": "and",
+    "all": [
+      { "type": "intentMatched", "signalId": "drop" },
+      { "type": "playerAt", "roomId": "up-a-tree" }
+    ]
+  },
+  "effects": [
+    { "type": "moveItem", "itemId": { "fromIntent": "drop", "key": "itemId" }, "to": "path" },
+    { "type": "removeMatchedIntent", "signalId": "drop" }
+  ]
+}
+```
+
+The trigger should gate on `intentMatched(signalId)` so the args are guaranteed populated. If the resolved arg can't be looked up, the effect is skipped defensively (no crash, no stringified-object key in `itemLocations`).
+
+**Outside handlers and triggers, all id fields should be plain strings.**
 
 Fields that accept IdRef (in addition to plain strings):
 - `Condition.passageState.passageId`
@@ -404,8 +436,10 @@ Fields that accept IdRef (in addition to plain strings):
 - `Condition.itemAccessible.itemId`
 - `Condition.itemHasStateKey.itemId`
 - `Condition.itemReadable.itemId`
+- `Effect.moveItem.itemId`
 - `Effect.setPassageState.passageId`
 - `Effect.setItemState.itemId`
+- `Effect.adjustItemState.itemId`
 
 ---
 
@@ -458,7 +492,7 @@ Effects mutate `GameState`. Triggers fire effects when their `when` becomes true
 | Type | Shape | Meaning |
 |---|---|---|
 | `setFlag` | `{ key, value }` | `state.flags[key] = value` |
-| `moveItem` | `{ itemId, to }` | move item to roomId / itemId (parent container) / `"player"` (inventory) / `"nowhere"`. Moving the player item updates currentRoom; if the destination is a room, `visitedRooms` is updated |
+| `moveItem` | `{ itemId, to }` | move item to roomId / itemId (parent container) / `"player"` (inventory) / `"nowhere"` / `"<current-room>"` (sentinel — player's current room). Moving the player item updates currentRoom; if the destination is a room, `visitedRooms` is updated. `itemId` may be `{fromArg}` in handlers or `{fromIntent}` in triggers — useful for hooking action targets dynamically. |
 | `moveItemsFrom` | `{ from, to }` | bulk: every item currently at `from` moves to `to`. Generic primitive for "container empties" — NPC drops everything, trophy case shatters, bag torn open |
 | `setPassageState` | `{ passageId, key, value }` | mutate passage state. `passageId` may be `{fromArg: "..."}` inside a tool handler |
 | `setItemState` | `{ itemId, key, value }` | mutate item state. `itemId` may be `{fromArg: "..."}` |

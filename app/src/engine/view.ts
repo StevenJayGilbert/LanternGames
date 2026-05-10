@@ -73,7 +73,12 @@ export interface ItemView {
 export interface ExitView {
   direction: string;
   targetRoomId: string;
-  targetRoomName: string;
+  // Destination's player-facing name. Populated ONLY when the destination
+  // is in state.visitedRooms — i.e. the player has been there before and
+  // already knows what it's called. Omitted otherwise so the narrator
+  // describes the exit by direction only and can't leak a room name the
+  // player hasn't earned. Absence is the signal.
+  targetRoomName?: string;
   blocked?: boolean;
   blockedMessage?: string;
   passageId?: string;       // if set, the exit traverses a passage
@@ -175,11 +180,13 @@ export function buildView(state: GameState, story: Story): WorldView {
   const itemsHere = [...baseItemsHere, ...vehicleContents];
   const exits = visibleExits(room, state, story).map(([direction, info]) => {
     const target = roomById(story, info.to);
-    const view: ExitView = {
-      direction,
-      targetRoomId: info.to,
-      targetRoomName: target?.name ?? "(unknown)",
-    };
+    const view: ExitView = { direction, targetRoomId: info.to };
+    // Only surface the destination's name once the player has visited it.
+    // Until then, the LLM should narrate the exit by direction only — no
+    // leaking room names the player hasn't earned through exploration.
+    if (target && state.visitedRooms.includes(info.to)) {
+      view.targetRoomName = target.name;
+    }
     if (info.blocked) view.blocked = true;
     if (info.blockedMessage !== undefined) view.blockedMessage = info.blockedMessage;
     if (info.passageId !== undefined) view.passageId = info.passageId;

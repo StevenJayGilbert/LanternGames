@@ -1669,10 +1669,127 @@ console.log("\n--- F16: Cyclops eats player (hunger threshold) ---");
     fail("F16 cyclops did not kill player",
          `finished=${JSON.stringify(f.state.finished)} hunger=${f.state.itemStates["cyclops"]?.hunger} health=${f.state.flags["player-health"]}`);
   }
+  // Strengthen: combat got engaged, no escape was used, death-message is cyclops-flavored.
+  f.state.flags["cyclops-flag"] === false
+    ? pass("F16 player did not escape (cyclops-flag stays false)")
+    : fail("F16 cyclops-flag flipped — escape happened mid-test");
+  const dmsg = (f.state.finished?.message ?? f.state.flags["death-message"] ?? "").toString().toLowerCase();
+  /cyclops/.test(dmsg)
+    ? pass("F16 death-message references the cyclops")
+    : fail(`F16 death-message generic: "${dmsg}"`);
 }
 
-// F17: Cyclops fed (lunch + bottle) sleeps — defuses combat
-console.log("\n--- F17: Cyclops fed sleeps (cyclops-flag set) ---");
+// F16b: Attack cyclops with sword — engages combat; cyclops survives
+console.log("\n--- F16b: Attack cyclops with sword (cyclops invulnerable) ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "cyclops-room",
+      sword: "player",
+    },
+    flags: { ...f.state.flags, "player-health": 30 },
+  };
+  f.execute({ type: "attack", itemId: "sword", targetId: "cyclops" });
+  const cycHp = (f.state.itemStates["cyclops"]?.health as number | undefined) ?? 0;
+  cycHp > 0
+    ? pass(`F16b cyclops survives bladed attack (health=${cycHp})`)
+    : fail(`F16b cyclops was killed by a sword swing — health=${cycHp}`);
+  f.state.flags["combat-engaged-with-cyclops"] === true
+    ? pass("F16b combat engaged after attack")
+    : fail("F16b combat did not engage after attack");
+  // A few more turns: cyclops should retaliate.
+  const hpBefore = (f.state.flags["player-health"] as number) ?? 30;
+  for (let i = 0; i < 10; i++) {
+    if (f.state.finished) break;
+    f.execute({ type: "wait" });
+  }
+  const hpAfter = (f.state.flags["player-health"] as number) ?? 30;
+  hpAfter < hpBefore || playerDied(f.state)
+    ? pass(`F16b cyclops retaliated (hp ${hpBefore} → ${hpAfter})`)
+    : fail(`F16b cyclops did not retaliate after combat engaged (hp unchanged)`);
+}
+
+// F16c: Feed mid-combat — combat halts, no further player damage
+console.log("\n--- F16c: Feed cyclops mid-combat (Bug 1 fix) ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "cyclops-room",
+      lunch: "player",
+      bottle: "player",
+    },
+    flags: {
+      ...f.state.flags,
+      "player-health": 30,
+      "combat-engaged-with-cyclops": true,
+    },
+    itemStates: {
+      ...f.state.itemStates,
+      cyclops: { ...(f.state.itemStates.cyclops ?? {}), hunger: 6 },
+    },
+  };
+  // Feed both halves (lunch then bottle) — cyclops sleeps after the second.
+  f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "lunch" } });
+  f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "bottle" } });
+  f.state.itemStates["cyclops"]?.unconscious === true
+    ? pass("F16c fed cyclops → unconscious=true")
+    : fail(`F16c cyclops not unconscious: ${JSON.stringify(f.state.itemStates["cyclops"])}`);
+  f.state.flags["combat-engaged-with-cyclops"] === false
+    ? pass("F16c combat-engaged cleared by feeding")
+    : fail("F16c combat-engaged still true after feeding");
+  const hpAfterFeed = (f.state.flags["player-health"] as number) ?? 30;
+  for (let i = 0; i < 10; i++) {
+    if (f.state.finished) break;
+    f.execute({ type: "wait" });
+  }
+  const hpAfterTicks = (f.state.flags["player-health"] as number) ?? 30;
+  hpAfterTicks === hpAfterFeed
+    ? pass(`F16c no further damage after feeding (hp ${hpAfterTicks} stable)`)
+    : fail(`F16c cyclops kept attacking after feeding: hp ${hpAfterFeed} → ${hpAfterTicks}`);
+}
+
+// F16d: Magic word path — cyclops flees, both flags set, combat cleared
+console.log("\n--- F16d: Cyclops magic word (cyclops-flees, Bug 2 fix) ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "cyclops-room" },
+    flags: {
+      ...f.state.flags,
+      "player-health": 30,
+      "combat-engaged-with-cyclops": true,
+    },
+  };
+  f.execute({ type: "recordIntent", signalId: "cyclops-magic-word" });
+  f.state.flags["cyclops-flag"] === true
+    ? pass("F16d cyclops-flag set")
+    : fail("F16d cyclops-flag not set");
+  f.state.flags["magic-flag"] === true
+    ? pass("F16d magic-flag set (wall smashed east)")
+    : fail("F16d magic-flag not set");
+  f.state.flags["combat-engaged-with-cyclops"] === false
+    ? pass("F16d combat-engaged cleared by cyclops fleeing")
+    : fail("F16d combat-engaged still true after flee");
+  f.state.itemLocations["cyclops"] === "nowhere"
+    ? pass("F16d cyclops moved to 'nowhere'")
+    : fail(`F16d cyclops still at ${f.state.itemLocations["cyclops"]}`);
+  // East exit (smashed wall) should now be unblocked.
+  const view = f.getView();
+  const eastExit = view.exits.find((x) => x.direction === "east");
+  eastExit && !eastExit.blocked
+    ? pass("F16d east exit unblocked (cyclops-shaped hole)")
+    : fail(`F16d east exit still blocked: ${JSON.stringify(eastExit)}`);
+}
+
+// F16e: Fed path — cyclops-flag set, magic-flag NOT set, up unblocked, east still blocked
+console.log("\n--- F16e: Fed path leaves east blocked ---");
 {
   const f = new Engine(story);
   f.state = {
@@ -1685,12 +1802,326 @@ console.log("\n--- F17: Cyclops fed sleeps (cyclops-flag set) ---");
     },
     flags: { ...f.state.flags, "player-health": 30 },
   };
-  f.execute({ type: "recordIntent", signalId: "feed-cyclops" });
-  if (f.state.flags["cyclops-flag"] === true) {
-    pass("F17 cyclops fed → cyclops-flag set (sleeps)");
-  } else {
-    fail("F17 cyclops not fed", `flags=${JSON.stringify(Object.fromEntries(Object.entries(f.state.flags).filter(([k]) => k.startsWith("cyclops"))))}`);
-  }
+  // Two-call feed (lunch then bottle).
+  f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "lunch" } });
+  f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "bottle" } });
+  f.state.flags["cyclops-flag"] === true
+    ? pass("F16e fed → cyclops-flag set")
+    : fail("F16e fed → cyclops-flag not set");
+  f.state.flags["magic-flag"] !== true
+    ? pass("F16e fed path leaves magic-flag false (no wall break)")
+    : fail("F16e magic-flag wrongly set on fed path");
+  const view = f.getView();
+  const upExit = view.exits.find((x) => x.direction === "up");
+  upExit && !upExit.blocked
+    ? pass("F16e up exit unblocked (cyclops asleep)")
+    : fail(`F16e up exit still blocked: ${JSON.stringify(upExit)}`);
+  const eastExit = view.exits.find((x) => x.direction === "east");
+  // east at cyclops-room is hidden when magic-flag=false (per the override),
+  // so it shouldn't appear in the visible exits at all.
+  !eastExit
+    ? pass("F16e east exit absent on fed path (no wall hole)")
+    : fail(`F16e east exit visible on fed path: ${JSON.stringify(eastExit)}`);
+}
+
+// F17: Two-call feed (lunch then bottle) sleeps the cyclops
+console.log("\n--- F17: feed lunch then bottle → cyclops sleeps ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "cyclops-room",
+      lunch: "player",
+      bottle: "player",
+    },
+    flags: { ...f.state.flags, "player-health": 30 },
+  };
+  // Feed lunch first.
+  f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "lunch" } });
+  f.state.itemStates["cyclops"]?.fedLunch === true
+    ? pass("F17 lunch fed → cyclops.fedLunch=true")
+    : fail(`F17 fedLunch = ${f.state.itemStates["cyclops"]?.fedLunch}`);
+  f.state.itemLocations.lunch === "nowhere"
+    ? pass("F17 lunch consumed (moved to nowhere)")
+    : fail(`F17 lunch at ${f.state.itemLocations.lunch}`);
+  f.state.flags["cyclops-flag"] === false
+    ? pass("F17 cyclops still blocking after lunch only")
+    : fail("F17 cyclops-flag set after lunch alone");
+  // Now feed bottle.
+  f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "bottle" } });
+  f.state.itemStates["cyclops"]?.fedBottle === true
+    ? pass("F17 bottle fed → cyclops.fedBottle=true")
+    : fail(`F17 fedBottle = ${f.state.itemStates["cyclops"]?.fedBottle}`);
+  f.state.flags["cyclops-flag"] === true
+    ? pass("F17 cyclops sleeps after both halves (cyclops-flag=true)")
+    : fail("F17 cyclops-flag not set after both fed");
+  f.state.itemStates["cyclops"]?.unconscious === true
+    ? pass("F17 cyclops.unconscious=true")
+    : fail("F17 cyclops not unconscious");
+}
+
+// F17b: Order independence (bottle first, then lunch)
+console.log("\n--- F17b: feed bottle then lunch (reverse order) → cyclops sleeps ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "cyclops-room",
+      lunch: "player",
+      bottle: "player",
+    },
+    flags: { ...f.state.flags, "player-health": 30 },
+  };
+  f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "bottle" } });
+  f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "lunch" } });
+  f.state.flags["cyclops-flag"] === true && f.state.itemStates["cyclops"]?.unconscious === true
+    ? pass("F17b cyclops sleeps regardless of order")
+    : fail(`F17b cyclops-flag=${f.state.flags["cyclops-flag"]} unconscious=${f.state.itemStates["cyclops"]?.unconscious}`);
+}
+
+// F17c: Feed garlic at cyclops-room → catchall, no state change
+console.log("\n--- F17c: feed garlic → catchall, cyclops not appeased ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "cyclops-room",
+      garlic: "player",
+    },
+    flags: { ...f.state.flags, "player-health": 30 },
+  };
+  const result = f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "garlic" } });
+  f.state.itemLocations.garlic === "player"
+    ? pass("F17c garlic stays in inventory after rejection")
+    : fail(`F17c garlic at ${f.state.itemLocations.garlic}`);
+  f.state.flags["cyclops-flag"] === false
+    ? pass("F17c cyclops-flag still false after garlic")
+    : fail("F17c cyclops-flag set after garlic");
+  result.triggersFired.includes("cyclops-rejects-feed")
+    ? pass("F17c cyclops-rejects-feed fired")
+    : fail(`F17c triggers fired: ${JSON.stringify(result.triggersFired)}`);
+}
+
+// F17d: Feed at non-cyclops room → handler refuses
+console.log("\n--- F17d: feed lunch when not at cyclops-room → refused ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "kitchen", lunch: "player" },
+  };
+  const result = f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "lunch" } });
+  f.state.itemLocations.lunch === "player"
+    ? pass("F17d lunch stays in inventory when no cyclops here")
+    : fail(`F17d lunch at ${f.state.itemLocations.lunch}`);
+  result.narrationCues.some((c) => /no cyclops here/i.test(c))
+    ? pass("F17d refusal cue mentions no cyclops here")
+    : fail(`F17d cues: ${JSON.stringify(result.narrationCues)}`);
+}
+
+// F17e: Feed lunch when player doesn't have it → handler refuses
+console.log("\n--- F17e: feed lunch without having lunch → refused ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "cyclops-room" },
+  };
+  const result = f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "lunch" } });
+  result.narrationCues.some((c) => /don't have/i.test(c))
+    ? pass("F17e refusal cue mentions not having the item")
+    : fail(`F17e cues: ${JSON.stringify(result.narrationCues)}`);
+  f.state.itemStates["cyclops"]?.fedLunch !== true
+    ? pass("F17e fedLunch not set on refusal")
+    : fail("F17e fedLunch incorrectly set");
+}
+
+// F17f: Double-feed lunch → second call hits catchall
+console.log("\n--- F17f: feed lunch twice → second call rejected ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "cyclops-room",
+      lunch: "player",
+    },
+  };
+  // First feed succeeds.
+  f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "lunch" } });
+  // Second feed: lunch is gone (moved to nowhere) → handler refuses with "don't have lunch."
+  const result2 = f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "lunch" } });
+  result2.narrationCues.some((c) => /don't have/i.test(c))
+    ? pass("F17f second feed-lunch refused (lunch already consumed)")
+    : fail(`F17f second-feed cues: ${JSON.stringify(result2.narrationCues)}`);
+}
+
+// ----- Boat-on-water gating -----
+// Helper: place player in the inflated boat at a water room.
+function placeInBoat(f: Engine, room: string) {
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      "inflatable-boat": room,
+      player: "inflatable-boat",
+    },
+    itemStates: {
+      ...f.state.itemStates,
+      "inflatable-boat": {
+        ...(f.state.itemStates["inflatable-boat"] ?? {}),
+        inflation: "inflated",
+      },
+    },
+  };
+}
+
+// F-boat-1: in boat at sandy-beach, go northeast → blocked
+console.log("\n--- F-boat-1: in boat at sandy-beach, go northeast → blocked ---");
+{
+  const f = new Engine(story);
+  placeInBoat(f, "sandy-beach");
+  const result = f.execute({ type: "go", direction: "northeast" });
+  result.event.type === "rejected" && f.state.itemLocations.player === "inflatable-boat" && f.state.itemLocations["inflatable-boat"] === "sandy-beach"
+    ? pass("F-boat-1 sandy-beach.northeast blocked in boat")
+    : fail(`F-boat-1: event=${JSON.stringify(result.event)} player=${f.state.itemLocations.player} boat=${f.state.itemLocations["inflatable-boat"]}`);
+}
+
+// F-boat-2: in boat at dam-base, go north → blocked
+console.log("\n--- F-boat-2: in boat at dam-base, go north → blocked ---");
+{
+  const f = new Engine(story);
+  placeInBoat(f, "dam-base");
+  const result = f.execute({ type: "go", direction: "north" });
+  result.event.type === "rejected" && f.state.itemLocations["inflatable-boat"] === "dam-base"
+    ? pass("F-boat-2 dam-base.north blocked in boat")
+    : fail(`F-boat-2: event=${JSON.stringify(result.event)} boat=${f.state.itemLocations["inflatable-boat"]}`);
+}
+
+// F-boat-3: in boat at shore, go north → blocked (foot-only)
+console.log("\n--- F-boat-3: in boat at shore, go north → blocked ---");
+{
+  const f = new Engine(story);
+  placeInBoat(f, "shore");
+  const result = f.execute({ type: "go", direction: "north" });
+  result.event.type === "rejected" && f.state.itemLocations["inflatable-boat"] === "shore"
+    ? pass("F-boat-3 shore.north blocked in boat")
+    : fail(`F-boat-3: event=${JSON.stringify(result.event)} boat=${f.state.itemLocations["inflatable-boat"]}`);
+}
+
+// F-boat-4: in boat at shore, go south → blocked (no falls plummet)
+console.log("\n--- F-boat-4: in boat at shore, go south → blocked ---");
+{
+  const f = new Engine(story);
+  placeInBoat(f, "shore");
+  const result = f.execute({ type: "go", direction: "south" });
+  result.event.type === "rejected" && f.state.itemLocations["inflatable-boat"] === "shore"
+    ? pass("F-boat-4 shore.south blocked in boat")
+    : fail(`F-boat-4: event=${JSON.stringify(result.event)} boat=${f.state.itemLocations["inflatable-boat"]}`);
+}
+
+// F-boat-5: on foot at sandy-beach (boat NOT under player), go northeast → allowed
+console.log("\n--- F-boat-5: on foot at sandy-beach, go northeast → allowed ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "sandy-beach",
+      "inflatable-boat": "sandy-beach",
+    },
+    itemStates: {
+      ...f.state.itemStates,
+      "inflatable-boat": {
+        ...(f.state.itemStates["inflatable-boat"] ?? {}),
+        inflation: "inflated",
+      },
+    },
+  };
+  const result = f.execute({ type: "go", direction: "northeast" });
+  result.ok && f.state.itemLocations.player === "sandy-cave"
+    ? pass("F-boat-5 on-foot sandy-beach.northeast allowed")
+    : fail(`F-boat-5: ok=${result.ok} player=${f.state.itemLocations.player}`);
+}
+
+// F-boat-6: in boat at river-3, go west → allowed (landing at white-cliffs-north)
+console.log("\n--- F-boat-6: in boat at river-3, go west → allowed ---");
+{
+  const f = new Engine(story);
+  placeInBoat(f, "river-3");
+  const result = f.execute({ type: "go", direction: "west" });
+  result.ok && f.state.itemLocations["inflatable-boat"] === "white-cliffs-north" && f.state.itemLocations.player === "inflatable-boat"
+    ? pass("F-boat-6 river-3.west landing at white-cliffs-north allowed in boat")
+    : fail(`F-boat-6: ok=${result.ok} boat=${f.state.itemLocations["inflatable-boat"]} player=${f.state.itemLocations.player}`);
+}
+
+// F-boat-7: in boat at river-5, go east → allowed (canonical landing at shore)
+console.log("\n--- F-boat-7: in boat at river-5, go east → allowed ---");
+{
+  const f = new Engine(story);
+  placeInBoat(f, "river-5");
+  const result = f.execute({ type: "go", direction: "east" });
+  result.ok && f.state.itemLocations["inflatable-boat"] === "shore"
+    ? pass("F-boat-7 river-5.east landing at shore allowed in boat")
+    : fail(`F-boat-7: ok=${result.ok} boat=${f.state.itemLocations["inflatable-boat"]}`);
+}
+
+// F-boat-8: try to board boat at non-water room (maze-15) → refused
+console.log("\n--- F-boat-8: board boat at maze-15 → refused ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "maze-15",
+      "inflatable-boat": "maze-15",
+    },
+    itemStates: {
+      ...f.state.itemStates,
+      "inflatable-boat": {
+        ...(f.state.itemStates["inflatable-boat"] ?? {}),
+        inflation: "inflated",
+      },
+    },
+  };
+  const result = f.execute({ type: "board", itemId: "inflatable-boat" });
+  result.event.type === "rejected" && f.state.itemLocations.player === "maze-15"
+    ? pass("F-boat-8 board at maze-15 refused (not water)")
+    : fail(`F-boat-8: event=${JSON.stringify(result.event)} player=${f.state.itemLocations.player}`);
+}
+
+// F-boat-9: board boat at dam-base (water) → succeeds
+console.log("\n--- F-boat-9: board boat at dam-base → succeeds ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "dam-base",
+      "inflatable-boat": "dam-base",
+    },
+    itemStates: {
+      ...f.state.itemStates,
+      "inflatable-boat": {
+        ...(f.state.itemStates["inflatable-boat"] ?? {}),
+        inflation: "inflated",
+      },
+    },
+  };
+  const result = f.execute({ type: "board", itemId: "inflatable-boat" });
+  result.ok && f.state.itemLocations.player === "inflatable-boat"
+    ? pass("F-boat-9 board at dam-base succeeds")
+    : fail(`F-boat-9: ok=${result.ok} player=${f.state.itemLocations.player}`);
 }
 
 // F19: Bat carries player to a random room (no garlic)

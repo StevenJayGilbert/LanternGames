@@ -388,5 +388,40 @@ console.log("\n=== <current-room> sentinel ===");
     : fail(`sword at ${after2.itemLocations.sword}`);
 }
 
+// ===== ExitView: targetRoomName gated on state.visitedRooms =====
+console.log("\n=== ExitView targetRoomName visited-gating ===");
+{
+  const e = new Engine(zork as unknown as Story);
+  const v0 = e.getView();
+  // Fresh game: only west-of-house is visited (the start room). All exits at
+  // west-of-house lead to unvisited rooms — none should expose targetRoomName.
+  v0.exits.every((x) => x.targetRoomName === undefined)
+    ? pass("fresh game: no exit at west-of-house exposes a targetRoomName")
+    : fail(
+        "leaked target on fresh exits",
+        JSON.stringify(v0.exits.map((x) => ({ d: x.direction, t: x.targetRoomName }))),
+      );
+
+  // Walk north → north-of-house. Now west-of-house IS visited; any exit at
+  // north-of-house pointing back to west-of-house should have a name; exits
+  // pointing to still-unvisited rooms should NOT.
+  e.execute({ type: "go", direction: "north" });
+  const v1 = e.getView();
+  const exitsBack = v1.exits.filter((x) => x.targetRoomId === "west-of-house");
+  exitsBack.length > 0 && exitsBack.every((x) => x.targetRoomName === "West of House")
+    ? pass("after going north, exits back to west-of-house are named (visited)")
+    : fail(
+        "exit-back not named",
+        JSON.stringify(exitsBack.map((x) => ({ d: x.direction, t: x.targetRoomName }))),
+      );
+  const exitsToUnvisited = v1.exits.filter((x) => x.targetRoomId !== "west-of-house");
+  exitsToUnvisited.every((x) => x.targetRoomName === undefined)
+    ? pass("exits to still-unvisited rooms remain anonymous")
+    : fail(
+        "leaked target on still-unvisited exit",
+        JSON.stringify(exitsToUnvisited.map((x) => ({ d: x.direction, target: x.targetRoomId, name: x.targetRoomName }))),
+      );
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

@@ -69,7 +69,23 @@ import { currentRoomId, PLAYER_ITEM_ID } from "../engine/state";
 //   - flags.deaths defaults to 0
 //   - flags.just-died defaults to false
 //   - flags.death-message defaults to ""
-const SAVE_VERSION = 15;
+// v16: Egg-puzzle flavor pass — egg + canary gain a state.broken key so
+// the new force/break triggers (which gate on itemState(broken, equals:
+// false)) fire correctly. Also seals the broken egg's contents (gated
+// access via container.accessibleWhen now requires not-broken).
+//   - itemStates.egg.broken defaults to false
+//   - itemStates.canary.broken defaults to false
+// v17: Reasserts the v16 egg/canary broken backfill for v16 saves that
+// were written from fresh-game state (where initialState() didn't seed
+// the broken key — the egg/canary item.state blocks omitted it). The
+// backfill function (applyV16Backfill) is idempotent: it spreads
+// existing state over { broken: false }, so v16 saves that already had
+// broken set are unaffected; saves missing the key get it seeded.
+// Pairs with: egg + canary item.state now declare broken: false in
+// zork-1.overrides.json, fixing fresh games structurally; trigger
+// gates moved from itemState(broken, equals: false) to
+// not(itemState(broken, equals: true)) for undefined-tolerance.
+const SAVE_VERSION = 17;
 const LEGACY_SAVE_VERSION = 5;
 const V6_SAVE_VERSION = 6;
 const V7_SAVE_VERSION = 7;
@@ -80,6 +96,8 @@ const V11_SAVE_VERSION = 11;
 const V12_SAVE_VERSION = 12;
 const V13_SAVE_VERSION = 13;
 const V14_SAVE_VERSION = 14;
+const V15_SAVE_VERSION = 15;
+const V16_SAVE_VERSION = 16;
 const PREFIX = "lanterngames_save_v" + SAVE_VERSION + "_";
 const LEGACY_PREFIX = "lanterngames_save_v" + LEGACY_SAVE_VERSION + "_";
 const V6_PREFIX = "lanterngames_save_v" + V6_SAVE_VERSION + "_";
@@ -91,6 +109,8 @@ const V11_PREFIX = "lanterngames_save_v" + V11_SAVE_VERSION + "_";
 const V12_PREFIX = "lanterngames_save_v" + V12_SAVE_VERSION + "_";
 const V13_PREFIX = "lanterngames_save_v" + V13_SAVE_VERSION + "_";
 const V14_PREFIX = "lanterngames_save_v" + V14_SAVE_VERSION + "_";
+const V15_PREFIX = "lanterngames_save_v" + V15_SAVE_VERSION + "_";
+const V16_PREFIX = "lanterngames_save_v" + V16_SAVE_VERSION + "_";
 
 // Transcript entry types — shared between App.tsx (display) and localSave
 // (persistence) so neither side has to redeclare or guess the shape.
@@ -157,8 +177,42 @@ export function loadSession(storyId: string, slot: SaveSlot): SavedSession | nul
       const parsed = JSON.parse(raw) as unknown;
       if (isValidSession(parsed, storyId)) return parsed;
     }
-    // v14 fallback: try the v14 key. v14→v15 seeds the three new
-    // death-mechanic flags (deaths, just-died, death-message).
+    // v16 fallback: try the v16 key. v16→v17 reasserts the egg/canary
+    // broken backfill for saves written from fresh-game state where the
+    // broken key was never seeded (initialState() only mirrored item.state,
+    // and the egg/canary state blocks omitted broken until v17). Idempotent
+    // for saves that already have broken set.
+    const v16Raw = localStorage.getItem(v16KeyForSlot(storyId, slot));
+    if (v16Raw) {
+      const migrated = migrateV16Session(JSON.parse(v16Raw) as unknown, storyId);
+      if (migrated) {
+        try {
+          localStorage.setItem(key(storyId, slot), JSON.stringify(migrated));
+          localStorage.removeItem(v16KeyForSlot(storyId, slot));
+        } catch {
+          // ignore write failures — migration retries next load
+        }
+        return migrated;
+      }
+    }
+    // v15 fallback: try the v15 key. v15→v17 seeds itemStates.egg.broken
+    // and itemStates.canary.broken so the egg-puzzle force/break triggers
+    // fire on previously-saved games.
+    const v15Raw = localStorage.getItem(v15KeyForSlot(storyId, slot));
+    if (v15Raw) {
+      const migrated = migrateV15Session(JSON.parse(v15Raw) as unknown, storyId);
+      if (migrated) {
+        try {
+          localStorage.setItem(key(storyId, slot), JSON.stringify(migrated));
+          localStorage.removeItem(v15KeyForSlot(storyId, slot));
+        } catch {
+          // ignore write failures — migration retries next load
+        }
+        return migrated;
+      }
+    }
+    // v14 fallback: try the v14 key. v14→v16 seeds the three death-mechanic
+    // flags + the v16 egg/canary broken backfill (cumulative).
     const v14Raw = localStorage.getItem(v14KeyForSlot(storyId, slot));
     if (v14Raw) {
       const migrated = migrateV14Session(JSON.parse(v14Raw) as unknown, storyId);
@@ -362,8 +416,16 @@ export function loadSession(storyId: string, slot: SaveSlot): SavedSession | nul
 // saves get the three flags seeded so any subsequent fatal event triggers
 // the soft-death flow instead of dangling on undefined state.
 //
+// v16 additions:
+//   - itemStates.egg.broken (default false)
+//   - itemStates.canary.broken (default false)
+// The egg-puzzle flavor pass added force/break triggers that gate on
+// itemState(broken, equals: false). Without the backfill, old saves
+// (which lack the broken key) silently fail the gate (undefined !== false)
+// and the triggers never fire.
+//
 // Saved values win where present; missing keys get the defaults.
-function applyV15Backfill(es: Record<string, unknown>): Record<string, unknown> {
+function applyV16Backfill(es: Record<string, unknown>): Record<string, unknown> {
   const itemStates = (es.itemStates as Record<string, Record<string, unknown>> | undefined) ?? {};
   const flags = (es.flags as Record<string, unknown> | undefined) ?? {};
   const itemLocations = (es.itemLocations as Record<string, unknown> | undefined) ?? {};
@@ -392,6 +454,16 @@ function applyV15Backfill(es: Record<string, unknown>): Record<string, unknown> 
   migratedItemStates["candles"] = {
     burnTurnsRemaining: 230,
     ...itemStates["candles"],
+  };
+  // v16: egg + canary gain state.broken so the egg-puzzle force/break
+  // triggers fire on old saves.
+  migratedItemStates["egg"] = {
+    broken: false,
+    ...itemStates["egg"],
+  };
+  migratedItemStates["canary"] = {
+    broken: false,
+    ...itemStates["canary"],
   };
 
   // v12: per-item weight backfill (Zork I canonical SIZE values).
@@ -449,9 +521,53 @@ function applyV15Backfill(es: Record<string, unknown>): Record<string, unknown> 
   };
 }
 
-// v14 → v15 migration. Seeds the three new death-mechanic flags
-// (deaths=0, just-died=false, death-message="") so the central
-// process-death trigger has well-defined values when it next fires.
+// v16 → v17 migration. Reseats itemStates.egg.broken and
+// itemStates.canary.broken for v16 saves written from fresh-game state
+// (where the broken key was never seeded — the egg/canary item.state
+// blocks omitted it). applyV16Backfill is idempotent on the broken
+// fields: existing values win via spread; missing keys get false.
+function migrateV16Session(v: unknown, storyId: string): SavedSession | null {
+  if (!v || typeof v !== "object") return null;
+  const r = v as Record<string, unknown>;
+  if (r.version !== V16_SAVE_VERSION) return null;
+  if (r.storyId !== storyId) return null;
+  if (!r.engineState || typeof r.engineState !== "object") return null;
+  const es = r.engineState as Record<string, unknown>;
+  return {
+    version: SAVE_VERSION,
+    storyId,
+    engineState: applyV16Backfill(es) as unknown as GameState,
+    narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
+    transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
+    inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
+    savedAt: typeof r.savedAt === "number" ? r.savedAt : Date.now(),
+  };
+}
+
+// v15 → v17 migration. Seeds itemStates.egg.broken=false +
+// itemStates.canary.broken=false so the egg-puzzle force/break triggers
+// fire on loaded v15 saves.
+function migrateV15Session(v: unknown, storyId: string): SavedSession | null {
+  if (!v || typeof v !== "object") return null;
+  const r = v as Record<string, unknown>;
+  if (r.version !== V15_SAVE_VERSION) return null;
+  if (r.storyId !== storyId) return null;
+  if (!r.engineState || typeof r.engineState !== "object") return null;
+  const es = r.engineState as Record<string, unknown>;
+  return {
+    version: SAVE_VERSION,
+    storyId,
+    engineState: applyV16Backfill(es) as unknown as GameState,
+    narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
+    transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
+    inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
+    savedAt: typeof r.savedAt === "number" ? r.savedAt : Date.now(),
+  };
+}
+
+// v14 → v16 migration. Seeds the three death-mechanic flags
+// (deaths=0, just-died=false, death-message="") plus the v16 egg/canary
+// broken backfill via applyV16Backfill (cumulative).
 function migrateV14Session(v: unknown, storyId: string): SavedSession | null {
   if (!v || typeof v !== "object") return null;
   const r = v as Record<string, unknown>;
@@ -462,7 +578,7 @@ function migrateV14Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV15Backfill(es) as unknown as GameState,
+    engineState: applyV16Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -482,7 +598,7 @@ function migrateV13Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV15Backfill(es) as unknown as GameState,
+    engineState: applyV16Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -491,7 +607,7 @@ function migrateV13Session(v: unknown, storyId: string): SavedSession | null {
 }
 
 // v12 → v14 migration. Same as the v13 migration plus the v13 backfill —
-// applyV15Backfill chains all prior backfills.
+// applyV16Backfill chains all prior backfills.
 function migrateV12Session(v: unknown, storyId: string): SavedSession | null {
   if (!v || typeof v !== "object") return null;
   const r = v as Record<string, unknown>;
@@ -502,7 +618,7 @@ function migrateV12Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV15Backfill(es) as unknown as GameState,
+    engineState: applyV16Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -522,7 +638,7 @@ function migrateV11Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV15Backfill(es) as unknown as GameState,
+    engineState: applyV16Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -542,7 +658,7 @@ function migrateV10Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV15Backfill(es) as unknown as GameState,
+    engineState: applyV16Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -562,7 +678,7 @@ function migrateV9Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV15Backfill(es) as unknown as GameState,
+    engineState: applyV16Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -570,7 +686,7 @@ function migrateV9Session(v: unknown, storyId: string): SavedSession | null {
   };
 }
 
-// v8 → v10 migration. Backfills the new state fields per applyV15Backfill.
+// v8 → v10 migration. Backfills the new state fields per applyV16Backfill.
 function migrateV8Session(v: unknown, storyId: string): SavedSession | null {
   if (!v || typeof v !== "object") return null;
   const r = v as Record<string, unknown>;
@@ -581,7 +697,7 @@ function migrateV8Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV15Backfill(es) as unknown as GameState,
+    engineState: applyV16Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -602,7 +718,7 @@ function migrateV7Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV15Backfill(stripped) as unknown as GameState,
+    engineState: applyV16Backfill(stripped) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -621,7 +737,7 @@ function migrateV6Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV15Backfill(r.engineState as Record<string, unknown>) as unknown as GameState,
+    engineState: applyV16Backfill(r.engineState as Record<string, unknown>) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -664,7 +780,7 @@ function migrateV5Session(v: unknown, storyId: string): SavedSession | null {
     lastExamineShown: _le,
     ...rest
   } = es;
-  const migratedEngineState = applyV15Backfill({
+  const migratedEngineState = applyV16Backfill({
     ...rest,
     itemLocations: nextItemLocations,
   }) as unknown as GameState;
@@ -720,6 +836,14 @@ function v14KeyForSlot(storyId: string, slot: SaveSlot): string {
   return V14_PREFIX + storyId + "_" + (slot === "quick" ? "quick" : "slot" + slot);
 }
 
+function v15KeyForSlot(storyId: string, slot: SaveSlot): string {
+  return V15_PREFIX + storyId + "_" + (slot === "quick" ? "quick" : "slot" + slot);
+}
+
+function v16KeyForSlot(storyId: string, slot: SaveSlot): string {
+  return V16_PREFIX + storyId + "_" + (slot === "quick" ? "quick" : "slot" + slot);
+}
+
 export function clearSession(storyId: string, slot: SaveSlot): void {
   try {
     localStorage.removeItem(key(storyId, slot));
@@ -727,6 +851,8 @@ export function clearSession(storyId: string, slot: SaveSlot): void {
     // lingered, loadSession would migrate-and-restore them on the next read,
     // and the user would see the slot "uncleared" / the LLM would resurrect
     // old narration history after a "new game".
+    localStorage.removeItem(v16KeyForSlot(storyId, slot));
+    localStorage.removeItem(v15KeyForSlot(storyId, slot));
     localStorage.removeItem(v14KeyForSlot(storyId, slot));
     localStorage.removeItem(v13KeyForSlot(storyId, slot));
     localStorage.removeItem(v12KeyForSlot(storyId, slot));

@@ -17,6 +17,7 @@ import type {
   Story,
 } from "../story/schema";
 import { renderNarration } from "./renderNarration";
+import { substituteEffect } from "./substituteArgs";
 
 // ---------- Player as item ----------
 
@@ -668,6 +669,15 @@ export function applyEffect(state: GameState, e: Effect, story?: Story): GameSta
     case "setFlag":
       return { ...state, flags: { ...state.flags, [e.key]: e.value } };
     case "moveItem": {
+      // itemId is IdRef; substitution upstream should have resolved it.
+      // If it's still an object ({fromArg} or {fromIntent}), the substitution
+      // failed (missing arg, missing matched intent) — skip the mutation
+      // defensively rather than corrupt itemLocations with a stringified
+      // object key.
+      if (typeof e.itemId !== "string") {
+        console.warn(`[applyEffect] moveItem.itemId is unsubstituted IdRef:`, e.itemId);
+        return state;
+      }
       // Resolve "inventory" legacy alias and "<current-room>" sentinel.
       const to = resolveLocationDynamic(e.to, state, story);
       const next = { ...state.itemLocations, [e.itemId]: to };
@@ -811,6 +821,12 @@ export function applyEffect(state: GameState, e: Effect, story?: Story): GameSta
 // visible to a later `if(compare(flag, ...))` — the canonical decomposition
 // pattern), and collecting `narrate` cues into the return value.
 //
+// IdRef substitution: each effect is substituted against the rolling state
+// (no handler args, since triggers don't have a call-args context — only
+// state.matchedIntentArgs via {fromIntent} IdRefs). substituteEffect
+// returns null if a required IdRef can't resolve; in that case the effect
+// is skipped (defensive — same posture as handler dispatch).
+//
 // This is the trigger pipeline's apply path. Handler dispatch (in actions.ts)
 // uses applyEffect directly per-effect; that path doesn't capture narrate
 // cues (handlers use successNarration instead).
@@ -828,7 +844,12 @@ export function resolveEffects(
   }
   let cur = state;
   const cues: string[] = [];
-  for (const e of effects) {
+  for (const raw of effects) {
+    // Resolve {fromIntent} IdRefs against the rolling state. No handler args
+    // in trigger context — pass {}. substituteEffect returns null when a
+    // required IdRef can't resolve; skip those defensively.
+    const e = substituteEffect(raw, {}, cur);
+    if (e === null) continue;
     if (e.type === "narrate") {
       // Pure cue. State unchanged.
       cues.push(renderNarration(e.text, {}, story, cur));

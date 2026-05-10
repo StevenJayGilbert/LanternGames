@@ -138,12 +138,14 @@ Defined at [view.ts:31-70](../app/src/engine/view.ts).
 ```ts
 {
   direction: string,            // "north", "down", "in", etc.
-  target: string,               // ROOM NAME (not id) of destination
+  target?: string,              // ROOM NAME of destination — only present once the player has visited it (engine-gated on state.visitedRooms). Absent for unvisited destinations so the LLM narrates by direction only and can't leak a room name the player hasn't earned.
   passage?: string,             // passage id if exit traverses a passage
   blocked?: true,               // present only when currently blocked
   blockedMessage?: string       // present only when blocked
 }
 ```
+
+The narrator is instructed (via STYLE rule in the system prompt) to narrate exits without `target` by direction only — no inventing or recalling destination names from canonical world-knowledge. Once `target` is present, the LLM may reference it ("the path back to the Forest Path").
 
 ### Concrete example: dome-room with rope tied
 

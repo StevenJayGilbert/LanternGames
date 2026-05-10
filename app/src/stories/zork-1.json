@@ -345,7 +345,7 @@
     {
       "id": "living-room",
       "name": "Living Room",
-      "description": "You are in the living room. To the east, a doorway opens into the kitchen. To the west is the front door, nailed shut. A trophy case stands against one wall, and a large oriental rug lies in the center of the room.",
+      "description": "You are in the living room. To the east, a doorway opens into the kitchen. To the west is the front door, nailed shut. A trophy case stands against one wall.",
       "exits": {
         "east": {
           "to": "kitchen"
@@ -861,12 +861,12 @@
         },
         "east": {
           "to": "strange-passage",
+          "hidden": true,
           "when": {
             "type": "flag",
             "key": "magic-flag",
             "equals": true
-          },
-          "blockedMessage": "The cyclops, a hulking giant, blocks the passage east, glowering hungrily down at you."
+          }
         },
         "up": {
           "to": "treasure-room",
@@ -1641,11 +1641,30 @@
       "description": "You are at the base of Flood Control Dam #3, which looms above you and to the north. The river Frigid is flowing by here. Along the river are the White Cliffs which seem to form giant walls stretching from north to south along the shores of the river as it winds its way downstream.",
       "exits": {
         "north": {
-          "to": "dam-room"
+          "to": "dam-room",
+          "when": {
+            "type": "not",
+            "condition": {
+              "type": "inVehicle",
+              "itemId": "inflatable-boat"
+            }
+          },
+          "blockedMessage": "The boat does not float on land."
         },
         "up": {
-          "to": "dam-room"
+          "to": "dam-room",
+          "when": {
+            "type": "not",
+            "condition": {
+              "type": "inVehicle",
+              "itemId": "inflatable-boat"
+            }
+          },
+          "blockedMessage": "The boat does not float on land."
         }
+      },
+      "state": {
+        "terrain": "water"
       }
     },
     {
@@ -1662,6 +1681,9 @@
         "down": {
           "to": "river-2"
         }
+      },
+      "state": {
+        "terrain": "water"
       }
     },
     {
@@ -1672,6 +1694,9 @@
         "down": {
           "to": "river-3"
         }
+      },
+      "state": {
+        "terrain": "water"
       }
     },
     {
@@ -1688,6 +1713,9 @@
         "west": {
           "to": "white-cliffs-north"
         }
+      },
+      "state": {
+        "terrain": "water"
       }
     },
     {
@@ -1696,11 +1724,30 @@
       "description": "You are on a narrow strip of beach which runs along the base of the White Cliffs. There is a narrow path heading south along the Cliffs and a tight passage leading west into the cliffs themselves.",
       "exits": {
         "south": {
-          "to": "white-cliffs-south"
+          "to": "white-cliffs-south",
+          "when": {
+            "type": "not",
+            "condition": {
+              "type": "inVehicle",
+              "itemId": "inflatable-boat"
+            }
+          },
+          "blockedMessage": "The boat does not float on land."
         },
         "west": {
-          "to": "damp-cave"
+          "to": "damp-cave",
+          "when": {
+            "type": "not",
+            "condition": {
+              "type": "inVehicle",
+              "itemId": "inflatable-boat"
+            }
+          },
+          "blockedMessage": "The boat does not float on land."
         }
+      },
+      "state": {
+        "terrain": "water"
       }
     },
     {
@@ -1709,8 +1756,19 @@
       "description": "You are on a rocky, narrow strip of beach beside the Cliffs. A narrow path leads north along the shore.",
       "exits": {
         "north": {
-          "to": "white-cliffs-north"
+          "to": "white-cliffs-north",
+          "when": {
+            "type": "not",
+            "condition": {
+              "type": "inVehicle",
+              "itemId": "inflatable-boat"
+            }
+          },
+          "blockedMessage": "The boat does not float on land."
         }
+      },
+      "state": {
+        "terrain": "water"
       }
     },
     {
@@ -1727,6 +1785,9 @@
         "east": {
           "to": "sandy-beach"
         }
+      },
+      "state": {
+        "terrain": "water"
       }
     },
     {
@@ -1740,6 +1801,9 @@
         "land": {
           "to": "shore"
         }
+      },
+      "state": {
+        "terrain": "water"
       }
     },
     {
@@ -1748,11 +1812,30 @@
       "description": "You are on the east shore of the river. The water here seems somewhat treacherous. A path travels from north to south here, the south end quickly turning around a sharp corner.",
       "exits": {
         "north": {
-          "to": "sandy-beach"
+          "to": "sandy-beach",
+          "when": {
+            "type": "not",
+            "condition": {
+              "type": "inVehicle",
+              "itemId": "inflatable-boat"
+            }
+          },
+          "blockedMessage": "The boat does not float on land."
         },
         "south": {
-          "to": "aragain-falls"
+          "to": "aragain-falls",
+          "when": {
+            "type": "not",
+            "condition": {
+              "type": "inVehicle",
+              "itemId": "inflatable-boat"
+            }
+          },
+          "blockedMessage": "The boat does not float on land."
         }
+      },
+      "state": {
+        "terrain": "water"
       }
     },
     {
@@ -1761,11 +1844,30 @@
       "description": "You are on a large sandy beach on the east shore of the river, which is flowing quickly by. A path runs beside the river to the south here, and a passage is partially buried in sand to the northeast.",
       "exits": {
         "northeast": {
-          "to": "sandy-cave"
+          "to": "sandy-cave",
+          "when": {
+            "type": "not",
+            "condition": {
+              "type": "inVehicle",
+              "itemId": "inflatable-boat"
+            }
+          },
+          "blockedMessage": "The boat does not float on land."
         },
         "south": {
-          "to": "shore"
+          "to": "shore",
+          "when": {
+            "type": "not",
+            "condition": {
+              "type": "inVehicle",
+              "itemId": "inflatable-boat"
+            }
+          },
+          "blockedMessage": "The boat does not float on land."
         }
+      },
+      "state": {
+        "terrain": "water"
       }
     },
     {
@@ -2857,6 +2959,16 @@
       "description": "A heavy oriental carpet covers the center of the floor, oddly out of place. Something about its position invites curiosity.",
       "location": "living-room",
       "fixed": true,
+      "variants": [
+        {
+          "when": {
+            "type": "flag",
+            "key": "rug-moved-flag",
+            "equals": true
+          },
+          "text": "The heavy oriental carpet has been pulled to one side of the room, revealing the trap door it concealed."
+        }
+      ],
       "tags": [
         "scenery",
         "fixed"
@@ -3748,12 +3860,22 @@
       "vehicle": {
         "mobile": true,
         "enterableWhen": {
-          "type": "itemState",
-          "itemId": "inflatable-boat",
-          "key": "inflation",
-          "equals": "inflated"
+          "type": "and",
+          "all": [
+            {
+              "type": "itemState",
+              "itemId": "inflatable-boat",
+              "key": "inflation",
+              "equals": "inflated"
+            },
+            {
+              "type": "currentRoomState",
+              "key": "terrain",
+              "equals": "water"
+            }
+          ]
         },
-        "enterBlockedMessage": "The pile of plastic has no inside to step into."
+        "enterBlockedMessage": "The boat needs to be inflated and on water before you can board it."
       },
       "container": {
         "accessibleWhen": {
@@ -4933,15 +5055,33 @@
       "takeable": true,
       "state": {
         "isOpen": false,
+        "broken": false,
         "weight": 6
       },
       "container": {
         "capacity": 6,
         "accessibleWhen": {
-          "type": "itemState",
+          "type": "and",
           "itemId": "egg",
           "key": "isOpen",
-          "equals": true
+          "equals": true,
+          "all": [
+            {
+              "type": "itemState",
+              "itemId": "egg",
+              "key": "isOpen",
+              "equals": true
+            },
+            {
+              "type": "not",
+              "condition": {
+                "type": "itemState",
+                "itemId": "egg",
+                "key": "broken",
+                "equals": true
+              }
+            }
+          ]
         },
         "accessBlockedMessage": "The jewel-encrusted egg is closed."
       },
@@ -4973,19 +5113,40 @@
         "container",
         "valuable"
       ],
-      "narratorNote": "The egg, once opened, cannot be closed again. The clasp is delicate filigree; once sprung, it bends out of true and refuses to seat. If the player tries to close it, narrate the failure in flavor — the clasp is a one-shot mechanism, the gold inlay has buckled, the tiny hinge-pin was lost into the songbird's beak (or thief's pocket), etc. Pick a silly-but-period-appropriate reason; never say 'the engine doesn't allow it.'",
-      "openWhen": {
-        "type": "not",
-        "condition": {
-          "type": "always"
+      "variants": [
+        {
+          "when": {
+            "type": "itemState",
+            "itemId": "egg",
+            "key": "broken",
+            "equals": true
+          },
+          "text": "The jewel-encrusted egg has been crushed — clasp bent, gold inlay buckled, the broken clockwork canary tangled visibly in the cracked shell."
+        },
+        {
+          "when": {
+            "type": "and",
+            "all": [
+              {
+                "type": "itemState",
+                "itemId": "egg",
+                "key": "isOpen",
+                "equals": true
+              },
+              {
+                "type": "not",
+                "condition": {
+                  "type": "itemState",
+                  "itemId": "egg",
+                  "key": "broken",
+                  "equals": true
+                }
+              }
+            ]
+          },
+          "text": "The jewel-encrusted egg has been opened cleanly along its delicate clasp, revealing the hollow within."
         }
-      },
-      "closeWhen": {
-        "type": "not",
-        "condition": {
-          "type": "always"
-        }
-      }
+      ]
     },
     {
       "id": "canary",
@@ -5015,7 +5176,19 @@
         }
       },
       "takeBlockedMessage": "Your load is too heavy.",
+      "variants": [
+        {
+          "when": {
+            "type": "itemState",
+            "itemId": "canary",
+            "key": "broken",
+            "equals": true
+          },
+          "text": "The golden clockwork canary lies still — mechanism crushed, ruby eyes dulled, silver beak bent out of true, mainspring snapped."
+        }
+      ],
       "state": {
+        "broken": false,
         "weight": 3
       }
     },
@@ -5628,6 +5801,20 @@
               ]
             },
             "failedNarration": "{arg.itemId.name} is already closed."
+          },
+          {
+            "when": {
+              "type": "not",
+              "condition": {
+                "type": "itemState",
+                "itemId": {
+                  "fromArg": "itemId"
+                },
+                "key": "broken",
+                "equals": true
+              }
+            },
+            "failedNarration": "{arg.itemId.name} is too bent out of true to close."
           }
         ],
         "effects": [
@@ -5690,12 +5877,15 @@
           },
           {
             "when": {
-              "type": "itemState",
-              "itemId": {
-                "fromArg": "itemId"
-              },
-              "key": "broken",
-              "equals": false
+              "type": "not",
+              "condition": {
+                "type": "itemState",
+                "itemId": {
+                  "fromArg": "itemId"
+                },
+                "key": "broken",
+                "equals": true
+              }
             },
             "failedNarration": "{arg.itemId.name} is already broken."
           }
@@ -5735,7 +5925,42 @@
     },
     {
       "id": "feed-cyclops",
-      "description": "Player gives, offers, or hands the cyclops the lunch (hot pepper sandwich) and the bottle of water — feeding and watering him."
+      "description": "Player gives, offers, or hands the cyclops a single item — feeding him. Pass the id of one item from inventory. The cyclops needs both food (the lunch / hot pepper sandwich) and drink (the bottle of water) before he sleeps; one item per call.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the single item being given to the cyclops, from inventory"
+          }
+        },
+        "required": [
+          "itemId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
+            "failedNarration": "You don't have {arg.itemId.name}."
+          },
+          {
+            "when": {
+              "type": "playerAt",
+              "roomId": "cyclops-room"
+            },
+            "failedNarration": "There is no cyclops here to feed."
+          }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
     },
     {
       "id": "pray-at-altar",
@@ -8084,6 +8309,11 @@
           "value": true
         },
         {
+          "type": "setFlag",
+          "key": "combat-engaged-with-cyclops",
+          "value": false
+        },
+        {
           "type": "moveItem",
           "itemId": "cyclops",
           "to": "nowhere"
@@ -8093,7 +8323,184 @@
       "once": true
     },
     {
-      "id": "cyclops-fed",
+      "id": "cyclops-eats-lunch",
+      "once": false,
+      "priority": 10,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "feed-cyclops"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "feed-cyclops",
+            "key": "itemId",
+            "equals": "lunch"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "cyclops-room"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "lunch"
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "key": "cyclops-flag",
+              "equals": true
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemState",
+              "itemId": "cyclops",
+              "key": "fedLunch",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "moveItem",
+          "itemId": "lunch",
+          "to": "nowhere"
+        },
+        {
+          "type": "setItemState",
+          "itemId": "cyclops",
+          "key": "fedLunch",
+          "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "feed-cyclops"
+        }
+      ],
+      "narration": "The cyclops snatches the sandwich and devours it in two bites. He grunts approvingly — but the pepper has him thirsty now."
+    },
+    {
+      "id": "cyclops-drinks-bottle",
+      "once": false,
+      "priority": 10,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "feed-cyclops"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "feed-cyclops",
+            "key": "itemId",
+            "equals": "bottle"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "cyclops-room"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "bottle"
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "key": "cyclops-flag",
+              "equals": true
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemState",
+              "itemId": "cyclops",
+              "key": "fedBottle",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "moveItem",
+          "itemId": "bottle",
+          "to": "nowhere"
+        },
+        {
+          "type": "setItemState",
+          "itemId": "cyclops",
+          "key": "fedBottle",
+          "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "feed-cyclops"
+        }
+      ],
+      "narration": "The cyclops drains the bottle in one long pull, water running down his beard. He smacks his lips — but he's still hungry."
+    },
+    {
+      "id": "cyclops-falls-asleep",
+      "once": true,
+      "priority": 5,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemState",
+            "itemId": "cyclops",
+            "key": "fedLunch",
+            "equals": true
+          },
+          {
+            "type": "itemState",
+            "itemId": "cyclops",
+            "key": "fedBottle",
+            "equals": true
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "key": "cyclops-flag",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "cyclops-flag",
+          "value": true
+        },
+        {
+          "type": "setItemState",
+          "itemId": "cyclops",
+          "key": "unconscious",
+          "value": true
+        },
+        {
+          "type": "setFlag",
+          "key": "combat-engaged-with-cyclops",
+          "value": false
+        }
+      ],
+      "narration": "Sated and slaked, the cyclops slumps against the wall and begins snoring thunderously. The staircase is no longer guarded."
+    },
+    {
+      "id": "cyclops-rejects-feed",
+      "once": false,
+      "priority": 0,
       "when": {
         "type": "and",
         "all": [
@@ -8106,39 +8513,22 @@
             "roomId": "cyclops-room"
           },
           {
-            "type": "flag",
-            "key": "cyclops-flag",
-            "equals": false
-          },
-          {
-            "type": "hasItem",
-            "itemId": "lunch"
-          },
-          {
-            "type": "hasItem",
-            "itemId": "bottle"
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "key": "cyclops-flag",
+              "equals": true
+            }
           }
         ]
       },
       "effects": [
         {
-          "type": "setFlag",
-          "key": "cyclops-flag",
-          "value": true
-        },
-        {
-          "type": "moveItem",
-          "itemId": "lunch",
-          "to": "nowhere"
-        },
-        {
-          "type": "moveItem",
-          "itemId": "bottle",
-          "to": "nowhere"
+          "type": "removeMatchedIntent",
+          "signalId": "feed-cyclops"
         }
       ],
-      "narration": "The cyclops devours the sandwich in two bites and drains the bottle. Within moments his single eye droops, and he slumps against the wall, snoring thunderously. The staircase is no longer guarded.",
-      "once": true
+      "narration": "The cyclops sniffs whatever you offered, snorts, and shoves it back at you with a hungry glower."
     },
     {
       "id": "altar-prayer",
@@ -9408,9 +9798,19 @@
           "value": true
         },
         {
-          "type": "setFlag",
-          "key": "death-message",
-          "value": "Your wounds overcome you, and the world fades to black."
+          "type": "if",
+          "if": {
+            "type": "flag",
+            "key": "death-message",
+            "equals": ""
+          },
+          "then": [
+            {
+              "type": "setFlag",
+              "key": "death-message",
+              "value": "Your wounds overcome you, and the world fades to black."
+            }
+          ]
         },
         {
           "type": "setFlag",
@@ -10184,6 +10584,11 @@
               "type": "adjustFlag",
               "key": "player-health",
               "by": -4
+            },
+            {
+              "type": "setFlag",
+              "key": "death-message",
+              "value": "The cyclops's hand catches you across the temple. Your vision swims, then fades."
             }
           ],
           "else": [
@@ -10210,6 +10615,11 @@
                   "type": "adjustFlag",
                   "key": "player-health",
                   "by": -10
+                },
+                {
+                  "type": "setFlag",
+                  "key": "death-message",
+                  "value": "The cyclops's fist pounds you into the wall — and you do not get up."
                 }
               ],
               "else": [
@@ -10236,6 +10646,11 @@
                       "type": "adjustFlag",
                       "key": "player-health",
                       "by": -15
+                    },
+                    {
+                      "type": "setFlag",
+                      "key": "death-message",
+                      "value": "The cyclops squeezes. Ribs crack. Then the rest of you."
                     }
                   ],
                   "else": [
@@ -10262,6 +10677,11 @@
                           "type": "adjustFlag",
                           "key": "player-health",
                           "by": -100
+                        },
+                        {
+                          "type": "setFlag",
+                          "key": "death-message",
+                          "value": "The cyclops's massive fingers find your throat. The stars behind your eyes go out."
                         }
                       ],
                       "else": [
@@ -13206,6 +13626,124 @@
         }
       ],
       "narration": "The thief takes the egg between two long fingers, examines it, and gives a small approving smile. With an audible click the clasp yields. He pockets the egg, canary and all. 'A pleasure, as always.'"
+    },
+    {
+      "id": "break-egg-destroys-canary",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "break"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "break",
+            "key": "itemId",
+            "equals": "egg"
+          },
+          {
+            "type": "itemAccessible",
+            "itemId": "egg"
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemState",
+              "itemId": "egg",
+              "key": "broken",
+              "equals": true
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "triggerFired",
+              "triggerId": "thief-opens-egg"
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "egg",
+          "key": "broken",
+          "value": true
+        },
+        {
+          "type": "setItemState",
+          "itemId": "canary",
+          "key": "broken",
+          "value": true
+        },
+        {
+          "type": "setItemState",
+          "itemId": "egg",
+          "key": "isOpen",
+          "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "break"
+        }
+      ],
+      "narration": "There is a sickening crunching noise. The egg's clasp gives way, and the bird inside is silenced under the wreckage."
+    },
+    {
+      "id": "open-egg-destroys-canary",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "open"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "open",
+            "key": "itemId",
+            "equals": "egg"
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemState",
+              "itemId": "egg",
+              "key": "broken",
+              "equals": true
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "triggerFired",
+              "triggerId": "thief-opens-egg"
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "egg",
+          "key": "broken",
+          "value": true
+        },
+        {
+          "type": "setItemState",
+          "itemId": "canary",
+          "key": "broken",
+          "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "open"
+        }
+      ],
+      "narration": "Your indelicate handling bends the egg's clasp out of true and buckles the gold inlay. The clockwork bird inside is mangled — silver beak crumpled, ruby eyes scratched, fine wires kinked beyond use."
     },
     {
       "id": "coffin-cure-on",
@@ -16365,7 +16903,7 @@
           "value": 0
         }
       ],
-      "narration": "The current sweeps you forward; the roar of falling water fills your ears. This is your last chance to land — east to the sandy beach!"
+      "narration": "The current sweeps you forward. The roar of falling water fills your ears."
     },
     {
       "id": "river-5-waterfall-death",
@@ -16471,21 +17009,41 @@
       ]
     },
     {
-      "id": "egg-falls-from-tree",
-      "once": true,
+      "id": "egg-breaks-on-tree-drop",
+      "once": false,
+      "priority": 10,
       "when": {
         "type": "and",
         "all": [
           {
-            "type": "itemAt",
-            "itemId": "egg",
-            "location": "up-a-tree"
+            "type": "intentMatched",
+            "signalId": "drop"
           },
           {
-            "type": "itemState",
-            "itemId": "egg",
-            "key": "isOpen",
-            "equals": false
+            "type": "intentArg",
+            "signalId": "drop",
+            "key": "itemId",
+            "equals": "egg"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "up-a-tree"
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemState",
+              "itemId": "egg",
+              "key": "broken",
+              "equals": true
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "triggerFired",
+              "triggerId": "thief-opens-egg"
+            }
           }
         ]
       },
@@ -16507,9 +17065,46 @@
           "itemId": "canary",
           "key": "broken",
           "value": true
+        },
+        {
+          "type": "moveItem",
+          "itemId": "canary",
+          "to": "path"
         }
       ],
-      "narration": "The egg hits the wooden floor of the branches with a sharp crack. The shell splits apart, exposing the clockwork canary — but its delicate mechanism is now hopelessly mangled."
+      "narration": "The egg hits the path with a sharp crack. The shell splits apart, exposing the broken clockwork canary tangled in the wreckage."
+    },
+    {
+      "id": "items-fall-from-tree",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "drop"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "up-a-tree"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "moveItem",
+          "itemId": {
+            "fromIntent": "drop",
+            "key": "itemId"
+          },
+          "to": "path"
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "drop"
+        }
+      ],
+      "narration": "It falls through the branches to the forest path below."
     },
     {
       "id": "canary-sings-for-bauble",

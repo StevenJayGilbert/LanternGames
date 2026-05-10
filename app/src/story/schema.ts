@@ -47,12 +47,21 @@ export type NumericExpr =
 
 // ---------- Arg references (templated values inside tool handlers) ----------
 
-// A handler's preconditions/effects can reference the call's args via
-// { fromArg: "<argName>" } in place of a literal string. The runtime
-// substitutes args eagerly before evaluation, so by the time a Condition
-// or Effect reaches an evaluator the IdRef has been resolved to a string.
-// Outside handlers, all id fields should be plain strings.
-export type IdRef = string | { fromArg: string };
+// IdRef variants:
+//   - string: literal id.
+//   - { fromArg }: pulled from a tool-handler's call args. Use inside
+//     customTool handler preconditions/effects; the dispatcher injects args
+//     before evaluation.
+//   - { fromIntent }: pulled from state.matchedIntentArgs[signalId][key].
+//     Use inside triggers to reference args of an intent matched earlier
+//     this turn — e.g. { fromIntent: "drop", key: "itemId" } resolves to
+//     whichever item the player just dropped. The trigger should gate on
+//     intentMatched(signalId) so the args are guaranteed populated.
+// Outside handlers and triggers, all id fields should be plain strings.
+export type IdRef =
+  | string
+  | { fromArg: string }
+  | { fromIntent: string; key: string };
 
 // ---------- Conditions ----------
 
@@ -99,7 +108,7 @@ export type Condition =
 // Effects mutate GameState. Triggers fire effects when their `when` becomes true.
 export type Effect =
   | { type: "setFlag"; key: string; value: Atom }
-  | { type: "moveItem"; itemId: string; to: string }       // roomId | itemId | "player" | "inventory" (legacy alias for "player") | "nowhere" | "<current-room>" (sentinel resolved at effect-application time to the player's current room id; falls back to "nowhere" if the chain is broken). Moving the "player" item updates currentRoom; if the destination is a room, visitedRooms is updated.
+  | { type: "moveItem"; itemId: IdRef; to: string }        // roomId | itemId | "player" | "inventory" (legacy alias for "player") | "nowhere" | "<current-room>" (sentinel resolved at effect-application time to the player's current room id; falls back to "nowhere" if the chain is broken). Moving the "player" item updates currentRoom; if the destination is a room, visitedRooms is updated. itemId is IdRef so handlers can use {fromArg} and triggers can use {fromIntent} to reference an action's target dynamically.
   | { type: "moveItemsFrom"; from: string; to: string }    // bulk: every item currently at `from` moves to `to`. Generic primitive for "container empties": NPC dies and drops everything; trophy case shatters; bag torn open. `from`/`to` are roomId | itemId | "player" | "inventory" | "nowhere" | "<current-room>" (sentinel resolved at effect-application time).
   | { type: "setPassageState"; passageId: IdRef; key: string; value: Atom }  // mutate passage state (passageId may be {fromArg: "..."} inside a tool handler)
   | { type: "setItemState"; itemId: IdRef; key: string; value: Atom }         // mutate item state (itemId may be {fromArg: "..."} inside a tool handler)

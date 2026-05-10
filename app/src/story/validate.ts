@@ -806,10 +806,14 @@ function validateNpc(
   }
 }
 
-// IdRef = string (item id) | { fromArg: string } (substituted at handler
-// dispatch). For the literal-string form, validate it's a known item id.
-// For the {fromArg} form, just check shape — arg-existence is checked when
-// validating the enclosing CustomTool.
+// IdRef variants:
+//   - string: literal item id, validated against itemIds.
+//   - { fromArg: string }: substituted at handler dispatch from call args.
+//     Arg-existence is checked separately in validateCustomTool.
+//   - { fromIntent: string, key: string }: substituted in trigger context
+//     from state.matchedIntentArgs. Both fields must be non-empty strings;
+//     signalId values aren't enumerated up front (built-in intents +
+//     custom-tool ids share a namespace), so we accept any string.
 function validateIdRef(
   raw: unknown,
   path: string,
@@ -820,10 +824,15 @@ function validateIdRef(
     if (itemIds.size && !itemIds.has(raw)) err(path, `unknown item "${raw}"`);
     return;
   }
-  if (isObject(raw) && typeof (raw as Record<string, unknown>).fromArg === "string") {
-    return;
+  if (isObject(raw)) {
+    const o = raw as Record<string, unknown>;
+    if (typeof o.fromArg === "string") return;
+    if (typeof o.fromIntent === "string" && typeof o.key === "string") return;
   }
-  err(path, "must be a string item id or { fromArg: <argName> }");
+  err(
+    path,
+    "must be a string item id, { fromArg: <argName> }, or { fromIntent: <signalId>, key: <argName> }",
+  );
 }
 
 // Sibling of validateIdRef for passage ids. Cross-ref to passages array is
@@ -835,8 +844,15 @@ function validatePassageIdRef(
   err: (p: string, m: string) => void,
 ) {
   if (typeof raw === "string") return;
-  if (isObject(raw) && typeof (raw as Record<string, unknown>).fromArg === "string") return;
-  err(path, "must be a string passage id or { fromArg: <argName> }");
+  if (isObject(raw)) {
+    const o = raw as Record<string, unknown>;
+    if (typeof o.fromArg === "string") return;
+    if (typeof o.fromIntent === "string" && typeof o.key === "string") return;
+  }
+  err(
+    path,
+    "must be a string passage id, { fromArg: <argName> }, or { fromIntent: <signalId>, key: <argName> }",
+  );
 }
 
 function validateCondition(
@@ -1085,8 +1101,11 @@ function validateEffect(
       if (!isAtom(raw.value)) err(`${path}.value`, "must be string, number, or boolean");
       return;
     case "moveItem":
-      if (typeof raw.itemId !== "string") err(`${path}.itemId`, "must be a string");
-      else if (itemIds.size && !itemIds.has(raw.itemId)) err(`${path}.itemId`, `unknown item "${raw.itemId}"`);
+      // itemId is now an IdRef — accept literal item id, {fromArg}, or
+      // {fromIntent}. The {fromIntent} form is for triggers that move
+      // "the item the player just acted on" (resolved against
+      // state.matchedIntentArgs at effect-application time).
+      validateIdRef(raw.itemId, `${path}.itemId`, itemIds, err);
       if (typeof raw.to !== "string") err(`${path}.to`, "must be a string");
       else if (
         !SPECIAL_LOCATIONS.has(raw.to) &&

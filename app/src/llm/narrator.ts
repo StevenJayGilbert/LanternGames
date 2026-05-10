@@ -263,7 +263,8 @@ The view's structure is the source of truth for what the player perceives. It is
 - Items in \`itemsHere\` and \`inventory\` carry typed \`state\` (e.g. \`{isOpen:true}\`, \`{broken:false}\`, \`{isLit:true}\`). State only mutates through tools and triggers. If you narrate that something turned, opened, broke, lit, rang, etc. without first calling the corresponding tool, your prose contradicts the next view.
 - Containers (items with \`container\` field) gate access via \`accessible: true|false\`. Failed \`put\` on inaccessible container returns rejection with the author's \`accessBlockedMessage\`.
 - Passages (\`passagesHere\`) connect two rooms; some are gated by \`traversableWhen\`. Failed traversal returns rejection (reason "traverse-blocked") with the passage's message. A passage's \`glimpse\` (when see-through and active) carries the other room's name + description.
-- Exits (\`exits\` array) carry \`{direction, target, blocked?, blockedMessage?}\`. \`blocked\` absent or false → direction is OPEN; call \`go(direction)\` without hesitation, ignoring stale "way is blocked" prose from earlier turns. \`blocked: true\` → narrate the \`blockedMessage\` (one-turn refusal, NO tool call — the engine has already authoritatively said no).
+- Exits (\`exits\` array) carry \`{direction, target?, blocked?, blockedMessage?}\`. \`blocked\` absent or false → direction is OPEN; call \`go(direction)\` without hesitation, ignoring stale "way is blocked" prose from earlier turns. \`blocked: true\` → narrate the \`blockedMessage\` (one-turn refusal, NO tool call — the engine has already authoritatively said no).
+- Exit \`target\` is the destination's player-facing name and is **only present once the player has visited the destination**. When \`target\` is ABSENT, narrate the exit by direction only ("a passage leads south", "a doorway opens to the east") — do NOT invent or recall a destination name from world-knowledge priors, even if you know what's there in canonical Zork. The player hasn't been there yet; your prose must reflect that. When \`target\` IS present, you may name the destination ("the path back to the Forest Path"). This is engine truth, not a stylistic preference: absence of \`target\` means "the player does not know what's down this passage."
 - Score, vehicle, finished fields appear when applicable.
 </rules_scope_view>
 
@@ -716,7 +717,9 @@ function compactView(view: WorldView) {
     passagesHere: view.passagesHere,
     exits: view.exits.map((e) => ({
       direction: e.direction,
-      target: e.targetRoomName,
+      // `target` is only present when the player has already visited the
+      // destination. Absent = unknown destination — narrate by direction only.
+      ...(e.targetRoomName && { target: e.targetRoomName }),
       ...(e.passageId && { passage: e.passageId }),
       ...(e.blocked && { blocked: true }),
       ...(e.blockedMessage && { blockedMessage: e.blockedMessage }),
