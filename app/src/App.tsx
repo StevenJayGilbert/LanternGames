@@ -220,7 +220,12 @@ function App() {
       // in the BEFORE-view block of the user message. Pure read commands
       // (/help, /room, /find) leave history alone.
       const cmd = text.trim().split(/\s+/)[0].toLowerCase();
-      const mutating = cmd === "/tp" || cmd === "/give" || cmd === "/flag" || cmd === "/put";
+      const mutating =
+        cmd === "/tp" ||
+        cmd === "/take" ||
+        cmd === "/put" ||
+        cmd === "/flag" ||
+        cmd === "/state";
       if (mutating) narrator.reset();
       const transcriptAfterDebug: TranscriptEntry[] = [
         ...transcriptAfterInput,
@@ -630,16 +635,17 @@ function handleDebugCommand(text: string, engine: Engine): string {
     case "/help":
       return [
         "[DEBUG] Available commands:",
-        "  /tp <roomId>         — teleport to a room",
-        "  /give <itemId>       — add an item to your inventory",
-        "  /put <itemId> <to>   — move an item to a room id, item id, or player/nowhere",
-        "  /flag <key> <val>    — set a flag (val: true/false/<number>/<string>)",
-        "  /room                — show your current room id",
-        "  /find <substr>       — search for room/item ids matching the substring",
-        "  /help                — this help",
+        "  /tp <roomId>                  — teleport to a room",
+        "  /take <itemId>                — take an item into your inventory",
+        "  /put <itemId> <to>            — move an item to a room id, item id, or player/nowhere",
+        "  /flag <key> <val>             — set a flag (val: true/false/<number>/<string>)",
+        "  /state <itemId> <key> <val>   — set per-item state (e.g. /state cyclops unconscious true)",
+        "  /room                         — show your current room id",
+        "  /find <substr>                — search for room/item ids matching the substring",
+        "  /help                         — this help",
         "",
-        "Note: /tp /give /put /flag reset the narrator's conversation history so",
-        "the LLM doesn't keep narrating from stale views. The transcript stays;",
+        "Note: /tp /take /put /flag /state reset the narrator's conversation history",
+        "so the LLM doesn't keep narrating from stale views. The transcript stays;",
         "only the LLM's internal context is cleared. /room /find /help are",
         "read-only and leave history alone.",
       ].join("\n");
@@ -659,9 +665,9 @@ function handleDebugCommand(text: string, engine: Engine): string {
       return `[DEBUG] Teleported to ${roomId} (${room.name}).`;
     }
 
-    case "/give": {
+    case "/take": {
       const itemId = args[0];
-      if (!itemId) return "[DEBUG] Usage: /give <itemId>";
+      if (!itemId) return "[DEBUG] Usage: /take <itemId>";
       const item = engine.story.items.find((i) => i.id === itemId);
       if (!item) return `[DEBUG] No such item: "${itemId}". Try /find ${itemId}`;
       engine.state = {
@@ -719,6 +725,32 @@ function handleDebugCommand(text: string, engine: Engine): string {
         flags: { ...engine.state.flags, [key]: val },
       };
       return `[DEBUG] Set flag ${key} = ${JSON.stringify(val)}`;
+    }
+
+    case "/state": {
+      const itemId = args[0];
+      const key = args[1];
+      const valStr = args.slice(2).join(" ");
+      if (!itemId || !key || valStr === "") {
+        return "[DEBUG] Usage: /state <itemId> <key> <true|false|<number>|<string>>";
+      }
+      const item = engine.story.items.find((i) => i.id === itemId);
+      if (!item) return `[DEBUG] No such item: "${itemId}". Try /find ${itemId}`;
+      let val: string | number | boolean;
+      if (valStr === "true") val = true;
+      else if (valStr === "false") val = false;
+      else if (/^-?\d+(\.\d+)?$/.test(valStr)) val = Number(valStr);
+      else val = valStr;
+      const prevItemState = engine.state.itemStates[itemId] ?? {};
+      const wasNew = key in prevItemState ? "" : " (new key)";
+      engine.state = {
+        ...engine.state,
+        itemStates: {
+          ...engine.state.itemStates,
+          [itemId]: { ...prevItemState, [key]: val },
+        },
+      };
+      return `[DEBUG] Set ${itemId}.${key} = ${JSON.stringify(val)}${wasNew}`;
     }
 
     case "/find": {

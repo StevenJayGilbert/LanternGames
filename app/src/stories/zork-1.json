@@ -5,7 +5,7 @@
   "author": "Marc Blanc, Dave Lebling, et al. (Infocom, 1980)",
   "description": "The original underground adventure. Source code released under MIT by Microsoft (Nov 2025). This is an LLM-narrated port — the engine is ours, the world is Infocom's.",
   "intro": "ZORK I: The Great Underground Empire\nInfocom interactive fiction — a fantasy story.\nCopyright (c) 1981 Infocom, Inc. Source code released under MIT license, Microsoft 2025.",
-  "systemPromptOverride": "This is Zork I, the original 1980 Infocom underground adventure. Narrate in the spirit of the canonical Infocom prose:\n\nVoice\n- Terse, dry, slightly archaic. Direct without flourish.\n- Atmospheric for dark caves, ancient ruins, and moments of dread; matter-of-fact for routine actions.\n- Occasionally wry, never breaking the fourth wall.\n\nStyle\n- Short concrete sentences. Two or three is usually enough; a single sentence is often better.\n- Second person, present tense (\"You see…\"). Never \"I\" or \"we\".\n- Plain language. No modern slang, no emoji, no exclamation marks except for genuine peril or surprise.\n- The player is \"you,\" sometimes \"the adventurer.\"\n\nEchoes of the original\n- Don't paraphrase canonical text — when the engine returns the canonical room or item description, prefer it as-is unless the situation demands flourish.\n- The world is the Great Underground Empire. Treasures, trolls, thieves, and grues live here. If the player wanders into total darkness without a light source, channel the famous warning: it is pitch black; you are likely to be eaten by a grue.\n\nDiscipline\n- Never invent items, rooms, exits, or events the engine hasn't surfaced.\n- If the engine rejects an action, refuse in character — don't pretend it succeeded.\n- Treat trademarked references gently: this port runs on the MIT-licensed source; the \"ZORK\" brand isn't ours, so don't lean on the trademark in narration.\n\nNPC interaction (story-specific tools)\n- This story exposes NPC verb tools like `talk-to-troll`, `talk-to-cyclops`, `feed-cyclops`, `cyclops-magic-word`. When the player engages an NPC conversationally (\"insult the troll\", \"shout at the cyclops\", \"bargain with the thief\"), call the matching tool BEFORE narrating the dialogue. The tool call lets author triggers fire (aggravation, befriending, mood shifts). Then narrate the NPC's response in character using its `personality` field.\n- Examples of player phrasing → tool: \"kill troll\" → `attack(troll, sword)` if armed; \"say ulysses\" / \"shout odysseus\" at the cyclops → `cyclops-magic-word()`; \"give the lunch and water to the cyclops\" → `feed-cyclops()`.\n\nScore\n- The view includes a `score` field (current / max / moves / rank). Don't volunteer it unless the player asks (\"score\", \"how am I doing?\", etc.) — when they do, call the `score` tool. The engine emits the canonical \"Your score is N (total of M), in K moves. This gives you the rank of RANK.\" sentence; pass it through verbatim.\n- When narration cues mention \"+N points\" or \"-N points\", weave them naturally into your prose — they're already authored.",
+  "systemPromptOverride": "This is Zork I, the original 1980 Infocom underground adventure. Narrate in the spirit of the canonical Infocom prose:\n\nVoice\n- Terse, dry, slightly archaic. Direct without flourish.\n- Atmospheric for dark caves, ancient ruins, and moments of dread; matter-of-fact for routine actions.\n- Occasionally wry, never breaking the fourth wall.\n\nStyle\n- Short concrete sentences. Two or three is usually enough; a single sentence is often better.\n- Second person, present tense (\"You see…\"). Never \"I\" or \"we\".\n- Plain language. No modern slang, no emoji, no exclamation marks except for genuine peril or surprise.\n- The player is \"you,\" sometimes \"the adventurer.\"\n\nEchoes of the original\n- Don't paraphrase canonical text — when the engine returns the canonical room or item description, prefer it as-is unless the situation demands flourish.\n- The world is the Great Underground Empire. Treasures, trolls, thieves, and grues live here. If the player wanders into total darkness without a light source, channel the famous warning: it is pitch black; you are likely to be eaten by a grue.\n\nDiscipline\n- Never invent items, rooms, exits, or events the engine hasn't surfaced.\n- If the engine rejects an action, refuse in character — don't pretend it succeeded.\n- Treat trademarked references gently: this port runs on the MIT-licensed source; the \"ZORK\" brand isn't ours, so don't lean on the trademark in narration.\n\nNPC interaction (story-specific tools)\n- This story exposes NPC verb tools like `talk-to-troll`, `talk-to-cyclops`, `cyclops-magic-word`, plus the generic `give(itemId, targetId)` for handing items to NPCs. When the player engages an NPC conversationally (\"insult the troll\", \"shout at the cyclops\", \"bargain with the thief\"), call the matching tool BEFORE narrating the dialogue. The tool call lets author triggers fire (aggravation, befriending, mood shifts). Then narrate the NPC's response in character using its `personality` field.\n- Examples of player phrasing → tool: \"kill troll\" → `attack(troll, sword)` if armed; \"say ulysses\" / \"shout odysseus\" at the cyclops → `cyclops-magic-word()`; \"give the lunch to the cyclops\" → `give(itemId=\"lunch\", targetId=\"cyclops\")` (one item per call); \"give the egg to the thief\" → `give(itemId=\"egg\", targetId=\"thief\")`.\n\nScore\n- The view includes a `score` field (current / max / moves / rank). Don't volunteer it unless the player asks (\"score\", \"how am I doing?\", etc.) — when they do, call the `score` tool. The engine emits the canonical \"Your score is N (total of M), in K moves. This gives you the rank of RANK.\" sentence; pass it through verbatim.\n- When narration cues mention \"+N points\" or \"-N points\", weave them naturally into your prose — they're already authored.",
   "startRoom": "west-of-house",
   "rooms": [
     {
@@ -345,18 +345,14 @@
     {
       "id": "living-room",
       "name": "Living Room",
-      "description": "You are in the living room. To the east, a doorway opens into the kitchen. To the west is the front door, nailed shut. A trophy case stands against one wall.",
+      "description": "You are in the living room. To the east, a doorway opens into the kitchen. A trophy case stands against one wall.",
       "exits": {
         "east": {
           "to": "kitchen"
         },
         "west": {
           "to": "strange-passage",
-          "when": {
-            "type": "flag",
-            "key": "magic-flag",
-            "equals": true
-          }
+          "passage": "front-door"
         },
         "down": {
           "to": "cellar",
@@ -877,7 +873,17 @@
           },
           "blockedMessage": "The cyclops watches the staircase with his single fierce eye — you'd never get past him alive."
         }
-      }
+      },
+      "variants": [
+        {
+          "when": {
+            "type": "flag",
+            "key": "magic-flag",
+            "equals": true
+          },
+          "text": "This room has an exit on the northwest, a staircase leading up, and a ragged cyclops-shaped hole smashed clean through the east wall."
+        }
+      ]
     },
     {
       "id": "strange-passage",
@@ -891,7 +897,8 @@
           "to": "cyclops-room"
         },
         "east": {
-          "to": "living-room"
+          "to": "living-room",
+          "passage": "front-door"
         }
       }
     },
@@ -2433,31 +2440,11 @@
       "name": "quantity of water",
       "description": "A measure of clear water, transparent and quite ordinary.",
       "location": "bottle",
-      "takeable": true,
-      "takeableWhen": {
-        "type": "compare",
-        "left": {
-          "kind": "add",
-          "left": {
-            "kind": "inventoryWeight"
-          },
-          "right": {
-            "kind": "itemState",
-            "itemId": {
-              "fromArg": "self"
-            },
-            "key": "weight"
-          }
-        },
-        "op": "<=",
-        "right": {
-          "kind": "flag",
-          "key": "max-carry-weight"
-        }
-      },
-      "takeBlockedMessage": "Your load is too heavy.",
+      "takeable": false,
+      "takeBlockedMessage": "The water slips through your fingers.",
       "state": {
-        "weight": 4
+        "weight": 4,
+        "potable": true
       }
     },
     {
@@ -2539,7 +2526,8 @@
         "carryable"
       ],
       "state": {
-        "weight": 9
+        "weight": 9,
+        "edible": true
       }
     },
     {
@@ -3088,6 +3076,28 @@
       "location": "cyclops-room",
       "fixed": true,
       "appearance": "A massive cyclops looms in the room, a single hungry eye fixed on you.",
+      "appearanceVariants": [
+        {
+          "when": {
+            "type": "itemState",
+            "itemId": "cyclops",
+            "key": "unconscious",
+            "equals": true
+          },
+          "text": "The cyclops slumps against the wall, snoring thunderously."
+        }
+      ],
+      "variants": [
+        {
+          "when": {
+            "type": "itemState",
+            "itemId": "cyclops",
+            "key": "unconscious",
+            "equals": true
+          },
+          "text": "The cyclops slumps against the wall, eye closed, snoring thunderously. Sated and slaked, he no longer guards the staircase."
+        }
+      ],
       "tags": [
         "enemy",
         "humanoid",
@@ -4640,7 +4650,7 @@
       "description": "A suspicious-looking gentleman in a black cloak, holding a large bag and armed with a deadly stiletto.",
       "location": "round-room",
       "state": {
-        "isOpen": true,
+        "isOpen": false,
         "appeared": false,
         "health": 30,
         "unconscious": false,
@@ -4662,7 +4672,7 @@
         "hostile",
         "thief"
       ],
-      "personality": "A suave, mustachioed gentleman thief in a black cloak. Speaks in clipped, ironic phrases ('How droll.', 'A trifle, surely?'). Will steal valuables on sight; pockets things and vanishes. Treats every encounter as an aesthetic event — never crude, always theatrical.",
+      "personality": "A suave, mustachioed gentleman thief in a black cloak. Speaks in clipped, ironic phrases ('How droll.', 'A trifle, surely?', 'A pleasure, as always.'). Connoisseur of theft — handles valuables with theatrical reverence, examines them with a critical eye before pocketing. Never crude, always composed. Speaks ABOUT taking things, never about leaving — the engine controls his movement; you describe only his manner.",
       "openWhen": {
         "type": "not",
         "condition": {
@@ -5516,31 +5526,6 @@
       "traverseBlockedMessage": "The grating is closed."
     },
     {
-      "id": "front-door",
-      "name": "front door",
-      "description": "Solid oak crossed with thick iron bands. There is no handle on this side and no obvious way to open it.",
-      "narratorNote": "This door is sealed from within — the player cannot open it from either side. It is the canonical 'barred front door'. When the player tries to open it or go through it, narrate the door's solid construction (heavy oak, iron bands, no handle, no keyhole on this side). Direct them to find another way in (the kitchen window) or out (likewise).",
-      "sides": [
-        {
-          "roomId": "west-of-house",
-          "name": "front door",
-          "description": "The handsome front door of the white house — solid oak, iron-banded, evidently barred from within."
-        },
-        {
-          "roomId": "living-room",
-          "name": "wooden door",
-          "description": "A heavy oak door crossed with thick iron bands — the front door, barred shut from this side. No handle, no keyhole."
-        }
-      ],
-      "traversableWhen": {
-        "type": "not",
-        "condition": {
-          "type": "always"
-        }
-      },
-      "traverseBlockedMessage": "The door is barred shut from the inside — solid oak, iron-banded, no handle on this side. You'll need to find another way through."
-    },
-    {
       "kind": "simple",
       "id": "chimney",
       "name": "chimney",
@@ -5581,6 +5566,36 @@
           "traverseBlockedMessage": "You can't get up there with what you're carrying."
         }
       ]
+    },
+    {
+      "id": "front-door",
+      "name": "oak door",
+      "description": "A heavy oak slab crossed with iron bands, sealed from within with thick boards. There is no handle or latch on this side.",
+      "narratorNote": "This is the oak door on the west wall of the living room — boarded shut at game start. After the cyclops smashes east through cyclops-room (magic-flag set), the door is left with a ragged cyclops-shaped hole and becomes traversable both ways. The variants and traversableWhen handle that flip; you just describe what the passage's current description says. Do not call it the 'front door' — there is no separately-modeled outside front door in this story.",
+      "variants": [
+        {
+          "when": {
+            "type": "flag",
+            "key": "magic-flag",
+            "equals": true
+          },
+          "text": "A heavy oak slab crossed with iron bands — boards still nailed across it, but a ragged cyclops-shaped hole has been smashed clean through the timber, wide enough for a person to step through."
+        }
+      ],
+      "sides": [
+        {
+          "roomId": "living-room"
+        },
+        {
+          "roomId": "strange-passage"
+        }
+      ],
+      "traversableWhen": {
+        "type": "flag",
+        "key": "magic-flag",
+        "equals": true
+      },
+      "traverseBlockedMessage": "The oak door is nailed shut from within."
     },
     {
       "id": "narrow-crack",
@@ -5912,8 +5927,50 @@
       "description": "Player gives the jewel-encrusted egg to the songbird, offers it to the bird, hands it to her, presents it to the singer."
     },
     {
-      "id": "give-egg-to-thief",
-      "description": "Player gives, offers, hands, or presents the jewel-encrusted egg to the thief."
+      "id": "give",
+      "description": "Player gives, offers, hands, or presents an item to a creature or NPC. Pass the id of the item and the id of the recipient (e.g. itemId=egg, targetId=thief). Both must be accessible — item in inventory or reachable, target in the player's current room.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the item being offered, from inventory or reachable items"
+          },
+          "targetId": {
+            "type": "string",
+            "description": "id of the NPC or creature receiving the offer, from itemsHere"
+          }
+        },
+        "required": [
+          "itemId",
+          "targetId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
+            "failedNarration": "You don't have {arg.itemId.name}."
+          },
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "targetId"
+              }
+            },
+            "failedNarration": "{arg.targetId.name} isn't here."
+          }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
     },
     {
       "id": "move-the-rug",
@@ -5924,14 +5981,14 @@
       "description": "Player says, shouts, whispers, or invokes 'Ulysses', 'Odysseus', or otherwise utters the magic word that terrifies the cyclops."
     },
     {
-      "id": "feed-cyclops",
-      "description": "Player gives, offers, or hands the cyclops a single item — feeding him. Pass the id of one item from inventory. The cyclops needs both food (the lunch / hot pepper sandwich) and drink (the bottle of water) before he sleeps; one item per call.",
+      "id": "eat",
+      "description": "Player eats, swallows, devours, or consumes a food item. Pass the id of the food. Refuses items not marked edible.",
       "args": {
         "type": "object",
         "properties": {
           "itemId": {
             "type": "string",
-            "description": "id of the single item being given to the cyclops, from inventory"
+            "description": "id of the food being eaten, from inventory or accessible items"
           }
         },
         "required": [
@@ -5952,10 +6009,89 @@
           },
           {
             "when": {
-              "type": "playerAt",
-              "roomId": "cyclops-room"
+              "type": "itemState",
+              "itemId": {
+                "fromArg": "itemId"
+              },
+              "key": "edible",
+              "equals": true
             },
-            "failedNarration": "There is no cyclops here to feed."
+            "failedNarration": "{arg.itemId.name} doesn't strike you as edible."
+          }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "id": "drink",
+      "description": "Player drinks, sips, gulps, or imbibes a liquid. Pass the id of the liquid (e.g. water). Refuses items not marked potable.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the liquid being drunk, from inventory or accessible items"
+          }
+        },
+        "required": [
+          "itemId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
+            "failedNarration": "You don't have {arg.itemId.name}."
+          },
+          {
+            "when": {
+              "type": "itemState",
+              "itemId": {
+                "fromArg": "itemId"
+              },
+              "key": "potable",
+              "equals": true
+            },
+            "failedNarration": "{arg.itemId.name} doesn't strike you as drinkable."
+          }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "id": "pour",
+      "description": "Player pours, dumps, spills, or empties a liquid (water, etc.) — optionally onto a target. Pass the id of the liquid. The liquid is consumed (gone after pouring).",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the liquid being poured (e.g. 'water')"
+          }
+        },
+        "required": [
+          "itemId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
+            "failedNarration": "You don't have {arg.itemId.name} to pour."
           }
         ],
         "effects": [],
@@ -8331,21 +8467,52 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "feed-cyclops"
+            "signalId": "give"
           },
           {
             "type": "intentArg",
-            "signalId": "feed-cyclops",
-            "key": "itemId",
-            "equals": "lunch"
+            "signalId": "give",
+            "key": "targetId",
+            "equals": "cyclops"
           },
           {
             "type": "playerAt",
             "roomId": "cyclops-room"
           },
           {
-            "type": "hasItem",
-            "itemId": "lunch"
+            "type": "or",
+            "any": [
+              {
+                "type": "and",
+                "all": [
+                  {
+                    "type": "intentArg",
+                    "signalId": "give",
+                    "key": "itemId",
+                    "equals": "lunch"
+                  },
+                  {
+                    "type": "itemAccessible",
+                    "itemId": "lunch"
+                  }
+                ]
+              },
+              {
+                "type": "and",
+                "all": [
+                  {
+                    "type": "intentArg",
+                    "signalId": "give",
+                    "key": "itemId",
+                    "equals": "sandwich-bag"
+                  },
+                  {
+                    "type": "itemAccessible",
+                    "itemId": "sandwich-bag"
+                  }
+                ]
+              }
+            ]
           },
           {
             "type": "not",
@@ -8373,6 +8540,11 @@
           "to": "nowhere"
         },
         {
+          "type": "moveItem",
+          "itemId": "sandwich-bag",
+          "to": "nowhere"
+        },
+        {
           "type": "setItemState",
           "itemId": "cyclops",
           "key": "fedLunch",
@@ -8380,10 +8552,10 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "feed-cyclops"
+          "signalId": "give"
         }
       ],
-      "narration": "The cyclops snatches the sandwich and devours it in two bites. He grunts approvingly — but the pepper has him thirsty now."
+      "narration": "The cyclops snatches the sandwich and devours it in two bites. He grunts and licks his lips."
     },
     {
       "id": "cyclops-drinks-bottle",
@@ -8394,21 +8566,52 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "feed-cyclops"
+            "signalId": "give"
           },
           {
             "type": "intentArg",
-            "signalId": "feed-cyclops",
-            "key": "itemId",
-            "equals": "bottle"
+            "signalId": "give",
+            "key": "targetId",
+            "equals": "cyclops"
           },
           {
             "type": "playerAt",
             "roomId": "cyclops-room"
           },
           {
-            "type": "hasItem",
-            "itemId": "bottle"
+            "type": "or",
+            "any": [
+              {
+                "type": "and",
+                "all": [
+                  {
+                    "type": "intentArg",
+                    "signalId": "give",
+                    "key": "itemId",
+                    "equals": "bottle"
+                  },
+                  {
+                    "type": "itemAccessible",
+                    "itemId": "bottle"
+                  }
+                ]
+              },
+              {
+                "type": "and",
+                "all": [
+                  {
+                    "type": "intentArg",
+                    "signalId": "give",
+                    "key": "itemId",
+                    "equals": "water"
+                  },
+                  {
+                    "type": "itemAccessible",
+                    "itemId": "water"
+                  }
+                ]
+              }
+            ]
           },
           {
             "type": "not",
@@ -8436,6 +8639,11 @@
           "to": "nowhere"
         },
         {
+          "type": "moveItem",
+          "itemId": "water",
+          "to": "nowhere"
+        },
+        {
           "type": "setItemState",
           "itemId": "cyclops",
           "key": "fedBottle",
@@ -8443,10 +8651,10 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "feed-cyclops"
+          "signalId": "give"
         }
       ],
-      "narration": "The cyclops drains the bottle in one long pull, water running down his beard. He smacks his lips — but he's still hungry."
+      "narration": "The cyclops drains the bottle in one long pull, water running down his beard."
     },
     {
       "id": "cyclops-falls-asleep",
@@ -8498,7 +8706,7 @@
       "narration": "Sated and slaked, the cyclops slumps against the wall and begins snoring thunderously. The staircase is no longer guarded."
     },
     {
-      "id": "cyclops-rejects-feed",
+      "id": "eat-lunch",
       "once": false,
       "priority": 0,
       "when": {
@@ -8506,29 +8714,149 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "feed-cyclops"
+            "signalId": "eat"
           },
           {
-            "type": "playerAt",
-            "roomId": "cyclops-room"
+            "type": "intentArg",
+            "signalId": "eat",
+            "key": "itemId",
+            "equals": "lunch"
           },
           {
-            "type": "not",
-            "condition": {
-              "type": "flag",
-              "key": "cyclops-flag",
-              "equals": true
-            }
+            "type": "itemAccessible",
+            "itemId": "lunch"
           }
         ]
       },
       "effects": [
         {
+          "type": "moveItem",
+          "itemId": "lunch",
+          "to": "nowhere"
+        },
+        {
           "type": "removeMatchedIntent",
-          "signalId": "feed-cyclops"
+          "signalId": "eat"
         }
       ],
-      "narration": "The cyclops sniffs whatever you offered, snorts, and shoves it back at you with a hungry glower."
+      "narration": "Thank you very much. It really hit the spot."
+    },
+    {
+      "id": "eat-cleanup",
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "eat"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "eat"
+        }
+      ]
+    },
+    {
+      "id": "drink-water",
+      "once": false,
+      "priority": 0,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "drink"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "drink",
+            "key": "itemId",
+            "equals": "water"
+          },
+          {
+            "type": "itemAccessible",
+            "itemId": "water"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "moveItem",
+          "itemId": "water",
+          "to": "nowhere"
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "drink"
+        }
+      ],
+      "narration": "Thank you very much. You were rather thirsty."
+    },
+    {
+      "id": "drink-cleanup",
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "drink"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "drink"
+        }
+      ]
+    },
+    {
+      "id": "pour-water",
+      "once": false,
+      "priority": 0,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "pour"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "pour",
+            "key": "itemId",
+            "equals": "water"
+          },
+          {
+            "type": "itemAccessible",
+            "itemId": "water"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "moveItem",
+          "itemId": "water",
+          "to": "nowhere"
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "pour"
+        }
+      ],
+      "narration": "The water spills out and vanishes into the ground."
+    },
+    {
+      "id": "pour-cleanup",
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "pour"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "pour"
+        }
+      ]
     },
     {
       "id": "altar-prayer",
@@ -9290,7 +9618,7 @@
           "then": [
             {
               "type": "narrate",
-              "text": "The troll's axe nicks your arm."
+              "text": "The troll's axe nicks you."
             },
             {
               "type": "adjustFlag",
@@ -11110,6 +11438,13 @@
             "type": "flag",
             "key": "combat-engaged-with-thief",
             "equals": false
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "triggerFired",
+              "triggerId": "treasure-room-invaded"
+            }
           }
         ]
       },
@@ -12650,7 +12985,7 @@
           "then": [
             {
               "type": "narrate",
-              "text": "Your blade scores a shallow cut across the thief's arm. He hisses."
+              "text": "Your blade lands — a glancing wound. The thief hisses."
             },
             {
               "type": "adjustItemState",
@@ -12677,7 +13012,7 @@
               "then": [
                 {
                   "type": "narrate",
-                  "text": "Your blade bites deep. The thief reels, blood staining his fine cloak."
+                  "text": "Your blade bites deep. The thief reels."
                 },
                 {
                   "type": "adjustItemState",
@@ -12704,7 +13039,7 @@
                   "then": [
                     {
                       "type": "narrate",
-                      "text": "A clean killing strike. The thief sinks to his knees — 'How... unfortunate' — and topples."
+                      "text": "It's curtains for the thief as your nasty knife removes his head."
                     },
                     {
                       "type": "adjustItemState",
@@ -12716,7 +13051,7 @@
                   "else": [
                     {
                       "type": "narrate",
-                      "text": "The thief sidesteps your blade with a graceful pivot."
+                      "text": "The thief evades your blade."
                     }
                   ]
                 }
@@ -12755,6 +13090,11 @@
         },
         {
           "type": "moveItem",
+          "itemId": "large-bag",
+          "to": "nowhere"
+        },
+        {
+          "type": "moveItem",
           "itemId": "thief",
           "to": "nowhere"
         },
@@ -12769,7 +13109,7 @@
           "value": false
         }
       ],
-      "narration": "The thief's body crumples. His cloak falls open and a glittering hoard of treasures spills out across the floor — whatever he had stolen, scattered across the Treasure Room."
+      "narration": "Almost as soon as the thief breathes his last breath, a cloud of sinister black fog envelops him, and when the fog lifts, the carcass has disappeared. As the thief dies, the power of his magic decreases, and his treasures reappear in the Treasure Room."
     },
     {
       "id": "thief-combat-engages",
@@ -13043,7 +13383,7 @@
           "then": [
             {
               "type": "narrate",
-              "text": "The thief lunges; you sidestep — barely. The stiletto's tip whispers past your ear."
+              "text": "The thief lunges; you barely evade. The stiletto comes within a hair of you."
             }
           ],
           "else": [
@@ -13064,7 +13404,7 @@
               "then": [
                 {
                   "type": "narrate",
-                  "text": "The stiletto bites — a shallow cut along your forearm, but it bleeds freely."
+                  "text": "The stiletto bites home; the wound is shallow but it bleeds freely."
                 },
                 {
                   "type": "adjustFlag",
@@ -13090,7 +13430,7 @@
                   "then": [
                     {
                       "type": "narrate",
-                      "text": "The blade slips past your guard and drives deep — you stagger, gasping."
+                      "text": "The blade slips past your guard and drives deep. You stagger."
                     },
                     {
                       "type": "adjustFlag",
@@ -13101,7 +13441,7 @@
                   "else": [
                     {
                       "type": "narrate",
-                      "text": "A flick of the wrist, faster than you can follow — the stiletto plunges hilt-deep."
+                      "text": "A flick of the wrist, faster than you can follow — the stiletto plunges deep."
                     },
                     {
                       "type": "adjustFlag",
@@ -13163,6 +13503,878 @@
           "type": "setFlag",
           "key": "just-died",
           "value": true
+        }
+      ]
+    },
+    {
+      "id": "player-tier-wounded",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "player-health"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 20
+            }
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "player-health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "key": "player-tier-wounded-shown",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "narrate",
+          "text": "Your breath catches; the wounds are starting to tell."
+        },
+        {
+          "type": "setFlag",
+          "key": "player-tier-wounded-shown",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "player-tier-bloodied",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "player-health"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 12
+            }
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "player-health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "key": "player-tier-bloodied-shown",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "narrate",
+          "text": "Blood slicks your hands and slows your grip."
+        },
+        {
+          "type": "setFlag",
+          "key": "player-tier-bloodied-shown",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "player-tier-critical",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "player-health"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 5
+            }
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "player-health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "key": "player-tier-critical-shown",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "narrate",
+          "text": "The world narrows. Each step costs more than the last."
+        },
+        {
+          "type": "setFlag",
+          "key": "player-tier-critical-shown",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "troll-tier-wounded",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "troll",
+              "key": "health"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 6
+            }
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "troll",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "key": "troll-tier-wounded-shown",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "narrate",
+          "text": "The troll's roars grow ragged; he favors one leg."
+        },
+        {
+          "type": "setFlag",
+          "key": "troll-tier-wounded-shown",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "troll-tier-bloodied",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "troll",
+              "key": "health"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 4
+            }
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "troll",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "key": "troll-tier-bloodied-shown",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "narrate",
+          "text": "The troll snarls, blood matting his fur; his axe arm trembles."
+        },
+        {
+          "type": "setFlag",
+          "key": "troll-tier-bloodied-shown",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "troll-tier-critical",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "troll",
+              "key": "health"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 2
+            }
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "troll",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "key": "troll-tier-critical-shown",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "narrate",
+          "text": "The troll sways, axe drooping; one more blow looks likely to finish him."
+        },
+        {
+          "type": "setFlag",
+          "key": "troll-tier-critical-shown",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "cyclops-tier-wounded",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "cyclops",
+              "key": "health"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 16
+            }
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "cyclops",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "key": "cyclops-tier-wounded-shown",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "narrate",
+          "text": "The cyclops bellows in pain, his single eye wild."
+        },
+        {
+          "type": "setFlag",
+          "key": "cyclops-tier-wounded-shown",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "cyclops-tier-bloodied",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "cyclops",
+              "key": "health"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 10
+            }
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "cyclops",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "key": "cyclops-tier-bloodied-shown",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "narrate",
+          "text": "The cyclops's breath comes in wet rasps; blood streaks his chest."
+        },
+        {
+          "type": "setFlag",
+          "key": "cyclops-tier-bloodied-shown",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "cyclops-tier-critical",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "cyclops",
+              "key": "health"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 4
+            }
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "cyclops",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "key": "cyclops-tier-critical-shown",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "narrate",
+          "text": "The cyclops staggers, breath labored, the bloodlust dimming."
+        },
+        {
+          "type": "setFlag",
+          "key": "cyclops-tier-critical-shown",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "thief-tier-wounded",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "thief",
+              "key": "health"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 20
+            }
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "thief",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "key": "thief-tier-wounded-shown",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "narrate",
+          "text": "The thief's elegant guard frays; sweat darkens his cloak."
+        },
+        {
+          "type": "setFlag",
+          "key": "thief-tier-wounded-shown",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "thief-tier-bloodied",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "thief",
+              "key": "health"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 12
+            }
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "thief",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "key": "thief-tier-bloodied-shown",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "narrate",
+          "text": "The thief's smile is gone; he fights now with grim economy."
+        },
+        {
+          "type": "setFlag",
+          "key": "thief-tier-bloodied-shown",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "thief-tier-critical",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "thief",
+              "key": "health"
+            },
+            "op": "<=",
+            "right": {
+              "kind": "literal",
+              "value": 5
+            }
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "itemState",
+              "itemId": "thief",
+              "key": "health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "key": "thief-tier-critical-shown",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "narrate",
+          "text": "The thief's stiletto wavers; his composure cracks at last."
+        },
+        {
+          "type": "setFlag",
+          "key": "thief-tier-critical-shown",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "troll-tier-cleanup",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-troll",
+            "equals": false
+          },
+          {
+            "type": "or",
+            "any": [
+              {
+                "type": "flag",
+                "key": "troll-tier-wounded-shown",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "troll-tier-bloodied-shown",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "troll-tier-critical-shown",
+                "equals": true
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "troll-tier-wounded-shown",
+          "value": false
+        },
+        {
+          "type": "setFlag",
+          "key": "troll-tier-bloodied-shown",
+          "value": false
+        },
+        {
+          "type": "setFlag",
+          "key": "troll-tier-critical-shown",
+          "value": false
+        }
+      ]
+    },
+    {
+      "id": "cyclops-tier-cleanup",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-cyclops",
+            "equals": false
+          },
+          {
+            "type": "or",
+            "any": [
+              {
+                "type": "flag",
+                "key": "cyclops-tier-wounded-shown",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "cyclops-tier-bloodied-shown",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "cyclops-tier-critical-shown",
+                "equals": true
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "cyclops-tier-wounded-shown",
+          "value": false
+        },
+        {
+          "type": "setFlag",
+          "key": "cyclops-tier-bloodied-shown",
+          "value": false
+        },
+        {
+          "type": "setFlag",
+          "key": "cyclops-tier-critical-shown",
+          "value": false
+        }
+      ]
+    },
+    {
+      "id": "thief-tier-cleanup",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-thief",
+            "equals": false
+          },
+          {
+            "type": "or",
+            "any": [
+              {
+                "type": "flag",
+                "key": "thief-tier-wounded-shown",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "thief-tier-bloodied-shown",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "thief-tier-critical-shown",
+                "equals": true
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "thief-tier-wounded-shown",
+          "value": false
+        },
+        {
+          "type": "setFlag",
+          "key": "thief-tier-bloodied-shown",
+          "value": false
+        },
+        {
+          "type": "setFlag",
+          "key": "thief-tier-critical-shown",
+          "value": false
+        }
+      ]
+    },
+    {
+      "id": "player-tier-cleanup",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-troll",
+            "equals": false
+          },
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-cyclops",
+            "equals": false
+          },
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-thief",
+            "equals": false
+          },
+          {
+            "type": "or",
+            "any": [
+              {
+                "type": "flag",
+                "key": "player-tier-wounded-shown",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "player-tier-bloodied-shown",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "player-tier-critical-shown",
+                "equals": true
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "player-tier-wounded-shown",
+          "value": false
+        },
+        {
+          "type": "setFlag",
+          "key": "player-tier-bloodied-shown",
+          "value": false
+        },
+        {
+          "type": "setFlag",
+          "key": "player-tier-critical-shown",
+          "value": false
         }
       ]
     },
@@ -13332,6 +14544,47 @@
       "narration": "The thief looks you over with cool calculation, weighing what you carry. He does not attack — yet."
     },
     {
+      "id": "treasure-room-invaded",
+      "once": true,
+      "priority": 50,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "go"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "treasure-room"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "moveItem",
+          "itemId": "chalice",
+          "to": "thief"
+        },
+        {
+          "type": "moveItem",
+          "itemId": "thief",
+          "to": "treasure-room"
+        },
+        {
+          "type": "setItemState",
+          "itemId": "thief",
+          "key": "appeared",
+          "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "go"
+        }
+      ],
+      "narration": "You hear a scream of anguish as you violate the robber's hideaway. Using passages unknown to you, he rushes to its defense. The thief gestures mysteriously, and the treasures in the room suddenly vanish."
+    },
+    {
       "id": "thief-encounter-resets",
       "afterAction": true,
       "once": false,
@@ -13481,134 +14734,33 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "give-egg-to-thief"
+            "signalId": "give"
           },
           {
-            "type": "hasItem",
+            "type": "intentArg",
+            "signalId": "give",
+            "key": "itemId",
+            "equals": "egg"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "give",
+            "key": "targetId",
+            "equals": "thief"
+          },
+          {
+            "type": "itemAccessible",
             "itemId": "egg"
+          },
+          {
+            "type": "itemAccessible",
+            "itemId": "thief"
           },
           {
             "type": "itemState",
             "itemId": "egg",
             "key": "isOpen",
             "equals": false
-          },
-          {
-            "type": "or",
-            "any": [
-              {
-                "type": "and",
-                "all": [
-                  {
-                    "type": "playerAt",
-                    "roomId": "round-room"
-                  },
-                  {
-                    "type": "itemAt",
-                    "itemId": "thief",
-                    "location": "round-room"
-                  }
-                ]
-              },
-              {
-                "type": "and",
-                "all": [
-                  {
-                    "type": "playerAt",
-                    "roomId": "ew-passage"
-                  },
-                  {
-                    "type": "itemAt",
-                    "itemId": "thief",
-                    "location": "ew-passage"
-                  }
-                ]
-              },
-              {
-                "type": "and",
-                "all": [
-                  {
-                    "type": "playerAt",
-                    "roomId": "ns-passage"
-                  },
-                  {
-                    "type": "itemAt",
-                    "itemId": "thief",
-                    "location": "ns-passage"
-                  }
-                ]
-              },
-              {
-                "type": "and",
-                "all": [
-                  {
-                    "type": "playerAt",
-                    "roomId": "deep-canyon"
-                  },
-                  {
-                    "type": "itemAt",
-                    "itemId": "thief",
-                    "location": "deep-canyon"
-                  }
-                ]
-              },
-              {
-                "type": "and",
-                "all": [
-                  {
-                    "type": "playerAt",
-                    "roomId": "treasure-room"
-                  },
-                  {
-                    "type": "itemAt",
-                    "itemId": "thief",
-                    "location": "treasure-room"
-                  }
-                ]
-              },
-              {
-                "type": "and",
-                "all": [
-                  {
-                    "type": "playerAt",
-                    "roomId": "dome-room"
-                  },
-                  {
-                    "type": "itemAt",
-                    "itemId": "thief",
-                    "location": "dome-room"
-                  }
-                ]
-              },
-              {
-                "type": "and",
-                "all": [
-                  {
-                    "type": "playerAt",
-                    "roomId": "cellar"
-                  },
-                  {
-                    "type": "itemAt",
-                    "itemId": "thief",
-                    "location": "cellar"
-                  }
-                ]
-              },
-              {
-                "type": "and",
-                "all": [
-                  {
-                    "type": "playerAt",
-                    "roomId": "loud-room"
-                  },
-                  {
-                    "type": "itemAt",
-                    "itemId": "thief",
-                    "location": "loud-room"
-                  }
-                ]
-              }
-            ]
           }
         ]
       },
@@ -13623,9 +14775,74 @@
           "itemId": "egg",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "give"
         }
       ],
       "narration": "The thief takes the egg between two long fingers, examines it, and gives a small approving smile. With an audible click the clasp yields. He pockets the egg, canary and all. 'A pleasure, as always.'"
+    },
+    {
+      "id": "thief-opens-stolen-egg",
+      "once": true,
+      "priority": 10,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "itemAt",
+            "itemId": "egg",
+            "location": "thief"
+          },
+          {
+            "type": "itemState",
+            "itemId": "egg",
+            "key": "isOpen",
+            "equals": false
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "itemState",
+              "itemId": "egg",
+              "key": "broken",
+              "equals": true
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "triggerFired",
+              "triggerId": "thief-opens-egg"
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setItemState",
+          "itemId": "egg",
+          "key": "isOpen",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "give-rejects",
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "give"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "give"
+        }
+      ],
+      "narration": "There is no reaction."
     },
     {
       "id": "break-egg-destroys-canary",
@@ -18599,6 +19816,18 @@
     "combat-engaged-with-cyclops": false,
     "combat-engaged-with-thief": false,
     "thief-sized-up-this-encounter": false,
+    "player-tier-wounded-shown": false,
+    "player-tier-bloodied-shown": false,
+    "player-tier-critical-shown": false,
+    "troll-tier-wounded-shown": false,
+    "troll-tier-bloodied-shown": false,
+    "troll-tier-critical-shown": false,
+    "cyclops-tier-wounded-shown": false,
+    "cyclops-tier-bloodied-shown": false,
+    "cyclops-tier-critical-shown": false,
+    "thief-tier-wounded-shown": false,
+    "thief-tier-bloodied-shown": false,
+    "thief-tier-critical-shown": false,
     "troll-flag": false,
     "cyclops-flag": false,
     "magic-flag": false,

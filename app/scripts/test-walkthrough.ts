@@ -12,7 +12,7 @@
 // — those gaps are logged for follow-up plans, not patched here.
 
 import { Engine } from "../src/engine/engine";
-import { currentRoomId } from "../src/engine/state";
+import { currentRoomId, isItemAccessible } from "../src/engine/state";
 import zork from "../src/stories/zork-1.json" with { type: "json" };
 import type { Story, GameState, Atom } from "../src/story/schema";
 
@@ -399,7 +399,7 @@ if (!e.state.finished && !aborted()) {
     fail("P6: pre-give egg state unexpected",
          `loc=${e.state.itemLocations["egg"]} isOpen=${e.state.itemStates["egg"]?.isOpen}`);
   }
-  intent(e, "give-egg-to-thief", undefined, "P6 give egg to thief");
+  intent(e, "give", { itemId: "egg", targetId: "thief" }, "P6 give egg to thief");
   // Post-trigger assertions: trigger should have moved egg to thief and
   // opened it. Canary's location depends on the trigger; the test logs it
   // either way.
@@ -1489,18 +1489,26 @@ console.log("\n--- F8: Thief kills player in combat ---");
 console.log("\n--- F9: Give egg to thief ---");
 {
   const f = new Engine(story);
-  // Set up: player at round-room with the thief, egg in inventory (closed).
+  // Set up: player at round-room with the thief, egg + lit lamp in inventory.
+  // round-room is canonically dark — without the lit lamp, isItemAccessible
+  // would refuse the egg and thief and the give handler would refuse the call.
   f.state = {
     ...f.state,
-    itemLocations: { ...f.state.itemLocations, player: "round-room", thief: "round-room",
-      egg: "player", },
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "round-room",
+      thief: "round-room",
+      egg: "player",
+      lamp: "player",
+    },
     itemStates: {
       ...f.state.itemStates,
       thief: { ...(f.state.itemStates["thief"] ?? {}), appeared: true },
       egg: { ...(f.state.itemStates["egg"] ?? {}), isOpen: false },
+      lamp: { ...(f.state.itemStates["lamp"] ?? {}), isLit: true },
     },
   };
-  f.execute({ type: "recordIntent", signalId: "give-egg-to-thief" });
+  f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "egg", targetId: "thief" } });
   const eggOpen = f.state.itemStates["egg"]?.isOpen === true;
   const eggWithThief = f.state.itemLocations["egg"] === "thief";
   // Canary stays inside the egg — container parentage is transitive, so the
@@ -1735,8 +1743,8 @@ console.log("\n--- F16c: Feed cyclops mid-combat (Bug 1 fix) ---");
     },
   };
   // Feed both halves (lunch then bottle) — cyclops sleeps after the second.
-  f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "lunch" } });
-  f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "bottle" } });
+  f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "lunch", targetId: "cyclops" } });
+  f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "bottle", targetId: "cyclops" } });
   f.state.itemStates["cyclops"]?.unconscious === true
     ? pass("F16c fed cyclops → unconscious=true")
     : fail(`F16c cyclops not unconscious: ${JSON.stringify(f.state.itemStates["cyclops"])}`);
@@ -1803,8 +1811,8 @@ console.log("\n--- F16e: Fed path leaves east blocked ---");
     flags: { ...f.state.flags, "player-health": 30 },
   };
   // Two-call feed (lunch then bottle).
-  f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "lunch" } });
-  f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "bottle" } });
+  f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "lunch", targetId: "cyclops" } });
+  f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "bottle", targetId: "cyclops" } });
   f.state.flags["cyclops-flag"] === true
     ? pass("F16e fed → cyclops-flag set")
     : fail("F16e fed → cyclops-flag not set");
@@ -1839,7 +1847,7 @@ console.log("\n--- F17: feed lunch then bottle → cyclops sleeps ---");
     flags: { ...f.state.flags, "player-health": 30 },
   };
   // Feed lunch first.
-  f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "lunch" } });
+  f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "lunch", targetId: "cyclops" } });
   f.state.itemStates["cyclops"]?.fedLunch === true
     ? pass("F17 lunch fed → cyclops.fedLunch=true")
     : fail(`F17 fedLunch = ${f.state.itemStates["cyclops"]?.fedLunch}`);
@@ -1850,7 +1858,7 @@ console.log("\n--- F17: feed lunch then bottle → cyclops sleeps ---");
     ? pass("F17 cyclops still blocking after lunch only")
     : fail("F17 cyclops-flag set after lunch alone");
   // Now feed bottle.
-  f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "bottle" } });
+  f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "bottle", targetId: "cyclops" } });
   f.state.itemStates["cyclops"]?.fedBottle === true
     ? pass("F17 bottle fed → cyclops.fedBottle=true")
     : fail(`F17 fedBottle = ${f.state.itemStates["cyclops"]?.fedBottle}`);
@@ -1876,8 +1884,8 @@ console.log("\n--- F17b: feed bottle then lunch (reverse order) → cyclops slee
     },
     flags: { ...f.state.flags, "player-health": 30 },
   };
-  f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "bottle" } });
-  f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "lunch" } });
+  f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "bottle", targetId: "cyclops" } });
+  f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "lunch", targetId: "cyclops" } });
   f.state.flags["cyclops-flag"] === true && f.state.itemStates["cyclops"]?.unconscious === true
     ? pass("F17b cyclops sleeps regardless of order")
     : fail(`F17b cyclops-flag=${f.state.flags["cyclops-flag"]} unconscious=${f.state.itemStates["cyclops"]?.unconscious}`);
@@ -1896,15 +1904,15 @@ console.log("\n--- F17c: feed garlic → catchall, cyclops not appeased ---");
     },
     flags: { ...f.state.flags, "player-health": 30 },
   };
-  const result = f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "garlic" } });
+  const result = f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "garlic", targetId: "cyclops" } });
   f.state.itemLocations.garlic === "player"
     ? pass("F17c garlic stays in inventory after rejection")
     : fail(`F17c garlic at ${f.state.itemLocations.garlic}`);
   f.state.flags["cyclops-flag"] === false
     ? pass("F17c cyclops-flag still false after garlic")
     : fail("F17c cyclops-flag set after garlic");
-  result.triggersFired.includes("cyclops-rejects-feed")
-    ? pass("F17c cyclops-rejects-feed fired")
+  result.triggersFired.includes("give-rejects")
+    ? pass("F17c give-rejects fired (cyclops doesn't take garlic)")
     : fail(`F17c triggers fired: ${JSON.stringify(result.triggersFired)}`);
 }
 
@@ -1916,12 +1924,12 @@ console.log("\n--- F17d: feed lunch when not at cyclops-room → refused ---");
     ...f.state,
     itemLocations: { ...f.state.itemLocations, player: "kitchen", lunch: "player" },
   };
-  const result = f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "lunch" } });
+  const result = f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "lunch", targetId: "cyclops" } });
   f.state.itemLocations.lunch === "player"
     ? pass("F17d lunch stays in inventory when no cyclops here")
     : fail(`F17d lunch at ${f.state.itemLocations.lunch}`);
-  result.narrationCues.some((c) => /no cyclops here/i.test(c))
-    ? pass("F17d refusal cue mentions no cyclops here")
+  result.narrationCues.some((c) => /cyclops isn't here|no cyclops here/i.test(c))
+    ? pass("F17d refusal cue indicates cyclops isn't here")
     : fail(`F17d cues: ${JSON.stringify(result.narrationCues)}`);
 }
 
@@ -1933,13 +1941,887 @@ console.log("\n--- F17e: feed lunch without having lunch → refused ---");
     ...f.state,
     itemLocations: { ...f.state.itemLocations, player: "cyclops-room" },
   };
-  const result = f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "lunch" } });
+  const result = f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "lunch", targetId: "cyclops" } });
   result.narrationCues.some((c) => /don't have/i.test(c))
     ? pass("F17e refusal cue mentions not having the item")
     : fail(`F17e cues: ${JSON.stringify(result.narrationCues)}`);
   f.state.itemStates["cyclops"]?.fedLunch !== true
     ? pass("F17e fedLunch not set on refusal")
     : fail("F17e fedLunch incorrectly set");
+}
+
+// F17h: Feed water (water nested in open bottle in inventory) → drinks-bottle fires
+console.log("\n--- F17h: feed water (nested in bottle) → drinks-bottle fires ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "cyclops-room",
+      bottle: "player",
+      // water.location stays "bottle" (story-default).
+    },
+    itemStates: {
+      ...f.state.itemStates,
+      bottle: { ...(f.state.itemStates.bottle ?? {}), isOpen: true },
+    },
+  };
+  const result = f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "water", targetId: "cyclops" } });
+  result.triggersFired.includes("cyclops-drinks-bottle")
+    ? pass("F17h cyclops-drinks-bottle fired for water arg")
+    : fail(`F17h triggers fired: ${JSON.stringify(result.triggersFired)} cues: ${JSON.stringify(result.narrationCues)}`);
+  f.state.itemLocations.bottle === "nowhere" && f.state.itemLocations.water === "nowhere"
+    ? pass("F17h both bottle and water consumed")
+    : fail(`F17h bottle=${f.state.itemLocations.bottle} water=${f.state.itemLocations.water}`);
+  f.state.itemStates["cyclops"]?.fedBottle === true
+    ? pass("F17h cyclops.fedBottle=true")
+    : fail(`F17h fedBottle=${f.state.itemStates["cyclops"]?.fedBottle}`);
+}
+
+// F17i: Feed sandwich-bag (with lunch nested) → eats-lunch fires
+console.log("\n--- F17i: feed sandwich-bag (with lunch nested) → eats-lunch fires ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "cyclops-room",
+      "sandwich-bag": "player",
+      // lunch.location stays "sandwich-bag".
+    },
+    itemStates: {
+      ...f.state.itemStates,
+      "sandwich-bag": { ...(f.state.itemStates["sandwich-bag"] ?? {}), isOpen: true },
+    },
+  };
+  const result = f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "sandwich-bag", targetId: "cyclops" } });
+  result.triggersFired.includes("cyclops-eats-lunch")
+    ? pass("F17i cyclops-eats-lunch fired for sandwich-bag arg")
+    : fail(`F17i triggers fired: ${JSON.stringify(result.triggersFired)} cues: ${JSON.stringify(result.narrationCues)}`);
+  f.state.itemLocations.lunch === "nowhere" && f.state.itemLocations["sandwich-bag"] === "nowhere"
+    ? pass("F17i both lunch and sandwich-bag consumed")
+    : fail(`F17i lunch=${f.state.itemLocations.lunch} bag=${f.state.itemLocations["sandwich-bag"]}`);
+  f.state.itemStates["cyclops"]?.fedLunch === true
+    ? pass("F17i cyclops.fedLunch=true")
+    : fail(`F17i fedLunch=${f.state.itemStates["cyclops"]?.fedLunch}`);
+}
+
+// F17j: Full canonical pour-bottle path: feed lunch then water → cyclops sleeps
+console.log("\n--- F17j: feed lunch then water (canonical pour-bottle path) → sleeps ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "cyclops-room",
+      lunch: "player",
+      bottle: "player",
+    },
+    itemStates: {
+      ...f.state.itemStates,
+      bottle: { ...(f.state.itemStates.bottle ?? {}), isOpen: true },
+    },
+  };
+  f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "lunch", targetId: "cyclops" } });
+  f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "water", targetId: "cyclops" } });
+  f.state.flags["cyclops-flag"] === true
+    ? pass("F17j cyclops asleep after lunch + water sequence")
+    : fail(`F17j cyclops-flag=${f.state.flags["cyclops-flag"]}`);
+  f.state.itemStates["cyclops"]?.unconscious === true
+    ? pass("F17j cyclops.unconscious=true")
+    : fail(`F17j unconscious=${f.state.itemStates["cyclops"]?.unconscious}`);
+}
+
+// F17k (re-aimed): water can't be taken standalone (canon); feeding water with
+// a closed bottle in inventory is correctly refused.
+console.log("\n--- F17k: feed water with closed bottle → refused (water inaccessible) ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "cyclops-room",
+      bottle: "player",
+      // bottle.isOpen stays false (story default) → water inaccessible.
+    },
+  };
+  const result = f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "water", targetId: "cyclops" } });
+  result.narrationCues.some((c) => /don't have/i.test(c))
+    ? pass("F17k closed bottle → handler refuses 'don't have water'")
+    : fail(`F17k cues: ${JSON.stringify(result.narrationCues)}`);
+  f.state.itemStates["cyclops"]?.fedBottle !== true
+    ? pass("F17k fedBottle not set on refusal")
+    : fail("F17k fedBottle wrongly set");
+}
+
+// F17l: Feed sandwich-bag when sack is closed (lunch sealed inside, sack reachable)
+console.log("\n--- F17l: feed sandwich-bag (sack closed) → eats-lunch fires ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "cyclops-room",
+      "sandwich-bag": "player",
+    },
+    // sandwich-bag.isOpen stays false (story default).
+  };
+  const result = f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "sandwich-bag", targetId: "cyclops" } });
+  result.triggersFired.includes("cyclops-eats-lunch")
+    ? pass("F17l eats-lunch fires for closed sandwich-bag")
+    : fail(`F17l triggers fired: ${JSON.stringify(result.triggersFired)} cues: ${JSON.stringify(result.narrationCues)}`);
+  f.state.itemLocations["sandwich-bag"] === "nowhere" && f.state.itemLocations.lunch === "nowhere"
+    ? pass("F17l both bag and (sealed) lunch consumed")
+    : fail(`F17l bag=${f.state.itemLocations["sandwich-bag"]} lunch=${f.state.itemLocations.lunch}`);
+}
+
+// F-door-pre-smash-blocked: front-door (re-purposed as cyclops-smashed wall)
+// is nailed shut before magic-flag.
+console.log("\n--- F-door-pre-smash-blocked: front door blocks west exit pre-smash ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "living-room" },
+    flags: { ...f.state.flags, "magic-flag": false },
+  };
+  const result = f.execute({ type: "go", direction: "west" });
+  result.event.type === "rejected" && f.state.itemLocations.player === "living-room"
+    ? pass("F-door-pre-smash west exit blocked, player stays")
+    : fail(`F-door-pre-smash event=${JSON.stringify(result.event)} player=${f.state.itemLocations.player}`);
+  // blockedMessage rides on the rejection event, not narrationCues.
+  const evMsg = (result.event as { message?: string } | undefined)?.message ?? "";
+  /nailed shut/i.test(evMsg)
+    ? pass("F-door-pre-smash event message mentions 'nailed shut'")
+    : fail(`F-door-pre-smash event message: "${evMsg}"`);
+}
+
+// F-door-post-smash-traversable: after magic-flag, west exit works.
+console.log("\n--- F-door-post-smash-traversable: front door has cyclops hole, traversable ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "living-room" },
+    flags: { ...f.state.flags, "magic-flag": true },
+  };
+  const result = f.execute({ type: "go", direction: "west" });
+  result.ok && f.state.itemLocations.player === "strange-passage"
+    ? pass("F-door-post-smash player traverses to strange-passage")
+    : fail(`F-door-post-smash ok=${result.ok} player=${f.state.itemLocations.player}`);
+}
+
+// F-door-passage-visible-both-sides: the front-door passage shows up in
+// passagesHere from BOTH living-room and strange-passage with a state-aware description.
+console.log("\n--- F-door-passage-visible-both-sides ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "living-room" },
+    flags: { ...f.state.flags, "magic-flag": true },
+  };
+  const v1 = f.getView();
+  const livingDoor = v1.passagesHere.find((p) => p.id === "front-door");
+  livingDoor && /cyclops-shaped hole/i.test(livingDoor.description)
+    ? pass("F-door-both-sides post-smash description includes cyclops hole (living-room)")
+    : fail(`F-door-both-sides living-room desc: ${livingDoor?.description}`);
+  // Move to strange-passage; same passage should be visible.
+  f.state = { ...f.state, itemLocations: { ...f.state.itemLocations, player: "strange-passage" } };
+  const v2 = f.getView();
+  const strangeDoor = v2.passagesHere.find((p) => p.id === "front-door");
+  strangeDoor && /cyclops-shaped hole/i.test(strangeDoor.description)
+    ? pass("F-door-both-sides post-smash description includes cyclops hole (strange-passage)")
+    : fail(`F-door-both-sides strange-passage desc: ${strangeDoor?.description}`);
+}
+
+// F-door-name: the re-purposed front-door passage's display name is "oak door"
+// from both sides — no leaking the term "front door" into LLM prose.
+console.log("\n--- F-door-name: passage name is 'oak door' from both sides ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "living-room" },
+  };
+  const livingDoor = f.getView().passagesHere.find((p) => p.id === "front-door");
+  livingDoor?.name === "oak door"
+    ? pass("F-door-name living-room: passage name = 'oak door'")
+    : fail(`F-door-name living-room: name="${livingDoor?.name}"`);
+  f.state = { ...f.state, itemLocations: { ...f.state.itemLocations, player: "strange-passage" } };
+  const strangeDoor = f.getView().passagesHere.find((p) => p.id === "front-door");
+  strangeDoor?.name === "oak door"
+    ? pass("F-door-name strange-passage: passage name = 'oak door'")
+    : fail(`F-door-name strange-passage: name="${strangeDoor?.name}"`);
+}
+
+// F-cyclops-room-pre: cyclops-room description has no "ragged"/"hole" pre-magic.
+console.log("\n--- F-cyclops-room-pre: no smashed-wall text before magic-flag ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "cyclops-room" },
+    flags: { ...f.state.flags, "magic-flag": false },
+  };
+  const desc = f.getView().room.description;
+  !/ragged|hole/i.test(desc)
+    ? pass("F-cyclops-room-pre: description does not mention ragged/hole")
+    : fail(`F-cyclops-room-pre: description="${desc}"`);
+}
+
+// F-cyclops-room-post-magic: after magic-flag, room description includes the smashed wall.
+console.log("\n--- F-cyclops-room-post-magic: smashed-east-wall variant fires ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "cyclops-room" },
+    flags: { ...f.state.flags, "magic-flag": true },
+  };
+  const desc = f.getView().room.description;
+  /ragged cyclops-shaped hole/i.test(desc)
+    ? pass("F-cyclops-room-post-magic: description includes 'ragged cyclops-shaped hole'")
+    : fail(`F-cyclops-room-post-magic: description="${desc}"`);
+}
+
+// F-cyclops-asleep-appearance: cyclops appearance flips when unconscious=true.
+console.log("\n--- F-cyclops-asleep-appearance: appearance reflects unconscious state ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "cyclops-room", cyclops: "cyclops-room" },
+    itemStates: {
+      ...f.state.itemStates,
+      cyclops: { ...(f.state.itemStates["cyclops"] ?? {}), unconscious: true },
+    },
+  };
+  const cyclopsView = f.getView().itemsHere.find((i) => i.id === "cyclops");
+  const app = cyclopsView?.appearance ?? "";
+  /slumps|snoring/i.test(app) && !/single hungry eye/i.test(app)
+    ? pass("F-cyclops-asleep-appearance: appearance shows slumping/snoring, not hostile")
+    : fail(`F-cyclops-asleep-appearance: appearance="${app}"`);
+}
+
+// F-tier-player-wounded: player crossing the wounded threshold (player-health <= 20)
+// fires the one-shot tier cue, sets the shown flag, and does not re-fire next turn.
+console.log("\n--- F-tier-player-wounded: one-shot wounded cue + memoization ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "troll-room" },
+    flags: { ...f.state.flags, "player-health": 15, "combat-engaged-with-troll": true },
+    itemStates: {
+      ...f.state.itemStates,
+      troll: { ...(f.state.itemStates["troll"] ?? {}), unconscious: true },
+    },
+  };
+  const r1 = f.execute({ type: "wait" });
+  const cues1 = r1.narrationCues.join(" ");
+  /wounds are starting to tell/i.test(cues1)
+    ? pass("F-tier-player-wounded: cue fires on first cross")
+    : fail(`F-tier-player-wounded cues: ${JSON.stringify(r1.narrationCues)}`);
+  f.state.flags["player-tier-wounded-shown"] === true
+    ? pass("F-tier-player-wounded: shown flag set")
+    : fail(`F-tier-player-wounded shown flag: ${f.state.flags["player-tier-wounded-shown"]}`);
+  const r2 = f.execute({ type: "wait" });
+  !r2.narrationCues.some((c) => /wounds are starting to tell/i.test(c))
+    ? pass("F-tier-player-wounded: cue does NOT re-fire next turn")
+    : fail(`F-tier-player-wounded re-fired: ${JSON.stringify(r2.narrationCues)}`);
+}
+
+// F-tier-player-critical: at <= 5 HP the critical cue fires.
+console.log("\n--- F-tier-player-critical: critical cue on deep damage ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "troll-room" },
+    flags: { ...f.state.flags, "player-health": 4, "combat-engaged-with-troll": true },
+    itemStates: {
+      ...f.state.itemStates,
+      troll: { ...(f.state.itemStates["troll"] ?? {}), unconscious: true },
+    },
+  };
+  const r = f.execute({ type: "wait" });
+  const cues = r.narrationCues.join(" ");
+  /world narrows/i.test(cues)
+    ? pass("F-tier-player-critical: critical cue fires")
+    : fail(`F-tier-player-critical cues: ${JSON.stringify(r.narrationCues)}`);
+}
+
+// F-tier-troll-bloodied: troll at low HP shows the bloodied cue, not critical.
+console.log("\n--- F-tier-troll-bloodied: middle tier fires for troll ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "troll-room" },
+    itemStates: {
+      ...f.state.itemStates,
+      troll: { ...(f.state.itemStates["troll"] ?? {}), health: 4 },
+    },
+    flags: { ...f.state.flags, "combat-engaged-with-troll": true },
+  };
+  const r = f.execute({ type: "wait" });
+  const cues = r.narrationCues.join(" ");
+  /blood matting his fur/i.test(cues)
+    ? pass("F-tier-troll-bloodied: bloodied cue fires at <= 4 HP")
+    : fail(`F-tier-troll-bloodied cues: ${JSON.stringify(r.narrationCues)}`);
+}
+
+// F-tier-cleanup: when combat disengages, the shown flags reset.
+console.log("\n--- F-tier-cleanup: shown flags reset when combat ends ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    flags: {
+      ...f.state.flags,
+      "combat-engaged-with-troll": false,
+      "combat-engaged-with-cyclops": false,
+      "combat-engaged-with-thief": false,
+      "player-tier-wounded-shown": true,
+      "player-tier-bloodied-shown": true,
+      "thief-tier-wounded-shown": true,
+    },
+  };
+  f.execute({ type: "wait" });
+  f.state.flags["player-tier-wounded-shown"] === false &&
+  f.state.flags["player-tier-bloodied-shown"] === false &&
+  f.state.flags["thief-tier-wounded-shown"] === false
+    ? pass("F-tier-cleanup: tier-shown flags reset on disengage")
+    : fail(
+        `F-tier-cleanup flags: player-wounded=${f.state.flags["player-tier-wounded-shown"]} player-bloodied=${f.state.flags["player-tier-bloodied-shown"]} thief-wounded=${f.state.flags["thief-tier-wounded-shown"]}`,
+      );
+}
+
+// F-thief-kill-narration: thief-dies narration matches canonical Zork
+// ("sinister black fog... carcass has disappeared... treasures reappear").
+console.log("\n--- F-thief-kill-narration: canonical death prose fires on kill ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "treasure-room", thief: "treasure-room" },
+    itemStates: {
+      ...f.state.itemStates,
+      thief: { ...(f.state.itemStates["thief"] ?? {}), health: 0 },
+    },
+  };
+  const result = f.execute({ type: "wait" });
+  const cues = result.narrationCues.join(" ");
+  /sinister black fog/i.test(cues) && /carcass has disappeared/i.test(cues) && /treasures reappear/i.test(cues)
+    ? pass("F-thief-kill-narration: thief-dies narration matches canonical")
+    : fail(`F-thief-kill cues: ${JSON.stringify(result.narrationCues)}`);
+  result.triggersFired.includes("thief-dies")
+    ? pass("F-thief-kill-narration: thief-dies trigger fired")
+    : fail(`F-thief-kill triggers: ${JSON.stringify(result.triggersFired)}`);
+  f.state.itemLocations.thief === "nowhere"
+    ? pass("F-thief-kill-narration: thief moved to nowhere (carcass vanished)")
+    : fail(`F-thief-kill thief location: ${f.state.itemLocations.thief}`);
+  f.state.itemLocations["large-bag"] === "nowhere"
+    ? pass("F-thief-kill-narration: large-bag also vanishes (no orphan scenery)")
+    : fail(`F-thief-kill large-bag location: ${f.state.itemLocations["large-bag"]}`);
+}
+
+// F-thief-opens-stolen-egg: when the thief has the closed egg (e.g. he stole it),
+// the thief-opens-stolen-egg trigger fires and opens it offscreen.
+console.log("\n--- F-thief-opens-stolen-egg: thief auto-opens stolen egg ---");
+{
+  const f = new Engine(story);
+  // Simulate the thief having stolen the closed egg.
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "round-room",
+      thief: "round-room",
+      egg: "thief",
+    },
+    itemStates: {
+      ...f.state.itemStates,
+      egg: { ...(f.state.itemStates["egg"] ?? {}), isOpen: false },
+    },
+  };
+  const result = f.execute({ type: "wait" });
+  result.triggersFired.includes("thief-opens-stolen-egg")
+    ? pass("F-stolen-egg trigger fires when egg is in thief's bag and closed")
+    : fail(`F-stolen-egg triggers fired: ${JSON.stringify(result.triggersFired)}`);
+  f.state.itemStates["egg"]?.isOpen === true
+    ? pass("F-stolen-egg egg.isOpen=true after trigger")
+    : fail(`F-stolen-egg egg.isOpen=${f.state.itemStates["egg"]?.isOpen}`);
+}
+
+// F-stolen-egg-not-after-give: give-path's thief-opens-egg already opens the egg;
+// the stolen-egg trigger should NOT also fire.
+console.log("\n--- F-stolen-egg-not-after-give: no double-fire after give ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "round-room",
+      thief: "round-room",
+      egg: "thief",
+      lamp: "player",
+    },
+    itemStates: {
+      ...f.state.itemStates,
+      lamp: { ...(f.state.itemStates["lamp"] ?? {}), isLit: true },
+      egg: { ...(f.state.itemStates["egg"] ?? {}), isOpen: true },
+    },
+    firedTriggers: [...f.state.firedTriggers, "thief-opens-egg"],
+  };
+  const result = f.execute({ type: "wait" });
+  !result.triggersFired.includes("thief-opens-stolen-egg")
+    ? pass("F-stolen-egg-not-after-give does NOT re-fire after give path")
+    : fail("F-stolen-egg-not-after-give double-fired");
+}
+
+// F-stolen-egg-recovery: full canonical recovery — thief stole egg, dies, egg dumps to treasure-room open.
+console.log("\n--- F-stolen-egg-recovery: kill thief, recover open egg ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "treasure-room",
+      thief: "treasure-room",
+      egg: "thief",
+    },
+    flags: { ...f.state.flags, "combat-engaged-with-thief": true },
+    itemStates: {
+      ...f.state.itemStates,
+      thief: { ...(f.state.itemStates["thief"] ?? {}), appeared: true, health: 0 },
+      egg: { ...(f.state.itemStates["egg"] ?? {}), isOpen: false },
+    },
+  };
+  f.execute({ type: "wait" });
+  // After the trigger pass: thief-opens-stolen-egg + thief-dies should have fired.
+  f.state.itemStates["egg"]?.isOpen === true
+    ? pass("F-recovery egg.isOpen=true after trigger pass")
+    : fail(`F-recovery egg.isOpen=${f.state.itemStates["egg"]?.isOpen}`);
+  f.state.itemLocations.egg === "treasure-room"
+    ? pass("F-recovery egg dumped to treasure-room (open) after thief death")
+    : fail(`F-recovery egg at ${f.state.itemLocations.egg}`);
+  f.state.itemLocations.canary === "egg"
+    ? pass("F-recovery canary still nested in (now-open) egg")
+    : fail(`F-recovery canary at ${f.state.itemLocations.canary}`);
+}
+
+// F-thief-stays-after-give: engine state pin — thief remains in room after giving egg.
+// Personality field was previously prescribing "pockets things and vanishes" which made
+// the LLM hallucinate the thief's exit. Engine truth: he stays put.
+console.log("\n--- F-thief-stays-after-give: thief still in room after egg given ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "round-room",
+      thief: "round-room",
+      egg: "player",
+      lamp: "player",
+    },
+    itemStates: {
+      ...f.state.itemStates,
+      thief: { ...(f.state.itemStates["thief"] ?? {}), appeared: true },
+      egg: { ...(f.state.itemStates["egg"] ?? {}), isOpen: false },
+      lamp: { ...(f.state.itemStates["lamp"] ?? {}), isLit: true },
+    },
+  };
+  f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "egg", targetId: "thief" } });
+  f.state.itemLocations.thief === "round-room"
+    ? pass("F-thief-stays thief still at round-room (not 'nowhere') after egg-give")
+    : fail(`F-thief-stays thief at ${f.state.itemLocations.thief}`);
+}
+
+// F-treasure-room-1: first entry to treasure-room invokes the canonical robber's-hideaway trigger
+console.log("\n--- F-treasure-room-1: violate robber's hideaway → chalice hidden, thief teleports in ---");
+{
+  const f = new Engine(story);
+  // Place player at cyclops-room with cyclops appeased + lit lamp; thief at deep-canyon (NOT treasure-room).
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "cyclops-room",
+      thief: "deep-canyon",
+      lamp: "player",
+    },
+    flags: { ...f.state.flags, "cyclops-flag": true },
+    itemStates: {
+      ...f.state.itemStates,
+      lamp: { ...(f.state.itemStates["lamp"] ?? {}), isLit: true },
+      cyclops: { ...(f.state.itemStates["cyclops"] ?? {}), unconscious: true },
+    },
+  };
+  const result = f.execute({ type: "go", direction: "up" });
+  result.triggersFired.includes("treasure-room-invaded")
+    ? pass("F-tr-1 treasure-room-invaded fired on first entry")
+    : fail(`F-tr-1 triggers fired: ${JSON.stringify(result.triggersFired)}`);
+  f.state.itemLocations.chalice === "thief"
+    ? pass("F-tr-1 chalice hidden in thief's bag")
+    : fail(`F-tr-1 chalice at ${f.state.itemLocations.chalice}`);
+  f.state.itemLocations.thief === "treasure-room"
+    ? pass("F-tr-1 thief teleported to treasure-room")
+    : fail(`F-tr-1 thief at ${f.state.itemLocations.thief}`);
+  f.state.itemStates["thief"]?.appeared === true
+    ? pass("F-tr-1 thief.appeared=true")
+    : fail(`F-tr-1 thief.appeared=${f.state.itemStates["thief"]?.appeared}`);
+  result.narrationCues.some((c) => /violate the robber's hideaway/i.test(c))
+    ? pass("F-tr-1 narration includes canonical 'violate the robber's hideaway'")
+    : fail(`F-tr-1 cues: ${JSON.stringify(result.narrationCues)}`);
+}
+
+// F-treasure-room-2: re-entry doesn't re-fire the trigger (once:true)
+console.log("\n--- F-treasure-room-2: re-entering treasure-room doesn't re-fire ---");
+{
+  const f = new Engine(story);
+  // Set up: trigger has already fired (firedTriggers includes it), player at cyclops-room.
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "cyclops-room",
+      thief: "treasure-room",
+      lamp: "player",
+    },
+    flags: { ...f.state.flags, "cyclops-flag": true },
+    itemStates: {
+      ...f.state.itemStates,
+      lamp: { ...(f.state.itemStates["lamp"] ?? {}), isLit: true },
+      cyclops: { ...(f.state.itemStates["cyclops"] ?? {}), unconscious: true },
+    },
+    firedTriggers: [...f.state.firedTriggers, "treasure-room-invaded"],
+  };
+  const result = f.execute({ type: "go", direction: "up" });
+  !result.triggersFired.includes("treasure-room-invaded")
+    ? pass("F-tr-2 trigger does NOT re-fire on subsequent entry")
+    : fail("F-tr-2 trigger re-fired (once:true broken?)");
+  !result.narrationCues.some((c) => /violate the robber's hideaway/i.test(c))
+    ? pass("F-tr-2 no duplicate violate-the-hideaway cue")
+    : fail(`F-tr-2 duplicate cue: ${JSON.stringify(result.narrationCues)}`);
+}
+
+// F-treasure-room-3: killing the thief at treasure-room dumps chalice + stash back
+console.log("\n--- F-treasure-room-3: thief death dumps chalice + stash to treasure-room ---");
+{
+  const f = new Engine(story);
+  // Set up: thief at treasure-room with chalice + a stolen torch in his bag; player there with sword.
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "treasure-room",
+      thief: "treasure-room",
+      chalice: "thief",
+      torch: "thief",
+      sword: "player",
+    },
+    flags: { ...f.state.flags, "combat-engaged-with-thief": true },
+    itemStates: {
+      ...f.state.itemStates,
+      thief: { ...(f.state.itemStates["thief"] ?? {}), appeared: true, health: 1 },
+    },
+  };
+  // Force the thief's death.
+  f.state = {
+    ...f.state,
+    itemStates: {
+      ...f.state.itemStates,
+      thief: { ...f.state.itemStates.thief, health: 0 },
+    },
+  };
+  f.execute({ type: "wait" });
+  f.state.itemLocations.chalice === "treasure-room"
+    ? pass("F-tr-3 chalice dumped back to treasure-room on thief death")
+    : fail(`F-tr-3 chalice at ${f.state.itemLocations.chalice}`);
+  f.state.itemLocations.torch === "treasure-room"
+    ? pass("F-tr-3 stolen torch dumped to treasure-room on thief death")
+    : fail(`F-tr-3 torch at ${f.state.itemLocations.torch}`);
+}
+
+// F-thief-bag-closed: thief's bag is closed by default; items inside aren't accessible
+console.log("\n--- F-thief-bag-closed: items at thief are inaccessible (bag closed) ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "round-room",
+      thief: "round-room",
+      torch: "thief",
+      lamp: "player",
+    },
+    itemStates: {
+      ...f.state.itemStates,
+      lamp: { ...(f.state.itemStates["lamp"] ?? {}), isLit: true },
+    },
+  };
+  const torchItem = (story as any).items.find((i: any) => i.id === "torch");
+  isItemAccessible(torchItem, f.state, story) === false
+    ? pass("F-thief-bag-closed torch (in closed bag) is NOT accessible")
+    : fail("F-thief-bag-closed torch is accessible — bag isn't closed?");
+}
+
+// F-give-1: thief NOT in same room → handler refuses with "thief isn't here"
+console.log("\n--- F-give-1: give egg to absent thief → refused ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "round-room",
+      thief: "treasure-room",
+      egg: "player",
+      lamp: "player",
+    },
+    itemStates: {
+      ...f.state.itemStates,
+      lamp: { ...(f.state.itemStates["lamp"] ?? {}), isLit: true },
+    },
+  };
+  const result = f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "egg", targetId: "thief" } });
+  result.narrationCues.some((c) => /isn't here/i.test(c))
+    ? pass("F-give-1 refusal mentions 'isn't here'")
+    : fail(`F-give-1 cues: ${JSON.stringify(result.narrationCues)}`);
+  f.state.itemLocations.egg === "player"
+    ? pass("F-give-1 egg stays in inventory after refusal")
+    : fail(`F-give-1 egg at ${f.state.itemLocations.egg}`);
+}
+
+// F-give-2: give item not in inventory → handler refuses with "don't have"
+console.log("\n--- F-give-2: give item not in inventory → refused ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "round-room",
+      thief: "round-room",
+      lamp: "player",
+    },
+    itemStates: {
+      ...f.state.itemStates,
+      lamp: { ...(f.state.itemStates["lamp"] ?? {}), isLit: true },
+    },
+  };
+  // egg stays at nest (story default).
+  const result = f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "egg", targetId: "thief" } });
+  result.narrationCues.some((c) => /don't have/i.test(c))
+    ? pass("F-give-2 refusal mentions 'don't have'")
+    : fail(`F-give-2 cues: ${JSON.stringify(result.narrationCues)}`);
+}
+
+// F-give-3: give unrelated item to thief (no specific trigger) → catchall fires
+console.log("\n--- F-give-3: give lamp to thief → catchall ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "round-room",
+      thief: "round-room",
+      lamp: "player",
+    },
+    itemStates: {
+      ...f.state.itemStates,
+      lamp: { ...(f.state.itemStates["lamp"] ?? {}), isLit: true },
+    },
+  };
+  const result = f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "lamp", targetId: "thief" } });
+  result.triggersFired.includes("give-rejects")
+    ? pass("F-give-3 give-rejects catchall fires for unrelated item")
+    : fail(`F-give-3 triggers fired: ${JSON.stringify(result.triggersFired)}`);
+  f.state.itemLocations.lamp === "player"
+    ? pass("F-give-3 lamp stays in inventory")
+    : fail(`F-give-3 lamp at ${f.state.itemLocations.lamp}`);
+}
+
+// F-water-not-takeable: canonical Zork I refuses TAKE WATER
+console.log("\n--- F-water-not-takeable: take water → refused ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "kitchen", bottle: "player" },
+    itemStates: {
+      ...f.state.itemStates,
+      bottle: { ...(f.state.itemStates.bottle ?? {}), isOpen: true },
+    },
+  };
+  const result = f.execute({ type: "take", itemId: "water" });
+  result.event.type === "rejected" && f.state.itemLocations.water === "bottle"
+    ? pass("F-water-not-takeable take water refused; water stays in bottle")
+    : fail(`F-water-not-takeable: event=${JSON.stringify(result.event)} water at ${f.state.itemLocations.water}`);
+}
+
+// F-pour-1: pour water (open bottle in inventory) → water consumed, bottle stays
+console.log("\n--- F-pour-1: pour water → water → nowhere; bottle stays ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "kitchen", bottle: "player" },
+    itemStates: {
+      ...f.state.itemStates,
+      bottle: { ...(f.state.itemStates.bottle ?? {}), isOpen: true },
+    },
+  };
+  f.execute({ type: "recordIntent", signalId: "pour", args: { itemId: "water" } });
+  f.state.itemLocations.water === "nowhere"
+    ? pass("F-pour-1 water moved to nowhere")
+    : fail(`F-pour-1 water at ${f.state.itemLocations.water}`);
+  f.state.itemLocations.bottle === "player"
+    ? pass("F-pour-1 bottle stays in inventory (empty)")
+    : fail(`F-pour-1 bottle at ${f.state.itemLocations.bottle}`);
+}
+
+// F-pour-2: after pouring, feed-cyclops with water → handler refuses
+console.log("\n--- F-pour-2: after pouring, feed water at cyclops-room → refused ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "cyclops-room", bottle: "player" },
+    itemStates: {
+      ...f.state.itemStates,
+      bottle: { ...(f.state.itemStates.bottle ?? {}), isOpen: true },
+    },
+  };
+  f.execute({ type: "recordIntent", signalId: "pour", args: { itemId: "water" } });
+  const result = f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "water", targetId: "cyclops" } });
+  result.narrationCues.some((c) => /don't have/i.test(c))
+    ? pass("F-pour-2 feed-water after pour → 'don't have water'")
+    : fail(`F-pour-2 cues: ${JSON.stringify(result.narrationCues)}`);
+}
+
+// F-eat-1: eat lunch (edible) → lunch consumed
+console.log("\n--- F-eat-1: eat lunch → lunch → nowhere ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "kitchen", lunch: "player" },
+  };
+  f.execute({ type: "recordIntent", signalId: "eat", args: { itemId: "lunch" } });
+  f.state.itemLocations.lunch === "nowhere"
+    ? pass("F-eat-1 lunch consumed")
+    : fail(`F-eat-1 lunch at ${f.state.itemLocations.lunch}`);
+}
+
+// F-eat-2: try to eat inedible (lamp) → handler refuses
+console.log("\n--- F-eat-2: eat lamp (inedible) → refused ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "kitchen", lamp: "player" },
+  };
+  const result = f.execute({ type: "recordIntent", signalId: "eat", args: { itemId: "lamp" } });
+  result.narrationCues.some((c) => /not.*edible|doesn't strike you as edible/i.test(c))
+    ? pass("F-eat-2 lamp refusal mentions inedibility")
+    : fail(`F-eat-2 cues: ${JSON.stringify(result.narrationCues)}`);
+  f.state.itemLocations.lamp === "player"
+    ? pass("F-eat-2 lamp still in inventory")
+    : fail(`F-eat-2 lamp at ${f.state.itemLocations.lamp}`);
+}
+
+// F-drink-1: drink water (open bottle in inventory) → water consumed
+console.log("\n--- F-drink-1: drink water → water → nowhere ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "kitchen", bottle: "player" },
+    itemStates: {
+      ...f.state.itemStates,
+      bottle: { ...(f.state.itemStates.bottle ?? {}), isOpen: true },
+    },
+  };
+  f.execute({ type: "recordIntent", signalId: "drink", args: { itemId: "water" } });
+  f.state.itemLocations.water === "nowhere"
+    ? pass("F-drink-1 water consumed")
+    : fail(`F-drink-1 water at ${f.state.itemLocations.water}`);
+}
+
+// F-drink-2: try to drink non-potable (lamp) → handler refuses
+console.log("\n--- F-drink-2: drink lamp (non-potable) → refused ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "kitchen", lamp: "player" },
+  };
+  const result = f.execute({ type: "recordIntent", signalId: "drink", args: { itemId: "lamp" } });
+  result.narrationCues.some((c) => /drinkable|doesn't strike/i.test(c))
+    ? pass("F-drink-2 lamp refusal mentions undrinkability")
+    : fail(`F-drink-2 cues: ${JSON.stringify(result.narrationCues)}`);
+}
+
+// F-eat-feed-interaction: eat lunch first, then feed-cyclops lunch → refused
+console.log("\n--- F-eat-feed-interaction: eat then feed-lunch → refused ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "cyclops-room", lunch: "player" },
+  };
+  f.execute({ type: "recordIntent", signalId: "eat", args: { itemId: "lunch" } });
+  const result = f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "lunch", targetId: "cyclops" } });
+  result.narrationCues.some((c) => /don't have/i.test(c))
+    ? pass("F-eat-feed feed-lunch after eat → 'don't have lunch'")
+    : fail(`F-eat-feed cues: ${JSON.stringify(result.narrationCues)}`);
+}
+
+// F17g: Feed lunch while it's nested inside the open sandwich-bag in inventory
+console.log("\n--- F17g: feed lunch nested in sandwich-bag → eats-lunch fires ---");
+{
+  const f = new Engine(story);
+  // Canonical starting position: lunch is INSIDE sandwich-bag (not directly
+  // in player). Player carries the bag (open) into cyclops-room.
+  f.state = {
+    ...f.state,
+    itemLocations: {
+      ...f.state.itemLocations,
+      player: "cyclops-room",
+      "sandwich-bag": "player",
+      // lunch.location stays "sandwich-bag" (story-default).
+    },
+    itemStates: {
+      ...f.state.itemStates,
+      "sandwich-bag": {
+        ...(f.state.itemStates["sandwich-bag"] ?? {}),
+        isOpen: true,
+      },
+    },
+  };
+  const result = f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "lunch", targetId: "cyclops" } });
+  result.triggersFired.includes("cyclops-eats-lunch")
+    ? pass("F17g cyclops-eats-lunch fired despite nesting")
+    : fail(`F17g triggers fired: ${JSON.stringify(result.triggersFired)} cues: ${JSON.stringify(result.narrationCues)}`);
+  f.state.itemLocations.lunch === "nowhere"
+    ? pass("F17g lunch consumed from inside the bag")
+    : fail(`F17g lunch at ${f.state.itemLocations.lunch}`);
+  f.state.itemStates["cyclops"]?.fedLunch === true
+    ? pass("F17g cyclops.fedLunch=true")
+    : fail(`F17g fedLunch=${f.state.itemStates["cyclops"]?.fedLunch}`);
 }
 
 // F17f: Double-feed lunch → second call hits catchall
@@ -1955,9 +2837,9 @@ console.log("\n--- F17f: feed lunch twice → second call rejected ---");
     },
   };
   // First feed succeeds.
-  f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "lunch" } });
+  f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "lunch", targetId: "cyclops" } });
   // Second feed: lunch is gone (moved to nowhere) → handler refuses with "don't have lunch."
-  const result2 = f.execute({ type: "recordIntent", signalId: "feed-cyclops", args: { itemId: "lunch" } });
+  const result2 = f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "lunch", targetId: "cyclops" } });
   result2.narrationCues.some((c) => /don't have/i.test(c))
     ? pass("F17f second feed-lunch refused (lunch already consumed)")
     : fail(`F17f second-feed cues: ${JSON.stringify(result2.narrationCues)}`);

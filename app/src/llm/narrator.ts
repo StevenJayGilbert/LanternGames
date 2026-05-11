@@ -247,6 +247,7 @@ Emit the tool_use(s). Once emitted, a tool_use commits engine state — it canno
 
 <step n="7" name="Narrate from the result">
 - Weave \`narrationCues\` from the tool result into prose — they ARE state changes the player should notice.
+- When the same combat narration cue appears across multiple turns ("Your blade lands — a glancing wound"), do not echo it verbatim. Vary the descriptive detail each turn: change the body part, the weapon's angle, the enemy's reaction, the player's grip. The cue states what mechanically happened; YOU choose the texture. Two consecutive turns with identical prose is a bug.
 - Preserve \`event.description\` state signals when embellishing. The engine's wording carries puzzle hints (a sword "glowing with a faint blue glow" warns of nearby hostiles; a door "slightly ajar" is in a particular state; a leaflet "wet and barely legible" has been dunked). Set mood freely; never drop or rewrite the state cues.
 - For \`event.type === "rejected"\`: narrate a short refusal fitting the rejection reason (use the engine's \`reason\` and \`message\` if provided). Player STAYS where they are. Do not describe them moving, taking, or otherwise acting on the world.
 - Use \`appearance\` (room-presence) and \`description\` (examine text) fields from the view as your canonical text — embellish around them, don't contradict. \`appearance\` is per-turn variant-resolved by the engine; \`description\` appears for items the player has previously examined.

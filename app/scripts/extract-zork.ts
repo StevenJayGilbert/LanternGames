@@ -72,8 +72,8 @@ Discipline
 - Treat trademarked references gently: this port runs on the MIT-licensed source; the "ZORK" brand isn't ours, so don't lean on the trademark in narration.
 
 NPC interaction (story-specific tools)
-- This story exposes NPC verb tools like \`talk-to-troll\`, \`talk-to-cyclops\`, \`feed-cyclops\`, \`cyclops-magic-word\`. When the player engages an NPC conversationally ("insult the troll", "shout at the cyclops", "bargain with the thief"), call the matching tool BEFORE narrating the dialogue. The tool call lets author triggers fire (aggravation, befriending, mood shifts). Then narrate the NPC's response in character using its \`personality\` field.
-- Examples of player phrasing → tool: "kill troll" → \`attack(troll, sword)\` if armed; "say ulysses" / "shout odysseus" at the cyclops → \`cyclops-magic-word()\`; "give the lunch and water to the cyclops" → \`feed-cyclops()\`.
+- This story exposes NPC verb tools like \`talk-to-troll\`, \`talk-to-cyclops\`, \`cyclops-magic-word\`, plus the generic \`give(itemId, targetId)\` for handing items to NPCs. When the player engages an NPC conversationally ("insult the troll", "shout at the cyclops", "bargain with the thief"), call the matching tool BEFORE narrating the dialogue. The tool call lets author triggers fire (aggravation, befriending, mood shifts). Then narrate the NPC's response in character using its \`personality\` field.
+- Examples of player phrasing → tool: "kill troll" → \`attack(troll, sword)\` if armed; "say ulysses" / "shout odysseus" at the cyclops → \`cyclops-magic-word()\`; "give the lunch to the cyclops" → \`give(itemId="lunch", targetId="cyclops")\` (one item per call); "give the egg to the thief" → \`give(itemId="egg", targetId="thief")\`.
 
 Score
 - The view includes a \`score\` field (current / max / moves / rank). Don't volunteer it unless the player asks ("score", "how am I doing?", etc.) — when they do, call the \`score\` tool. The engine emits the canonical "Your score is N (total of M), in K moves. This gives you the rank of RANK." sentence; pass it through verbatim.
@@ -1089,6 +1089,21 @@ function mergeSides(
   base: PassageSide[],
   overrides: Partial<PassageSide>[],
 ): PassageSide[] {
+  // If the override specifies 2 sides AND at least one of their roomIds is
+  // NOT in the base, treat it as an explicit RE-WIRE: replace the sides
+  // entirely. This lets an override re-purpose an existing passage to
+  // connect different rooms (e.g. front-door re-wired from west-of-house ↔
+  // living-room to living-room ↔ strange-passage — living-room overlaps,
+  // strange-passage is new, so we replace).
+  const overrideRoomIds = overrides
+    .map((o) => o.roomId)
+    .filter((r): r is string => typeof r === "string");
+  const baseRoomIds = new Set(base.map((s) => s.roomId));
+  const hasNewRoomId = overrideRoomIds.some((r) => !baseRoomIds.has(r));
+  if (overrideRoomIds.length === 2 && hasNewRoomId) {
+    return overrides.map((o) => ({ ...o })) as PassageSide[];
+  }
+  // Merge mode: per-side update by roomId match.
   const out = base.map((s) => ({ ...s }));
   for (const ov of overrides) {
     if (typeof ov.roomId !== "string") continue;
