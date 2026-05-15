@@ -38,6 +38,7 @@ import type {
   Tool,
 } from "./types";
 import { LLMError } from "./types";
+import { getFetch } from "./transport";
 
 const DEFAULT_BASE_URL = "http://localhost:11434";
 const DEFAULT_MODEL = "llama3.1:8b";
@@ -142,7 +143,7 @@ export class OllamaClient implements LLMClient {
 
     let response: Response;
     try {
-      response = await fetch(`${this.baseUrl}/api/chat`, {
+      response = await getFetch()(`${this.baseUrl}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

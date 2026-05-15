@@ -227,6 +227,21 @@ Avoid models that don't list tool support on Ollama's library page; they'll eith
 
 ---
 
+## Cloud providers (BYOK)
+
+Besides Ollama, LanternGames narrates with four bring-your-own-key cloud providers, each selectable on the gate page. You supply your own API key; it is stored only in your browser's localStorage (a separate slot per provider, so switching keeps each key) and sent directly to the provider.
+
+| Provider | Get a key at | Key prefix | Plain browser | Desktop app |
+|---|---|---|---|---|
+| Anthropic (Claude) | console.anthropic.com | `sk-ant-` | works | works |
+| xAI (Grok) | console.x.ai | `xai-` | works | works |
+| OpenAI (ChatGPT) | platform.openai.com/api-keys | `sk-` | CORS-blocked | works |
+| Google (Gemini) | aistudio.google.com/apikey | `AIza` | CORS-blocked | works |
+
+**OpenAI and Gemini block browser-direct API calls (CORS).** They work in the **desktop build**, whose HTTP requests run through Rust (via Tauri) and bypass the browser's CORS enforcement. In a plain browser tab, use Anthropic, xAI, or Ollama.
+
+All four cloud providers cache the prompt prefix automatically — repeated turns within a session are billed at a steep discount (50–90% off the cached tokens) with no configuration. Turn the `provider` (or `anthropic`) flag on in `debug.config.json` to see cache hits in the console.
+
 ## Cost comparison (rough)
 
 | Provider          | First-turn latency | Per-turn cost      | Quality           |

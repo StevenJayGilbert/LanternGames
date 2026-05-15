@@ -1,9 +1,10 @@
 {
-  "$comment": "Per-category debug log toggles. Edit and rebuild to flip. Categories are: tools (per-turn dynamic intent tools injected), rooms (room moves), anthropic (cache hit/miss + token usage from the LLM client), thinking (extended-thinking blocks — also enables thinking on the API request itself, so this flag carries a real per-turn token cost when on). Set to false to silence that category. Independent of the Debug header button (which controls slash-command intercepts, not logs).",
+  "$comment": "Per-category debug log toggles. Edit and rebuild to flip. Categories are: tools (per-turn dynamic intent tools injected), rooms (room moves), anthropic (cache hit/miss + token usage from the Anthropic client), provider (token + cache usage from the OpenAI-compatible client — OpenAI/xAI/Gemini), thinking (extended-thinking blocks — also enables thinking on the API request itself, so this flag carries a real per-turn token cost when on). Set to false to silence that category. Independent of the Debug header button (which controls slash-command intercepts, not logs).",
   "logs": {
     "tools": true,
     "rooms": true,
     "anthropic": true,
+    "provider": true,
     "thinking": false
   }
 }

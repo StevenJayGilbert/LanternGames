@@ -15,6 +15,7 @@ import type {
   Tool,
 } from "./types";
 import { LLMError } from "./types";
+import { getFetch } from "./transport";
 import { debugLog, isDebugEnabled } from "../debug";
 
 const DEFAULT_MODEL = "claude-haiku-4-5-20251001";
@@ -35,6 +36,9 @@ export class DirectAnthropicClient implements LLMClient {
     this.client = new Anthropic({
       apiKey: opts.apiKey,
       dangerouslyAllowBrowser: true,
+      // Routes through the Tauri HTTP plugin in the desktop build, window.fetch
+      // in the browser — see transport.ts.
+      fetch: getFetch(),
     });
     this.model = opts.model ?? DEFAULT_MODEL;
   }

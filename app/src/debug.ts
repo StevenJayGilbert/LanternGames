@@ -8,12 +8,13 @@
 
 import config from "./debug.config.json" with { type: "json" };
 
-export type DebugCategory = "tools" | "rooms" | "anthropic" | "thinking";
+export type DebugCategory = "tools" | "rooms" | "anthropic" | "provider" | "thinking";
 
 const FLAGS: Record<DebugCategory, boolean> = {
   tools: !!config.logs?.tools,
   rooms: !!config.logs?.rooms,
   anthropic: !!config.logs?.anthropic,
+  provider: !!config.logs?.provider,
   thinking: !!config.logs?.thinking,
 };
 

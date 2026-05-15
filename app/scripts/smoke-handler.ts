@@ -14,6 +14,14 @@ import zork from "../src/stories/zork-1.json" with { type: "json" };
 import type { Story, CustomTool } from "../src/story/schema";
 import { evaluateCondition } from "../src/engine/state";
 import { alwaysOnCustomTools, activeConditionalCustomTools } from "../src/engine/intents";
+import {
+  toOAIMessages,
+  fromOAIMessage,
+  toOAITool,
+  toOAIToolChoice,
+  mapFinishReason,
+} from "../src/llm/OpenAICompatibleClient";
+import type { Message, Tool } from "../src/llm/types";
 
 let passed = 0;
 let failed = 0;
@@ -478,6 +486,97 @@ console.log("\n=== itemContainedBy: walks container chain (direct + nested + cyc
   ) === false
     ? pass("cycle guard: canary↔egg cycle → terminates, returns false")
     : fail("cycle guard failed (likely infinite loop or wrong return)");
+}
+
+// ===== OpenAICompatibleClient: message/tool conversion =====
+console.log("\n=== OpenAICompatibleClient conversion (OpenAI/xAI/Gemini) ===");
+{
+  // String-content message → one message, role preserved.
+  const strMsgs = toOAIMessages({ role: "user", content: "go north" });
+  strMsgs.length === 1 && strMsgs[0].role === "user" && strMsgs[0].content === "go north"
+    ? pass("toOAIMessages: string content → single user message")
+    : fail("toOAIMessages string content wrong", JSON.stringify(strMsgs));
+
+  // Assistant message with text + tool_use → assistant msg with tool_calls;
+  // arguments serialized to a JSON string.
+  const asstMsg: Message = {
+    role: "assistant",
+    content: [
+      { type: "text", text: "Heading out." },
+      { type: "tool_use", id: "call_1", name: "go", input: { direction: "north" } },
+    ],
+  };
+  const asstOut = toOAIMessages(asstMsg);
+  const a0 = asstOut[0] as { role: string; content: unknown; tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }> };
+  a0.role === "assistant" &&
+  a0.content === "Heading out." &&
+  a0.tool_calls?.[0].id === "call_1" &&
+  a0.tool_calls?.[0].function.name === "go" &&
+  a0.tool_calls?.[0].function.arguments === JSON.stringify({ direction: "north" })
+    ? pass("toOAIMessages: assistant tool_use → tool_calls with JSON-string arguments")
+    : fail("toOAIMessages assistant tool_use wrong", JSON.stringify(asstOut));
+
+  // User message with a tool_result block → role:"tool" message id-matched.
+  const resultMsg: Message = {
+    role: "user",
+    content: [{ type: "tool_result", tool_use_id: "call_1", content: "You go north." }],
+  };
+  const resultOut = toOAIMessages(resultMsg);
+  const r0 = resultOut[0] as { role: string; tool_call_id?: string; content: string };
+  r0.role === "tool" && r0.tool_call_id === "call_1" && r0.content === "You go north."
+    ? pass("toOAIMessages: tool_result → role:tool message with tool_call_id")
+    : fail("toOAIMessages tool_result wrong", JSON.stringify(resultOut));
+
+  // fromOAIMessage: content + tool_calls → text block + tool_use (args parsed).
+  const fromOut = fromOAIMessage({
+    content: "Looking around.",
+    tool_calls: [
+      { id: "call_9", type: "function", function: { name: "look", arguments: '{"target":"room"}' } },
+    ],
+  });
+  const fText = fromOut.find((b) => b.type === "text");
+  const fTool = fromOut.find((b) => b.type === "tool_use");
+  fText?.type === "text" &&
+  fText.text === "Looking around." &&
+  fTool?.type === "tool_use" &&
+  fTool.name === "look" &&
+  (fTool.input as { target?: string }).target === "room"
+    ? pass("fromOAIMessage: content + tool_calls → text + tool_use (args JSON-parsed)")
+    : fail("fromOAIMessage wrong", JSON.stringify(fromOut));
+
+  // fromOAIMessage: content only → single text block.
+  const textOnly = fromOAIMessage({ content: "Just narration." });
+  textOnly.length === 1 && textOnly[0].type === "text"
+    ? pass("fromOAIMessage: content only → single text block")
+    : fail("fromOAIMessage text-only wrong", JSON.stringify(textOnly));
+
+  // toOAIToolChoice: "any" → "required" (the OpenAI must-call-a-tool mode).
+  toOAIToolChoice({ type: "auto" }) === "auto" &&
+  toOAIToolChoice({ type: "any" }) === "required" &&
+  JSON.stringify(toOAIToolChoice({ type: "tool", name: "go" })) ===
+    JSON.stringify({ type: "function", function: { name: "go" } })
+    ? pass('toOAIToolChoice: auto/any/tool → auto/required/function')
+    : fail("toOAIToolChoice wrong");
+
+  // mapFinishReason: OpenAI finish_reason → our StopReason.
+  mapFinishReason("tool_calls") === "tool_use" &&
+  mapFinishReason("stop") === "end_turn" &&
+  mapFinishReason("length") === "max_tokens"
+    ? pass("mapFinishReason: tool_calls/stop/length mapped correctly")
+    : fail("mapFinishReason wrong");
+
+  // toOAITool: Tool → {type:function, function:{parameters: input_schema}}.
+  const tool: Tool = {
+    name: "go",
+    description: "Move a direction.",
+    input_schema: { type: "object", properties: { direction: { type: "string" } }, required: ["direction"] },
+  };
+  const oaiTool = toOAITool(tool);
+  oaiTool.type === "function" &&
+  oaiTool.function.name === "go" &&
+  oaiTool.function.parameters === tool.input_schema
+    ? pass("toOAITool: Tool → OpenAI function shape")
+    : fail("toOAITool wrong", JSON.stringify(oaiTool));
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

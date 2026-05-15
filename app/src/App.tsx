@@ -4,6 +4,8 @@ import { currentRoomId, PLAYER_ITEM_ID } from "./engine/state";
 import { renderRoomView } from "./engine/render";
 import { DirectAnthropicClient } from "./llm/DirectAnthropicClient";
 import { OllamaClient } from "./llm/OllamaClient";
+import { OpenAICompatibleClient } from "./llm/OpenAICompatibleClient";
+import { OPENAI_COMPAT_PRESETS } from "./llm/providers";
 import type { LLMClient } from "./llm/types";
 import { Narrator } from "./llm/narrator";
 import {
@@ -18,9 +20,15 @@ import { SaveLoadDialog } from "./SaveLoadDialog";
 import { DEFAULT_STORY_ID, STORIES, findStory } from "./stories";
 import "./App.css";
 
-type Provider = "anthropic" | "ollama";
+type Provider = "anthropic" | "openai" | "xai" | "gemini" | "ollama";
+// Every provider except Ollama is a BYOK (bring-your-own-key) provider.
+type ByokProvider = Exclude<Provider, "ollama">;
 
-const KEY_STORAGE = "lanterngames_api_key";
+const ALL_PROVIDERS: Provider[] = ["anthropic", "openai", "xai", "gemini", "ollama"];
+
+// Pre-multi-provider builds stored the (Anthropic) key under this single key.
+// It's migrated into the per-provider anthropic slot on first load.
+const LEGACY_KEY_STORAGE = "lanterngames_api_key";
 const STORY_STORAGE = "lanterngames_story_id";
 const PROVIDER_STORAGE = "lanterngames_provider";
 const OLLAMA_URL_STORAGE = "lanterngames_ollama_url";
@@ -30,14 +38,68 @@ const OLLAMA_READY_STORAGE = "lanterngames_ollama_ready";
 const DEFAULT_OLLAMA_URL = "http://localhost:11434";
 const DEFAULT_OLLAMA_MODEL = "llama3.1:8b";
 
+// Per-provider BYOK key storage — each provider keeps its own key.
+function keyStorageKey(p: Provider): string {
+  return `lanterngames_key_${p}`;
+}
+
+// UI copy + key-format hints per BYOK provider. Anthropic and xAI reach their
+// APIs browser-direct; OpenAI and Gemini are CORS-blocked in a browser and
+// only work in the desktop build — the picker hint says so.
+const BYOK_META: Record<
+  ByokProvider,
+  { label: string; pickerHint: string; placeholder: string; consoleUrl: string; consoleLabel: string }
+> = {
+  anthropic: {
+    label: "Anthropic (BYOK)",
+    pickerHint:
+      "Fast, polished narration via Claude. Bring your own API key — about $0.01–0.05 per turn. The key stays in your browser.",
+    placeholder: "sk-ant-...",
+    consoleUrl: "https://console.anthropic.com",
+    consoleLabel: "console.anthropic.com",
+  },
+  openai: {
+    label: "OpenAI / ChatGPT (BYOK)",
+    pickerHint:
+      "Narration via GPT. Bring your own API key. Best in the desktop build — browsers block OpenAI's API directly.",
+    placeholder: "sk-...",
+    consoleUrl: "https://platform.openai.com/api-keys",
+    consoleLabel: "platform.openai.com",
+  },
+  xai: {
+    label: "xAI Grok (BYOK)",
+    pickerHint: "Narration via Grok. Bring your own API key from the xAI console.",
+    placeholder: "xai-...",
+    consoleUrl: "https://console.x.ai",
+    consoleLabel: "console.x.ai",
+  },
+  gemini: {
+    label: "Google Gemini (BYOK)",
+    pickerHint:
+      "Narration via Gemini. Bring your own API key. Best in the desktop build — browsers block Gemini's API directly.",
+    placeholder: "AIza...",
+    consoleUrl: "https://aistudio.google.com/apikey",
+    consoleLabel: "aistudio.google.com",
+  },
+};
+
 function loadProvider(): Provider {
   const stored = localStorage.getItem(PROVIDER_STORAGE);
-  return stored === "ollama" ? "ollama" : "anthropic";
+  return ALL_PROVIDERS.includes(stored as Provider) ? (stored as Provider) : "anthropic";
 }
 
 // One-time legacy-save migration. Runs before the App component mounts so
 // every loadSession/loadSlot call below sees the new key layout. Idempotent.
 for (const s of STORIES) migrateLegacySaveToSlots(s.id);
+
+// One-time: migrate the pre-multi-provider single API-key entry into the
+// per-provider anthropic slot. Idempotent.
+{
+  const legacy = localStorage.getItem(LEGACY_KEY_STORAGE);
+  if (legacy && !localStorage.getItem(keyStorageKey("anthropic"))) {
+    localStorage.setItem(keyStorageKey("anthropic"), legacy);
+  }
+}
 
 // TranscriptEntry + EntryKind types are imported from localSave so the save
 // shape and the in-memory shape stay aligned automatically.
@@ -50,7 +112,11 @@ function App() {
   const story = useMemo(() => findStory(storyId) ?? STORIES[0], [storyId]);
 
   const [provider, setProvider] = useState<Provider>(loadProvider);
-  const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem(KEY_STORAGE) ?? "");
+  // The API key for the currently selected provider. Reloaded on provider
+  // change so each BYOK provider keeps its own key.
+  const [apiKey, setApiKey] = useState<string>(
+    () => localStorage.getItem(keyStorageKey(loadProvider())) ?? "",
+  );
   const [keyDraft, setKeyDraft] = useState("");
   const [ollamaUrl, setOllamaUrl] = useState<string>(
     () => localStorage.getItem(OLLAMA_URL_STORAGE) ?? DEFAULT_OLLAMA_URL,
@@ -121,11 +187,11 @@ function App() {
   }, [story]);
 
   // The gate is "passed" when:
-  //  - Anthropic: the user has supplied an API key
+  //  - BYOK provider: the user has supplied an API key
   //  - Ollama: the user has clicked Start at least once (defaults always work,
   //    but we want first-timers to see the setup hint and choose a model).
   const ready =
-    provider === "anthropic" ? !!apiKey : ollamaReady && !!ollamaUrl && !!ollamaModel;
+    provider === "ollama" ? ollamaReady && !!ollamaUrl && !!ollamaModel : !!apiKey;
 
   // Build a Narrator whenever the provider config or engine changes. Restore
   // saved conversation history if available for this story.
@@ -135,10 +201,20 @@ function App() {
       return;
     }
     const saved = loadSession(engine.story.id, "quick");
-    const client: LLMClient =
-      provider === "ollama"
-        ? new OllamaClient({ baseUrl: ollamaUrl, model: ollamaModel })
-        : new DirectAnthropicClient({ apiKey });
+    let client: LLMClient;
+    if (provider === "ollama") {
+      client = new OllamaClient({ baseUrl: ollamaUrl, model: ollamaModel });
+    } else if (provider === "anthropic") {
+      client = new DirectAnthropicClient({ apiKey });
+    } else {
+      const preset = OPENAI_COMPAT_PRESETS[provider];
+      client = new OpenAICompatibleClient({
+        apiKey,
+        baseUrl: preset.baseUrl,
+        model: preset.defaultModel,
+        providerLabel: preset.label,
+      });
+    }
     setNarrator(
       new Narrator({
         engine,
@@ -160,13 +236,18 @@ function App() {
   const handleProviderChange = (next: Provider) => {
     setProvider(next);
     localStorage.setItem(PROVIDER_STORAGE, next);
+    // Load the newly selected provider's saved key (if any).
+    if (next !== "ollama") {
+      setApiKey(localStorage.getItem(keyStorageKey(next)) ?? "");
+    }
+    setKeyDraft("");
   };
 
   const startGame = () => {
-    if (provider === "anthropic") {
+    if (provider !== "ollama") {
       const trimmed = keyDraft.trim();
       if (!trimmed) return;
-      localStorage.setItem(KEY_STORAGE, trimmed);
+      localStorage.setItem(keyStorageKey(provider), trimmed);
       setApiKey(trimmed);
       setKeyDraft("");
     } else {
@@ -183,8 +264,8 @@ function App() {
   };
 
   const resetConfig = () => {
-    if (provider === "anthropic") {
-      localStorage.removeItem(KEY_STORAGE);
+    if (provider !== "ollama") {
+      localStorage.removeItem(keyStorageKey(provider));
       setApiKey("");
     } else {
       localStorage.removeItem(OLLAMA_READY_STORAGE);
@@ -390,9 +471,9 @@ function App() {
   // ----- Provider / config gate -----
   if (!ready) {
     const startDisabled =
-      provider === "anthropic"
-        ? !keyDraft.trim()
-        : !ollamaUrlDraft.trim() || !ollamaModelDraft.trim();
+      provider === "ollama"
+        ? !ollamaUrlDraft.trim() || !ollamaModelDraft.trim()
+        : !keyDraft.trim();
     return (
       <main className="game">
         <header className="game-header">
@@ -404,22 +485,24 @@ function App() {
         <section className="card">
           <h2 className="card-title">Choose a narrator</h2>
           <div className="provider-picker">
-            <label className={`provider-option${provider === "anthropic" ? " selected" : ""}`}>
-              <input
-                type="radio"
-                name="provider"
-                value="anthropic"
-                checked={provider === "anthropic"}
-                onChange={() => handleProviderChange("anthropic")}
-              />
-              <div>
-                <strong>Anthropic (BYOK)</strong>
-                <p className="hint">
-                  Fast, polished narration via Claude. Bring your own API key — about $0.01–0.05
-                  per turn. The key stays in your browser.
-                </p>
-              </div>
-            </label>
+            {(Object.keys(BYOK_META) as ByokProvider[]).map((p) => (
+              <label
+                key={p}
+                className={`provider-option${provider === p ? " selected" : ""}`}
+              >
+                <input
+                  type="radio"
+                  name="provider"
+                  value={p}
+                  checked={provider === p}
+                  onChange={() => handleProviderChange(p)}
+                />
+                <div>
+                  <strong>{BYOK_META[p].label}</strong>
+                  <p className="hint">{BYOK_META[p].pickerHint}</p>
+                </div>
+              </label>
+            ))}
             <label className={`provider-option${provider === "ollama" ? " selected" : ""}`}>
               <input
                 type="radio"
@@ -439,16 +522,25 @@ function App() {
             </label>
           </div>
 
-          {provider === "anthropic" ? (
+          {provider !== "ollama" ? (
             <>
               <p className="hint">
-                <strong>This is separate from a Claude Pro / Max subscription</strong> — consumer
-                subscriptions do not include API access. Get a key at{" "}
-                <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer">
-                  console.anthropic.com
+                {provider === "anthropic" && (
+                  <>
+                    <strong>This is separate from a Claude Pro / Max subscription</strong> —
+                    consumer subscriptions do not include API access.{" "}
+                  </>
+                )}
+                Get a key at{" "}
+                <a
+                  href={BYOK_META[provider].consoleUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {BYOK_META[provider].consoleLabel}
                 </a>
-                . ~$5 of credits covers many hours of play. The key is stored only in your browser
-                (localStorage) and sent directly to Anthropic.
+                . The key is stored only in your browser (localStorage) and sent directly to the
+                provider.
               </p>
               <form
                 className="key-form"
@@ -461,7 +553,7 @@ function App() {
                   type="password"
                   value={keyDraft}
                   onChange={(e) => setKeyDraft(e.target.value)}
-                  placeholder="sk-ant-..."
+                  placeholder={BYOK_META[provider].placeholder}
                   autoComplete="off"
                   spellCheck={false}
                   autoFocus
@@ -561,7 +653,7 @@ function App() {
             {debugMode ? "Debug ●" : "Debug ○"}
           </button>
           <button type="button" className="restart" onClick={resetConfig} disabled={loading}>
-            {provider === "anthropic" ? "Clear key" : "Switch provider"}
+            {provider === "ollama" ? "Switch provider" : "Clear key"}
           </button>
         </div>
       </header>
