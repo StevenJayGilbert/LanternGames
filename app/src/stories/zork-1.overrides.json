@@ -54,7 +54,7 @@
     "just-died": false,
     "death-message": "",
     "score": 0,
-    "max-score": 357,
+    "max-score": 350,
     "skull-deposited": false,
     "sceptre-deposited": false,
     "chalice-deposited": false,
@@ -3735,185 +3735,50 @@
       ]
     },
     {
-      "$comment": "PUZZLE/VISIT BONUSES — round the 270-point treasure baseline to 350. Sum of these = 80.",
-      "id": "score-solve-dam",
-      "when": {
-        "type": "and",
-        "all": [
-          {
-            "type": "flag",
-            "key": "gates-open",
-            "equals": true
-          }
-        ]
-      },
+      "$comment": "Canonical Zork I non-treasure bonuses (78 points total). Per dungeon.zil source: house entry 10, cellar 25, past troll 5, drafty room (lower-shaft) 13, treasure room 25.",
+      "id": "score-enter-house",
+      "when": { "type": "playerAt", "roomId": "living-room" },
       "effects": [
-        {
-          "type": "adjustFlag",
-          "key": "score",
-          "by": 15
-        }
+        { "type": "adjustFlag", "key": "score", "by": 10 }
       ],
-      "narration": "(Solving the dam puzzle. +15 points; your score is now {flag.score}.)",
+      "narration": "(Entering the house. +10 points; your score is now {flag.score}.)",
       "once": true
     },
     {
-      "$comment": "Completing the bell+book+candle ritual scores +15 (was +5; absorbed the +10 from the now-removed score-ring-bell-at-hades trigger). One score event for one puzzle.",
-      "id": "score-complete-hades-ritual",
-      "when": {
-        "type": "flag",
-        "key": "lld-flag",
-        "equals": true
-      },
+      "id": "score-enter-cellar",
+      "when": { "type": "playerAt", "roomId": "cellar" },
       "effects": [
-        {
-          "type": "adjustFlag",
-          "key": "score",
-          "by": 15
-        }
+        { "type": "adjustFlag", "key": "score", "by": 25 }
       ],
-      "narration": "(Completing the bell-book-candle ritual at Hades. +15 points; your score is now {flag.score}.)",
+      "narration": "(Down into the underground. +25 points; your score is now {flag.score}.)",
       "once": true
     },
     {
-      "id": "score-defeat-troll",
-      "when": {
-        "type": "compare",
-        "left": {
-          "kind": "itemState",
-          "itemId": "troll",
-          "key": "health"
-        },
-        "op": "<=",
-        "right": {
-          "kind": "literal",
-          "value": 0
-        }
-      },
+      "id": "score-past-troll",
+      "when": { "type": "flag", "key": "troll-flag", "equals": true },
       "effects": [
-        {
-          "type": "adjustFlag",
-          "key": "score",
-          "by": 10
-        }
+        { "type": "adjustFlag", "key": "score", "by": 5 }
       ],
-      "narration": "(The troll defeated. +10 points; your score is now {flag.score}.)",
+      "narration": "(Past the troll. +5 points; your score is now {flag.score}.)",
       "once": true
     },
     {
-      "id": "score-defeat-cyclops",
-      "when": {
-        "type": "flag",
-        "key": "cyclops-flag",
-        "equals": true
-      },
+      "$comment": "Drafty Room is the canonical name for what we call lower-shaft (the room at the bottom of the basket shaft).",
+      "id": "score-enter-drafty-room",
+      "when": { "type": "playerAt", "roomId": "lower-shaft" },
       "effects": [
-        {
-          "type": "adjustFlag",
-          "key": "score",
-          "by": 10
-        }
+        { "type": "adjustFlag", "key": "score", "by": 13 }
       ],
-      "narration": "(The cyclops dealt with. +10 points; your score is now {flag.score}.)",
+      "narration": "(Down to the Drafty Room. +13 points; your score is now {flag.score}.)",
       "once": true
     },
     {
-      "id": "score-rainbow-solid",
-      "when": {
-        "type": "flag",
-        "key": "rainbow-flag",
-        "equals": true
-      },
+      "id": "score-enter-treasure-room",
+      "when": { "type": "playerAt", "roomId": "treasure-room" },
       "effects": [
-        {
-          "type": "adjustFlag",
-          "key": "score",
-          "by": 5
-        }
+        { "type": "adjustFlag", "key": "score", "by": 25 }
       ],
-      "narration": "(The rainbow solidifies — passable now. +5 points; your score is now {flag.score}.)",
-      "once": true
-    },
-    {
-      "id": "score-mirror-discovered",
-      "when": {
-        "type": "flag",
-        "key": "magic-flag",
-        "equals": true
-      },
-      "effects": [
-        {
-          "type": "adjustFlag",
-          "key": "score",
-          "by": 5
-        }
-      ],
-      "narration": "(A new passage opens. +5 points; your score is now {flag.score}.)",
-      "once": true
-    },
-    {
-      "id": "score-find-egg",
-      "when": {
-        "type": "itemAt",
-        "itemId": "egg",
-        "location": "inventory"
-      },
-      "effects": [
-        {
-          "type": "adjustFlag",
-          "key": "score",
-          "by": 5
-        }
-      ],
-      "narration": "(You found the egg. +5 points; your score is now {flag.score}.)",
-      "once": true
-    },
-    {
-      "id": "score-visit-living-room",
-      "when": {
-        "type": "playerAt",
-        "roomId": "living-room"
-      },
-      "effects": [
-        {
-          "type": "adjustFlag",
-          "key": "score",
-          "by": 5
-        }
-      ],
-      "narration": "(Discovering the living room. +5 points; your score is now {flag.score}.)",
-      "once": true
-    },
-    {
-      "id": "score-visit-troll-room",
-      "when": {
-        "type": "playerAt",
-        "roomId": "troll-room"
-      },
-      "effects": [
-        {
-          "type": "adjustFlag",
-          "key": "score",
-          "by": 5
-        }
-      ],
-      "narration": "(Reaching the troll's lair. +5 points; your score is now {flag.score}.)",
-      "once": true
-    },
-    {
-      "id": "score-visit-cyclops-room",
-      "when": {
-        "type": "playerAt",
-        "roomId": "cyclops-room"
-      },
-      "effects": [
-        {
-          "type": "adjustFlag",
-          "key": "score",
-          "by": 5
-        }
-      ],
-      "narration": "(Discovering the cyclops's chamber. +5 points; your score is now {flag.score}.)",
+      "narration": "(Reaching the Treasure Room. +25 points; your score is now {flag.score}.)",
       "once": true
     },
     {
@@ -11426,107 +11291,31 @@
       "once": true
     },
     {
-      "$comment": "PUZZLE #4 ENDGAME — when the win condition is met, set won-flag (which unblocks west-of-house→stone-barrow). Narrates the canonical 'almost inaudible voice' line. once:true. Kept as a regular trigger so it fires on the same turn the win condition becomes true (cascading through the fixed-point loop).",
+      "$comment": "PUZZLE #4 ENDGAME — when the win condition is met, set won-flag (which unblocks west-of-house→stone-barrow). Narrates the canonical 'almost inaudible voice' line. once:true. Kept as a regular trigger so it fires on the same turn the win condition becomes true (cascading through the fixed-point loop). Uses itemContainedBy (not itemAt) so nested treasures count — canary inside egg-in-case, sceptre inside coffin-in-case both satisfy the gate.",
       "id": "unlock-endgame",
       "once": true,
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "itemAt",
-            "itemId": "egg",
-            "location": "trophy-case"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "canary",
-            "location": "trophy-case"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "bag-of-coins",
-            "location": "trophy-case"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "painting",
-            "location": "trophy-case"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "chalice",
-            "location": "trophy-case"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "torch",
-            "location": "trophy-case"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "trident",
-            "location": "trophy-case"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "coffin",
-            "location": "trophy-case"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "sceptre",
-            "location": "trophy-case"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "jade",
-            "location": "trophy-case"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "scarab",
-            "location": "trophy-case"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "skull",
-            "location": "trophy-case"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "emerald",
-            "location": "trophy-case"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "bracelet",
-            "location": "trophy-case"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "trunk",
-            "location": "trophy-case"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "bar",
-            "location": "trophy-case"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "pot-of-gold",
-            "location": "trophy-case"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "diamond",
-            "location": "trophy-case"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "bauble",
-            "location": "trophy-case"
-          }
+          { "type": "itemContainedBy", "itemId": "egg", "containerId": "trophy-case" },
+          { "type": "itemContainedBy", "itemId": "canary", "containerId": "trophy-case" },
+          { "type": "itemContainedBy", "itemId": "bag-of-coins", "containerId": "trophy-case" },
+          { "type": "itemContainedBy", "itemId": "painting", "containerId": "trophy-case" },
+          { "type": "itemContainedBy", "itemId": "chalice", "containerId": "trophy-case" },
+          { "type": "itemContainedBy", "itemId": "torch", "containerId": "trophy-case" },
+          { "type": "itemContainedBy", "itemId": "trident", "containerId": "trophy-case" },
+          { "type": "itemContainedBy", "itemId": "coffin", "containerId": "trophy-case" },
+          { "type": "itemContainedBy", "itemId": "sceptre", "containerId": "trophy-case" },
+          { "type": "itemContainedBy", "itemId": "jade", "containerId": "trophy-case" },
+          { "type": "itemContainedBy", "itemId": "scarab", "containerId": "trophy-case" },
+          { "type": "itemContainedBy", "itemId": "skull", "containerId": "trophy-case" },
+          { "type": "itemContainedBy", "itemId": "emerald", "containerId": "trophy-case" },
+          { "type": "itemContainedBy", "itemId": "bracelet", "containerId": "trophy-case" },
+          { "type": "itemContainedBy", "itemId": "trunk", "containerId": "trophy-case" },
+          { "type": "itemContainedBy", "itemId": "bar", "containerId": "trophy-case" },
+          { "type": "itemContainedBy", "itemId": "pot-of-gold", "containerId": "trophy-case" },
+          { "type": "itemContainedBy", "itemId": "diamond", "containerId": "trophy-case" },
+          { "type": "itemContainedBy", "itemId": "bauble", "containerId": "trophy-case" }
         ]
       },
       "effects": [
@@ -14691,7 +14480,7 @@
       "once": true
     },
     {
-      "$comment": "P7 scoring — bauble deposit. Awarded each time the bauble enters the trophy case (toggle via bauble-deposited flag). Canonical Zork I: 6 points.",
+      "$comment": "P7 scoring — bauble deposit. Awarded each time the bauble enters the trophy case (toggle via bauble-deposited flag). Canonical Zork I dungeon.zil: BAUBLE TVALUE=1.",
       "id": "score-credit-bauble",
       "when": {
         "type": "and",
@@ -14712,7 +14501,7 @@
         {
           "type": "adjustFlag",
           "key": "score",
-          "by": 6
+          "by": 1
         },
         {
           "type": "setFlag",
@@ -14720,7 +14509,7 @@
           "value": true
         }
       ],
-      "narration": "The brass bauble joins the trophy case's collection. (+6 points; your score is now {flag.score}.)",
+      "narration": "The brass bauble joins the trophy case's collection. (+1 point; your score is now {flag.score}.)",
       "once": false
     },
     {
@@ -14748,7 +14537,7 @@
         {
           "type": "adjustFlag",
           "key": "score",
-          "by": -6
+          "by": -1
         },
         {
           "type": "setFlag",
@@ -14756,7 +14545,7 @@
           "value": false
         }
       ],
-      "narration": "(The brass bauble leaves the trophy case. -6 points; your score is now {flag.score}.)",
+      "narration": "(The brass bauble leaves the trophy case. -1 point; your score is now {flag.score}.)",
       "once": false
     },
     {

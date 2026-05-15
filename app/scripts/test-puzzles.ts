@@ -710,13 +710,13 @@ console.log("\n=== #12 scoring ===");
     ? pass("painting-deposited flag flipped back false")
     : fail(`flag = ${e.state.flags["painting-deposited"]}`);
 
-  // Put back in → re-credit. Final breakdown: take +4, visit-living-room +5,
-  // deposit +6, debit -6, re-credit +6 = 15.
+  // Put back in → re-credit. Final breakdown: enter-house +10, take +4,
+  // deposit +6, debit -6, re-credit +6 = 20.
   e.execute({ type: "put", itemId: "painting", targetId: "trophy-case" });
   const finalScore = e.state.flags.score as number;
-  finalScore === 15
-    ? pass(`re-deposit nets back: take(+4) + visit-living-room(+5) + deposit(+6) - debit(-6) + redeposit(+6) = 15 (got ${finalScore})`)
-    : fail(`expected 15, got ${finalScore}`);
+  finalScore === 20
+    ? pass(`re-deposit nets back: enter-house(+10) + take(+4) + deposit(+6) - debit(-6) + redeposit(+6) = 20 (got ${finalScore})`)
+    : fail(`expected 20, got ${finalScore}`);
 }
 
 // ----- #13: Score view + rank tier table -----
@@ -739,8 +739,8 @@ console.log("\n=== #13 score view + rank tier ===");
       : fail(`score=${score} expected "${expected}" got "${v.score?.rank}"`);
   }
   const v = e.getView();
-  v.score?.max === 357
-    ? pass(`view.score.max = 357`)
+  v.score?.max === 350
+    ? pass(`view.score.max = 350`)
     : fail(`view.score.max = ${v.score?.max}`);
 }
 

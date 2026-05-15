@@ -423,5 +423,62 @@ console.log("\n=== ExitView targetRoomName visited-gating ===");
       );
 }
 
+// ===== itemContainedBy: walks the container chain =====
+console.log("\n=== itemContainedBy: walks container chain (direct + nested + cycle) ===");
+{
+  const e = new Engine(zork as unknown as Story);
+  // Direct: bauble inside trophy-case → true.
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, bauble: "trophy-case" },
+  };
+  evaluateCondition(
+    { type: "itemContainedBy", itemId: "bauble", containerId: "trophy-case" },
+    e.state,
+    zork as unknown as Story,
+  ) === true
+    ? pass("direct nest: bauble in trophy-case → true")
+    : fail("direct nest expected true");
+
+  // Nested two deep: canary inside egg inside trophy-case → true.
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, egg: "trophy-case", canary: "egg" },
+  };
+  evaluateCondition(
+    { type: "itemContainedBy", itemId: "canary", containerId: "trophy-case" },
+    e.state,
+    zork as unknown as Story,
+  ) === true
+    ? pass("two-deep nest: canary in egg in trophy-case → true")
+    : fail("two-deep nest expected true");
+
+  // Negative: canary in egg in some-other-room → not in trophy-case.
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, egg: "kitchen", canary: "egg" },
+  };
+  evaluateCondition(
+    { type: "itemContainedBy", itemId: "canary", containerId: "trophy-case" },
+    e.state,
+    zork as unknown as Story,
+  ) === false
+    ? pass("non-nest: canary in egg in kitchen → not in trophy-case")
+    : fail("non-nest expected false");
+
+  // Cycle guard: itemA in itemB, itemB in itemA → must terminate, return false.
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, egg: "canary", canary: "egg" },
+  };
+  evaluateCondition(
+    { type: "itemContainedBy", itemId: "canary", containerId: "trophy-case" },
+    e.state,
+    zork as unknown as Story,
+  ) === false
+    ? pass("cycle guard: canary↔egg cycle → terminates, returns false")
+    : fail("cycle guard failed (likely infinite loop or wrong return)");
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

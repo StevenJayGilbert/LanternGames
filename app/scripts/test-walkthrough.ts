@@ -1246,7 +1246,7 @@ const s_all_treasures_in_case = snapshot(e);
     fail("P15 endGame did not fire", JSON.stringify(e.state.finished));
   }
 
-  // Final score sanity. Max is 357 (350 base + 1 bauble find + 6 bauble deposit).
+  // Final score sanity. Canonical Zork I max is 350.
   const finalScore = e.state.flags.score as number;
   const maxScore = e.state.flags["max-score"] as number;
   console.log(`  i Final score: ${finalScore} / ${maxScore} (rank tier checked separately)`);
@@ -4087,6 +4087,101 @@ console.log("\n--- F42: Blue button drowning ---");
     pass("F42 leak flooded → drowning death");
   } else {
     fail("F42 expected drowning death", `finished=${JSON.stringify(f.state.finished)}`);
+  }
+}
+
+// F-canonical-max-score: every positive `adjustFlag score by: N` across the
+// loaded story must sum to exactly 350 (canonical Zork I SCORE-MAX). Walks
+// trigger effects recursively through `if/then/else`.
+console.log("\n--- F-canonical-max-score: positive score grants sum to 350 ---");
+{
+  type AnyEffect = { type: string; key?: string; by?: unknown; then?: AnyEffect[]; else?: AnyEffect[] };
+  function sumPositiveScore(effects: AnyEffect[] | undefined): number {
+    if (!effects) return 0;
+    let total = 0;
+    for (const eff of effects) {
+      if (eff.type === "adjustFlag" && eff.key === "score" && typeof eff.by === "number" && eff.by > 0) {
+        total += eff.by;
+      }
+      if (eff.type === "if") {
+        total += sumPositiveScore(eff.then);
+        total += sumPositiveScore(eff.else);
+      }
+    }
+    return total;
+  }
+  let total = 0;
+  for (const t of story.triggers ?? []) {
+    total += sumPositiveScore(t.effects as unknown as AnyEffect[]);
+  }
+  total === 350
+    ? pass(`F-canonical-max-score: positive score grants sum to 350 (got ${total})`)
+    : fail("F-canonical-max-score: positive score grants do not sum to 350", `got ${total}`);
+}
+
+// F-no-double-score: pick up the egg → score increases by exactly 5 (formerly
+// double-counted via score-take-egg + score-find-egg = +10).
+console.log("\n--- F-no-double-score: take egg → +5, not +10 ---");
+{
+  const f = new Engine(story);
+  // Climb the tree to where the egg sits.
+  f.execute({ type: "go", direction: "north" });
+  f.execute({ type: "go", direction: "north" });
+  f.execute({ type: "go", direction: "up" });
+  const before = f.state.flags.score as number;
+  f.execute({ type: "take", itemId: "egg" });
+  const delta = (f.state.flags.score as number) - before;
+  delta === 5
+    ? pass(`F-no-double-score: take egg → score +5 (got +${delta})`)
+    : fail("F-no-double-score: take egg score delta wrong", `expected +5, got +${delta}`);
+}
+
+// F-barrow-nested: deposit all 19 treasures with canary nested in egg and
+// sceptre nested in coffin → unlock-endgame fires (won-flag), barrow opens,
+// game ends on entering stone-barrow.
+console.log("\n--- F-barrow-nested: nested treasures unlock the barrow + end game ---");
+{
+  const f = new Engine(story);
+  // The 17 top-level treasures land directly in trophy-case; canary nests in
+  // egg, sceptre nests in coffin (canonical authoring of those two pairs).
+  const topLevel = [
+    "egg", "bag-of-coins", "painting", "chalice", "torch", "trident",
+    "coffin", "jade", "scarab", "skull", "emerald", "bracelet", "trunk",
+    "bar", "pot-of-gold", "diamond", "bauble",
+  ];
+  const treasureLocations: Record<string, string> = {};
+  for (const id of topLevel) treasureLocations[id] = "trophy-case";
+  treasureLocations["canary"] = "egg";
+  treasureLocations["sceptre"] = "coffin";
+  f.state = {
+    ...f.state,
+    flags: { ...f.state.flags, "won-flag": false, "endgame-narrated": false },
+    itemLocations: { ...f.state.itemLocations, ...treasureLocations, player: "living-room" },
+  };
+  // Tick the cascade — unlock-endgame should fire on the first turn the gate is satisfied.
+  f.execute({ type: "wait" });
+  if (f.state.flags["won-flag"] === true) {
+    pass("F-barrow-nested: unlock-endgame fired despite canary in egg + sceptre in coffin");
+  } else {
+    fail("F-barrow-nested: won-flag stayed false", JSON.stringify({
+      egg: f.state.itemLocations["egg"],
+      canary: f.state.itemLocations["canary"],
+      coffin: f.state.itemLocations["coffin"],
+      sceptre: f.state.itemLocations["sceptre"],
+    }));
+  }
+  // Walk to west-of-house and southwest into the barrow.
+  f.state = { ...f.state, itemLocations: { ...f.state.itemLocations, player: "west-of-house" } };
+  f.execute({ type: "go", direction: "southwest" });
+  if (f.state.itemLocations["player"] === "stone-barrow") {
+    pass("F-barrow-nested: southwest from west-of-house reached stone-barrow");
+  } else {
+    fail("F-barrow-nested: barrow exit still gated", `player at ${f.state.itemLocations["player"]}`);
+  }
+  if (f.state.finished?.won === true) {
+    pass("F-barrow-nested: stone-barrow-ends-game fired (finished.won=true)");
+  } else {
+    fail("F-barrow-nested: end-game not triggered", JSON.stringify(f.state.finished));
   }
 }
 

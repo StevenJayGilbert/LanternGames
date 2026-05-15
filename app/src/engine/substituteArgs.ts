@@ -96,6 +96,13 @@ export function substituteCondition(
       if (id === null) return null;
       return { ...c, itemId: id };
     }
+    case "itemContainedBy": {
+      const itemId = resolveIdRef(c.itemId, args, state);
+      if (itemId === null) return null;
+      const containerId = resolveIdRef(c.containerId, args, state);
+      if (containerId === null) return null;
+      return { ...c, itemId, containerId };
+    }
     case "hasItem": {
       const id = resolveIdRef(c.itemId, args, state);
       if (id === null) return null;

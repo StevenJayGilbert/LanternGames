@@ -71,6 +71,7 @@ export type Condition =
   | { type: "flag"; key: string; equals: Atom }
   | { type: "hasItem"; itemId: IdRef }                     // item currently in inventory; IdRef so handler args can substitute (e.g. {fromArg: "withItemId"})
   | { type: "itemAt"; itemId: string; location: string }   // item at specific roomId | "inventory" | "nowhere"
+  | { type: "itemContainedBy"; itemId: IdRef; containerId: IdRef }  // itemId is directly OR transitively inside containerId (walks itemLocations chain). Use this instead of itemAt for end-state gates that should accept nested treasures (e.g. canary inside egg inside trophy-case).
   | { type: "playerAt"; roomId: string }
   | { type: "visited"; roomId: string }                    // player has entered room at least once
   | { type: "examined"; itemId: string }                   // player has examined item at least once

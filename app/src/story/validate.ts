@@ -893,6 +893,10 @@ function validateCondition(
         );
       }
       return;
+    case "itemContainedBy":
+      validateIdRef(raw.itemId, `${path}.itemId`, itemIds, err);
+      validateIdRef(raw.containerId, `${path}.containerId`, itemIds, err);
+      return;
     case "playerAt":
     case "visited":
       if (typeof raw.roomId !== "string") err(`${path}.roomId`, "must be a string");

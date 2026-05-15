@@ -6999,139 +6999,7 @@
       ]
     },
     {
-      "id": "score-solve-dam",
-      "when": {
-        "type": "and",
-        "all": [
-          {
-            "type": "flag",
-            "key": "gates-open",
-            "equals": true
-          }
-        ]
-      },
-      "effects": [
-        {
-          "type": "adjustFlag",
-          "key": "score",
-          "by": 15
-        }
-      ],
-      "narration": "(Solving the dam puzzle. +15 points; your score is now {flag.score}.)",
-      "once": true
-    },
-    {
-      "id": "score-complete-hades-ritual",
-      "when": {
-        "type": "flag",
-        "key": "lld-flag",
-        "equals": true
-      },
-      "effects": [
-        {
-          "type": "adjustFlag",
-          "key": "score",
-          "by": 15
-        }
-      ],
-      "narration": "(Completing the bell-book-candle ritual at Hades. +15 points; your score is now {flag.score}.)",
-      "once": true
-    },
-    {
-      "id": "score-defeat-troll",
-      "when": {
-        "type": "compare",
-        "left": {
-          "kind": "itemState",
-          "itemId": "troll",
-          "key": "health"
-        },
-        "op": "<=",
-        "right": {
-          "kind": "literal",
-          "value": 0
-        }
-      },
-      "effects": [
-        {
-          "type": "adjustFlag",
-          "key": "score",
-          "by": 10
-        }
-      ],
-      "narration": "(The troll defeated. +10 points; your score is now {flag.score}.)",
-      "once": true
-    },
-    {
-      "id": "score-defeat-cyclops",
-      "when": {
-        "type": "flag",
-        "key": "cyclops-flag",
-        "equals": true
-      },
-      "effects": [
-        {
-          "type": "adjustFlag",
-          "key": "score",
-          "by": 10
-        }
-      ],
-      "narration": "(The cyclops dealt with. +10 points; your score is now {flag.score}.)",
-      "once": true
-    },
-    {
-      "id": "score-rainbow-solid",
-      "when": {
-        "type": "flag",
-        "key": "rainbow-flag",
-        "equals": true
-      },
-      "effects": [
-        {
-          "type": "adjustFlag",
-          "key": "score",
-          "by": 5
-        }
-      ],
-      "narration": "(The rainbow solidifies — passable now. +5 points; your score is now {flag.score}.)",
-      "once": true
-    },
-    {
-      "id": "score-mirror-discovered",
-      "when": {
-        "type": "flag",
-        "key": "magic-flag",
-        "equals": true
-      },
-      "effects": [
-        {
-          "type": "adjustFlag",
-          "key": "score",
-          "by": 5
-        }
-      ],
-      "narration": "(A new passage opens. +5 points; your score is now {flag.score}.)",
-      "once": true
-    },
-    {
-      "id": "score-find-egg",
-      "when": {
-        "type": "itemAt",
-        "itemId": "egg",
-        "location": "inventory"
-      },
-      "effects": [
-        {
-          "type": "adjustFlag",
-          "key": "score",
-          "by": 5
-        }
-      ],
-      "narration": "(You found the egg. +5 points; your score is now {flag.score}.)",
-      "once": true
-    },
-    {
-      "id": "score-visit-living-room",
+      "id": "score-enter-house",
       "when": {
         "type": "playerAt",
         "roomId": "living-room"
@@ -7140,17 +7008,34 @@
         {
           "type": "adjustFlag",
           "key": "score",
-          "by": 5
+          "by": 10
         }
       ],
-      "narration": "(Discovering the living room. +5 points; your score is now {flag.score}.)",
+      "narration": "(Entering the house. +10 points; your score is now {flag.score}.)",
       "once": true
     },
     {
-      "id": "score-visit-troll-room",
+      "id": "score-enter-cellar",
       "when": {
         "type": "playerAt",
-        "roomId": "troll-room"
+        "roomId": "cellar"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 25
+        }
+      ],
+      "narration": "(Down into the underground. +25 points; your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-past-troll",
+      "when": {
+        "type": "flag",
+        "key": "troll-flag",
+        "equals": true
       },
       "effects": [
         {
@@ -7159,23 +7044,39 @@
           "by": 5
         }
       ],
-      "narration": "(Reaching the troll's lair. +5 points; your score is now {flag.score}.)",
+      "narration": "(Past the troll. +5 points; your score is now {flag.score}.)",
       "once": true
     },
     {
-      "id": "score-visit-cyclops-room",
+      "id": "score-enter-drafty-room",
       "when": {
         "type": "playerAt",
-        "roomId": "cyclops-room"
+        "roomId": "lower-shaft"
       },
       "effects": [
         {
           "type": "adjustFlag",
           "key": "score",
-          "by": 5
+          "by": 13
         }
       ],
-      "narration": "(Discovering the cyclops's chamber. +5 points; your score is now {flag.score}.)",
+      "narration": "(Down to the Drafty Room. +13 points; your score is now {flag.score}.)",
+      "once": true
+    },
+    {
+      "id": "score-enter-treasure-room",
+      "when": {
+        "type": "playerAt",
+        "roomId": "treasure-room"
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "score",
+          "by": 25
+        }
+      ],
+      "narration": "(Reaching the Treasure Room. +25 points; your score is now {flag.score}.)",
       "once": true
     },
     {
@@ -15739,99 +15640,99 @@
         "type": "and",
         "all": [
           {
-            "type": "itemAt",
+            "type": "itemContainedBy",
             "itemId": "egg",
-            "location": "trophy-case"
+            "containerId": "trophy-case"
           },
           {
-            "type": "itemAt",
+            "type": "itemContainedBy",
             "itemId": "canary",
-            "location": "trophy-case"
+            "containerId": "trophy-case"
           },
           {
-            "type": "itemAt",
+            "type": "itemContainedBy",
             "itemId": "bag-of-coins",
-            "location": "trophy-case"
+            "containerId": "trophy-case"
           },
           {
-            "type": "itemAt",
+            "type": "itemContainedBy",
             "itemId": "painting",
-            "location": "trophy-case"
+            "containerId": "trophy-case"
           },
           {
-            "type": "itemAt",
+            "type": "itemContainedBy",
             "itemId": "chalice",
-            "location": "trophy-case"
+            "containerId": "trophy-case"
           },
           {
-            "type": "itemAt",
+            "type": "itemContainedBy",
             "itemId": "torch",
-            "location": "trophy-case"
+            "containerId": "trophy-case"
           },
           {
-            "type": "itemAt",
+            "type": "itemContainedBy",
             "itemId": "trident",
-            "location": "trophy-case"
+            "containerId": "trophy-case"
           },
           {
-            "type": "itemAt",
+            "type": "itemContainedBy",
             "itemId": "coffin",
-            "location": "trophy-case"
+            "containerId": "trophy-case"
           },
           {
-            "type": "itemAt",
+            "type": "itemContainedBy",
             "itemId": "sceptre",
-            "location": "trophy-case"
+            "containerId": "trophy-case"
           },
           {
-            "type": "itemAt",
+            "type": "itemContainedBy",
             "itemId": "jade",
-            "location": "trophy-case"
+            "containerId": "trophy-case"
           },
           {
-            "type": "itemAt",
+            "type": "itemContainedBy",
             "itemId": "scarab",
-            "location": "trophy-case"
+            "containerId": "trophy-case"
           },
           {
-            "type": "itemAt",
+            "type": "itemContainedBy",
             "itemId": "skull",
-            "location": "trophy-case"
+            "containerId": "trophy-case"
           },
           {
-            "type": "itemAt",
+            "type": "itemContainedBy",
             "itemId": "emerald",
-            "location": "trophy-case"
+            "containerId": "trophy-case"
           },
           {
-            "type": "itemAt",
+            "type": "itemContainedBy",
             "itemId": "bracelet",
-            "location": "trophy-case"
+            "containerId": "trophy-case"
           },
           {
-            "type": "itemAt",
+            "type": "itemContainedBy",
             "itemId": "trunk",
-            "location": "trophy-case"
+            "containerId": "trophy-case"
           },
           {
-            "type": "itemAt",
+            "type": "itemContainedBy",
             "itemId": "bar",
-            "location": "trophy-case"
+            "containerId": "trophy-case"
           },
           {
-            "type": "itemAt",
+            "type": "itemContainedBy",
             "itemId": "pot-of-gold",
-            "location": "trophy-case"
+            "containerId": "trophy-case"
           },
           {
-            "type": "itemAt",
+            "type": "itemContainedBy",
             "itemId": "diamond",
-            "location": "trophy-case"
+            "containerId": "trophy-case"
           },
           {
-            "type": "itemAt",
+            "type": "itemContainedBy",
             "itemId": "bauble",
-            "location": "trophy-case"
+            "containerId": "trophy-case"
           }
         ]
       },
@@ -19357,7 +19258,7 @@
         {
           "type": "adjustFlag",
           "key": "score",
-          "by": 6
+          "by": 1
         },
         {
           "type": "setFlag",
@@ -19365,7 +19266,7 @@
           "value": true
         }
       ],
-      "narration": "The brass bauble joins the trophy case's collection. (+6 points; your score is now {flag.score}.)",
+      "narration": "The brass bauble joins the trophy case's collection. (+1 point; your score is now {flag.score}.)",
       "once": false
     },
     {
@@ -19392,7 +19293,7 @@
         {
           "type": "adjustFlag",
           "key": "score",
-          "by": -6
+          "by": -1
         },
         {
           "type": "setFlag",
@@ -19400,7 +19301,7 @@
           "value": false
         }
       ],
-      "narration": "(The brass bauble leaves the trophy case. -6 points; your score is now {flag.score}.)",
+      "narration": "(The brass bauble leaves the trophy case. -1 point; your score is now {flag.score}.)",
       "once": false
     },
     {
@@ -20738,7 +20639,7 @@
     "just-died": false,
     "death-message": "",
     "score": 0,
-    "max-score": 357,
+    "max-score": 350,
     "skull-deposited": false,
     "sceptre-deposited": false,
     "chalice-deposited": false,

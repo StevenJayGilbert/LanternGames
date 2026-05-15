@@ -830,6 +830,8 @@ For per-turn ticking (timers, drains, NPC wandering), use `afterAction: true` + 
 
 A story without any `endGame` trigger is sandbox-mode and never ends on its own.
 
+> **Nested treasures and `itemContainedBy`.** If your win/end-state gate checks "treasure X is in the case", use `itemContainedBy` (`{ type, itemId, containerId }`), **not** `itemAt`. `itemAt` is strict equality on the item's immediate location — if the player deposits a container with a treasure still inside it (a clockwork bird sealed in an egg, a sceptre buried in a coffin), the inner treasure's location is the *container*, not the case, and an `itemAt` clause silently fails. `itemContainedBy` walks the full location chain, so a treasure nested any number of levels deep inside the case still counts.
+
 ---
 
 # Part 5: Custom tools — extending the verb namespace

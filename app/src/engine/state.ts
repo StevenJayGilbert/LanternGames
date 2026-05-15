@@ -470,6 +470,18 @@ export function evaluateCondition(
       // Resolve the legacy "inventory" alias so authors can still write
       // itemAt(X, "inventory") and have it match items at the player.
       return state.itemLocations[c.itemId] === resolveLocation(c.location);
+    case "itemContainedBy": {
+      // Defensive: if {fromArg} substitution didn't resolve, skip.
+      if (typeof c.itemId !== "string" || typeof c.containerId !== "string") return false;
+      const visited = new Set<string>();
+      let cur: string | undefined = state.itemLocations[c.itemId];
+      while (cur !== undefined && !visited.has(cur)) {
+        if (cur === c.containerId) return true;
+        visited.add(cur);
+        cur = state.itemLocations[cur];
+      }
+      return false;
+    }
     case "playerAt":
       return currentRoomId(state, story) === c.roomId;
     case "visited":

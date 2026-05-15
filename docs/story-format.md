@@ -312,7 +312,8 @@ Conditions are boolean expressions over `GameState`. They appear in: exit gating
 |---|---|---|
 | `flag` | `{ type, key, equals }` | `state.flags[key] === equals` |
 | `hasItem` | `{ type, itemId }` | item is in player's inventory |
-| `itemAt` | `{ type, itemId, location }` | item is at a specific location (roomId / itemId / `"inventory"` / `"nowhere"`) |
+| `itemAt` | `{ type, itemId, location }` | item is at a specific location (roomId / itemId / `"inventory"` / `"nowhere"`). Strict — does **not** see through nested containers |
+| `itemContainedBy` | `{ type, itemId, containerId }` | item is directly **or transitively** inside `containerId` (walks the location chain). Use instead of `itemAt` for end-state gates that should accept nested treasures (e.g. canary inside egg inside trophy-case). Both fields may be `{fromArg: "..."}` |
 | `playerAt` | `{ type, roomId }` | player is currently in this room |
 | `visited` | `{ type, roomId }` | player has entered this room at least once |
 | `examined` | `{ type, itemId }` | player has examined this item at least once |
