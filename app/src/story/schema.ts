@@ -69,7 +69,7 @@ export type IdRef =
 // exit gating, text variants, and end conditions.
 export type Condition =
   | { type: "flag"; key: string; equals: Atom }
-  | { type: "hasItem"; itemId: string }                    // item currently in inventory
+  | { type: "hasItem"; itemId: IdRef }                     // item currently in inventory; IdRef so handler args can substitute (e.g. {fromArg: "withItemId"})
   | { type: "itemAt"; itemId: string; location: string }   // item at specific roomId | "inventory" | "nowhere"
   | { type: "playerAt"; roomId: string }
   | { type: "visited"; roomId: string }                    // player has entered room at least once

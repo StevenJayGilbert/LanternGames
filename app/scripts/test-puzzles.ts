@@ -275,7 +275,7 @@ console.log("\n=== #7 Coal → diamond ===");
       machine: { ...(e.state.itemStates.machine ?? {}), isOpen: false },
     },
   };
-  e.execute({ type: "recordIntent", signalId: "turn-machine-switch", args: { withItemId: "screwdriver" } });
+  e.execute({ type: "recordIntent", signalId: "turn", args: { itemId: "machine-switch", withItemId: "screwdriver" } });
   e.state.itemLocations.diamond === "machine-room"
     ? pass("diamond moved to machine-room")
     : fail(`diamond at ${e.state.itemLocations.diamond}`);
@@ -300,7 +300,7 @@ console.log("\n=== #7b Machine switch refuses bare-hand ===");
       machine: { ...(e.state.itemStates.machine ?? {}), isOpen: false },
     },
   };
-  const r = e.execute({ type: "recordIntent", signalId: "push-machine-switch" });
+  const r = e.execute({ type: "recordIntent", signalId: "push", args: { itemId: "machine-switch" } });
   e.state.itemLocations.coal === "machine"
     ? pass("coal still in machine (puzzle did not fire)")
     : fail(`coal at ${e.state.itemLocations.coal}`);
@@ -325,7 +325,7 @@ console.log("\n=== #7c Machine switch refuses wrong tool ===");
       machine: { ...(e.state.itemStates.machine ?? {}), isOpen: false },
     },
   };
-  const r = e.execute({ type: "recordIntent", signalId: "turn-machine-switch", args: { withItemId: "wrench" } });
+  const r = e.execute({ type: "recordIntent", signalId: "turn", args: { itemId: "machine-switch", withItemId: "wrench" } });
   e.state.itemLocations.coal === "machine"
     ? pass("coal still in machine (wrong-tool path did not fire puzzle)")
     : fail(`coal at ${e.state.itemLocations.coal}`);
@@ -347,7 +347,7 @@ console.log("\n=== #7d Machine refuses with lid open ===");
       machine: { ...(e.state.itemStates.machine ?? {}), isOpen: true },
     },
   };
-  const r = e.execute({ type: "recordIntent", signalId: "turn-machine-switch", args: { withItemId: "screwdriver" } });
+  const r = e.execute({ type: "recordIntent", signalId: "turn", args: { itemId: "machine-switch", withItemId: "screwdriver" } });
   e.state.itemLocations.coal === "machine"
     ? pass("coal still in machine (lid-open did not consume)")
     : fail(`coal at ${e.state.itemLocations.coal}`);
@@ -365,14 +365,14 @@ console.log("\n=== #9 Dam control panel ===");
   const e = newEngine();
   // Step 1: yellow button at maintenance-room
   e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "maintenance-room", wrench: "player" } };
-  e.execute({ type: "recordIntent", signalId: "push-yellow-button" });
+  e.execute({ type: "recordIntent", signalId: "push", args: { itemId: "yellow-button" } });
   e.state.flags["gate-flag"] === true
     ? pass("gate-flag set by yellow button")
     : fail("gate-flag not set");
 
   // Step 2: walk to dam-room, turn bolt
   e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "dam-room" } };
-  e.execute({ type: "recordIntent", signalId: "turn-dam-bolt", args: { withItemId: "wrench" } });
+  e.execute({ type: "recordIntent", signalId: "turn", args: { itemId: "bolt", withItemId: "wrench" } });
   e.state.flags["gates-open"] === true
     ? pass("gates-open set by bolt turn")
     : fail("gates-open not set");
@@ -407,7 +407,7 @@ console.log("\n=== #9b Dam bolt refuses bare-hand ===");
     itemLocations: { ...e.state.itemLocations, player: "dam-room", wrench: "player" },
     flags: { ...e.state.flags, "gate-flag": true, "gates-open": false },
   };
-  const r = e.execute({ type: "recordIntent", signalId: "turn-dam-bolt-by-hand" });
+  const r = e.execute({ type: "recordIntent", signalId: "turn", args: { itemId: "bolt" } });
   e.state.flags["gates-open"] !== true
     ? pass("gates-open still false (bare-hand did not fire bolt)")
     : fail("gates-open flipped on bare-hand");
@@ -425,7 +425,7 @@ console.log("\n=== #9c Leak refuses bare-hand plug ===");
     itemLocations: { ...e.state.itemLocations, player: "maintenance-room" },
     flags: { ...e.state.flags, "leak-active": true, "leak-flood-counter": 5 },
   };
-  const r = e.execute({ type: "recordIntent", signalId: "plug-leak-by-hand" });
+  const r = e.execute({ type: "recordIntent", signalId: "plug", args: { itemId: "leak" } });
   e.state.flags["leak-active"] === true
     ? pass("leak still active (bare-hand did not seal it)")
     : fail("leak-active flipped on bare-hand");
@@ -446,7 +446,7 @@ console.log("\n=== #11b Boat refuses bare-mouth inflation ===");
       "inflatable-boat": { ...(e.state.itemStates["inflatable-boat"] ?? {}), inflation: "deflated" },
     },
   };
-  const r = e.execute({ type: "recordIntent", signalId: "inflate-boat-by-mouth" });
+  const r = e.execute({ type: "recordIntent", signalId: "inflate", args: { itemId: "inflatable-boat" } });
   e.state.itemStates["inflatable-boat"]?.inflation === "deflated"
     ? pass("boat still deflated (bare-mouth did not inflate it)")
     : fail(`boat state = ${e.state.itemStates["inflatable-boat"]?.inflation}`);
@@ -507,7 +507,7 @@ console.log("\n=== #11 Boat / river travel ===");
     : fail(`expected vehicle-blocked, got ${JSON.stringify(r0.event)}`);
 
   // Match inflate intent → trigger fires → boat is inflated
-  e.execute({ type: "recordIntent", signalId: "inflate-boat", args: { withItemId: "pump" } });
+  e.execute({ type: "recordIntent", signalId: "inflate", args: { itemId: "inflatable-boat", withItemId: "pump" } });
   e.state.itemStates["inflatable-boat"]?.inflation === "inflated"
     ? pass("inflate intent → boat state is inflated")
     : fail(`inflation = ${e.state.itemStates["inflatable-boat"]?.inflation}`);
@@ -518,7 +518,7 @@ console.log("\n=== #11 Boat / river travel ===");
     ...e2.state,
     itemLocations: { ...e2.state.itemLocations, player: "dam-base", pump: "player", sword: "player" },
   };
-  e2.execute({ type: "recordIntent", signalId: "inflate-boat", args: { withItemId: "pump" } });
+  e2.execute({ type: "recordIntent", signalId: "inflate", args: { itemId: "inflatable-boat", withItemId: "pump" } });
   // Now board — engine boards (no weapon check at engine level), but the
   // puncture trigger fires immediately (priority 100) on inVehicle+weapon.
   e2.execute({ type: "board", itemId: "inflatable-boat" });
@@ -557,7 +557,7 @@ console.log("\n=== #11 Boat / river travel ===");
     ...e4.state,
     itemLocations: { ...e4.state.itemLocations, player: "dam-base", pump: "player" },
   };
-  e4.execute({ type: "recordIntent", signalId: "inflate-boat", args: { withItemId: "pump" } });
+  e4.execute({ type: "recordIntent", signalId: "inflate", args: { itemId: "inflatable-boat", withItemId: "pump" } });
   e4.execute({ type: "board", itemId: "inflatable-boat" });
   e4.state.itemLocations.player === "inflatable-boat"
     ? pass("clean board → player parent is the vehicle")

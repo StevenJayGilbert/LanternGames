@@ -497,10 +497,17 @@ export class Narrator {
             const cues = engineResult.narrationCues.length
               ? ` cues=${JSON.stringify(engineResult.narrationCues)}`
               : "";
+            // Surface the examine description (the actual prose the LLM
+            // receives) so testers can see exactly what's being narrated
+            // without inspecting the LLM-facing tool_result payload.
+            const extra =
+              engineResult.event.type === "examined"
+                ? ` desc=${JSON.stringify((engineResult.event as { description?: string }).description ?? "")}`
+                : "";
             console.log(
               `[tool] ${toolUse.name}`,
               toolUse.input,
-              `→ ${engineResult.event.type}${reason}${cues}`,
+              `→ ${engineResult.event.type}${reason}${cues}${extra}`,
             );
             toolResults.push({
               type: "tool_result",

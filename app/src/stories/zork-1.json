@@ -685,6 +685,9 @@
         },
         "northwest": {
           "to": "maze-9"
+        },
+        "down": {
+          "to": "maze-11"
         }
       },
       "state": {
@@ -1594,7 +1597,7 @@
     {
       "id": "dam-room",
       "name": "Dam",
-      "description": "You are standing on the top of the Flood Control Dam #3, which was quite a tourist attraction in times far distant. There are paths to the north, south, and west, and a scramble down.There is a control panel here, on which a large metal bolt is mounted. Directly above the bolt is a small green plastic bubble.",
+      "description": "You are standing on the top of the Flood Control Dam #3, which was quite a tourist attraction in times far distant. There are paths to the north, south, and west, and a scramble down. A heavy iron bolt is mounted on the dam's weathered stonework, with a small green plastic bubble set directly above it.",
       "exits": {
         "south": {
           "to": "deep-canyon"
@@ -2621,16 +2624,26 @@
       "description": "A heavy iron bolt with a slot evidently sized for a wrench.",
       "location": "dam-room",
       "fixed": true,
-      "appearance": "A heavy iron bolt protrudes from the dam's control panel.",
-      "narratorNote": "DEFAULT to turn-dam-bolt-by-hand (no args) for ANY input about the bolt unless the player's input literally names a tool. Inputs like 'turn the bolt', 'twist bolt', 'open the gates', 'open the dam' → turn-dam-bolt-by-hand. ONLY call turn-dam-bolt when the player's input contains a literal tool noun like 'wrench' (e.g. 'turn bolt with wrench', 'use the wrench on the bolt'). NEVER auto-fill withItemId from inventory. This applies to both opening and closing the gates."
+      "appearance": "A heavy iron bolt protrudes from the dam's stonework.",
+      "narratorNote": "Call turn(itemId='bolt') for any bare-hand 'turn the bolt' / 'twist bolt' / 'open the gates' / 'open the dam' input. Call turn(itemId='bolt', withItemId='wrench') ONLY when the player's input literally names the wrench (e.g. 'turn bolt with wrench', 'use the wrench on the bolt'). NEVER auto-fill withItemId from inventory.",
+      "variants": [
+        {
+          "when": {
+            "type": "flag",
+            "key": "gates-open",
+            "equals": true
+          },
+          "text": "A heavy iron bolt, turned roughly a quarter rotation from its starting position."
+        }
+      ]
     },
     {
       "id": "bubble",
       "name": "green bubble",
-      "description": "A small green glass bubble — currently dark, evidently waiting for something.",
+      "description": "A small green glass bubble, currently dark.",
       "location": "dam-room",
       "fixed": true,
-      "appearance": "A small green glass bubble is set into the dam's control panel.",
+      "appearance": "A small green glass bubble is set into the dam's stonework.",
       "variants": [
         {
           "when": {
@@ -2638,7 +2651,7 @@
             "key": "gate-flag",
             "equals": true
           },
-          "text": "A small green glass bubble, glowing steadily — the bolt control is live."
+          "text": "A small green glass bubble, glowing steadily."
         }
       ]
     },
@@ -2889,7 +2902,17 @@
       "description": "A worn yellow button, slightly recessed. Yellow paint flakes around the edges.",
       "location": "maintenance-room",
       "fixed": true,
-      "appearance": "A worn yellow button is set into the panel."
+      "appearance": "A worn yellow button is set into the wall.",
+      "variants": [
+        {
+          "when": {
+            "type": "flag",
+            "key": "gate-flag",
+            "equals": true
+          },
+          "text": "A worn yellow button, slightly recessed. A small indicator beside it glows steadily."
+        }
+      ]
     },
     {
       "id": "brown-button",
@@ -2905,7 +2928,17 @@
       "description": "A red button marked with a faded warning symbol.",
       "location": "maintenance-room",
       "fixed": true,
-      "appearance": "A red button with a faded warning symbol sits on the panel."
+      "appearance": "A red button with a faded warning symbol sits on the wall.",
+      "variants": [
+        {
+          "when": {
+            "type": "flag",
+            "key": "maintenance-lights",
+            "equals": false
+          },
+          "text": "A red button marked with a faded warning symbol. A small indicator beside it glows."
+        }
+      ]
     },
     {
       "id": "blue-button",
@@ -2913,7 +2946,17 @@
       "description": "A small blue button, smooth and unmarked.",
       "location": "maintenance-room",
       "fixed": true,
-      "appearance": "A small blue button is set into the panel."
+      "appearance": "A small blue button is set into the wall.",
+      "variants": [
+        {
+          "when": {
+            "type": "flag",
+            "key": "leak-active",
+            "equals": true
+          },
+          "text": "A small blue button, smooth and unmarked. A small indicator beside it glows."
+        }
+      ]
     },
     {
       "id": "trophy-case",
@@ -3603,9 +3646,19 @@
     {
       "id": "leak",
       "name": "leak",
-      "description": "Water trickles from a small leak — for now a nuisance rather than a disaster.",
+      "description": "A pinhole leak in the ceiling pipe drips occasionally onto the floor.",
       "location": "maintenance-room",
-      "fixed": true
+      "fixed": true,
+      "variants": [
+        {
+          "when": {
+            "type": "flag",
+            "key": "leak-active",
+            "equals": true
+          },
+          "text": "Water sprays from a ruptured pipe in the ceiling, splashing the floor below."
+        }
+      ]
     },
     {
       "id": "machine",
@@ -5010,8 +5063,8 @@
     {
       "id": "control-panel",
       "name": "control panel",
-      "description": "A bank of indicator lights, four colored buttons, and a single iron bolt — clearly some kind of maintenance station.",
-      "location": "dam-room",
+      "description": "(control panel)",
+      "location": "nowhere",
       "fixed": true
     },
     {
@@ -5132,6 +5185,34 @@
             "equals": true
           },
           "text": "The jewel-encrusted egg has been crushed — clasp bent, gold inlay buckled, the broken clockwork canary tangled visibly in the cracked shell."
+        },
+        {
+          "when": {
+            "type": "and",
+            "all": [
+              {
+                "type": "itemState",
+                "itemId": "egg",
+                "key": "isOpen",
+                "equals": true
+              },
+              {
+                "type": "not",
+                "condition": {
+                  "type": "itemState",
+                  "itemId": "egg",
+                  "key": "broken",
+                  "equals": true
+                }
+              },
+              {
+                "type": "itemAt",
+                "itemId": "canary",
+                "location": "egg"
+              }
+            ]
+          },
+          "text": "The jewel-encrusted egg has been opened cleanly along its delicate clasp. The golden clockwork canary nestled inside is plainly visible, ready to be taken."
         },
         {
           "when": {
@@ -5503,6 +5584,7 @@
       "name": "grating",
       "description": "A heavy iron grating set into the floor — or, depending on which side you stand on, into the ceiling. Beyond it lies a clearing of scattered leaves.",
       "state": {
+        "isLocked": true,
         "isOpen": false
       },
       "sides": [
@@ -5513,9 +5595,25 @@
           "roomId": "grating-clearing"
         }
       ],
+      "variants": [
+        {
+          "when": {
+            "type": "passageState",
+            "passageId": "grate",
+            "key": "isLocked",
+            "equals": true
+          },
+          "text": "A heavy iron grating, secured by a skull-and-crossbones lock. It is closed and locked."
+        }
+      ],
       "openWhen": {
-        "type": "hasItem",
-        "itemId": "keys"
+        "type": "not",
+        "condition": {
+          "type": "passageState",
+          "passageId": "grate",
+          "key": "isLocked",
+          "equals": true
+        }
       },
       "traversableWhen": {
         "type": "passageState",
@@ -5919,12 +6017,73 @@
       }
     },
     {
-      "id": "rope-tied-to-railing",
-      "description": "Player ties, fastens, attaches, lashes, secures, or otherwise affixes the rope to the railing (or to the dome)."
+      "id": "tie",
+      "description": "Player ties, fastens, attaches, lashes, secures, or affixes one item to another. Pass the id of the rope/cord (itemId) and the id of the anchor (targetId). Both must be accessible.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the cord/rope being tied"
+          },
+          "targetId": {
+            "type": "string",
+            "description": "id of the anchor — what the cord is being tied to"
+          }
+        },
+        "required": [
+          "itemId",
+          "targetId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
+            "failedNarration": "You don't have {arg.itemId.name}."
+          }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
     },
     {
-      "id": "give-egg-to-songbird",
-      "description": "Player gives the jewel-encrusted egg to the songbird, offers it to the bird, hands it to her, presents it to the singer."
+      "id": "untie",
+      "description": "Player unties, releases, frees, or unfastens a tied cord/rope. Pass the id of the cord (itemId).",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the cord/rope being untied"
+          }
+        },
+        "required": [
+          "itemId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
+            "failedNarration": "You don't see any {arg.itemId.name} here."
+          }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
     },
     {
       "id": "give",
@@ -5966,6 +6125,423 @@
               }
             },
             "failedNarration": "{arg.targetId.name} isn't here."
+          }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "id": "unlock",
+      "description": "Player unlocks, releases, or opens with a key the lock on a target. Pass the id of the key (itemId, e.g. 'keys') and the id of the lockable target (targetId — a passage like 'grate' or an item like a chest). The key must be in inventory or reachable; the target must be perceivable.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the key or instrument being used, from inventory or reachable items"
+          },
+          "targetId": {
+            "type": "string",
+            "description": "id of the lockable target — a passage (e.g. 'grate') or item (e.g. a chest)"
+          }
+        },
+        "required": [
+          "itemId",
+          "targetId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
+            "failedNarration": "You don't have {arg.itemId.name}."
+          }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "id": "lock",
+      "description": "Player locks, secures, or fastens a target using a key/instrument. Pass the id of the key (itemId) and the id of the lockable target (targetId).",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the key or instrument being used, from inventory or reachable items"
+          },
+          "targetId": {
+            "type": "string",
+            "description": "id of the lockable target — a passage or item with an isLocked state"
+          }
+        },
+        "required": [
+          "itemId",
+          "targetId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
+            "failedNarration": "You don't have {arg.itemId.name}."
+          }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "id": "talk-to",
+      "description": "Player talks to, addresses, asks, shouts at, taunts, insults, threatens, bargains with, begs, or otherwise engages an NPC conversationally. Pass the id of the NPC (targetId).",
+      "args": {
+        "type": "object",
+        "properties": {
+          "targetId": {
+            "type": "string",
+            "description": "id of the NPC being addressed"
+          }
+        },
+        "required": [
+          "targetId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "targetId"
+              }
+            },
+            "failedNarration": "{arg.targetId.name} isn't here."
+          }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "id": "burn",
+      "description": "Player sets fire to, ignites, or burns an item (with match, candles, torch, or any flame). Pass the id of the item being burned.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the item being burned"
+          }
+        },
+        "required": [
+          "itemId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
+            "failedNarration": "You don't have {arg.itemId.name}."
+          }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "id": "mung",
+      "description": "Player desecrates, mutilates, destroys, smashes, defaces, or otherwise interferes with an item. Pass the id of the item being munged.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the item being destroyed"
+          }
+        },
+        "required": [
+          "itemId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
+            "failedNarration": "You don't see {arg.itemId.name} here."
+          }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "id": "push",
+      "description": "Player pushes, presses, depresses, hits, jabs, pokes, or otherwise actuates a button, switch, lever, or pushable object. Pass the id of the item being pushed.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the item being pushed"
+          }
+        },
+        "required": [
+          "itemId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
+            "failedNarration": "You don't see {arg.itemId.name} here."
+          }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "id": "lower",
+      "description": "Player lowers, drops down, sends down, or pays out an item. Pass the id of the item being lowered.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the item being lowered"
+          }
+        },
+        "required": [
+          "itemId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "id": "raise",
+      "description": "Player raises, hauls up, pulls up, or hoists an item. Pass the id of the item being raised.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the item being raised"
+          }
+        },
+        "required": [
+          "itemId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "id": "turn",
+      "description": "Player turns, twists, rotates, or pivots an item — optionally using an instrument. Pass the id of the thing being turned (itemId), and optionally the id of the instrument (withItemId).",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the thing being turned (e.g. 'dam-bolt', 'machine-switch')"
+          },
+          "withItemId": {
+            "type": "string",
+            "description": "optional instrument (e.g. 'wrench', 'screwdriver'). Pass ONLY if the player literally named a tool in their input. Do not auto-fill from inventory."
+          }
+        },
+        "required": [
+          "itemId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
+            "failedNarration": "You don't see {arg.itemId.name} here."
+          },
+          {
+            "when": {
+              "type": "hasItem",
+              "itemId": {
+                "fromArg": "withItemId"
+              }
+            },
+            "failedNarration": "You don't have the {arg.withItemId.name}."
+          }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "id": "inflate",
+      "description": "Player inflates, blows up, or fills an item with air — optionally using an instrument (e.g. a pump). Pass the id of the inflatable (itemId), and optionally the instrument (withItemId).",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the inflatable"
+          },
+          "withItemId": {
+            "type": "string",
+            "description": "optional instrument (e.g. 'pump'). Do not auto-fill."
+          }
+        },
+        "required": [
+          "itemId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
+            "failedNarration": "You don't see {arg.itemId.name} here."
+          },
+          {
+            "when": {
+              "type": "hasItem",
+              "itemId": {
+                "fromArg": "withItemId"
+              }
+            },
+            "failedNarration": "You don't have the {arg.withItemId.name}."
+          }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "id": "plug",
+      "description": "Player plugs, seals, fills, or stops up an item — optionally using a material (e.g. putty). Pass the id of the thing being plugged (itemId), and optionally the material (withItemId).",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the thing being plugged"
+          },
+          "withItemId": {
+            "type": "string",
+            "description": "optional material/instrument (e.g. 'putty'). Do not auto-fill."
+          }
+        },
+        "required": [
+          "itemId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "itemAccessible",
+              "itemId": {
+                "fromArg": "itemId"
+              }
+            },
+            "failedNarration": "You don't see {arg.itemId.name} here."
+          },
+          {
+            "when": {
+              "type": "hasItem",
+              "itemId": {
+                "fromArg": "withItemId"
+              }
+            },
+            "failedNarration": "You don't have the {arg.withItemId.name}."
+          }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "id": "dig",
+      "description": "Player digs, scoops, scrapes, hollows out, or excavates a target — optionally using a tool. Pass the id of the target (targetId) and optionally the tool (withItemId).",
+      "args": {
+        "type": "object",
+        "properties": {
+          "targetId": {
+            "type": "string",
+            "description": "id of the thing being dug (e.g. 'sand')"
+          },
+          "withItemId": {
+            "type": "string",
+            "description": "optional digging tool (e.g. 'shovel'). Do not auto-fill."
+          }
+        },
+        "required": [
+          "targetId"
+        ]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": {
+              "type": "hasItem",
+              "itemId": {
+                "fromArg": "withItemId"
+              }
+            },
+            "failedNarration": "You don't have the {arg.withItemId.name}."
           }
         ],
         "effects": [],
@@ -6209,14 +6785,6 @@
       "description": "Player tries to free, yank, pull, dislodge, retrieve, or wrench loose their stuck weapon (sword, knife, or axe)."
     },
     {
-      "id": "talk-to-troll",
-      "description": "Player tries to talk to, address, ask, shout at, insult, threaten, bargain with, beg, taunt, or otherwise engage the troll conversationally."
-    },
-    {
-      "id": "talk-to-cyclops",
-      "description": "Player tries to talk to, address, ask, taunt, insult, threaten, or otherwise engage the cyclops conversationally — but NOT saying 'Ulysses' or 'Odysseus' (those match cyclops-magic-word instead)."
-    },
-    {
       "id": "say-echo-in-loud-room",
       "description": "Player says, shouts, calls, invokes, or otherwise utters the word 'echo' in the loud room."
     },
@@ -6233,20 +6801,8 @@
       "description": "Player brushes, polishes, scrubs, or cleans their teeth using the rubbery putty/glue/gunk."
     },
     {
-      "id": "burn-leaves",
-      "description": "Player sets fire to, ignites, or burns the pile of leaves (with match, candles, torch, or any flame)."
-    },
-    {
-      "id": "burn-book",
-      "description": "Player sets fire to, ignites, or burns the black book (the ritual book of arcane lore)."
-    },
-    {
       "id": "leap-down",
       "description": "Player leaps, jumps, dives, or hurls themselves down/off the current location (a tree, a canyon edge, a cliff)."
-    },
-    {
-      "id": "mung-bodies",
-      "description": "Player desecrates, mutilates, destroys, or otherwise interferes with the pile of corpses at the entrance to Hades."
     },
     {
       "id": "throw-at-self",
@@ -6257,26 +6813,6 @@
       "id": "attack-self",
       "description": "Player attacks, slashes, stabs, or otherwise turns a weapon on themselves.",
       "alwaysAvailable": true
-    },
-    {
-      "id": "dig-sand-with-tool",
-      "description": "ONLY call when the player's input contains a literal tool name (e.g. 'dig sand WITH SHOVEL', 'use shovel to dig', 'apply shovel to sand'). If the input does NOT contain a literal tool name, DO NOT call this tool — call dig-sand instead. Inputs like 'dig', 'dig sand', 'dig the hole', 'dig deeper' do NOT name a tool — route those to dig-sand. NEVER auto-fill withItemId from inventory or context.",
-      "args": {
-        "type": "object",
-        "properties": {
-          "withItemId": {
-            "type": "string",
-            "description": "the id of the tool the player literally named in their input (must come from the player's stated words — do not assume from inventory or context)"
-          }
-        },
-        "required": [
-          "withItemId"
-        ]
-      }
-    },
-    {
-      "id": "dig-sand",
-      "description": "DEFAULT tool when the player has NOT named a tool. Player tries to dig, scoop, scrape, hollow out, excavate, or otherwise excavate sandy ground — beach, cave, or anywhere else — without naming a tool. Examples: 'dig', 'dig the sand', 'dig a hole', 'dig deeper', 'scoop sand'. If the player names a tool (shovel, hands, etc.), use dig-sand-with-tool instead."
     },
     {
       "id": "clear-rubble",
@@ -6294,14 +6830,6 @@
         ],
         "successNarration": "You strain at the splintered timbers, but they're heavy and tightly wedged. Past them the passage narrows to a crack barely a person's width — clearing the rubble wouldn't widen it."
       }
-    },
-    {
-      "id": "mung-painting",
-      "description": "Player mutilates, defaces, slashes, or otherwise destroys the painting."
-    },
-    {
-      "id": "mung-sceptre",
-      "description": "Player breaks, snaps, smashes, or otherwise destroys the sceptre (especially while at the rainbow)."
     },
     {
       "id": "swim-river",
@@ -6372,98 +6900,6 @@
         ],
         "successNarration": "You leaf through the heavy black book, past the dog-eared page 569 to other passages. Among the dense archaic script, one line stands out: \"In the banishing of evil, certain noises, lights, and prayers prove most effective.\""
       }
-    },
-    {
-      "id": "turn-machine-switch",
-      "description": "ONLY call when the player's input contains a literal tool name (e.g. 'turn switch WITH screwdriver', 'use the screwdriver on the switch', 'apply screwdriver to switch'). If the input does NOT contain a literal tool name, DO NOT call this tool — call push-machine-switch instead. Inputs like 'start the machine', 'press start', 'turn the switch', 'activate it', 'flip switch', 'operate switch', 'turn it on' do NOT name a tool — route those to push-machine-switch. NEVER auto-fill withItemId from inventory or context.",
-      "args": {
-        "type": "object",
-        "properties": {
-          "withItemId": {
-            "type": "string",
-            "description": "the id of the tool the player literally named in their input (must come from the player's stated words — do not assume from inventory or context)"
-          }
-        },
-        "required": [
-          "withItemId"
-        ]
-      }
-    },
-    {
-      "id": "push-machine-switch",
-      "description": "DEFAULT tool for the machine's START switch when the player has NOT named a tool. Player tries to start, push, press, poke, flip, tap, turn, activate, operate, run, trigger, engage, use, or turn-on the START switch / machine — any phrasing that doesn't literally name a tool. Examples: 'push start', 'start the machine', 'press the switch', 'flip the switch', 'turn the switch', 'activate the switch', 'operate the machine', 'use the switch', 'turn it on'. If the player names a tool (screwdriver, etc.), use turn-machine-switch instead."
-    },
-    {
-      "id": "lower-basket",
-      "description": "Player lowers, drops, sends down, releases, pays out, or chains down the basket / dumbwaiter / chain into the shaft."
-    },
-    {
-      "id": "raise-basket",
-      "description": "Player raises, lifts, hauls up, draws up, pulls up, or winches up the basket / dumbwaiter / chain from the shaft."
-    },
-    {
-      "id": "push-yellow-button",
-      "description": "Player pushes, presses, depresses, or activates the yellow button."
-    },
-    {
-      "id": "push-brown-button",
-      "description": "Player pushes, presses, depresses, or activates the brown button."
-    },
-    {
-      "id": "push-red-button",
-      "description": "Player pushes, presses, depresses, or activates the red button."
-    },
-    {
-      "id": "push-blue-button",
-      "description": "Player pushes, presses, depresses, or activates the blue button."
-    },
-    {
-      "id": "plug-leak-with-putty",
-      "description": "ONLY call when the player's input contains a literal material name (e.g. 'plug leak WITH putty', 'use the putty on the leak', 'apply putty'). If the input does NOT contain a literal material name, DO NOT call this tool — call plug-leak-by-hand instead. Inputs like 'plug the leak', 'stop the leak', 'seal the leak', 'fix the pipe' do NOT name a material — route those to plug-leak-by-hand."
-    },
-    {
-      "id": "plug-leak-by-hand",
-      "description": "DEFAULT tool for the maintenance-room leak when the player has NOT named anything to plug it with. Player tries to plug, press, stop, cover, block, seal, fix, or close the leak / pipe / hole — any phrasing that doesn't literally name a material. Examples: 'plug the leak', 'stop the water', 'press the hole', 'seal the leak', 'fix the pipe'. If the player names putty or any other material, use plug-leak-with-putty instead."
-    },
-    {
-      "id": "turn-dam-bolt",
-      "description": "ONLY call when the player's input contains a literal tool name (e.g. 'turn bolt WITH wrench', 'use the wrench on the bolt'). If the input does NOT contain a literal tool name, DO NOT call this tool — call turn-dam-bolt-by-hand instead. Inputs like 'turn the bolt', 'twist bolt', 'open the gates', 'open the dam', 'release the gates' do NOT name a tool — route those to turn-dam-bolt-by-hand. NEVER auto-fill withItemId from inventory or context.",
-      "args": {
-        "type": "object",
-        "properties": {
-          "withItemId": {
-            "type": "string",
-            "description": "the id of the tool the player literally named in their input (must come from the player's stated words — do not assume from inventory or context)"
-          }
-        },
-        "required": [
-          "withItemId"
-        ]
-      }
-    },
-    {
-      "id": "turn-dam-bolt-by-hand",
-      "description": "DEFAULT tool for the dam control panel's iron bolt when the player has NOT named a tool. Player tries to turn, twist, pull, pry, rotate, operate, work, force, or otherwise act on the bolt / gates / dam — any phrasing that doesn't literally name a tool. Examples: 'turn the bolt', 'twist bolt', 'open the gates', 'open the dam', 'release the gates'. If the player names a tool (wrench, etc.), use turn-dam-bolt instead."
-    },
-    {
-      "id": "inflate-boat",
-      "description": "ONLY call when the player's input contains a literal tool name (e.g. 'inflate boat WITH pump', 'use the pump on the boat', 'pump up the raft'). If the input does NOT contain a literal tool name, DO NOT call this tool — call inflate-boat-by-mouth instead. Inputs like 'inflate the boat', 'blow up the boat', 'fill the raft', 'expand the boat' do NOT name a tool — route those to inflate-boat-by-mouth. NEVER auto-fill withItemId from inventory or context.",
-      "args": {
-        "type": "object",
-        "properties": {
-          "withItemId": {
-            "type": "string",
-            "description": "the id of the tool the player literally named in their input (must come from the player's stated words — do not assume from inventory or context)"
-          }
-        },
-        "required": [
-          "withItemId"
-        ]
-      }
-    },
-    {
-      "id": "inflate-boat-by-mouth",
-      "description": "DEFAULT tool for inflating the boat when the player has NOT named a tool. Player tries to inflate, blow up, fill, expand, breathe into, or open the boat / raft — any phrasing that doesn't literally name a tool (or that mentions breath/mouth/lungs). Examples: 'inflate the boat', 'blow up the boat', 'fill the raft', 'breathe into the boat', 'expand the raft'. If the player names the pump or any other tool, use inflate-boat instead."
     },
     {
       "id": "repair-boat-with-putty",
@@ -8271,7 +8707,19 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "rope-tied-to-railing"
+            "signalId": "tie"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "tie",
+            "key": "itemId",
+            "equals": "rope"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "tie",
+            "key": "targetId",
+            "equals": "railing"
           },
           {
             "type": "playerAt",
@@ -8296,7 +8744,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "rope-tied-to-railing"
+          "signalId": "tie"
         }
       ],
       "narration": "You tie the rope securely to the railing. It hangs down into the room below."
@@ -8334,7 +8782,19 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "give-egg-to-songbird"
+            "signalId": "give"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "give",
+            "key": "itemId",
+            "equals": "egg"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "give",
+            "key": "targetId",
+            "equals": "songbird"
           },
           {
             "type": "hasItem",
@@ -8383,6 +8843,10 @@
           "itemId": "egg",
           "key": "isOpen",
           "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "give"
         }
       ],
       "narration": "You hold out the egg. The songbird hops to it and sings a single perfect trill — and the delicate clasp springs open, revealing a golden clockwork canary nestled inside.",
@@ -10579,7 +11043,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "talk-to-troll"
+            "signalId": "talk-to"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "talk-to",
+            "key": "targetId",
+            "equals": "troll"
           },
           {
             "type": "playerAt",
@@ -10619,7 +11089,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "talk-to-troll"
+          "signalId": "talk-to"
         }
       ],
       "narration": "The troll bares his yellow tusks and growls."
@@ -10714,7 +11184,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "talk-to-cyclops"
+            "signalId": "talk-to"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "talk-to",
+            "key": "targetId",
+            "equals": "cyclops"
           },
           {
             "type": "playerAt",
@@ -10741,7 +11217,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "talk-to-cyclops"
+          "signalId": "talk-to"
         }
       ],
       "narration": "The cyclops eyes you with growing impatience."
@@ -13514,6 +13990,26 @@
         "type": "and",
         "all": [
           {
+            "type": "or",
+            "any": [
+              {
+                "type": "flag",
+                "key": "combat-engaged-with-troll",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "combat-engaged-with-cyclops",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "combat-engaged-with-thief",
+                "equals": true
+              }
+            ]
+          },
+          {
             "type": "compare",
             "left": {
               "kind": "flag",
@@ -13534,15 +14030,7 @@
             "op": ">",
             "right": {
               "kind": "literal",
-              "value": 0
-            }
-          },
-          {
-            "type": "not",
-            "condition": {
-              "type": "flag",
-              "key": "player-tier-wounded-shown",
-              "equals": true
+              "value": 12
             }
           }
         ]
@@ -13551,11 +14039,6 @@
         {
           "type": "narrate",
           "text": "Your breath catches; the wounds are starting to tell."
-        },
-        {
-          "type": "setFlag",
-          "key": "player-tier-wounded-shown",
-          "value": true
         }
       ]
     },
@@ -13566,6 +14049,26 @@
       "when": {
         "type": "and",
         "all": [
+          {
+            "type": "or",
+            "any": [
+              {
+                "type": "flag",
+                "key": "combat-engaged-with-troll",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "combat-engaged-with-cyclops",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "combat-engaged-with-thief",
+                "equals": true
+              }
+            ]
+          },
           {
             "type": "compare",
             "left": {
@@ -13587,15 +14090,7 @@
             "op": ">",
             "right": {
               "kind": "literal",
-              "value": 0
-            }
-          },
-          {
-            "type": "not",
-            "condition": {
-              "type": "flag",
-              "key": "player-tier-bloodied-shown",
-              "equals": true
+              "value": 5
             }
           }
         ]
@@ -13604,11 +14099,6 @@
         {
           "type": "narrate",
           "text": "Blood slicks your hands and slows your grip."
-        },
-        {
-          "type": "setFlag",
-          "key": "player-tier-bloodied-shown",
-          "value": true
         }
       ]
     },
@@ -13619,6 +14109,26 @@
       "when": {
         "type": "and",
         "all": [
+          {
+            "type": "or",
+            "any": [
+              {
+                "type": "flag",
+                "key": "combat-engaged-with-troll",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "combat-engaged-with-cyclops",
+                "equals": true
+              },
+              {
+                "type": "flag",
+                "key": "combat-engaged-with-thief",
+                "equals": true
+              }
+            ]
+          },
           {
             "type": "compare",
             "left": {
@@ -13642,14 +14152,6 @@
               "kind": "literal",
               "value": 0
             }
-          },
-          {
-            "type": "not",
-            "condition": {
-              "type": "flag",
-              "key": "player-tier-critical-shown",
-              "equals": true
-            }
           }
         ]
       },
@@ -13657,11 +14159,6 @@
         {
           "type": "narrate",
           "text": "The world narrows. Each step costs more than the last."
-        },
-        {
-          "type": "setFlag",
-          "key": "player-tier-critical-shown",
-          "value": true
         }
       ]
     },
@@ -13672,6 +14169,11 @@
       "when": {
         "type": "and",
         "all": [
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-troll",
+            "equals": true
+          },
           {
             "type": "compare",
             "left": {
@@ -13695,15 +14197,7 @@
             "op": ">",
             "right": {
               "kind": "literal",
-              "value": 0
-            }
-          },
-          {
-            "type": "not",
-            "condition": {
-              "type": "flag",
-              "key": "troll-tier-wounded-shown",
-              "equals": true
+              "value": 4
             }
           }
         ]
@@ -13712,11 +14206,6 @@
         {
           "type": "narrate",
           "text": "The troll's roars grow ragged; he favors one leg."
-        },
-        {
-          "type": "setFlag",
-          "key": "troll-tier-wounded-shown",
-          "value": true
         }
       ]
     },
@@ -13727,6 +14216,11 @@
       "when": {
         "type": "and",
         "all": [
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-troll",
+            "equals": true
+          },
           {
             "type": "compare",
             "left": {
@@ -13750,15 +14244,7 @@
             "op": ">",
             "right": {
               "kind": "literal",
-              "value": 0
-            }
-          },
-          {
-            "type": "not",
-            "condition": {
-              "type": "flag",
-              "key": "troll-tier-bloodied-shown",
-              "equals": true
+              "value": 2
             }
           }
         ]
@@ -13767,11 +14253,6 @@
         {
           "type": "narrate",
           "text": "The troll snarls, blood matting his fur; his axe arm trembles."
-        },
-        {
-          "type": "setFlag",
-          "key": "troll-tier-bloodied-shown",
-          "value": true
         }
       ]
     },
@@ -13782,6 +14263,11 @@
       "when": {
         "type": "and",
         "all": [
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-troll",
+            "equals": true
+          },
           {
             "type": "compare",
             "left": {
@@ -13807,14 +14293,6 @@
               "kind": "literal",
               "value": 0
             }
-          },
-          {
-            "type": "not",
-            "condition": {
-              "type": "flag",
-              "key": "troll-tier-critical-shown",
-              "equals": true
-            }
           }
         ]
       },
@@ -13822,11 +14300,6 @@
         {
           "type": "narrate",
           "text": "The troll sways, axe drooping; one more blow looks likely to finish him."
-        },
-        {
-          "type": "setFlag",
-          "key": "troll-tier-critical-shown",
-          "value": true
         }
       ]
     },
@@ -13837,6 +14310,11 @@
       "when": {
         "type": "and",
         "all": [
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-cyclops",
+            "equals": true
+          },
           {
             "type": "compare",
             "left": {
@@ -13860,15 +14338,7 @@
             "op": ">",
             "right": {
               "kind": "literal",
-              "value": 0
-            }
-          },
-          {
-            "type": "not",
-            "condition": {
-              "type": "flag",
-              "key": "cyclops-tier-wounded-shown",
-              "equals": true
+              "value": 10
             }
           }
         ]
@@ -13877,11 +14347,6 @@
         {
           "type": "narrate",
           "text": "The cyclops bellows in pain, his single eye wild."
-        },
-        {
-          "type": "setFlag",
-          "key": "cyclops-tier-wounded-shown",
-          "value": true
         }
       ]
     },
@@ -13892,6 +14357,11 @@
       "when": {
         "type": "and",
         "all": [
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-cyclops",
+            "equals": true
+          },
           {
             "type": "compare",
             "left": {
@@ -13915,15 +14385,7 @@
             "op": ">",
             "right": {
               "kind": "literal",
-              "value": 0
-            }
-          },
-          {
-            "type": "not",
-            "condition": {
-              "type": "flag",
-              "key": "cyclops-tier-bloodied-shown",
-              "equals": true
+              "value": 4
             }
           }
         ]
@@ -13932,11 +14394,6 @@
         {
           "type": "narrate",
           "text": "The cyclops's breath comes in wet rasps; blood streaks his chest."
-        },
-        {
-          "type": "setFlag",
-          "key": "cyclops-tier-bloodied-shown",
-          "value": true
         }
       ]
     },
@@ -13947,6 +14404,11 @@
       "when": {
         "type": "and",
         "all": [
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-cyclops",
+            "equals": true
+          },
           {
             "type": "compare",
             "left": {
@@ -13972,14 +14434,6 @@
               "kind": "literal",
               "value": 0
             }
-          },
-          {
-            "type": "not",
-            "condition": {
-              "type": "flag",
-              "key": "cyclops-tier-critical-shown",
-              "equals": true
-            }
           }
         ]
       },
@@ -13987,11 +14441,6 @@
         {
           "type": "narrate",
           "text": "The cyclops staggers, breath labored, the bloodlust dimming."
-        },
-        {
-          "type": "setFlag",
-          "key": "cyclops-tier-critical-shown",
-          "value": true
         }
       ]
     },
@@ -14002,6 +14451,11 @@
       "when": {
         "type": "and",
         "all": [
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-thief",
+            "equals": true
+          },
           {
             "type": "compare",
             "left": {
@@ -14025,15 +14479,7 @@
             "op": ">",
             "right": {
               "kind": "literal",
-              "value": 0
-            }
-          },
-          {
-            "type": "not",
-            "condition": {
-              "type": "flag",
-              "key": "thief-tier-wounded-shown",
-              "equals": true
+              "value": 12
             }
           }
         ]
@@ -14042,11 +14488,6 @@
         {
           "type": "narrate",
           "text": "The thief's elegant guard frays; sweat darkens his cloak."
-        },
-        {
-          "type": "setFlag",
-          "key": "thief-tier-wounded-shown",
-          "value": true
         }
       ]
     },
@@ -14057,6 +14498,11 @@
       "when": {
         "type": "and",
         "all": [
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-thief",
+            "equals": true
+          },
           {
             "type": "compare",
             "left": {
@@ -14080,15 +14526,7 @@
             "op": ">",
             "right": {
               "kind": "literal",
-              "value": 0
-            }
-          },
-          {
-            "type": "not",
-            "condition": {
-              "type": "flag",
-              "key": "thief-tier-bloodied-shown",
-              "equals": true
+              "value": 5
             }
           }
         ]
@@ -14097,11 +14535,6 @@
         {
           "type": "narrate",
           "text": "The thief's smile is gone; he fights now with grim economy."
-        },
-        {
-          "type": "setFlag",
-          "key": "thief-tier-bloodied-shown",
-          "value": true
         }
       ]
     },
@@ -14112,6 +14545,11 @@
       "when": {
         "type": "and",
         "all": [
+          {
+            "type": "flag",
+            "key": "combat-engaged-with-thief",
+            "equals": true
+          },
           {
             "type": "compare",
             "left": {
@@ -14137,14 +14575,6 @@
               "kind": "literal",
               "value": 0
             }
-          },
-          {
-            "type": "not",
-            "condition": {
-              "type": "flag",
-              "key": "thief-tier-critical-shown",
-              "equals": true
-            }
           }
         ]
       },
@@ -14152,229 +14582,6 @@
         {
           "type": "narrate",
           "text": "The thief's stiletto wavers; his composure cracks at last."
-        },
-        {
-          "type": "setFlag",
-          "key": "thief-tier-critical-shown",
-          "value": true
-        }
-      ]
-    },
-    {
-      "id": "troll-tier-cleanup",
-      "afterAction": true,
-      "once": false,
-      "when": {
-        "type": "and",
-        "all": [
-          {
-            "type": "flag",
-            "key": "combat-engaged-with-troll",
-            "equals": false
-          },
-          {
-            "type": "or",
-            "any": [
-              {
-                "type": "flag",
-                "key": "troll-tier-wounded-shown",
-                "equals": true
-              },
-              {
-                "type": "flag",
-                "key": "troll-tier-bloodied-shown",
-                "equals": true
-              },
-              {
-                "type": "flag",
-                "key": "troll-tier-critical-shown",
-                "equals": true
-              }
-            ]
-          }
-        ]
-      },
-      "effects": [
-        {
-          "type": "setFlag",
-          "key": "troll-tier-wounded-shown",
-          "value": false
-        },
-        {
-          "type": "setFlag",
-          "key": "troll-tier-bloodied-shown",
-          "value": false
-        },
-        {
-          "type": "setFlag",
-          "key": "troll-tier-critical-shown",
-          "value": false
-        }
-      ]
-    },
-    {
-      "id": "cyclops-tier-cleanup",
-      "afterAction": true,
-      "once": false,
-      "when": {
-        "type": "and",
-        "all": [
-          {
-            "type": "flag",
-            "key": "combat-engaged-with-cyclops",
-            "equals": false
-          },
-          {
-            "type": "or",
-            "any": [
-              {
-                "type": "flag",
-                "key": "cyclops-tier-wounded-shown",
-                "equals": true
-              },
-              {
-                "type": "flag",
-                "key": "cyclops-tier-bloodied-shown",
-                "equals": true
-              },
-              {
-                "type": "flag",
-                "key": "cyclops-tier-critical-shown",
-                "equals": true
-              }
-            ]
-          }
-        ]
-      },
-      "effects": [
-        {
-          "type": "setFlag",
-          "key": "cyclops-tier-wounded-shown",
-          "value": false
-        },
-        {
-          "type": "setFlag",
-          "key": "cyclops-tier-bloodied-shown",
-          "value": false
-        },
-        {
-          "type": "setFlag",
-          "key": "cyclops-tier-critical-shown",
-          "value": false
-        }
-      ]
-    },
-    {
-      "id": "thief-tier-cleanup",
-      "afterAction": true,
-      "once": false,
-      "when": {
-        "type": "and",
-        "all": [
-          {
-            "type": "flag",
-            "key": "combat-engaged-with-thief",
-            "equals": false
-          },
-          {
-            "type": "or",
-            "any": [
-              {
-                "type": "flag",
-                "key": "thief-tier-wounded-shown",
-                "equals": true
-              },
-              {
-                "type": "flag",
-                "key": "thief-tier-bloodied-shown",
-                "equals": true
-              },
-              {
-                "type": "flag",
-                "key": "thief-tier-critical-shown",
-                "equals": true
-              }
-            ]
-          }
-        ]
-      },
-      "effects": [
-        {
-          "type": "setFlag",
-          "key": "thief-tier-wounded-shown",
-          "value": false
-        },
-        {
-          "type": "setFlag",
-          "key": "thief-tier-bloodied-shown",
-          "value": false
-        },
-        {
-          "type": "setFlag",
-          "key": "thief-tier-critical-shown",
-          "value": false
-        }
-      ]
-    },
-    {
-      "id": "player-tier-cleanup",
-      "afterAction": true,
-      "once": false,
-      "when": {
-        "type": "and",
-        "all": [
-          {
-            "type": "flag",
-            "key": "combat-engaged-with-troll",
-            "equals": false
-          },
-          {
-            "type": "flag",
-            "key": "combat-engaged-with-cyclops",
-            "equals": false
-          },
-          {
-            "type": "flag",
-            "key": "combat-engaged-with-thief",
-            "equals": false
-          },
-          {
-            "type": "or",
-            "any": [
-              {
-                "type": "flag",
-                "key": "player-tier-wounded-shown",
-                "equals": true
-              },
-              {
-                "type": "flag",
-                "key": "player-tier-bloodied-shown",
-                "equals": true
-              },
-              {
-                "type": "flag",
-                "key": "player-tier-critical-shown",
-                "equals": true
-              }
-            ]
-          }
-        ]
-      },
-      "effects": [
-        {
-          "type": "setFlag",
-          "key": "player-tier-wounded-shown",
-          "value": false
-        },
-        {
-          "type": "setFlag",
-          "key": "player-tier-bloodied-shown",
-          "value": false
-        },
-        {
-          "type": "setFlag",
-          "key": "player-tier-critical-shown",
-          "value": false
         }
       ]
     },
@@ -14843,6 +15050,425 @@
         }
       ],
       "narration": "There is no reaction."
+    },
+    {
+      "id": "grate-unlocks",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "unlock"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "unlock",
+            "key": "itemId",
+            "equals": "keys"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "unlock",
+            "key": "targetId",
+            "equals": "grate"
+          },
+          {
+            "type": "passageState",
+            "passageId": "grate",
+            "key": "isLocked",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setPassageState",
+          "passageId": "grate",
+          "key": "isLocked",
+          "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "unlock"
+        }
+      ],
+      "narration": "The skeleton key fits the skull-and-crossbones lock with a satisfying click; the grate's bolt slides free."
+    },
+    {
+      "id": "grate-locks",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "lock"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "lock",
+            "key": "itemId",
+            "equals": "keys"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "lock",
+            "key": "targetId",
+            "equals": "grate"
+          },
+          {
+            "type": "passageState",
+            "passageId": "grate",
+            "key": "isLocked",
+            "equals": false
+          },
+          {
+            "type": "passageState",
+            "passageId": "grate",
+            "key": "isOpen",
+            "equals": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setPassageState",
+          "passageId": "grate",
+          "key": "isLocked",
+          "value": true
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "lock"
+        }
+      ],
+      "narration": "You turn the skeleton key in the skull-and-crossbones lock; the bolt slides home."
+    },
+    {
+      "id": "grate-open-refused-locked",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "open"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "open",
+            "key": "itemId",
+            "equals": "grate"
+          },
+          {
+            "type": "passageState",
+            "passageId": "grate",
+            "key": "isLocked",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setPassageState",
+          "passageId": "grate",
+          "key": "isOpen",
+          "value": false
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "open"
+        }
+      ],
+      "narration": "The grate is locked closed — a skull-and-crossbones lock keeps it shut."
+    },
+    {
+      "id": "unlock-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "unlock"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "unlock"
+        }
+      ],
+      "narration": "The key doesn't fit."
+    },
+    {
+      "id": "lock-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "lock"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "lock"
+        }
+      ],
+      "narration": "The key doesn't fit."
+    },
+    {
+      "id": "untie-rope",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "untie"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "untie",
+            "key": "itemId",
+            "equals": "rope"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "dome-room"
+          },
+          {
+            "type": "itemAt",
+            "itemId": "rope",
+            "location": "dome-room"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "dome-flag",
+          "value": false
+        },
+        {
+          "type": "moveItem",
+          "itemId": "rope",
+          "to": "player"
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "untie"
+        }
+      ],
+      "narration": "You untie the rope from the railing and coil it back into your hand."
+    },
+    {
+      "id": "tie-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "tie"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "tie"
+        }
+      ],
+      "narration": "There's nothing to tie that to here."
+    },
+    {
+      "id": "untie-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "untie"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "untie"
+        }
+      ],
+      "narration": "There's nothing here to untie."
+    },
+    {
+      "id": "talk-to-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "talk-to"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "talk-to"
+        }
+      ],
+      "narration": "There is no reaction."
+    },
+    {
+      "id": "burn-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "burn"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "burn"
+        }
+      ],
+      "narration": "It won't catch fire."
+    },
+    {
+      "id": "mung-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "mung"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "mung"
+        }
+      ],
+      "narration": "Nothing happens."
+    },
+    {
+      "id": "push-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "push"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "push"
+        }
+      ],
+      "narration": "Nothing happens."
+    },
+    {
+      "id": "lower-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "lower"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "lower"
+        }
+      ],
+      "narration": "There's nothing to lower here."
+    },
+    {
+      "id": "raise-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "raise"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "raise"
+        }
+      ],
+      "narration": "There's nothing to raise here."
+    },
+    {
+      "id": "turn-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "turn"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "turn"
+        }
+      ],
+      "narration": "It doesn't turn."
+    },
+    {
+      "id": "inflate-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "inflate"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "inflate"
+        }
+      ],
+      "narration": "There's nothing to inflate here."
+    },
+    {
+      "id": "plug-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "plug"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "plug"
+        }
+      ],
+      "narration": "Nothing to plug."
+    },
+    {
+      "id": "dig-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "dig"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "dig"
+        }
+      ],
+      "narration": "Nothing to dig here."
     },
     {
       "id": "break-egg-destroys-canary",
@@ -16327,11 +16953,17 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "turn-machine-switch"
+            "signalId": "turn"
           },
           {
             "type": "intentArg",
-            "signalId": "turn-machine-switch",
+            "signalId": "turn",
+            "key": "itemId",
+            "equals": "machine-switch"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn",
             "key": "withItemId",
             "equals": "screwdriver"
           },
@@ -16375,7 +17007,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "turn-machine-switch"
+          "signalId": "turn"
         }
       ],
       "narration": "The machine comes to life with a dazzling display of colored lights and bizarre noises — clattering, whirring, sparks. After a few moments the racket subsides. The lid pops open. Where you placed the coal, a magnificent diamond now lies."
@@ -16388,11 +17020,17 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "turn-machine-switch"
+            "signalId": "turn"
           },
           {
             "type": "intentArg",
-            "signalId": "turn-machine-switch",
+            "signalId": "turn",
+            "key": "itemId",
+            "equals": "machine-switch"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn",
             "key": "withItemId",
             "equals": "screwdriver"
           },
@@ -16423,7 +17061,7 @@
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "turn-machine-switch"
+          "signalId": "turn"
         }
       ],
       "narration": "The machine clatters and whirs, but produces only a faint puff of greenish smoke. Whatever it's looking for, it isn't finding."
@@ -16436,11 +17074,17 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "turn-machine-switch"
+            "signalId": "turn"
           },
           {
             "type": "intentArg",
-            "signalId": "turn-machine-switch",
+            "signalId": "turn",
+            "key": "itemId",
+            "equals": "machine-switch"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn",
             "key": "withItemId",
             "equals": "screwdriver"
           },
@@ -16463,7 +17107,7 @@
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "turn-machine-switch"
+          "signalId": "turn"
         }
       ],
       "narration": "The machine clatters into life. A plume of green smoke curls up out of the chamber, drifts into the room, and dissipates. The noise dwindles to silence."
@@ -16477,7 +17121,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "turn-machine-switch"
+            "signalId": "turn"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn",
+            "key": "itemId",
+            "equals": "machine-switch"
           },
           {
             "type": "playerAt",
@@ -16488,7 +17138,7 @@
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "turn-machine-switch"
+          "signalId": "turn"
         }
       ],
       "narration": "The switch doesn't budge."
@@ -16501,7 +17151,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "push-machine-switch"
+            "signalId": "push"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "push",
+            "key": "itemId",
+            "equals": "machine-switch"
           },
           {
             "type": "playerAt",
@@ -16512,7 +17168,7 @@
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "push-machine-switch"
+          "signalId": "push"
         }
       ],
       "narration": "The switch is too small to manipulate with human fingers — barely 1/16 by 1/4 of an inch."
@@ -16525,7 +17181,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "lower-basket"
+            "signalId": "lower"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "lower",
+            "key": "itemId",
+            "equals": "basket"
           },
           {
             "type": "or",
@@ -16562,7 +17224,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "lower-basket"
+          "signalId": "lower"
         }
       ],
       "narration": "The chain rattles as the basket descends out of sight, settling at the bottom of the shaft."
@@ -16575,7 +17237,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "raise-basket"
+            "signalId": "raise"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "raise",
+            "key": "itemId",
+            "equals": "basket"
           },
           {
             "type": "or",
@@ -16612,7 +17280,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "raise-basket"
+          "signalId": "raise"
         }
       ],
       "narration": "The chain creaks as you haul; the basket rises smoothly out of the depths and settles at the top of the shaft."
@@ -16716,7 +17384,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "push-yellow-button"
+            "signalId": "push"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "push",
+            "key": "itemId",
+            "equals": "yellow-button"
           },
           {
             "type": "playerAt",
@@ -16732,7 +17406,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "push-yellow-button"
+          "signalId": "push"
         }
       ],
       "narration": "Click."
@@ -16745,7 +17419,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "push-brown-button"
+            "signalId": "push"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "push",
+            "key": "itemId",
+            "equals": "brown-button"
           },
           {
             "type": "playerAt",
@@ -16761,7 +17441,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "push-brown-button"
+          "signalId": "push"
         }
       ],
       "narration": "Click."
@@ -16774,7 +17454,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "push-red-button"
+            "signalId": "push"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "push",
+            "key": "itemId",
+            "equals": "red-button"
           },
           {
             "type": "playerAt",
@@ -16815,7 +17501,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "push-red-button"
+          "signalId": "push"
         }
       ]
     },
@@ -16827,7 +17513,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "push-blue-button"
+            "signalId": "push"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "push",
+            "key": "itemId",
+            "equals": "blue-button"
           },
           {
             "type": "playerAt",
@@ -16853,7 +17545,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "push-blue-button"
+          "signalId": "push"
         }
       ],
       "narration": "There is a rumbling sound and a stream of water appears to burst from the east wall of the room (apparently, a leak has occurred in a pipe). The water level begins to rise."
@@ -16947,7 +17639,19 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "plug-leak-with-putty"
+            "signalId": "plug"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "plug",
+            "key": "itemId",
+            "equals": "leak"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "plug",
+            "key": "withItemId",
+            "equals": "putty"
           },
           {
             "type": "playerAt",
@@ -16982,7 +17686,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "plug-leak-with-putty"
+          "signalId": "plug"
         }
       ],
       "narration": "You press the viscous material against the pipe; it spreads and seals the leak with a satisfying squelch. The flow stops. The water level slowly recedes."
@@ -16995,7 +17699,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "plug-leak-by-hand"
+            "signalId": "plug"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "plug",
+            "key": "itemId",
+            "equals": "leak"
           },
           {
             "type": "playerAt",
@@ -17006,7 +17716,7 @@
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "plug-leak-by-hand"
+          "signalId": "plug"
         }
       ],
       "narration": "Water sprays past your fingers, the pressure forcing your hand right back."
@@ -17019,11 +17729,17 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "turn-dam-bolt"
+            "signalId": "turn"
           },
           {
             "type": "intentArg",
-            "signalId": "turn-dam-bolt",
+            "signalId": "turn",
+            "key": "itemId",
+            "equals": "bolt"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn",
             "key": "withItemId",
             "equals": "wrench"
           },
@@ -17060,7 +17776,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "turn-dam-bolt"
+          "signalId": "turn"
         }
       ],
       "narration": "The bolt turns slowly. Somewhere below, the sluice gates open and water pours through the dam with a sustained roar. The reservoir will take some time to drain."
@@ -17073,11 +17789,17 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "turn-dam-bolt"
+            "signalId": "turn"
           },
           {
             "type": "intentArg",
-            "signalId": "turn-dam-bolt",
+            "signalId": "turn",
+            "key": "itemId",
+            "equals": "bolt"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn",
             "key": "withItemId",
             "equals": "wrench"
           },
@@ -17119,10 +17841,10 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "turn-dam-bolt"
+          "signalId": "turn"
         }
       ],
-      "narration": "The bolt turns the other way. Below, the sluice gates rumble shut, and water begins to back up behind the dam once again."
+      "narration": "The bolt turns smoothly under the wrench. Below, the sluice gates rumble shut, and water begins to back up behind the dam once again."
     },
     {
       "id": "bolt-fails-to-turn",
@@ -17133,7 +17855,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "turn-dam-bolt"
+            "signalId": "turn"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn",
+            "key": "itemId",
+            "equals": "bolt"
           },
           {
             "type": "playerAt",
@@ -17144,7 +17872,7 @@
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "turn-dam-bolt"
+          "signalId": "turn"
         }
       ],
       "narration": "The bolt doesn't budge — you'll need the right tool, in the right place, with the right control surface enabled."
@@ -17157,7 +17885,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "turn-dam-bolt-by-hand"
+            "signalId": "turn"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn",
+            "key": "itemId",
+            "equals": "bolt"
           },
           {
             "type": "playerAt",
@@ -17168,7 +17902,7 @@
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "turn-dam-bolt-by-hand"
+          "signalId": "turn"
         }
       ],
       "narration": "The bolt is heavy iron and held tight in its socket. Your bare hands can't budge it."
@@ -17450,6 +18184,36 @@
       "narration": "Your load is too great. The passage west narrows to a slit barely a person's width."
     },
     {
+      "id": "maze-9-down-warning",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "go"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "go",
+            "key": "direction",
+            "equals": "down"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "maze-11"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "narrate",
+          "text": "You won't be able to get back up to the tunnel you are going through when it gets to the next room."
+        }
+      ]
+    },
+    {
       "id": "lower-shaft-too-loaded",
       "once": false,
       "when": {
@@ -17503,11 +18267,17 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "inflate-boat"
+            "signalId": "inflate"
           },
           {
             "type": "intentArg",
-            "signalId": "inflate-boat",
+            "signalId": "inflate",
+            "key": "itemId",
+            "equals": "inflatable-boat"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "inflate",
             "key": "withItemId",
             "equals": "pump"
           },
@@ -17536,7 +18306,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "inflate-boat"
+          "signalId": "inflate"
         }
       ],
       "narration": "The boat hisses and swells into a sturdy yellow raft, ready for the river."
@@ -17550,7 +18320,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "inflate-boat"
+            "signalId": "inflate"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "inflate",
+            "key": "itemId",
+            "equals": "inflatable-boat"
           },
           {
             "type": "itemAccessible",
@@ -17561,7 +18337,7 @@
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "inflate-boat"
+          "signalId": "inflate"
         }
       ],
       "narration": "That isn't going to inflate anything."
@@ -17570,13 +18346,24 @@
       "id": "boat-bare-mouth",
       "once": false,
       "when": {
-        "type": "intentMatched",
-        "signalId": "inflate-boat-by-mouth"
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "inflate"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "inflate",
+            "key": "itemId",
+            "equals": "inflatable-boat"
+          }
+        ]
       },
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "inflate-boat-by-mouth"
+          "signalId": "inflate"
         }
       ],
       "narration": "You blow until your head spins. The folded plastic doesn't budge."
@@ -18335,7 +19122,7 @@
             "signalId": "wind-canary"
           },
           {
-            "type": "hasItem",
+            "type": "itemAccessible",
             "itemId": "canary"
           },
           {
@@ -18463,7 +19250,7 @@
             "signalId": "wind-canary"
           },
           {
-            "type": "hasItem",
+            "type": "itemAccessible",
             "itemId": "canary"
           }
         ]
@@ -18653,7 +19440,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "burn-leaves"
+            "signalId": "burn"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "burn",
+            "key": "itemId",
+            "equals": "leaves"
           },
           {
             "type": "hasItem",
@@ -18816,7 +19609,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "burn-book"
+            "signalId": "burn"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "burn",
+            "key": "itemId",
+            "equals": "book"
           },
           {
             "type": "hasItem",
@@ -18880,7 +19679,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "mung-bodies"
+            "signalId": "mung"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "mung",
+            "key": "itemId",
+            "equals": "bodies"
           },
           {
             "type": "playerAt",
@@ -18967,11 +19772,17 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "dig-sand-with-tool"
+            "signalId": "dig"
           },
           {
             "type": "intentArg",
-            "signalId": "dig-sand-with-tool",
+            "signalId": "dig",
+            "key": "targetId",
+            "equals": "sand"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "dig",
             "key": "withItemId",
             "equals": "shovel"
           },
@@ -19005,7 +19816,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "dig-sand-with-tool"
+          "signalId": "dig"
         }
       ],
       "narration": "You dig deeper into the loose sand. The hole grows."
@@ -19019,11 +19830,17 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "dig-sand-with-tool"
+            "signalId": "dig"
           },
           {
             "type": "intentArg",
-            "signalId": "dig-sand-with-tool",
+            "signalId": "dig",
+            "key": "targetId",
+            "equals": "sand"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "dig",
             "key": "withItemId",
             "equals": "shovel"
           },
@@ -19071,11 +19888,17 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "dig-sand-with-tool"
+            "signalId": "dig"
           },
           {
             "type": "intentArg",
-            "signalId": "dig-sand-with-tool",
+            "signalId": "dig",
+            "key": "targetId",
+            "equals": "sand"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "dig",
             "key": "withItemId",
             "equals": "shovel"
           },
@@ -19109,7 +19932,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "dig-sand-with-tool"
+          "signalId": "dig"
         }
       ],
       "narration": "(with the shovel)\nYou seem to be digging a hole here."
@@ -19123,11 +19946,17 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "dig-sand-with-tool"
+            "signalId": "dig"
           },
           {
             "type": "intentArg",
-            "signalId": "dig-sand-with-tool",
+            "signalId": "dig",
+            "key": "targetId",
+            "equals": "sand"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "dig",
             "key": "withItemId",
             "equals": "shovel"
           },
@@ -19161,7 +19990,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "dig-sand-with-tool"
+          "signalId": "dig"
         }
       ],
       "narration": "(with the shovel)\nThe hole is getting deeper, but that's about it."
@@ -19175,11 +20004,17 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "dig-sand-with-tool"
+            "signalId": "dig"
           },
           {
             "type": "intentArg",
-            "signalId": "dig-sand-with-tool",
+            "signalId": "dig",
+            "key": "targetId",
+            "equals": "sand"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "dig",
             "key": "withItemId",
             "equals": "shovel"
           },
@@ -19213,7 +20048,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "dig-sand-with-tool"
+          "signalId": "dig"
         }
       ],
       "narration": "(with the shovel)\nYou are surrounded by a wall of sand on all sides."
@@ -19227,11 +20062,17 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "dig-sand-with-tool"
+            "signalId": "dig"
           },
           {
             "type": "intentArg",
-            "signalId": "dig-sand-with-tool",
+            "signalId": "dig",
+            "key": "targetId",
+            "equals": "sand"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "dig",
             "key": "withItemId",
             "equals": "shovel"
           },
@@ -19270,7 +20111,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "dig-sand-with-tool"
+          "signalId": "dig"
         }
       ],
       "narration": "(with the shovel)\nYou can see a scarab here in the sand."
@@ -19284,11 +20125,17 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "dig-sand-with-tool"
+            "signalId": "dig"
           },
           {
             "type": "intentArg",
-            "signalId": "dig-sand-with-tool",
+            "signalId": "dig",
+            "key": "targetId",
+            "equals": "sand"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "dig",
             "key": "withItemId",
             "equals": "shovel"
           },
@@ -19317,7 +20164,7 @@
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "dig-sand-with-tool"
+          "signalId": "dig"
         }
       ],
       "narration": "(with the shovel)\nThe hole is as deep as it'll go without bringing the cave down on your head."
@@ -19331,7 +20178,22 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "dig-sand-with-tool"
+            "signalId": "dig"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "dig",
+            "key": "targetId",
+            "equals": "sand"
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "intentArg",
+              "signalId": "dig",
+              "key": "withItemId",
+              "equals": "shovel"
+            }
           },
           {
             "type": "or",
@@ -19351,7 +20213,7 @@
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "dig-sand-with-tool"
+          "signalId": "dig"
         }
       ],
       "narration": "That isn't going to dig much sand."
@@ -19365,7 +20227,22 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "dig-sand"
+            "signalId": "dig"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "dig",
+            "key": "targetId",
+            "equals": "sand"
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "intentArg",
+              "signalId": "dig",
+              "key": "withItemId",
+              "equals": "shovel"
+            }
           },
           {
             "type": "or",
@@ -19385,7 +20262,7 @@
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "dig-sand"
+          "signalId": "dig"
         }
       ],
       "narration": "Digging with your bare hands won't get you very far."
@@ -19398,7 +20275,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "mung-painting"
+            "signalId": "mung"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "mung",
+            "key": "itemId",
+            "equals": "painting"
           },
           {
             "type": "or",
@@ -19434,7 +20317,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "mung-painting"
+          "signalId": "mung"
         }
       ],
       "narration": "You shred the canvas into ribbons. Whatever it depicted, it depicts no longer — the painting is now worthless."
@@ -19447,7 +20330,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "mung-sceptre"
+            "signalId": "mung"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "mung",
+            "key": "itemId",
+            "equals": "sceptre"
           },
           {
             "type": "hasItem",
@@ -19816,18 +20705,6 @@
     "combat-engaged-with-cyclops": false,
     "combat-engaged-with-thief": false,
     "thief-sized-up-this-encounter": false,
-    "player-tier-wounded-shown": false,
-    "player-tier-bloodied-shown": false,
-    "player-tier-critical-shown": false,
-    "troll-tier-wounded-shown": false,
-    "troll-tier-bloodied-shown": false,
-    "troll-tier-critical-shown": false,
-    "cyclops-tier-wounded-shown": false,
-    "cyclops-tier-bloodied-shown": false,
-    "cyclops-tier-critical-shown": false,
-    "thief-tier-wounded-shown": false,
-    "thief-tier-bloodied-shown": false,
-    "thief-tier-critical-shown": false,
     "troll-flag": false,
     "cyclops-flag": false,
     "magic-flag": false,

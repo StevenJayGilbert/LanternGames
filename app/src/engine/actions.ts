@@ -494,6 +494,18 @@ function recordIntent(
     const handlerResult = runHandler(nextState, story, customTool.handler, callArgs);
     nextState = handlerResult.state;
     cues.push(...handlerResult.cues);
+    // Precondition failure: the LLM's intent was technically matched, but the
+    // handler refused to execute it. Remove the matched intent so per-target
+    // triggers don't cascade on a "rejected" action (e.g. dam-bolt-bare-hands
+    // firing after a "you don't have the wrench" precondition refusal).
+    if (handlerResult.precondFailed) {
+      nextState = {
+        ...nextState,
+        matchedIntents: nextState.matchedIntents.filter((id) => id !== signalId),
+      };
+      const { [signalId]: _removed, ...restArgs } = nextState.matchedIntentArgs;
+      nextState = { ...nextState, matchedIntentArgs: restArgs };
+    }
   }
 
   return {
@@ -513,7 +525,7 @@ function runHandler(
   story: Story,
   handler: import("../story/schema").ToolHandler,
   args: Record<string, Atom>,
-): { state: GameState; cues: string[] } {
+): { state: GameState; cues: string[]; precondFailed?: boolean } {
   for (const pre of handler.preconditions ?? []) {
     const sub = substituteCondition(pre.when, args);
     if (sub === null) {
@@ -522,7 +534,11 @@ function runHandler(
     }
     if (!evaluateCondition(sub, state, story)) {
       // Failure narration reads pre-effect state (no effects applied yet).
-      return { state, cues: [renderHandlerTemplate(pre.failedNarration, args, story, state)] };
+      return {
+        state,
+        cues: [renderHandlerTemplate(pre.failedNarration, args, story, state)],
+        precondFailed: true,
+      };
     }
   }
 

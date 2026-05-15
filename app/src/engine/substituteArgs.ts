@@ -23,8 +23,13 @@ function resolveIdRef(ref: IdRef, args: Args, state?: GameState): string | null 
     if (typeof value === "string") return value;
     // Missing or wrong-typed arg — return null. Callers treat null as
     // "skip this Condition/Effect" which gracefully degrades rather
-    // than crashing.
-    console.warn(`[substituteArgs] arg "${ref.fromArg}" is not a string:`, value);
+    // than crashing. Missing (undefined) is the LEGITIMATE optional-arg
+    // case used by handler preconditions like hasItem({fromArg:
+    // "withItemId"}); silent. Wrong-typed values (number/object) are
+    // real authoring bugs — keep the warning for those.
+    if (value !== undefined) {
+      console.warn(`[substituteArgs] arg "${ref.fromArg}" is not a string:`, value);
+    }
     return null;
   }
   // fromIntent: pull from state.matchedIntentArgs (trigger context).
@@ -87,6 +92,11 @@ export function substituteCondition(
       return { ...c, itemId: id };
     }
     case "itemAccessible": {
+      const id = resolveIdRef(c.itemId, args, state);
+      if (id === null) return null;
+      return { ...c, itemId: id };
+    }
+    case "hasItem": {
       const id = resolveIdRef(c.itemId, args, state);
       if (id === null) return null;
       return { ...c, itemId: id };

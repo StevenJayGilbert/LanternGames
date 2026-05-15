@@ -85,7 +85,16 @@ import { currentRoomId, PLAYER_ITEM_ID } from "../engine/state";
 // zork-1.overrides.json, fixing fresh games structurally; trigger
 // gates moved from itemState(broken, equals: false) to
 // not(itemState(broken, equals: true)) for undefined-tolerance.
-const SAVE_VERSION = 17;
+// v18: Backfills passageStates.grate.isLocked=true for the unlock/lock
+// refactor. The grate gained state.isLocked=true in overrides.json;
+// fresh games seed it via initialState(), but pre-v18 saves were
+// persisted before the field existed and load with passageStates.grate
+// missing the key. The grate-unlocks per-target trigger gates on
+// passageState(grate, isLocked, equals: true) which evaluates false on
+// undefined, sending unlock attempts to the catchall ("The key doesn't
+// fit."). Backfill seeds the default for any save lacking it; saved
+// values win via spread.
+const SAVE_VERSION = 18;
 const LEGACY_SAVE_VERSION = 5;
 const V6_SAVE_VERSION = 6;
 const V7_SAVE_VERSION = 7;
@@ -98,6 +107,7 @@ const V13_SAVE_VERSION = 13;
 const V14_SAVE_VERSION = 14;
 const V15_SAVE_VERSION = 15;
 const V16_SAVE_VERSION = 16;
+const V17_SAVE_VERSION = 17;
 const PREFIX = "lanterngames_save_v" + SAVE_VERSION + "_";
 const LEGACY_PREFIX = "lanterngames_save_v" + LEGACY_SAVE_VERSION + "_";
 const V6_PREFIX = "lanterngames_save_v" + V6_SAVE_VERSION + "_";
@@ -111,6 +121,7 @@ const V13_PREFIX = "lanterngames_save_v" + V13_SAVE_VERSION + "_";
 const V14_PREFIX = "lanterngames_save_v" + V14_SAVE_VERSION + "_";
 const V15_PREFIX = "lanterngames_save_v" + V15_SAVE_VERSION + "_";
 const V16_PREFIX = "lanterngames_save_v" + V16_SAVE_VERSION + "_";
+const V17_PREFIX = "lanterngames_save_v" + V17_SAVE_VERSION + "_";
 
 // Transcript entry types — shared between App.tsx (display) and localSave
 // (persistence) so neither side has to redeclare or guess the shape.
@@ -177,11 +188,24 @@ export function loadSession(storyId: string, slot: SaveSlot): SavedSession | nul
       const parsed = JSON.parse(raw) as unknown;
       if (isValidSession(parsed, storyId)) return parsed;
     }
-    // v16 fallback: try the v16 key. v16→v17 reasserts the egg/canary
-    // broken backfill for saves written from fresh-game state where the
-    // broken key was never seeded (initialState() only mirrored item.state,
-    // and the egg/canary state blocks omitted broken until v17). Idempotent
-    // for saves that already have broken set.
+    // v17 fallback: try the v17 key. v17→v18 seeds passageStates.grate.isLocked
+    // for the unlock/lock refactor; without the seed, unlock attempts fall
+    // through to the catchall.
+    const v17Raw = localStorage.getItem(v17KeyForSlot(storyId, slot));
+    if (v17Raw) {
+      const migrated = migrateV17Session(JSON.parse(v17Raw) as unknown, storyId);
+      if (migrated) {
+        try {
+          localStorage.setItem(key(storyId, slot), JSON.stringify(migrated));
+          localStorage.removeItem(v17KeyForSlot(storyId, slot));
+        } catch {
+          // ignore write failures — migration retries next load
+        }
+        return migrated;
+      }
+    }
+    // v16 fallback: try the v16 key. v16→v18 chains v16 broken backfill +
+    // v18 grate.isLocked seed.
     const v16Raw = localStorage.getItem(v16KeyForSlot(storyId, slot));
     if (v16Raw) {
       const migrated = migrateV16Session(JSON.parse(v16Raw) as unknown, storyId);
@@ -521,6 +545,54 @@ function applyV16Backfill(es: Record<string, unknown>): Record<string, unknown> 
   };
 }
 
+// v18 additions:
+//   - passageStates.grate.isLocked (default true)
+//   - passageStates.grate.isOpen (default false)
+// The grate passage gained state.isLocked + state.isOpen in the unlock/lock
+// refactor. initialState() seeds them for fresh games via passage.state, but
+// pre-v18 saves were persisted without the fields. The grate-unlocks
+// per-target trigger gates on passageState(grate, isLocked, equals: true) —
+// undefined fails strict equality, sending unlock attempts to the catchall.
+// The open handler's precondition uses passageHasStateKey(grate, isOpen) —
+// undefined fails the existence check, rejecting open with "isn't something
+// you can open."
+//
+// Spread order (defaults first, then ...gratePrev) ensures any saved values
+// win over the defaults.
+function applyV18Backfill(es: Record<string, unknown>): Record<string, unknown> {
+  const v16 = applyV16Backfill(es);
+  const passageStates = (v16.passageStates as Record<string, Record<string, unknown>> | undefined) ?? {};
+  const gratePrev = passageStates["grate"] ?? {};
+  const migratedPassageStates: Record<string, Record<string, unknown>> = {
+    ...passageStates,
+    grate: {
+      isLocked: true,
+      isOpen: false,
+      ...gratePrev,
+    },
+  };
+  return { ...v16, passageStates: migratedPassageStates };
+}
+
+// v17 → v18 migration. Seeds passageStates.grate.isLocked for old saves.
+function migrateV17Session(v: unknown, storyId: string): SavedSession | null {
+  if (!v || typeof v !== "object") return null;
+  const r = v as Record<string, unknown>;
+  if (r.version !== V17_SAVE_VERSION) return null;
+  if (r.storyId !== storyId) return null;
+  if (!r.engineState || typeof r.engineState !== "object") return null;
+  const es = r.engineState as Record<string, unknown>;
+  return {
+    version: SAVE_VERSION,
+    storyId,
+    engineState: applyV18Backfill(es) as unknown as GameState,
+    narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
+    transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
+    inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
+    savedAt: typeof r.savedAt === "number" ? r.savedAt : Date.now(),
+  };
+}
+
 // v16 → v17 migration. Reseats itemStates.egg.broken and
 // itemStates.canary.broken for v16 saves written from fresh-game state
 // (where the broken key was never seeded — the egg/canary item.state
@@ -536,7 +608,7 @@ function migrateV16Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV16Backfill(es) as unknown as GameState,
+    engineState: applyV18Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -557,7 +629,7 @@ function migrateV15Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV16Backfill(es) as unknown as GameState,
+    engineState: applyV18Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -578,7 +650,7 @@ function migrateV14Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV16Backfill(es) as unknown as GameState,
+    engineState: applyV18Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -598,7 +670,7 @@ function migrateV13Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV16Backfill(es) as unknown as GameState,
+    engineState: applyV18Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -618,7 +690,7 @@ function migrateV12Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV16Backfill(es) as unknown as GameState,
+    engineState: applyV18Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -638,7 +710,7 @@ function migrateV11Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV16Backfill(es) as unknown as GameState,
+    engineState: applyV18Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -658,7 +730,7 @@ function migrateV10Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV16Backfill(es) as unknown as GameState,
+    engineState: applyV18Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -678,7 +750,7 @@ function migrateV9Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV16Backfill(es) as unknown as GameState,
+    engineState: applyV18Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -697,7 +769,7 @@ function migrateV8Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV16Backfill(es) as unknown as GameState,
+    engineState: applyV18Backfill(es) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -737,7 +809,7 @@ function migrateV6Session(v: unknown, storyId: string): SavedSession | null {
   return {
     version: SAVE_VERSION,
     storyId,
-    engineState: applyV16Backfill(r.engineState as Record<string, unknown>) as unknown as GameState,
+    engineState: applyV18Backfill(r.engineState as Record<string, unknown>) as unknown as GameState,
     narratorHistory: Array.isArray(r.narratorHistory) ? (r.narratorHistory as Message[]) : [],
     transcript: Array.isArray(r.transcript) ? (r.transcript as TranscriptEntry[]) : [],
     inputHistory: Array.isArray(r.inputHistory) ? (r.inputHistory as string[]) : [],
@@ -780,7 +852,7 @@ function migrateV5Session(v: unknown, storyId: string): SavedSession | null {
     lastExamineShown: _le,
     ...rest
   } = es;
-  const migratedEngineState = applyV16Backfill({
+  const migratedEngineState = applyV18Backfill({
     ...rest,
     itemLocations: nextItemLocations,
   }) as unknown as GameState;
@@ -844,6 +916,10 @@ function v16KeyForSlot(storyId: string, slot: SaveSlot): string {
   return V16_PREFIX + storyId + "_" + (slot === "quick" ? "quick" : "slot" + slot);
 }
 
+function v17KeyForSlot(storyId: string, slot: SaveSlot): string {
+  return V17_PREFIX + storyId + "_" + (slot === "quick" ? "quick" : "slot" + slot);
+}
+
 export function clearSession(storyId: string, slot: SaveSlot): void {
   try {
     localStorage.removeItem(key(storyId, slot));
@@ -851,6 +927,7 @@ export function clearSession(storyId: string, slot: SaveSlot): void {
     // lingered, loadSession would migrate-and-restore them on the next read,
     // and the user would see the slot "uncleared" / the LLM would resurrect
     // old narration history after a "new game".
+    localStorage.removeItem(v17KeyForSlot(storyId, slot));
     localStorage.removeItem(v16KeyForSlot(storyId, slot));
     localStorage.removeItem(v15KeyForSlot(storyId, slot));
     localStorage.removeItem(v14KeyForSlot(storyId, slot));

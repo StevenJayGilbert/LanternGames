@@ -871,6 +871,9 @@ function validateCondition(
       if (!isAtom(raw.equals)) err(`${path}.equals`, "must be string, number, or boolean");
       return;
     case "hasItem":
+      // hasItem.itemId is IdRef — accept handler-arg substitution.
+      validateIdRef(raw.itemId, `${path}.itemId`, itemIds, err);
+      return;
     case "examined":
       if (typeof raw.itemId !== "string") err(`${path}.itemId`, "must be a string");
       else if (itemIds.size && !itemIds.has(raw.itemId)) err(`${path}.itemId`, `unknown item "${raw.itemId}"`);

@@ -72,6 +72,17 @@ export class Engine {
     }
 
     const previousLocation = currentRoomId(this.state, this.story);
+
+    // Per-turn intent matching: clear any matched intents from prior turns
+    // before processing the current action. performAction records the new
+    // intent into matchedIntents/matchedIntentArgs; triggers gate on those.
+    // Without this reset, intents that no trigger consumes accumulate and
+    // leak into future turns (e.g. a `drop` at forest-1 with no per-target
+    // trigger would later re-fire items-fall-from-tree when the player
+    // visits up-a-tree). removeMatchedIntent still does its within-turn job:
+    // stopping downstream cascades from firing on the current intent.
+    this.state = { ...this.state, matchedIntents: [], matchedIntentArgs: {} };
+
     const actionResult = performAction(this.state, this.story, req);
 
     // Phase 1: regular trigger fixed-point loop. Skipped on rejection because

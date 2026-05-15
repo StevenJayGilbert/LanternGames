@@ -462,6 +462,9 @@ export function evaluateCondition(
     case "flag":
       return state.flags[c.key] === c.equals;
     case "hasItem":
+      // Defensive: if a {fromArg} slipped through (e.g. handler dispatch
+      // skipped substitution), return false rather than crash.
+      if (typeof c.itemId !== "string") return false;
       return state.itemLocations[c.itemId] === PLAYER_ITEM_ID;
     case "itemAt":
       // Resolve the legacy "inventory" alias so authors can still write

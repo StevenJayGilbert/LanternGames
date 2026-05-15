@@ -19,19 +19,6 @@
     "combat-engaged-with-cyclops": false,
     "combat-engaged-with-thief": false,
     "thief-sized-up-this-encounter": false,
-    "$tierFlagsComment": "Combat health-tier 'shown' memoization flags. Per (entity × tier), set true when the cue first fires; cleared by a per-entity tier-cleanup trigger when the relevant combat is no longer engaged. Three tiers per side (wounded / bloodied / critical) at 66% / 40% / 16% of max.",
-    "player-tier-wounded-shown": false,
-    "player-tier-bloodied-shown": false,
-    "player-tier-critical-shown": false,
-    "troll-tier-wounded-shown": false,
-    "troll-tier-bloodied-shown": false,
-    "troll-tier-critical-shown": false,
-    "cyclops-tier-wounded-shown": false,
-    "cyclops-tier-bloodied-shown": false,
-    "cyclops-tier-critical-shown": false,
-    "thief-tier-wounded-shown": false,
-    "thief-tier-bloodied-shown": false,
-    "thief-tier-critical-shown": false,
     "troll-flag": false,
     "cyclops-flag": false,
     "magic-flag": false,
@@ -289,12 +276,22 @@
       "traverseBlockedMessage": "The trap door is closed."
     },
     {
-      "$comment": "Grate is locked from above; opens only with the skeleton key (item id: keys, found in the maze near the skeleton). Symmetric — once unlocked, can open from either side. traversableWhen gates traversal on its open state.",
+      "$comment": "Grate has a skull-and-crossbones lock; the player must UNLOCK with the skeleton keys (item id: 'keys', found at maze-5) before OPEN works. Symmetric — once unlocked, the player can re-lock with the same keys (canonical). Two states: isLocked + isOpen. openWhen gates on not-locked; traversableWhen gates on isOpen.",
       "id": "grate",
       "description": "A heavy iron grating set into the floor — or, depending on which side you stand on, into the ceiling. Beyond it lies a clearing of scattered leaves.",
+      "state": {
+        "isLocked": true,
+        "isOpen": false
+      },
+      "variants": [
+        {
+          "when": { "type": "passageState", "passageId": "grate", "key": "isLocked", "equals": true },
+          "text": "A heavy iron grating, secured by a skull-and-crossbones lock. It is closed and locked."
+        }
+      ],
       "openWhen": {
-        "type": "hasItem",
-        "itemId": "keys"
+        "type": "not",
+        "condition": { "type": "passageState", "passageId": "grate", "key": "isLocked", "equals": true }
       },
       "traversableWhen": {
         "type": "passageState",
@@ -704,7 +701,11 @@
       }
     },
     {
+      "$comment": "Adds the canonical maze-9 → maze-11 down exit (one-way; maze-11 has no UP back). Mechanical ZIL extraction missed it. Per the canonical walkthrough: cyclops-room → NW → S → W → U → D → NE → Grating Room.",
       "id": "maze-9",
+      "exits": {
+        "down": { "to": "maze-11" }
+      },
       "state": {
         "dark": true
       }
@@ -820,6 +821,11 @@
       "state": {
         "dark": true
       }
+    },
+    {
+      "$comment": "Dam room — top of Flood Control Dam #3. Removes the canonical extraction's 'There is a control panel here' wording (which led the LLM to look for a separate control-panel object); rewords to describe the bolt + bubble directly as features of the dam's stonework.",
+      "id": "dam-room",
+      "description": "You are standing on the top of the Flood Control Dam #3, which was quite a tourist attraction in times far distant. There are paths to the north, south, and west, and a scramble down. A heavy iron bolt is mounted on the dam's weathered stonework, with a small green plastic bubble set directly above it."
     },
     {
       "$comment": "Loud Room. Three states: default loud (water flowing over the dam top, base description); unbearably loud (gates open, water rushing through); eerily silent (echo OR drain+close). Variants are first-match — silent checked before unbearably-loud; default falls through to base.",
@@ -1420,21 +1426,28 @@
       ]
     },
     {
+      "$comment": "control-panel is no longer modeled as a discrete object. The four buttons (yellow/brown/red/blue) at maintenance-room and the bolt + bubble at dam-room are the user-facing items; the conceptual 'control panel' is just room scenery. Relocated to 'nowhere' so it never surfaces in any view; the LLM examining it gets a not-accessible reject and refuses naturally.",
       "id": "control-panel",
-      "description": "A bank of indicator lights, four colored buttons, and a single iron bolt — clearly some kind of maintenance station."
+      "location": "nowhere"
     },
     {
-      "$comment": "Dam control bolt. Requires the wrench to turn — but the player must EXPLICITLY say which tool. Never auto-fill the wrench from inventory; if the player says 'turn bolt' alone, ask them what to use.",
+      "$comment": "Dam control bolt. Requires the wrench to turn — but the player must EXPLICITLY say which tool. Never auto-fill the wrench from inventory; bare-hand turns refuse via dam-bolt-bare-hands. Variant on gates-open reflects the bolt's visible rotation state.",
       "id": "bolt",
-      "appearance": "A heavy iron bolt protrudes from the dam's control panel.",
+      "appearance": "A heavy iron bolt protrudes from the dam's stonework.",
       "description": "A heavy iron bolt with a slot evidently sized for a wrench.",
-      "narratorNote": "DEFAULT to turn-dam-bolt-by-hand (no args) for ANY input about the bolt unless the player's input literally names a tool. Inputs like 'turn the bolt', 'twist bolt', 'open the gates', 'open the dam' → turn-dam-bolt-by-hand. ONLY call turn-dam-bolt when the player's input contains a literal tool noun like 'wrench' (e.g. 'turn bolt with wrench', 'use the wrench on the bolt'). NEVER auto-fill withItemId from inventory. This applies to both opening and closing the gates."
+      "narratorNote": "Call turn(itemId='bolt') for any bare-hand 'turn the bolt' / 'twist bolt' / 'open the gates' / 'open the dam' input. Call turn(itemId='bolt', withItemId='wrench') ONLY when the player's input literally names the wrench (e.g. 'turn bolt with wrench', 'use the wrench on the bolt'). NEVER auto-fill withItemId from inventory.",
+      "variants": [
+        {
+          "when": { "type": "flag", "key": "gates-open", "equals": true },
+          "text": "A heavy iron bolt, turned roughly a quarter rotation from its starting position."
+        }
+      ]
     },
     {
-      "$comment": "Dam-panel indicator. Glows when gate-flag=true (yellow button pressed) — the bolt control is live. yellow-button-enables-bolt narrates the flicker once; this variant makes the state persistently readable on examine bubble.",
+      "$comment": "Green glass bubble. State-aware variant fires when gate-flag=true; no-hints — describes only what the bubble looks like, not what it does.",
       "id": "bubble",
-      "appearance": "A small green glass bubble is set into the dam's control panel.",
-      "description": "A small green glass bubble — currently dark, evidently waiting for something.",
+      "appearance": "A small green glass bubble is set into the dam's stonework.",
+      "description": "A small green glass bubble, currently dark.",
       "variants": [
         {
           "when": {
@@ -1442,14 +1455,20 @@
             "key": "gate-flag",
             "equals": true
           },
-          "text": "A small green glass bubble, glowing steadily — the bolt control is live."
+          "text": "A small green glass bubble, glowing steadily."
         }
       ]
     },
     {
       "id": "yellow-button",
-      "appearance": "A worn yellow button is set into the panel.",
-      "description": "A worn yellow button, slightly recessed. Yellow paint flakes around the edges."
+      "appearance": "A worn yellow button is set into the wall.",
+      "description": "A worn yellow button, slightly recessed. Yellow paint flakes around the edges.",
+      "variants": [
+        {
+          "when": { "type": "flag", "key": "gate-flag", "equals": true },
+          "text": "A worn yellow button, slightly recessed. A small indicator beside it glows steadily."
+        }
+      ]
     },
     {
       "id": "brown-button",
@@ -1458,17 +1477,35 @@
     },
     {
       "id": "red-button",
-      "appearance": "A red button with a faded warning symbol sits on the panel.",
-      "description": "A red button marked with a faded warning symbol."
+      "appearance": "A red button with a faded warning symbol sits on the wall.",
+      "description": "A red button marked with a faded warning symbol.",
+      "variants": [
+        {
+          "when": { "type": "flag", "key": "maintenance-lights", "equals": false },
+          "text": "A red button marked with a faded warning symbol. A small indicator beside it glows."
+        }
+      ]
     },
     {
       "id": "blue-button",
-      "appearance": "A small blue button is set into the panel.",
-      "description": "A small blue button, smooth and unmarked."
+      "appearance": "A small blue button is set into the wall.",
+      "description": "A small blue button, smooth and unmarked.",
+      "variants": [
+        {
+          "when": { "type": "flag", "key": "leak-active", "equals": true },
+          "text": "A small blue button, smooth and unmarked. A small indicator beside it glows."
+        }
+      ]
     },
     {
       "id": "leak",
-      "description": "Water trickles from a small leak — for now a nuisance rather than a disaster."
+      "description": "A pinhole leak in the ceiling pipe drips occasionally onto the floor.",
+      "variants": [
+        {
+          "when": { "type": "flag", "key": "leak-active", "equals": true },
+          "text": "Water sprays from a ruptured pipe in the ceiling, splashing the floor below."
+        }
+      ]
     },
     {
       "id": "machine",
@@ -1940,6 +1977,18 @@
         {
           "when": { "type": "itemState", "itemId": "egg", "key": "broken", "equals": true },
           "text": "The jewel-encrusted egg has been crushed — clasp bent, gold inlay buckled, the broken clockwork canary tangled visibly in the cracked shell."
+        },
+        {
+          "$comment": "Open AND canary still nested: explicitly mention the canary visible inside so the LLM can't reach for the famous-but-stale 'egg is locked' lore when narrating accessibility.",
+          "when": {
+            "type": "and",
+            "all": [
+              { "type": "itemState", "itemId": "egg", "key": "isOpen", "equals": true },
+              { "type": "not", "condition": { "type": "itemState", "itemId": "egg", "key": "broken", "equals": true } },
+              { "type": "itemAt", "itemId": "canary", "location": "egg" }
+            ]
+          },
+          "text": "The jewel-encrusted egg has been opened cleanly along its delicate clasp. The golden clockwork canary nestled inside is plainly visible, ready to be taken."
         },
         {
           "when": {
@@ -2959,14 +3008,45 @@
       }
     },
     {
-      "$comment": "Rope-and-dome puzzle. Player ties the rope to the railing in the Dome Room; that flips dome-flag, unlocking the existing dome-room.down → torch-room exit. Active only when you're standing in the dome with the rope (and haven't already done it — once-matched intents auto-deactivate).",
-      "id": "rope-tied-to-railing",
-      "description": "Player ties, fastens, attaches, lashes, secures, or otherwise affixes the rope to the railing (or to the dome)."
+      "$comment": "Generic TIE X TO Y verb — mirrors the give pattern. Two args: itemId (the rope/cord/leash) and targetId (the anchor — railing, post, beam, etc.). Per-target triggers handle outcomes; tie-rejects catchall consumes unmatched pairs.",
+      "id": "tie",
+      "description": "Player ties, fastens, attaches, lashes, secures, or affixes one item to another. Pass the id of the rope/cord (itemId) and the id of the anchor (targetId). Both must be accessible.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": { "type": "string", "description": "id of the cord/rope being tied" },
+          "targetId": { "type": "string", "description": "id of the anchor — what the cord is being tied to" }
+        },
+        "required": ["itemId", "targetId"]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          { "when": { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } }, "failedNarration": "You don't have {arg.itemId.name}." }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
     },
     {
-      "$comment": "Egg puzzle: give the jewel-encrusted egg to the songbird; her song springs the clasp open and reveals the canary. Songbird is in forest-1 with appearsIn covering forest-2/3, path, up-a-tree, clearing — gate on player being in any of those. Inactive after egg is open.",
-      "id": "give-egg-to-songbird",
-      "description": "Player gives the jewel-encrusted egg to the songbird, offers it to the bird, hands it to her, presents it to the singer."
+      "$comment": "Generic UNTIE X verb — single arg: itemId of the cord being released. Per-item triggers handle outcomes; untie-rejects catchall consumes the rest. Note: untie-rope-on-take is a separate engine-side trigger that fires on retake without going through this verb.",
+      "id": "untie",
+      "description": "Player unties, releases, frees, or unfastens a tied cord/rope. Pass the id of the cord (itemId).",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": { "type": "string", "description": "id of the cord/rope being untied" }
+        },
+        "required": ["itemId"]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          { "when": { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } }, "failedNarration": "You don't see any {arg.itemId.name} here." }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
     },
     {
       "$comment": "Generic give verb — 'GIVE X TO Y' in canonical Zork parlance. Two args: itemId (gift) and targetId (recipient). Handler validates both are accessible. Per-pair triggers (e.g. thief-opens-egg) handle specific outcomes; the give-rejects catchall consumes the intent for any pair without a specific trigger.",
@@ -2997,6 +3077,269 @@
             "when": { "type": "itemAccessible", "itemId": { "fromArg": "targetId" } },
             "failedNarration": "{arg.targetId.name} isn't here."
           }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "$comment": "Generic UNLOCK X WITH Y verb — mirrors the give pattern. Two args: itemId (key/instrument) and targetId (lock-bearing item or passage). Handler validates the key is accessible; per-target triggers handle specific outcomes (e.g. grate-unlocks). The unlock-rejects catchall consumes any unhandled pair so the LLM can't invent prose.",
+      "id": "unlock",
+      "description": "Player unlocks, releases, or opens with a key the lock on a target. Pass the id of the key (itemId, e.g. 'keys') and the id of the lockable target (targetId — a passage like 'grate' or an item like a chest). The key must be in inventory or reachable; the target must be perceivable.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the key or instrument being used, from inventory or reachable items"
+          },
+          "targetId": {
+            "type": "string",
+            "description": "id of the lockable target — a passage (e.g. 'grate') or item (e.g. a chest)"
+          }
+        },
+        "required": ["itemId", "targetId"]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } },
+            "failedNarration": "You don't have {arg.itemId.name}."
+          }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "$comment": "Generic LOCK X WITH Y verb — symmetric to unlock. Same shape; per-target triggers (e.g. grate-locks) handle outcomes; lock-rejects catchall consumes unhandled pairs.",
+      "id": "lock",
+      "description": "Player locks, secures, or fastens a target using a key/instrument. Pass the id of the key (itemId) and the id of the lockable target (targetId).",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "id of the key or instrument being used, from inventory or reachable items"
+          },
+          "targetId": {
+            "type": "string",
+            "description": "id of the lockable target — a passage or item with an isLocked state"
+          }
+        },
+        "required": ["itemId", "targetId"]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          {
+            "when": { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } },
+            "failedNarration": "You don't have {arg.itemId.name}."
+          }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "$comment": "Generic TALK-TO X verb — single arg: targetId (the NPC). Per-target triggers handle outcomes (troll-aggravation-bump, cyclops-talk-bump, etc.); talk-to-rejects catchall consumes unhandled targets.",
+      "id": "talk-to",
+      "description": "Player talks to, addresses, asks, shouts at, taunts, insults, threatens, bargains with, begs, or otherwise engages an NPC conversationally. Pass the id of the NPC (targetId).",
+      "args": {
+        "type": "object",
+        "properties": {
+          "targetId": { "type": "string", "description": "id of the NPC being addressed" }
+        },
+        "required": ["targetId"]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          { "when": { "type": "itemAccessible", "itemId": { "fromArg": "targetId" } }, "failedNarration": "{arg.targetId.name} isn't here." }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "$comment": "Generic BURN X verb — single arg: itemId. Per-item triggers handle outcomes (burn-leaves-self-burn, burn-book-dies); burn-rejects catchall consumes unhandled items.",
+      "id": "burn",
+      "description": "Player sets fire to, ignites, or burns an item (with match, candles, torch, or any flame). Pass the id of the item being burned.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": { "type": "string", "description": "id of the item being burned" }
+        },
+        "required": ["itemId"]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          { "when": { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } }, "failedNarration": "You don't have {arg.itemId.name}." }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "$comment": "Generic MUNG X verb (Zork-speak: destroy, mutilate, desecrate). Single arg: itemId. Per-item triggers handle outcomes; mung-rejects catchall consumes unhandled items.",
+      "id": "mung",
+      "description": "Player desecrates, mutilates, destroys, smashes, defaces, or otherwise interferes with an item. Pass the id of the item being munged.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": { "type": "string", "description": "id of the item being destroyed" }
+        },
+        "required": ["itemId"]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          { "when": { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } }, "failedNarration": "You don't see {arg.itemId.name} here." }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "$comment": "Generic PUSH X verb — single arg: itemId (the button, switch, or thing being pushed). Per-item triggers handle outcomes (yellow/brown/red/blue button effects, machine-switch bare-hand refusal); push-rejects catchall consumes unhandled items.",
+      "id": "push",
+      "description": "Player pushes, presses, depresses, hits, jabs, pokes, or otherwise actuates a button, switch, lever, or pushable object. Pass the id of the item being pushed.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": { "type": "string", "description": "id of the item being pushed" }
+        },
+        "required": ["itemId"]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          { "when": { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } }, "failedNarration": "You don't see {arg.itemId.name} here." }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "$comment": "Generic LOWER X verb — single arg: itemId. NO accessibility precondition: lower/raise mechanics often act-at-a-distance via chains/ropes, so the per-item trigger handles its own scope check (e.g. basket-lowers fires from EITHER shaft-room or lower-shaft). lower-rejects catchall consumes unhandled items.",
+      "id": "lower",
+      "description": "Player lowers, drops down, sends down, or pays out an item. Pass the id of the item being lowered.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": { "type": "string", "description": "id of the item being lowered" }
+        },
+        "required": ["itemId"]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "$comment": "Generic RAISE X verb — symmetric to lower. Same no-precondition rationale.",
+      "id": "raise",
+      "description": "Player raises, hauls up, pulls up, or hoists an item. Pass the id of the item being raised.",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": { "type": "string", "description": "id of the item being raised" }
+        },
+        "required": ["itemId"]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "$comment": "Generic TURN X verb with optional withItemId instrument — single arg required (itemId), optional second arg (withItemId). Per-target triggers gate on intentArg(itemId, withItemId) to disambiguate canonical-tool / wrong-tool / bare-hand paths. turn-rejects catchall consumes unhandled targets.",
+      "id": "turn",
+      "description": "Player turns, twists, rotates, or pivots an item — optionally using an instrument. Pass the id of the thing being turned (itemId), and optionally the id of the instrument (withItemId).",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": { "type": "string", "description": "id of the thing being turned (e.g. 'dam-bolt', 'machine-switch')" },
+          "withItemId": { "type": "string", "description": "optional instrument (e.g. 'wrench', 'screwdriver'). Pass ONLY if the player literally named a tool in their input. Do not auto-fill from inventory." }
+        },
+        "required": ["itemId"]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          { "when": { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } }, "failedNarration": "You don't see {arg.itemId.name} here." },
+          { "when": { "type": "hasItem", "itemId": { "fromArg": "withItemId" } }, "failedNarration": "You don't have the {arg.withItemId.name}." }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "$comment": "Generic INFLATE X verb with optional withItemId instrument. Same shape as turn.",
+      "id": "inflate",
+      "description": "Player inflates, blows up, or fills an item with air — optionally using an instrument (e.g. a pump). Pass the id of the inflatable (itemId), and optionally the instrument (withItemId).",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": { "type": "string", "description": "id of the inflatable" },
+          "withItemId": { "type": "string", "description": "optional instrument (e.g. 'pump'). Do not auto-fill." }
+        },
+        "required": ["itemId"]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          { "when": { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } }, "failedNarration": "You don't see {arg.itemId.name} here." },
+          { "when": { "type": "hasItem", "itemId": { "fromArg": "withItemId" } }, "failedNarration": "You don't have the {arg.withItemId.name}." }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "$comment": "Generic PLUG X verb with optional withItemId instrument. Same shape as turn / inflate.",
+      "id": "plug",
+      "description": "Player plugs, seals, fills, or stops up an item — optionally using a material (e.g. putty). Pass the id of the thing being plugged (itemId), and optionally the material (withItemId).",
+      "args": {
+        "type": "object",
+        "properties": {
+          "itemId": { "type": "string", "description": "id of the thing being plugged" },
+          "withItemId": { "type": "string", "description": "optional material/instrument (e.g. 'putty'). Do not auto-fill." }
+        },
+        "required": ["itemId"]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          { "when": { "type": "itemAccessible", "itemId": { "fromArg": "itemId" } }, "failedNarration": "You don't see {arg.itemId.name} here." },
+          { "when": { "type": "hasItem", "itemId": { "fromArg": "withItemId" } }, "failedNarration": "You don't have the {arg.withItemId.name}." }
+        ],
+        "effects": [],
+        "successNarration": ""
+      }
+    },
+    {
+      "$comment": "Generic DIG X verb with optional withItemId instrument. Same shape as turn / inflate / plug. The targetId is the thing being dug (e.g. 'sand'); withItemId is the digging tool (e.g. 'shovel').",
+      "id": "dig",
+      "description": "Player digs, scoops, scrapes, hollows out, or excavates a target — optionally using a tool. Pass the id of the target (targetId) and optionally the tool (withItemId).",
+      "args": {
+        "type": "object",
+        "properties": {
+          "targetId": { "type": "string", "description": "id of the thing being dug (e.g. 'sand')" },
+          "withItemId": { "type": "string", "description": "optional digging tool (e.g. 'shovel'). Do not auto-fill." }
+        },
+        "required": ["targetId"]
+      },
+      "alwaysAvailable": true,
+      "handler": {
+        "preconditions": [
+          { "when": { "type": "hasItem", "itemId": { "fromArg": "withItemId" } }, "failedNarration": "You don't have the {arg.withItemId.name}." }
         ],
         "effects": [],
         "successNarration": ""
@@ -3213,16 +3556,6 @@
       "description": "Player tries to free, yank, pull, dislodge, retrieve, or wrench loose their stuck weapon (sword, knife, or axe)."
     },
     {
-      "$comment": "TALK-TO-TROLL: player engages the troll conversationally. Each match bumps troll.state.aggravation; at threshold the troll snaps and starts attacking (NPC-initiated combat). Active only while the troll is alive, present, and not yet engaged. The narrator records this BEFORE narrating the troll's response in character.",
-      "id": "talk-to-troll",
-      "description": "Player tries to talk to, address, ask, shout at, insult, threaten, bargain with, beg, taunt, or otherwise engage the troll conversationally."
-    },
-    {
-      "$comment": "TALK-TO-CYCLOPS: same shape as talk-to-troll. Bumps cyclops hunger by an extra +1 per talk (over the passive hunger tick), so an aggressive talker provokes him faster. Active while cyclops alive, present, not yet appeased.",
-      "id": "talk-to-cyclops",
-      "description": "Player tries to talk to, address, ask, taunt, insult, threaten, or otherwise engage the cyclops conversationally — but NOT saying 'Ulysses' or 'Odysseus' (those match cyclops-magic-word instead)."
-    },
-    {
       "$comment": "ECHO room — say 'echo' in loud-room. Bare verb in canonical Zork (special command loop in LOUD-ROOM-FCN). We accept any phrasing that's clearly invoking the echo: 'echo', 'say echo', 'shout echo', 'call out echo'.",
       "id": "say-echo-in-loud-room",
       "description": "Player says, shouts, calls, invokes, or otherwise utters the word 'echo' in the loud room."
@@ -3241,20 +3574,8 @@
       "description": "Player brushes, polishes, scrubs, or cleans their teeth using the rubbery putty/glue/gunk."
     },
     {
-      "id": "burn-leaves",
-      "description": "Player sets fire to, ignites, or burns the pile of leaves (with match, candles, torch, or any flame)."
-    },
-    {
-      "id": "burn-book",
-      "description": "Player sets fire to, ignites, or burns the black book (the ritual book of arcane lore)."
-    },
-    {
       "id": "leap-down",
       "description": "Player leaps, jumps, dives, or hurls themselves down/off the current location (a tree, a canyon edge, a cliff)."
-    },
-    {
-      "id": "mung-bodies",
-      "description": "Player desecrates, mutilates, destroys, or otherwise interferes with the pile of corpses at the entrance to Hades."
     },
     {
       "$comment": "Always available. The throw-at-self-dies trigger has no location/state gate (the player can hurl any inventory item at themselves anywhere) — making this customTool always-on moves it to the cache-stable tier instead of being re-injected as a per-turn dynamic tool.",
@@ -3267,26 +3588,6 @@
       "id": "attack-self",
       "description": "Player attacks, slashes, stabs, or otherwise turns a weapon on themselves.",
       "alwaysAvailable": true
-    },
-    {
-      "$comment": "DIG WITH a named tool. Narrow tool: only fires when the player's input literally names the tool. DEFAULT for ALL other phrasings is dig-sand (the bare-verb pair). Mirror of turn-machine-switch.",
-      "id": "dig-sand-with-tool",
-      "description": "ONLY call when the player's input contains a literal tool name (e.g. 'dig sand WITH SHOVEL', 'use shovel to dig', 'apply shovel to sand'). If the input does NOT contain a literal tool name, DO NOT call this tool — call dig-sand instead. Inputs like 'dig', 'dig sand', 'dig the hole', 'dig deeper' do NOT name a tool — route those to dig-sand. NEVER auto-fill withItemId from inventory or context.",
-      "args": {
-        "type": "object",
-        "properties": {
-          "withItemId": {
-            "type": "string",
-            "description": "the id of the tool the player literally named in their input (must come from the player's stated words — do not assume from inventory or context)"
-          }
-        },
-        "required": ["withItemId"]
-      }
-    },
-    {
-      "$comment": "DEFAULT dig tool. Carries broad bare-verb phrasing ('dig', 'dig sand', 'dig hole') so ambiguous inputs route here, not to dig-sand-with-tool. Trigger dig-bare-hands emits the canonical refusal.",
-      "id": "dig-sand",
-      "description": "DEFAULT tool when the player has NOT named a tool. Player tries to dig, scoop, scrape, hollow out, excavate, or otherwise excavate sandy ground — beach, cave, or anywhere else — without naming a tool. Examples: 'dig', 'dig the sand', 'dig a hole', 'dig deeper', 'scoop sand'. If the player names a tool (shovel, hands, etc.), use dig-sand-with-tool instead."
     },
     {
       "$comment": "CLEAR-RUBBLE — the obvious thing to try when the timber-room blocks the way west. We don't actually clear anything (the canonical mechanic is empty-handed squeeze, not debris removal). Handler narrates a thematic refusal that reiterates the tight passage. Outside the timber-room, the action no-ops with a generic 'nothing to clear' line.",
@@ -3305,14 +3606,6 @@
         ],
         "successNarration": "You strain at the splintered timbers, but they're heavy and tightly wedged. Past them the passage narrows to a crack barely a person's width — clearing the rubble wouldn't widen it."
       }
-    },
-    {
-      "id": "mung-painting",
-      "description": "Player mutilates, defaces, slashes, or otherwise destroys the painting."
-    },
-    {
-      "id": "mung-sceptre",
-      "description": "Player breaks, snaps, smashes, or otherwise destroys the sceptre (especially while at the rainbow)."
     },
     {
       "id": "swim-river",
@@ -3387,110 +3680,6 @@
         ],
         "successNarration": "You leaf through the heavy black book, past the dog-eared page 569 to other passages. Among the dense archaic script, one line stands out: \"In the banishing of evil, certain noises, lights, and prayers prove most effective.\""
       }
-    },
-    {
-      "$comment": "TURN the machine switch WITH a named tool. Narrow tool: only fires when the player's input literally names the tool. DEFAULT for ALL other phrasings is push-machine-switch (the bare-hand pair). Broad operating verbs ('start', 'activate', 'operate', 'turn it on') belong on push-machine-switch — keep them OFF this description so the LLM doesn't match them here.",
-      "id": "turn-machine-switch",
-      "description": "ONLY call when the player's input contains a literal tool name (e.g. 'turn switch WITH screwdriver', 'use the screwdriver on the switch', 'apply screwdriver to switch'). If the input does NOT contain a literal tool name, DO NOT call this tool — call push-machine-switch instead. Inputs like 'start the machine', 'press start', 'turn the switch', 'activate it', 'flip switch', 'operate switch', 'turn it on' do NOT name a tool — route those to push-machine-switch. NEVER auto-fill withItemId from inventory or context.",
-      "args": {
-        "type": "object",
-        "properties": {
-          "withItemId": {
-            "type": "string",
-            "description": "the id of the tool the player literally named in their input (must come from the player's stated words — do not assume from inventory or context)"
-          }
-        },
-        "required": [
-          "withItemId"
-        ]
-      }
-    },
-    {
-      "$comment": "DEFAULT machine-switch tool. Carries the broad verb namespace ('start', 'activate', 'operate', 'push', 'press', 'flip', 'turn') so ambiguous inputs route here, not to turn-machine-switch. Trigger machine-switch-bare-hands emits the canonical refusal.",
-      "id": "push-machine-switch",
-      "description": "DEFAULT tool for the machine's START switch when the player has NOT named a tool. Player tries to start, push, press, poke, flip, tap, turn, activate, operate, run, trigger, engage, use, or turn-on the START switch / machine — any phrasing that doesn't literally name a tool. Examples: 'push start', 'start the machine', 'press the switch', 'flip the switch', 'turn the switch', 'activate the switch', 'operate the machine', 'use the switch', 'turn it on'. If the player names a tool (screwdriver, etc.), use turn-machine-switch instead."
-    },
-    {
-      "$comment": "LOWER the basket on its chain — basket descends from shaft-room to lower-shaft, taking any contents with it (transitive parentage). Operable from either room: pulling the chain from above lowers it; pulling the chain from below also lowers an already-raised basket toward you. Backed by the basket-lowers trigger.",
-      "id": "lower-basket",
-      "description": "Player lowers, drops, sends down, releases, pays out, or chains down the basket / dumbwaiter / chain into the shaft."
-    },
-    {
-      "$comment": "RAISE the basket on its chain — basket ascends from lower-shaft to shaft-room, taking any contents with it. Operable from either room. Backed by the basket-raises trigger.",
-      "id": "raise-basket",
-      "description": "Player raises, lifts, hauls up, draws up, pulls up, or winches up the basket / dumbwaiter / chain from the shaft."
-    },
-    {
-      "$comment": "PUSH the YELLOW button — enables the bolt control. Active in maintenance-room. Bare press is canonical.",
-      "id": "push-yellow-button",
-      "description": "Player pushes, presses, depresses, or activates the yellow button."
-    },
-    {
-      "$comment": "PUSH the BROWN button — disables the bolt control. Active in maintenance-room.",
-      "id": "push-brown-button",
-      "description": "Player pushes, presses, depresses, or activates the brown button."
-    },
-    {
-      "$comment": "PUSH the RED button — toggles maintenance-room lights (cosmetic only; canonical Zork doesn't use this for any puzzle).",
-      "id": "push-red-button",
-      "description": "Player pushes, presses, depresses, or activates the red button."
-    },
-    {
-      "$comment": "PUSH the BLUE button — triggers a leak in the maintenance-room ceiling pipe. Canonical: water rises over several turns; player must plug the leak with the viscous material (putty) before drowning.",
-      "id": "push-blue-button",
-      "description": "Player pushes, presses, depresses, or activates the blue button."
-    },
-    {
-      "$comment": "PLUG the leak WITH a named material. Narrow tool: only fires when the player's input literally names the material. DEFAULT for ALL other phrasings is plug-leak-by-hand. Broad verbs ('plug', 'stop', 'seal', 'fix') belong on plug-leak-by-hand — keep them OFF this description.",
-      "id": "plug-leak-with-putty",
-      "description": "ONLY call when the player's input contains a literal material name (e.g. 'plug leak WITH putty', 'use the putty on the leak', 'apply putty'). If the input does NOT contain a literal material name, DO NOT call this tool — call plug-leak-by-hand instead. Inputs like 'plug the leak', 'stop the leak', 'seal the leak', 'fix the pipe' do NOT name a material — route those to plug-leak-by-hand."
-    },
-    {
-      "$comment": "DEFAULT leak tool. Carries the broad verb namespace ('plug', 'press', 'stop', 'cover', 'block', 'seal', 'fix') so ambiguous inputs route here, not to plug-leak-with-putty. Trigger leak-bare-hands emits the hint-free refusal.",
-      "id": "plug-leak-by-hand",
-      "description": "DEFAULT tool for the maintenance-room leak when the player has NOT named anything to plug it with. Player tries to plug, press, stop, cover, block, seal, fix, or close the leak / pipe / hole — any phrasing that doesn't literally name a material. Examples: 'plug the leak', 'stop the water', 'press the hole', 'seal the leak', 'fix the pipe'. If the player names putty or any other material, use plug-leak-with-putty instead."
-    },
-    {
-      "$comment": "TURN the dam bolt WITH a named tool. Narrow tool: only fires when the player's input literally names the tool. DEFAULT for ALL other phrasings is turn-dam-bolt-by-hand (the bare-hand pair). Broad operating verbs ('turn', 'twist', 'open the gates') belong on turn-dam-bolt-by-hand — keep them OFF this description so the LLM doesn't match them here.",
-      "id": "turn-dam-bolt",
-      "description": "ONLY call when the player's input contains a literal tool name (e.g. 'turn bolt WITH wrench', 'use the wrench on the bolt'). If the input does NOT contain a literal tool name, DO NOT call this tool — call turn-dam-bolt-by-hand instead. Inputs like 'turn the bolt', 'twist bolt', 'open the gates', 'open the dam', 'release the gates' do NOT name a tool — route those to turn-dam-bolt-by-hand. NEVER auto-fill withItemId from inventory or context.",
-      "args": {
-        "type": "object",
-        "properties": {
-          "withItemId": {
-            "type": "string",
-            "description": "the id of the tool the player literally named in their input (must come from the player's stated words — do not assume from inventory or context)"
-          }
-        },
-        "required": [
-          "withItemId"
-        ]
-      }
-    },
-    {
-      "$comment": "DEFAULT dam-bolt tool. Carries the broad verb namespace ('turn', 'twist', 'pull', 'pry', 'rotate', 'operate', 'open the gates/dam') so ambiguous inputs route here, not to turn-dam-bolt. Trigger dam-bolt-bare-hands emits the hint-free refusal.",
-      "id": "turn-dam-bolt-by-hand",
-      "description": "DEFAULT tool for the dam control panel's iron bolt when the player has NOT named a tool. Player tries to turn, twist, pull, pry, rotate, operate, work, force, or otherwise act on the bolt / gates / dam — any phrasing that doesn't literally name a tool. Examples: 'turn the bolt', 'twist bolt', 'open the gates', 'open the dam', 'release the gates'. If the player names a tool (wrench, etc.), use turn-dam-bolt instead."
-    },
-    {
-      "$comment": "BOAT INFLATE WITH a named tool. Narrow tool: only fires when the player's input literally names the tool. DEFAULT for ALL other phrasings is inflate-boat-by-mouth. Mirror of turn-machine-switch / dig-sand-with-tool — required withItemId arg + intentArg gate on the success trigger + wrong-tool refusal at low priority.",
-      "id": "inflate-boat",
-      "description": "ONLY call when the player's input contains a literal tool name (e.g. 'inflate boat WITH pump', 'use the pump on the boat', 'pump up the raft'). If the input does NOT contain a literal tool name, DO NOT call this tool — call inflate-boat-by-mouth instead. Inputs like 'inflate the boat', 'blow up the boat', 'fill the raft', 'expand the boat' do NOT name a tool — route those to inflate-boat-by-mouth. NEVER auto-fill withItemId from inventory or context.",
-      "args": {
-        "type": "object",
-        "properties": {
-          "withItemId": {
-            "type": "string",
-            "description": "the id of the tool the player literally named in their input (must come from the player's stated words — do not assume from inventory or context)"
-          }
-        },
-        "required": ["withItemId"]
-      }
-    },
-    {
-      "$comment": "DEFAULT boat-inflation tool. Carries the broad verb namespace ('inflate', 'blow up', 'fill', 'expand', 'breathe into') so ambiguous inputs route here, not to inflate-boat. Trigger boat-bare-mouth emits the hint-free refusal.",
-      "id": "inflate-boat-by-mouth",
-      "description": "DEFAULT tool for inflating the boat when the player has NOT named a tool. Player tries to inflate, blow up, fill, expand, breathe into, or open the boat / raft — any phrasing that doesn't literally name a tool (or that mentions breath/mouth/lungs). Examples: 'inflate the boat', 'blow up the boat', 'fill the raft', 'breathe into the boat', 'expand the raft'. If the player names the pump or any other tool, use inflate-boat instead."
     },
     {
       "$comment": "BOAT REPAIR with putty (in tube). Active only when boat is punctured and player carries putty. Consumed on use.",
@@ -5249,41 +5438,23 @@
       "once": false
     },
     {
-      "$comment": "Rope-and-dome puzzle. Player ties the rope to the railing in the dome-room → unblocks the dome-room.down → torch-room exit. Rope moves out of inventory and onto the railing (modeled as 'rope at dome-room'). once: false (paired with untie-rope-on-take) so tie/untie cycles work — the player may descend, climb back up, take the rope, walk around, return, and re-tie. removeMatchedIntent provides per-attempt single-shot: each tie intent fires this trigger exactly once, then clears, ready for the next attempt.",
+      "$comment": "Rope-and-dome puzzle. Player ties the rope to the railing in the dome-room → unblocks the dome-room.down → torch-room exit. Rope moves out of inventory and onto the railing (modeled as 'rope at dome-room'). once: false (paired with untie-rope-on-take) so tie/untie cycles work — the player may descend, climb back up, take the rope, walk around, return, and re-tie. Gates on the generic tie intent + (rope, railing) arg pair. removeMatchedIntent provides per-attempt single-shot: each tie intent fires this trigger exactly once, then clears, ready for the next attempt.",
       "id": "tie-rope",
       "once": false,
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "rope-tied-to-railing"
-          },
-          {
-            "type": "playerAt",
-            "roomId": "dome-room"
-          },
-          {
-            "type": "hasItem",
-            "itemId": "rope"
-          }
+          { "type": "intentMatched", "signalId": "tie" },
+          { "type": "intentArg", "signalId": "tie", "key": "itemId", "equals": "rope" },
+          { "type": "intentArg", "signalId": "tie", "key": "targetId", "equals": "railing" },
+          { "type": "playerAt", "roomId": "dome-room" },
+          { "type": "hasItem", "itemId": "rope" }
         ]
       },
       "effects": [
-        {
-          "type": "setFlag",
-          "key": "dome-flag",
-          "value": true
-        },
-        {
-          "type": "moveItem",
-          "itemId": "rope",
-          "to": "dome-room"
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "rope-tied-to-railing"
-        }
+        { "type": "setFlag", "key": "dome-flag", "value": true },
+        { "type": "moveItem", "itemId": "rope", "to": "dome-room" },
+        { "type": "removeMatchedIntent", "signalId": "tie" }
       ],
       "narration": "You tie the rope securely to the railing. It hangs down into the room below."
     },
@@ -5315,62 +5486,32 @@
       "narration": "As you take the rope, it slips free of the railing."
     },
     {
+      "$comment": "Songbird opens the egg when the player gives it to her. Gates on the generic give intent + (egg, songbird) arg pair + player at any room where the songbird is perceivable. Consumes the give intent so the give-rejects catchall doesn't fire.",
       "id": "songbird-opens-egg",
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "give-egg-to-songbird"
-          },
-          {
-            "type": "hasItem",
-            "itemId": "egg"
-          },
-          {
-            "type": "itemState",
-            "itemId": "egg",
-            "key": "isOpen",
-            "equals": false
-          },
+          { "type": "intentMatched", "signalId": "give" },
+          { "type": "intentArg", "signalId": "give", "key": "itemId", "equals": "egg" },
+          { "type": "intentArg", "signalId": "give", "key": "targetId", "equals": "songbird" },
+          { "type": "hasItem", "itemId": "egg" },
+          { "type": "itemState", "itemId": "egg", "key": "isOpen", "equals": false },
           {
             "type": "or",
             "any": [
-              {
-                "type": "playerAt",
-                "roomId": "forest-1"
-              },
-              {
-                "type": "playerAt",
-                "roomId": "forest-2"
-              },
-              {
-                "type": "playerAt",
-                "roomId": "forest-3"
-              },
-              {
-                "type": "playerAt",
-                "roomId": "path"
-              },
-              {
-                "type": "playerAt",
-                "roomId": "up-a-tree"
-              },
-              {
-                "type": "playerAt",
-                "roomId": "clearing"
-              }
+              { "type": "playerAt", "roomId": "forest-1" },
+              { "type": "playerAt", "roomId": "forest-2" },
+              { "type": "playerAt", "roomId": "forest-3" },
+              { "type": "playerAt", "roomId": "path" },
+              { "type": "playerAt", "roomId": "up-a-tree" },
+              { "type": "playerAt", "roomId": "clearing" }
             ]
           }
         ]
       },
       "effects": [
-        {
-          "type": "setItemState",
-          "itemId": "egg",
-          "key": "isOpen",
-          "value": true
-        }
+        { "type": "setItemState", "itemId": "egg", "key": "isOpen", "value": true },
+        { "type": "removeMatchedIntent", "signalId": "give" }
       ],
       "narration": "You hold out the egg. The songbird hops to it and sings a single perfect trill — and the delicate clasp springs open, revealing a golden clockwork canary nestled inside.",
       "once": true
@@ -7351,50 +7492,22 @@
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "talk-to-troll"
-          },
-          {
-            "type": "playerAt",
-            "roomId": "troll-room"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "troll",
-            "location": "troll-room"
-          },
+          { "type": "intentMatched", "signalId": "talk-to" },
+          { "type": "intentArg", "signalId": "talk-to", "key": "targetId", "equals": "troll" },
+          { "type": "playerAt", "roomId": "troll-room" },
+          { "type": "itemAt", "itemId": "troll", "location": "troll-room" },
           {
             "type": "compare",
-            "left": {
-              "kind": "itemState",
-              "itemId": "troll",
-              "key": "health"
-            },
+            "left": { "kind": "itemState", "itemId": "troll", "key": "health" },
             "op": ">",
-            "right": {
-              "kind": "literal",
-              "value": 0
-            }
+            "right": { "kind": "literal", "value": 0 }
           },
-          {
-            "type": "flag",
-            "key": "combat-engaged-with-troll",
-            "equals": false
-          }
+          { "type": "flag", "key": "combat-engaged-with-troll", "equals": false }
         ]
       },
       "effects": [
-        {
-          "type": "adjustItemState",
-          "itemId": "troll",
-          "key": "aggravation",
-          "by": 1
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "talk-to-troll"
-        }
+        { "type": "adjustItemState", "itemId": "troll", "key": "aggravation", "by": 1 },
+        { "type": "removeMatchedIntent", "signalId": "talk-to" }
       ],
       "narration": "The troll bares his yellow tusks and growls."
     },
@@ -7489,37 +7602,16 @@
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "talk-to-cyclops"
-          },
-          {
-            "type": "playerAt",
-            "roomId": "cyclops-room"
-          },
-          {
-            "type": "itemAt",
-            "itemId": "cyclops",
-            "location": "cyclops-room"
-          },
-          {
-            "type": "flag",
-            "key": "cyclops-flag",
-            "equals": false
-          }
+          { "type": "intentMatched", "signalId": "talk-to" },
+          { "type": "intentArg", "signalId": "talk-to", "key": "targetId", "equals": "cyclops" },
+          { "type": "playerAt", "roomId": "cyclops-room" },
+          { "type": "itemAt", "itemId": "cyclops", "location": "cyclops-room" },
+          { "type": "flag", "key": "cyclops-flag", "equals": false }
         ]
       },
       "effects": [
-        {
-          "type": "adjustItemState",
-          "itemId": "cyclops",
-          "key": "hunger",
-          "by": 1
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "talk-to-cyclops"
-        }
+        { "type": "adjustItemState", "itemId": "cyclops", "key": "hunger", "by": 1 },
+        { "type": "removeMatchedIntent", "signalId": "talk-to" }
       ],
       "narration": "The cyclops eyes you with growing impatience."
     },
@@ -10290,321 +10382,228 @@
       ]
     },
     {
-      "$comment": "TIER CUE — player wounded (66% threshold). Fires once per encounter when player-health first drops to ≤ 20 AND > 0. The 'shown' flag suppresses re-firing within the same encounter; per-entity tier-cleanup triggers reset the flags when combat ends, so the next combat fires fresh cues if the player is still hurt.",
+      "$comment": "TIER CUE — player wounded (band: 12 < hp ≤ 20). Per-turn while ANY combat is engaged. No memoization; fires every afterAction tick within the band. The narrator STYLE rule about varying repeated combat cues handles per-turn variation.",
       "id": "player-tier-wounded",
       "afterAction": true,
       "once": false,
       "when": {
         "type": "and",
         "all": [
+          {
+            "type": "or",
+            "any": [
+              { "type": "flag", "key": "combat-engaged-with-troll", "equals": true },
+              { "type": "flag", "key": "combat-engaged-with-cyclops", "equals": true },
+              { "type": "flag", "key": "combat-engaged-with-thief", "equals": true }
+            ]
+          },
           { "type": "compare", "left": { "kind": "flag", "key": "player-health" }, "op": "<=", "right": { "kind": "literal", "value": 20 } },
-          { "type": "compare", "left": { "kind": "flag", "key": "player-health" }, "op": ">", "right": { "kind": "literal", "value": 0 } },
-          { "type": "not", "condition": { "type": "flag", "key": "player-tier-wounded-shown", "equals": true } }
+          { "type": "compare", "left": { "kind": "flag", "key": "player-health" }, "op": ">", "right": { "kind": "literal", "value": 12 } }
         ]
       },
       "effects": [
-        { "type": "narrate", "text": "Your breath catches; the wounds are starting to tell." },
-        { "type": "setFlag", "key": "player-tier-wounded-shown", "value": true }
+        { "type": "narrate", "text": "Your breath catches; the wounds are starting to tell." }
       ]
     },
     {
-      "$comment": "TIER CUE — player bloodied (40% threshold).",
+      "$comment": "TIER CUE — player bloodied (band: 5 < hp ≤ 12).",
       "id": "player-tier-bloodied",
       "afterAction": true,
       "once": false,
       "when": {
         "type": "and",
         "all": [
+          {
+            "type": "or",
+            "any": [
+              { "type": "flag", "key": "combat-engaged-with-troll", "equals": true },
+              { "type": "flag", "key": "combat-engaged-with-cyclops", "equals": true },
+              { "type": "flag", "key": "combat-engaged-with-thief", "equals": true }
+            ]
+          },
           { "type": "compare", "left": { "kind": "flag", "key": "player-health" }, "op": "<=", "right": { "kind": "literal", "value": 12 } },
-          { "type": "compare", "left": { "kind": "flag", "key": "player-health" }, "op": ">", "right": { "kind": "literal", "value": 0 } },
-          { "type": "not", "condition": { "type": "flag", "key": "player-tier-bloodied-shown", "equals": true } }
+          { "type": "compare", "left": { "kind": "flag", "key": "player-health" }, "op": ">", "right": { "kind": "literal", "value": 5 } }
         ]
       },
       "effects": [
-        { "type": "narrate", "text": "Blood slicks your hands and slows your grip." },
-        { "type": "setFlag", "key": "player-tier-bloodied-shown", "value": true }
+        { "type": "narrate", "text": "Blood slicks your hands and slows your grip." }
       ]
     },
     {
-      "$comment": "TIER CUE — player critical (16% threshold).",
+      "$comment": "TIER CUE — player critical (band: 0 < hp ≤ 5).",
       "id": "player-tier-critical",
       "afterAction": true,
       "once": false,
       "when": {
         "type": "and",
         "all": [
+          {
+            "type": "or",
+            "any": [
+              { "type": "flag", "key": "combat-engaged-with-troll", "equals": true },
+              { "type": "flag", "key": "combat-engaged-with-cyclops", "equals": true },
+              { "type": "flag", "key": "combat-engaged-with-thief", "equals": true }
+            ]
+          },
           { "type": "compare", "left": { "kind": "flag", "key": "player-health" }, "op": "<=", "right": { "kind": "literal", "value": 5 } },
-          { "type": "compare", "left": { "kind": "flag", "key": "player-health" }, "op": ">", "right": { "kind": "literal", "value": 0 } },
-          { "type": "not", "condition": { "type": "flag", "key": "player-tier-critical-shown", "equals": true } }
+          { "type": "compare", "left": { "kind": "flag", "key": "player-health" }, "op": ">", "right": { "kind": "literal", "value": 0 } }
         ]
       },
       "effects": [
-        { "type": "narrate", "text": "The world narrows. Each step costs more than the last." },
-        { "type": "setFlag", "key": "player-tier-critical-shown", "value": true }
+        { "type": "narrate", "text": "The world narrows. Each step costs more than the last." }
       ]
     },
     {
-      "$comment": "TIER CUE — troll wounded (≤ 6 of max 10).",
+      "$comment": "TIER CUE — troll wounded (band: 4 < hp ≤ 6 of max 10). Per-turn while combat-engaged-with-troll.",
       "id": "troll-tier-wounded",
       "afterAction": true,
       "once": false,
       "when": {
         "type": "and",
         "all": [
+          { "type": "flag", "key": "combat-engaged-with-troll", "equals": true },
           { "type": "compare", "left": { "kind": "itemState", "itemId": "troll", "key": "health" }, "op": "<=", "right": { "kind": "literal", "value": 6 } },
-          { "type": "compare", "left": { "kind": "itemState", "itemId": "troll", "key": "health" }, "op": ">", "right": { "kind": "literal", "value": 0 } },
-          { "type": "not", "condition": { "type": "flag", "key": "troll-tier-wounded-shown", "equals": true } }
+          { "type": "compare", "left": { "kind": "itemState", "itemId": "troll", "key": "health" }, "op": ">", "right": { "kind": "literal", "value": 4 } }
         ]
       },
       "effects": [
-        { "type": "narrate", "text": "The troll's roars grow ragged; he favors one leg." },
-        { "type": "setFlag", "key": "troll-tier-wounded-shown", "value": true }
+        { "type": "narrate", "text": "The troll's roars grow ragged; he favors one leg." }
       ]
     },
     {
-      "$comment": "TIER CUE — troll bloodied (≤ 4).",
+      "$comment": "TIER CUE — troll bloodied (band: 2 < hp ≤ 4).",
       "id": "troll-tier-bloodied",
       "afterAction": true,
       "once": false,
       "when": {
         "type": "and",
         "all": [
+          { "type": "flag", "key": "combat-engaged-with-troll", "equals": true },
           { "type": "compare", "left": { "kind": "itemState", "itemId": "troll", "key": "health" }, "op": "<=", "right": { "kind": "literal", "value": 4 } },
-          { "type": "compare", "left": { "kind": "itemState", "itemId": "troll", "key": "health" }, "op": ">", "right": { "kind": "literal", "value": 0 } },
-          { "type": "not", "condition": { "type": "flag", "key": "troll-tier-bloodied-shown", "equals": true } }
+          { "type": "compare", "left": { "kind": "itemState", "itemId": "troll", "key": "health" }, "op": ">", "right": { "kind": "literal", "value": 2 } }
         ]
       },
       "effects": [
-        { "type": "narrate", "text": "The troll snarls, blood matting his fur; his axe arm trembles." },
-        { "type": "setFlag", "key": "troll-tier-bloodied-shown", "value": true }
+        { "type": "narrate", "text": "The troll snarls, blood matting his fur; his axe arm trembles." }
       ]
     },
     {
-      "$comment": "TIER CUE — troll critical (≤ 2).",
+      "$comment": "TIER CUE — troll critical (band: 0 < hp ≤ 2).",
       "id": "troll-tier-critical",
       "afterAction": true,
       "once": false,
       "when": {
         "type": "and",
         "all": [
+          { "type": "flag", "key": "combat-engaged-with-troll", "equals": true },
           { "type": "compare", "left": { "kind": "itemState", "itemId": "troll", "key": "health" }, "op": "<=", "right": { "kind": "literal", "value": 2 } },
-          { "type": "compare", "left": { "kind": "itemState", "itemId": "troll", "key": "health" }, "op": ">", "right": { "kind": "literal", "value": 0 } },
-          { "type": "not", "condition": { "type": "flag", "key": "troll-tier-critical-shown", "equals": true } }
+          { "type": "compare", "left": { "kind": "itemState", "itemId": "troll", "key": "health" }, "op": ">", "right": { "kind": "literal", "value": 0 } }
         ]
       },
       "effects": [
-        { "type": "narrate", "text": "The troll sways, axe drooping; one more blow looks likely to finish him." },
-        { "type": "setFlag", "key": "troll-tier-critical-shown", "value": true }
+        { "type": "narrate", "text": "The troll sways, axe drooping; one more blow looks likely to finish him." }
       ]
     },
     {
-      "$comment": "TIER CUE — cyclops wounded (≤ 16 of max 25).",
+      "$comment": "TIER CUE — cyclops wounded (band: 10 < hp ≤ 16 of max 25).",
       "id": "cyclops-tier-wounded",
       "afterAction": true,
       "once": false,
       "when": {
         "type": "and",
         "all": [
+          { "type": "flag", "key": "combat-engaged-with-cyclops", "equals": true },
           { "type": "compare", "left": { "kind": "itemState", "itemId": "cyclops", "key": "health" }, "op": "<=", "right": { "kind": "literal", "value": 16 } },
-          { "type": "compare", "left": { "kind": "itemState", "itemId": "cyclops", "key": "health" }, "op": ">", "right": { "kind": "literal", "value": 0 } },
-          { "type": "not", "condition": { "type": "flag", "key": "cyclops-tier-wounded-shown", "equals": true } }
+          { "type": "compare", "left": { "kind": "itemState", "itemId": "cyclops", "key": "health" }, "op": ">", "right": { "kind": "literal", "value": 10 } }
         ]
       },
       "effects": [
-        { "type": "narrate", "text": "The cyclops bellows in pain, his single eye wild." },
-        { "type": "setFlag", "key": "cyclops-tier-wounded-shown", "value": true }
+        { "type": "narrate", "text": "The cyclops bellows in pain, his single eye wild." }
       ]
     },
     {
-      "$comment": "TIER CUE — cyclops bloodied (≤ 10).",
+      "$comment": "TIER CUE — cyclops bloodied (band: 4 < hp ≤ 10).",
       "id": "cyclops-tier-bloodied",
       "afterAction": true,
       "once": false,
       "when": {
         "type": "and",
         "all": [
+          { "type": "flag", "key": "combat-engaged-with-cyclops", "equals": true },
           { "type": "compare", "left": { "kind": "itemState", "itemId": "cyclops", "key": "health" }, "op": "<=", "right": { "kind": "literal", "value": 10 } },
-          { "type": "compare", "left": { "kind": "itemState", "itemId": "cyclops", "key": "health" }, "op": ">", "right": { "kind": "literal", "value": 0 } },
-          { "type": "not", "condition": { "type": "flag", "key": "cyclops-tier-bloodied-shown", "equals": true } }
+          { "type": "compare", "left": { "kind": "itemState", "itemId": "cyclops", "key": "health" }, "op": ">", "right": { "kind": "literal", "value": 4 } }
         ]
       },
       "effects": [
-        { "type": "narrate", "text": "The cyclops's breath comes in wet rasps; blood streaks his chest." },
-        { "type": "setFlag", "key": "cyclops-tier-bloodied-shown", "value": true }
+        { "type": "narrate", "text": "The cyclops's breath comes in wet rasps; blood streaks his chest." }
       ]
     },
     {
-      "$comment": "TIER CUE — cyclops critical (≤ 4).",
+      "$comment": "TIER CUE — cyclops critical (band: 0 < hp ≤ 4).",
       "id": "cyclops-tier-critical",
       "afterAction": true,
       "once": false,
       "when": {
         "type": "and",
         "all": [
+          { "type": "flag", "key": "combat-engaged-with-cyclops", "equals": true },
           { "type": "compare", "left": { "kind": "itemState", "itemId": "cyclops", "key": "health" }, "op": "<=", "right": { "kind": "literal", "value": 4 } },
-          { "type": "compare", "left": { "kind": "itemState", "itemId": "cyclops", "key": "health" }, "op": ">", "right": { "kind": "literal", "value": 0 } },
-          { "type": "not", "condition": { "type": "flag", "key": "cyclops-tier-critical-shown", "equals": true } }
+          { "type": "compare", "left": { "kind": "itemState", "itemId": "cyclops", "key": "health" }, "op": ">", "right": { "kind": "literal", "value": 0 } }
         ]
       },
       "effects": [
-        { "type": "narrate", "text": "The cyclops staggers, breath labored, the bloodlust dimming." },
-        { "type": "setFlag", "key": "cyclops-tier-critical-shown", "value": true }
+        { "type": "narrate", "text": "The cyclops staggers, breath labored, the bloodlust dimming." }
       ]
     },
     {
-      "$comment": "TIER CUE — thief wounded (≤ 20 of max 30).",
+      "$comment": "TIER CUE — thief wounded (band: 12 < hp ≤ 20 of max 30).",
       "id": "thief-tier-wounded",
       "afterAction": true,
       "once": false,
       "when": {
         "type": "and",
         "all": [
+          { "type": "flag", "key": "combat-engaged-with-thief", "equals": true },
           { "type": "compare", "left": { "kind": "itemState", "itemId": "thief", "key": "health" }, "op": "<=", "right": { "kind": "literal", "value": 20 } },
-          { "type": "compare", "left": { "kind": "itemState", "itemId": "thief", "key": "health" }, "op": ">", "right": { "kind": "literal", "value": 0 } },
-          { "type": "not", "condition": { "type": "flag", "key": "thief-tier-wounded-shown", "equals": true } }
+          { "type": "compare", "left": { "kind": "itemState", "itemId": "thief", "key": "health" }, "op": ">", "right": { "kind": "literal", "value": 12 } }
         ]
       },
       "effects": [
-        { "type": "narrate", "text": "The thief's elegant guard frays; sweat darkens his cloak." },
-        { "type": "setFlag", "key": "thief-tier-wounded-shown", "value": true }
+        { "type": "narrate", "text": "The thief's elegant guard frays; sweat darkens his cloak." }
       ]
     },
     {
-      "$comment": "TIER CUE — thief bloodied (≤ 12).",
+      "$comment": "TIER CUE — thief bloodied (band: 5 < hp ≤ 12).",
       "id": "thief-tier-bloodied",
       "afterAction": true,
       "once": false,
       "when": {
         "type": "and",
         "all": [
+          { "type": "flag", "key": "combat-engaged-with-thief", "equals": true },
           { "type": "compare", "left": { "kind": "itemState", "itemId": "thief", "key": "health" }, "op": "<=", "right": { "kind": "literal", "value": 12 } },
-          { "type": "compare", "left": { "kind": "itemState", "itemId": "thief", "key": "health" }, "op": ">", "right": { "kind": "literal", "value": 0 } },
-          { "type": "not", "condition": { "type": "flag", "key": "thief-tier-bloodied-shown", "equals": true } }
+          { "type": "compare", "left": { "kind": "itemState", "itemId": "thief", "key": "health" }, "op": ">", "right": { "kind": "literal", "value": 5 } }
         ]
       },
       "effects": [
-        { "type": "narrate", "text": "The thief's smile is gone; he fights now with grim economy." },
-        { "type": "setFlag", "key": "thief-tier-bloodied-shown", "value": true }
+        { "type": "narrate", "text": "The thief's smile is gone; he fights now with grim economy." }
       ]
     },
     {
-      "$comment": "TIER CUE — thief critical (≤ 5).",
+      "$comment": "TIER CUE — thief critical (band: 0 < hp ≤ 5).",
       "id": "thief-tier-critical",
       "afterAction": true,
       "once": false,
       "when": {
         "type": "and",
         "all": [
+          { "type": "flag", "key": "combat-engaged-with-thief", "equals": true },
           { "type": "compare", "left": { "kind": "itemState", "itemId": "thief", "key": "health" }, "op": "<=", "right": { "kind": "literal", "value": 5 } },
-          { "type": "compare", "left": { "kind": "itemState", "itemId": "thief", "key": "health" }, "op": ">", "right": { "kind": "literal", "value": 0 } },
-          { "type": "not", "condition": { "type": "flag", "key": "thief-tier-critical-shown", "equals": true } }
+          { "type": "compare", "left": { "kind": "itemState", "itemId": "thief", "key": "health" }, "op": ">", "right": { "kind": "literal", "value": 0 } }
         ]
       },
       "effects": [
-        { "type": "narrate", "text": "The thief's stiletto wavers; his composure cracks at last." },
-        { "type": "setFlag", "key": "thief-tier-critical-shown", "value": true }
-      ]
-    },
-    {
-      "$comment": "TIER CLEANUP — when combat with troll is no longer engaged, reset all troll-tier-*-shown flags so the next encounter starts fresh. Gated on at least one tier-shown flag being true so the trigger doesn't redundantly fire every turn.",
-      "id": "troll-tier-cleanup",
-      "afterAction": true,
-      "once": false,
-      "when": {
-        "type": "and",
-        "all": [
-          { "type": "flag", "key": "combat-engaged-with-troll", "equals": false },
-          {
-            "type": "or",
-            "any": [
-              { "type": "flag", "key": "troll-tier-wounded-shown", "equals": true },
-              { "type": "flag", "key": "troll-tier-bloodied-shown", "equals": true },
-              { "type": "flag", "key": "troll-tier-critical-shown", "equals": true }
-            ]
-          }
-        ]
-      },
-      "effects": [
-        { "type": "setFlag", "key": "troll-tier-wounded-shown", "value": false },
-        { "type": "setFlag", "key": "troll-tier-bloodied-shown", "value": false },
-        { "type": "setFlag", "key": "troll-tier-critical-shown", "value": false }
-      ]
-    },
-    {
-      "$comment": "TIER CLEANUP — cyclops.",
-      "id": "cyclops-tier-cleanup",
-      "afterAction": true,
-      "once": false,
-      "when": {
-        "type": "and",
-        "all": [
-          { "type": "flag", "key": "combat-engaged-with-cyclops", "equals": false },
-          {
-            "type": "or",
-            "any": [
-              { "type": "flag", "key": "cyclops-tier-wounded-shown", "equals": true },
-              { "type": "flag", "key": "cyclops-tier-bloodied-shown", "equals": true },
-              { "type": "flag", "key": "cyclops-tier-critical-shown", "equals": true }
-            ]
-          }
-        ]
-      },
-      "effects": [
-        { "type": "setFlag", "key": "cyclops-tier-wounded-shown", "value": false },
-        { "type": "setFlag", "key": "cyclops-tier-bloodied-shown", "value": false },
-        { "type": "setFlag", "key": "cyclops-tier-critical-shown", "value": false }
-      ]
-    },
-    {
-      "$comment": "TIER CLEANUP — thief.",
-      "id": "thief-tier-cleanup",
-      "afterAction": true,
-      "once": false,
-      "when": {
-        "type": "and",
-        "all": [
-          { "type": "flag", "key": "combat-engaged-with-thief", "equals": false },
-          {
-            "type": "or",
-            "any": [
-              { "type": "flag", "key": "thief-tier-wounded-shown", "equals": true },
-              { "type": "flag", "key": "thief-tier-bloodied-shown", "equals": true },
-              { "type": "flag", "key": "thief-tier-critical-shown", "equals": true }
-            ]
-          }
-        ]
-      },
-      "effects": [
-        { "type": "setFlag", "key": "thief-tier-wounded-shown", "value": false },
-        { "type": "setFlag", "key": "thief-tier-bloodied-shown", "value": false },
-        { "type": "setFlag", "key": "thief-tier-critical-shown", "value": false }
-      ]
-    },
-    {
-      "$comment": "TIER CLEANUP — player. Resets when no combat is engaged so the next combat starts fresh.",
-      "id": "player-tier-cleanup",
-      "afterAction": true,
-      "once": false,
-      "when": {
-        "type": "and",
-        "all": [
-          { "type": "flag", "key": "combat-engaged-with-troll", "equals": false },
-          { "type": "flag", "key": "combat-engaged-with-cyclops", "equals": false },
-          { "type": "flag", "key": "combat-engaged-with-thief", "equals": false },
-          {
-            "type": "or",
-            "any": [
-              { "type": "flag", "key": "player-tier-wounded-shown", "equals": true },
-              { "type": "flag", "key": "player-tier-bloodied-shown", "equals": true },
-              { "type": "flag", "key": "player-tier-critical-shown", "equals": true }
-            ]
-          }
-        ]
-      },
-      "effects": [
-        { "type": "setFlag", "key": "player-tier-wounded-shown", "value": false },
-        { "type": "setFlag", "key": "player-tier-bloodied-shown", "value": false },
-        { "type": "setFlag", "key": "player-tier-critical-shown", "value": false }
+        { "type": "narrate", "text": "The thief's stiletto wavers; his composure cracks at last." }
       ]
     },
     {
@@ -10987,6 +10986,255 @@
         { "type": "removeMatchedIntent", "signalId": "give" }
       ],
       "narration": "There is no reaction."
+    },
+    {
+      "$comment": "Unlock the grate with the skeleton keys. Per-target trigger for the unlock customTool. Sets passageState.grate.isLocked=false and consumes the intent so the unlock-rejects catchall doesn't fire.",
+      "id": "grate-unlocks",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "unlock" },
+          { "type": "intentArg", "signalId": "unlock", "key": "itemId", "equals": "keys" },
+          { "type": "intentArg", "signalId": "unlock", "key": "targetId", "equals": "grate" },
+          { "type": "passageState", "passageId": "grate", "key": "isLocked", "equals": true }
+        ]
+      },
+      "effects": [
+        { "type": "setPassageState", "passageId": "grate", "key": "isLocked", "value": false },
+        { "type": "removeMatchedIntent", "signalId": "unlock" }
+      ],
+      "narration": "The skeleton key fits the skull-and-crossbones lock with a satisfying click; the grate's bolt slides free."
+    },
+    {
+      "$comment": "Lock the grate with the skeleton keys. Mirrors grate-unlocks. Refuses if grate is currently open (canonical: must close before locking).",
+      "id": "grate-locks",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "lock" },
+          { "type": "intentArg", "signalId": "lock", "key": "itemId", "equals": "keys" },
+          { "type": "intentArg", "signalId": "lock", "key": "targetId", "equals": "grate" },
+          { "type": "passageState", "passageId": "grate", "key": "isLocked", "equals": false },
+          { "type": "passageState", "passageId": "grate", "key": "isOpen", "equals": false }
+        ]
+      },
+      "effects": [
+        { "type": "setPassageState", "passageId": "grate", "key": "isLocked", "value": true },
+        { "type": "removeMatchedIntent", "signalId": "lock" }
+      ],
+      "narration": "You turn the skeleton key in the skull-and-crossbones lock; the bolt slides home."
+    },
+    {
+      "$comment": "Refusal when player tries to OPEN the grate while still locked. The generic open handler runs FIRST and sets isOpen=true (it doesn't know about isLocked); this trigger reverts isOpen=false and emits the canonical 'skull-and-crossbones' refusal so the LLM gets the colorful prose, not just the bland '{name} is locked' default.",
+      "id": "grate-open-refused-locked",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "open" },
+          { "type": "intentArg", "signalId": "open", "key": "itemId", "equals": "grate" },
+          { "type": "passageState", "passageId": "grate", "key": "isLocked", "equals": true }
+        ]
+      },
+      "effects": [
+        { "type": "setPassageState", "passageId": "grate", "key": "isOpen", "value": false },
+        { "type": "removeMatchedIntent", "signalId": "open" }
+      ],
+      "narration": "The grate is locked closed — a skull-and-crossbones lock keeps it shut."
+    },
+    {
+      "$comment": "Unlock catchall — fires when no per-target trigger consumed the intent. Generic refusal so the LLM doesn't fall through to invented prose.",
+      "id": "unlock-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "unlock" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "unlock" }
+      ],
+      "narration": "The key doesn't fit."
+    },
+    {
+      "$comment": "Lock catchall — symmetric to unlock-rejects.",
+      "id": "lock-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "lock" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "lock" }
+      ],
+      "narration": "The key doesn't fit."
+    },
+    {
+      "$comment": "Player explicitly unties the rope (separate from untie-rope-on-take, which fires when the player takes the rope back). Gates on untie intent + rope-at-dome-room (i.e. currently tied). Reverses tie-rope: clears dome-flag, returns rope to inventory.",
+      "id": "untie-rope",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "untie" },
+          { "type": "intentArg", "signalId": "untie", "key": "itemId", "equals": "rope" },
+          { "type": "playerAt", "roomId": "dome-room" },
+          { "type": "itemAt", "itemId": "rope", "location": "dome-room" }
+        ]
+      },
+      "effects": [
+        { "type": "setFlag", "key": "dome-flag", "value": false },
+        { "type": "moveItem", "itemId": "rope", "to": "player" },
+        { "type": "removeMatchedIntent", "signalId": "untie" }
+      ],
+      "narration": "You untie the rope from the railing and coil it back into your hand."
+    },
+    {
+      "$comment": "Tie catchall — fires when no per-target trigger consumed the intent. Generic refusal so the LLM doesn't fall through to invented prose.",
+      "id": "tie-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "tie" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "tie" }
+      ],
+      "narration": "There's nothing to tie that to here."
+    },
+    {
+      "$comment": "Untie catchall — symmetric to tie-rejects.",
+      "id": "untie-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "untie" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "untie" }
+      ],
+      "narration": "There's nothing here to untie."
+    },
+    {
+      "$comment": "Talk-to catchall — fires when no per-target trigger consumed the intent.",
+      "id": "talk-to-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "talk-to" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "talk-to" }
+      ],
+      "narration": "There is no reaction."
+    },
+    {
+      "$comment": "Burn catchall.",
+      "id": "burn-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "burn" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "burn" }
+      ],
+      "narration": "It won't catch fire."
+    },
+    {
+      "$comment": "Mung catchall.",
+      "id": "mung-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "mung" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "mung" }
+      ],
+      "narration": "Nothing happens."
+    },
+    {
+      "$comment": "Push catchall.",
+      "id": "push-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "push" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "push" }
+      ],
+      "narration": "Nothing happens."
+    },
+    {
+      "$comment": "Lower catchall.",
+      "id": "lower-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "lower" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "lower" }
+      ],
+      "narration": "There's nothing to lower here."
+    },
+    {
+      "$comment": "Raise catchall.",
+      "id": "raise-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "raise" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "raise" }
+      ],
+      "narration": "There's nothing to raise here."
+    },
+    {
+      "$comment": "Turn catchall.",
+      "id": "turn-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "turn" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "turn" }
+      ],
+      "narration": "It doesn't turn."
+    },
+    {
+      "$comment": "Inflate catchall.",
+      "id": "inflate-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "inflate" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "inflate" }
+      ],
+      "narration": "There's nothing to inflate here."
+    },
+    {
+      "$comment": "Plug catchall.",
+      "id": "plug-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "plug" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "plug" }
+      ],
+      "narration": "Nothing to plug."
+    },
+    {
+      "$comment": "Dig catchall.",
+      "id": "dig-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "dig" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "dig" }
+      ],
+      "narration": "Nothing to dig here."
     },
     {
       "$comment": "Force-break the egg (smash / crush / break) — destroys the canary inside. Mirror of egg-falls-from-tree but for explicit break-verb attempts in any room; the canonical Zork I 'sickening crunching noise' outcome. Both items get state.broken=true; egg.isOpen flips to true (broken == open for take semantics). The thief-opens-egg gate prevents retroactively destroying a thief-extracted canary. Variants on the egg/canary items render the post-break description. once:false is explicit — engine's default for once is true, so we must override. Idempotency comes from the not(broken=true) gate plus removeMatchedIntent(break) in the effects, both of which prevent re-fire after the first successful run; relying on those instead of once:true means a stale firedTriggers entry from any prior buggy run can't lock the trigger out forever.",
@@ -12418,11 +12666,17 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "turn-machine-switch"
+            "signalId": "turn"
           },
           {
             "type": "intentArg",
-            "signalId": "turn-machine-switch",
+            "signalId": "turn",
+            "key": "itemId",
+            "equals": "machine-switch"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn",
             "key": "withItemId",
             "equals": "screwdriver"
           },
@@ -12466,7 +12720,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "turn-machine-switch"
+          "signalId": "turn"
         }
       ],
       "narration": "The machine comes to life with a dazzling display of colored lights and bizarre noises — clattering, whirring, sparks. After a few moments the racket subsides. The lid pops open. Where you placed the coal, a magnificent diamond now lies."
@@ -12480,11 +12734,17 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "turn-machine-switch"
+            "signalId": "turn"
           },
           {
             "type": "intentArg",
-            "signalId": "turn-machine-switch",
+            "signalId": "turn",
+            "key": "itemId",
+            "equals": "machine-switch"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn",
             "key": "withItemId",
             "equals": "screwdriver"
           },
@@ -12515,7 +12775,7 @@
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "turn-machine-switch"
+          "signalId": "turn"
         }
       ],
       "narration": "The machine clatters and whirs, but produces only a faint puff of greenish smoke. Whatever it's looking for, it isn't finding."
@@ -12529,11 +12789,17 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "turn-machine-switch"
+            "signalId": "turn"
           },
           {
             "type": "intentArg",
-            "signalId": "turn-machine-switch",
+            "signalId": "turn",
+            "key": "itemId",
+            "equals": "machine-switch"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn",
             "key": "withItemId",
             "equals": "screwdriver"
           },
@@ -12556,7 +12822,7 @@
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "turn-machine-switch"
+          "signalId": "turn"
         }
       ],
       "narration": "The machine clatters into life. A plume of green smoke curls up out of the chamber, drifts into the room, and dissipates. The noise dwindles to silence."
@@ -12571,7 +12837,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "turn-machine-switch"
+            "signalId": "turn"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn",
+            "key": "itemId",
+            "equals": "machine-switch"
           },
           {
             "type": "playerAt",
@@ -12582,7 +12854,7 @@
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "turn-machine-switch"
+          "signalId": "turn"
         }
       ],
       "narration": "The switch doesn't budge."
@@ -12594,21 +12866,13 @@
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "push-machine-switch"
-          },
-          {
-            "type": "playerAt",
-            "roomId": "machine-room"
-          }
+          { "type": "intentMatched", "signalId": "push" },
+          { "type": "intentArg", "signalId": "push", "key": "itemId", "equals": "machine-switch" },
+          { "type": "playerAt", "roomId": "machine-room" }
         ]
       },
       "effects": [
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "push-machine-switch"
-        }
+        { "type": "removeMatchedIntent", "signalId": "push" }
       ],
       "narration": "The switch is too small to manipulate with human fingers — barely 1/16 by 1/4 of an inch."
     },
@@ -12619,10 +12883,8 @@
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "lower-basket"
-          },
+          { "type": "intentMatched", "signalId": "lower" },
+          { "type": "intentArg", "signalId": "lower", "key": "itemId", "equals": "basket" },
           {
             "type": "or",
             "any": [
@@ -12656,10 +12918,7 @@
           "key": "position",
           "value": "lowered"
         },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "lower-basket"
-        }
+        { "type": "removeMatchedIntent", "signalId": "lower" }
       ],
       "narration": "The chain rattles as the basket descends out of sight, settling at the bottom of the shaft."
     },
@@ -12670,10 +12929,8 @@
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "raise-basket"
-          },
+          { "type": "intentMatched", "signalId": "raise" },
+          { "type": "intentArg", "signalId": "raise", "key": "itemId", "equals": "basket" },
           {
             "type": "or",
             "any": [
@@ -12707,10 +12964,7 @@
           "key": "position",
           "value": "raised"
         },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "raise-basket"
-        }
+        { "type": "removeMatchedIntent", "signalId": "raise" }
       ],
       "narration": "The chain creaks as you haul; the basket rises smoothly out of the depths and settles at the top of the shaft."
     },
@@ -12814,26 +13068,14 @@
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "push-yellow-button"
-          },
-          {
-            "type": "playerAt",
-            "roomId": "maintenance-room"
-          }
+          { "type": "intentMatched", "signalId": "push" },
+          { "type": "intentArg", "signalId": "push", "key": "itemId", "equals": "yellow-button" },
+          { "type": "playerAt", "roomId": "maintenance-room" }
         ]
       },
       "effects": [
-        {
-          "type": "setFlag",
-          "key": "gate-flag",
-          "value": true
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "push-yellow-button"
-        }
+        { "type": "setFlag", "key": "gate-flag", "value": true },
+        { "type": "removeMatchedIntent", "signalId": "push" }
       ],
       "narration": "Click."
     },
@@ -12843,26 +13085,14 @@
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "push-brown-button"
-          },
-          {
-            "type": "playerAt",
-            "roomId": "maintenance-room"
-          }
+          { "type": "intentMatched", "signalId": "push" },
+          { "type": "intentArg", "signalId": "push", "key": "itemId", "equals": "brown-button" },
+          { "type": "playerAt", "roomId": "maintenance-room" }
         ]
       },
       "effects": [
-        {
-          "type": "setFlag",
-          "key": "gate-flag",
-          "value": false
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "push-brown-button"
-        }
+        { "type": "setFlag", "key": "gate-flag", "value": false },
+        { "type": "removeMatchedIntent", "signalId": "push" }
       ],
       "narration": "Click."
     },
@@ -12873,51 +13103,25 @@
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "push-red-button"
-          },
-          {
-            "type": "playerAt",
-            "roomId": "maintenance-room"
-          }
+          { "type": "intentMatched", "signalId": "push" },
+          { "type": "intentArg", "signalId": "push", "key": "itemId", "equals": "red-button" },
+          { "type": "playerAt", "roomId": "maintenance-room" }
         ]
       },
       "effects": [
         {
           "type": "if",
-          "if": {
-            "type": "flag",
-            "key": "maintenance-lights",
-            "equals": true
-          },
+          "if": { "type": "flag", "key": "maintenance-lights", "equals": true },
           "then": [
-            {
-              "type": "setFlag",
-              "key": "maintenance-lights",
-              "value": false
-            },
-            {
-              "type": "narrate",
-              "text": "Click. The maintenance-room lights flicker out. After a moment they flicker back on — a self-resetting safety circuit, evidently."
-            }
+            { "type": "setFlag", "key": "maintenance-lights", "value": false },
+            { "type": "narrate", "text": "Click. The maintenance-room lights flicker out. After a moment they flicker back on — a self-resetting safety circuit, evidently." }
           ],
           "else": [
-            {
-              "type": "setFlag",
-              "key": "maintenance-lights",
-              "value": true
-            },
-            {
-              "type": "narrate",
-              "text": "Click. The maintenance-room lights flicker."
-            }
+            { "type": "setFlag", "key": "maintenance-lights", "value": true },
+            { "type": "narrate", "text": "Click. The maintenance-room lights flicker." }
           ]
         },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "push-red-button"
-        }
+        { "type": "removeMatchedIntent", "signalId": "push" }
       ]
     },
     {
@@ -12927,36 +13131,16 @@
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "push-blue-button"
-          },
-          {
-            "type": "playerAt",
-            "roomId": "maintenance-room"
-          },
-          {
-            "type": "flag",
-            "key": "leak-active",
-            "equals": false
-          }
+          { "type": "intentMatched", "signalId": "push" },
+          { "type": "intentArg", "signalId": "push", "key": "itemId", "equals": "blue-button" },
+          { "type": "playerAt", "roomId": "maintenance-room" },
+          { "type": "flag", "key": "leak-active", "equals": false }
         ]
       },
       "effects": [
-        {
-          "type": "setFlag",
-          "key": "leak-active",
-          "value": true
-        },
-        {
-          "type": "setFlag",
-          "key": "leak-flood-counter",
-          "value": 5
-        },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "push-blue-button"
-        }
+        { "type": "setFlag", "key": "leak-active", "value": true },
+        { "type": "setFlag", "key": "leak-flood-counter", "value": 5 },
+        { "type": "removeMatchedIntent", "signalId": "push" }
       ],
       "narration": "There is a rumbling sound and a stream of water appears to burst from the east wall of the room (apparently, a leak has occurred in a pipe). The water level begins to rise."
     },
@@ -13044,7 +13228,19 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "plug-leak-with-putty"
+            "signalId": "plug"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "plug",
+            "key": "itemId",
+            "equals": "leak"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "plug",
+            "key": "withItemId",
+            "equals": "putty"
           },
           {
             "type": "playerAt",
@@ -13079,7 +13275,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "plug-leak-with-putty"
+          "signalId": "plug"
         }
       ],
       "narration": "You press the viscous material against the pipe; it spreads and seals the leak with a satisfying squelch. The flow stops. The water level slowly recedes."
@@ -13093,7 +13289,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "plug-leak-by-hand"
+            "signalId": "plug"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "plug",
+            "key": "itemId",
+            "equals": "leak"
           },
           {
             "type": "playerAt",
@@ -13104,7 +13306,7 @@
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "plug-leak-by-hand"
+          "signalId": "plug"
         }
       ],
       "narration": "Water sprays past your fingers, the pressure forcing your hand right back."
@@ -13118,11 +13320,17 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "turn-dam-bolt"
+            "signalId": "turn"
           },
           {
             "type": "intentArg",
-            "signalId": "turn-dam-bolt",
+            "signalId": "turn",
+            "key": "itemId",
+            "equals": "bolt"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn",
             "key": "withItemId",
             "equals": "wrench"
           },
@@ -13159,7 +13367,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "turn-dam-bolt"
+          "signalId": "turn"
         }
       ],
       "narration": "The bolt turns slowly. Somewhere below, the sluice gates open and water pours through the dam with a sustained roar. The reservoir will take some time to drain."
@@ -13173,11 +13381,17 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "turn-dam-bolt"
+            "signalId": "turn"
           },
           {
             "type": "intentArg",
-            "signalId": "turn-dam-bolt",
+            "signalId": "turn",
+            "key": "itemId",
+            "equals": "bolt"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn",
             "key": "withItemId",
             "equals": "wrench"
           },
@@ -13220,10 +13434,10 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "turn-dam-bolt"
+          "signalId": "turn"
         }
       ],
-      "narration": "The bolt turns the other way. Below, the sluice gates rumble shut, and water begins to back up behind the dam once again."
+      "narration": "The bolt turns smoothly under the wrench. Below, the sluice gates rumble shut, and water begins to back up behind the dam once again."
     },
     {
       "$comment": "Bolt-turn fallback. Fires at dam-room when turn-dam-bolt is matched but neither bolt-opens-gates nor bolt-closes-gates fired (wrong tool, missing wrench, or no gate-flag). Always consumes the intent so it doesn't carry across turns. The playerAt(dam-room) gate is also load-bearing for tool surfacing — without it, the relevance check makes turn-dam-bolt a dynamic intent in EVERY room.",
@@ -13235,7 +13449,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "turn-dam-bolt"
+            "signalId": "turn"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn",
+            "key": "itemId",
+            "equals": "bolt"
           },
           {
             "type": "playerAt",
@@ -13246,7 +13466,7 @@
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "turn-dam-bolt"
+          "signalId": "turn"
         }
       ],
       "narration": "The bolt doesn't budge — you'll need the right tool, in the right place, with the right control surface enabled."
@@ -13260,7 +13480,13 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "turn-dam-bolt-by-hand"
+            "signalId": "turn"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "turn",
+            "key": "itemId",
+            "equals": "bolt"
           },
           {
             "type": "playerAt",
@@ -13271,7 +13497,7 @@
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "turn-dam-bolt-by-hand"
+          "signalId": "turn"
         }
       ],
       "narration": "The bolt is heavy iron and held tight in its socket. Your bare hands can't budge it."
@@ -13559,6 +13785,23 @@
       "narration": "Your load is too great. The passage west narrows to a slit barely a person's width."
     },
     {
+      "$comment": "Canonical maze-9 down warning. The action runs (move resolved) before triggers fire, so we gate on the destination (maze-11) + the intent direction (down). The only way to reach maze-11 via `go down` is from maze-9, so this gate is unambiguous. afterAction:true so it runs single-pass (no fixed-point loop) — without that the cue would re-fire dozens of times per descent because it doesn't change any state. Repeats on every descent (matches ZIL room behavior).",
+      "id": "maze-9-down-warning",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "go" },
+          { "type": "intentArg", "signalId": "go", "key": "direction", "equals": "down" },
+          { "type": "playerAt", "roomId": "maze-11" }
+        ]
+      },
+      "effects": [
+        { "type": "narrate", "text": "You won't be able to get back up to the tunnel you are going through when it gets to the next room." }
+      ]
+    },
+    {
       "$comment": "Symmetric refusal for the return trip: lower-shaft → out/east back to timber-room. Same pattern as timber-room-too-loaded but covers both directions players might use to leave the lower shaft.",
       "id": "lower-shaft-too-loaded",
       "once": false,
@@ -13612,8 +13855,9 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "inflate-boat" },
-          { "type": "intentArg", "signalId": "inflate-boat", "key": "withItemId", "equals": "pump" },
+          { "type": "intentMatched", "signalId": "inflate" },
+          { "type": "intentArg", "signalId": "inflate", "key": "itemId", "equals": "inflatable-boat" },
+          { "type": "intentArg", "signalId": "inflate", "key": "withItemId", "equals": "pump" },
           { "type": "itemAccessible", "itemId": "inflatable-boat" },
           { "type": "itemAccessible", "itemId": "pump" },
           { "type": "itemState", "itemId": "inflatable-boat", "key": "inflation", "equals": "deflated" }
@@ -13621,7 +13865,7 @@
       },
       "effects": [
         { "type": "setItemState", "itemId": "inflatable-boat", "key": "inflation", "value": "inflated" },
-        { "type": "removeMatchedIntent", "signalId": "inflate-boat" }
+        { "type": "removeMatchedIntent", "signalId": "inflate" }
       ],
       "narration": "The boat hisses and swells into a sturdy yellow raft, ready for the river."
     },
@@ -13633,12 +13877,13 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "inflate-boat" },
+          { "type": "intentMatched", "signalId": "inflate" },
+          { "type": "intentArg", "signalId": "inflate", "key": "itemId", "equals": "inflatable-boat" },
           { "type": "itemAccessible", "itemId": "inflatable-boat" }
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "inflate-boat" }
+        { "type": "removeMatchedIntent", "signalId": "inflate" }
       ],
       "narration": "That isn't going to inflate anything."
     },
@@ -13647,13 +13892,16 @@
       "id": "boat-bare-mouth",
       "once": false,
       "when": {
-        "type": "intentMatched",
-        "signalId": "inflate-boat-by-mouth"
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "inflate" },
+          { "type": "intentArg", "signalId": "inflate", "key": "itemId", "equals": "inflatable-boat" }
+        ]
       },
       "effects": [
         {
           "type": "removeMatchedIntent",
-          "signalId": "inflate-boat-by-mouth"
+          "signalId": "inflate"
         }
       ],
       "narration": "You blow until your head spins. The folded plastic doesn't budge."
@@ -14226,7 +14474,7 @@
             "signalId": "wind-canary"
           },
           {
-            "type": "hasItem",
+            "type": "itemAccessible",
             "itemId": "canary"
           },
           {
@@ -14355,7 +14603,7 @@
             "signalId": "wind-canary"
           },
           {
-            "type": "hasItem",
+            "type": "itemAccessible",
             "itemId": "canary"
           }
         ]
@@ -14540,14 +14788,9 @@
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "burn-leaves"
-          },
-          {
-            "type": "hasItem",
-            "itemId": "leaves"
-          },
+          { "type": "intentMatched", "signalId": "burn" },
+          { "type": "intentArg", "signalId": "burn", "key": "itemId", "equals": "leaves" },
+          { "type": "hasItem", "itemId": "leaves" },
           {
             "type": "or",
             "any": [
@@ -14675,14 +14918,9 @@
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "burn-book"
-          },
-          {
-            "type": "hasItem",
-            "itemId": "book"
-          },
+          { "type": "intentMatched", "signalId": "burn" },
+          { "type": "intentArg", "signalId": "burn", "key": "itemId", "equals": "book" },
+          { "type": "hasItem", "itemId": "book" },
           {
             "type": "or",
             "any": [
@@ -14732,14 +14970,9 @@
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "mung-bodies"
-          },
-          {
-            "type": "playerAt",
-            "roomId": "entrance-to-hades"
-          }
+          { "type": "intentMatched", "signalId": "mung" },
+          { "type": "intentArg", "signalId": "mung", "key": "itemId", "equals": "bodies" },
+          { "type": "playerAt", "roomId": "entrance-to-hades" }
         ]
       },
       "effects": [
@@ -14800,11 +15033,17 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "dig-sand-with-tool"
+            "signalId": "dig"
           },
           {
             "type": "intentArg",
-            "signalId": "dig-sand-with-tool",
+            "signalId": "dig",
+            "key": "targetId",
+            "equals": "sand"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "dig",
             "key": "withItemId",
             "equals": "shovel"
           },
@@ -14838,7 +15077,7 @@
         },
         {
           "type": "removeMatchedIntent",
-          "signalId": "dig-sand-with-tool"
+          "signalId": "dig"
         }
       ],
       "narration": "You dig deeper into the loose sand. The hole grows."
@@ -14853,11 +15092,17 @@
         "all": [
           {
             "type": "intentMatched",
-            "signalId": "dig-sand-with-tool"
+            "signalId": "dig"
           },
           {
             "type": "intentArg",
-            "signalId": "dig-sand-with-tool",
+            "signalId": "dig",
+            "key": "targetId",
+            "equals": "sand"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "dig",
             "key": "withItemId",
             "equals": "shovel"
           },
@@ -14896,8 +15141,9 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "dig-sand-with-tool" },
-          { "type": "intentArg", "signalId": "dig-sand-with-tool", "key": "withItemId", "equals": "shovel" },
+          { "type": "intentMatched", "signalId": "dig" },
+          { "type": "intentArg", "signalId": "dig", "key": "targetId", "equals": "sand" },
+          { "type": "intentArg", "signalId": "dig", "key": "withItemId", "equals": "shovel" },
           { "type": "playerAt", "roomId": "sandy-cave" },
           { "type": "hasItem", "itemId": "shovel" },
           { "type": "compare", "left": { "kind": "flag", "key": "cave-dig-count" }, "op": "==", "right": { "kind": "literal", "value": 0 } }
@@ -14905,7 +15151,7 @@
       },
       "effects": [
         { "type": "adjustFlag", "key": "cave-dig-count", "by": 1 },
-        { "type": "removeMatchedIntent", "signalId": "dig-sand-with-tool" }
+        { "type": "removeMatchedIntent", "signalId": "dig" }
       ],
       "narration": "(with the shovel)\nYou seem to be digging a hole here."
     },
@@ -14917,8 +15163,9 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "dig-sand-with-tool" },
-          { "type": "intentArg", "signalId": "dig-sand-with-tool", "key": "withItemId", "equals": "shovel" },
+          { "type": "intentMatched", "signalId": "dig" },
+          { "type": "intentArg", "signalId": "dig", "key": "targetId", "equals": "sand" },
+          { "type": "intentArg", "signalId": "dig", "key": "withItemId", "equals": "shovel" },
           { "type": "playerAt", "roomId": "sandy-cave" },
           { "type": "hasItem", "itemId": "shovel" },
           { "type": "compare", "left": { "kind": "flag", "key": "cave-dig-count" }, "op": "==", "right": { "kind": "literal", "value": 1 } }
@@ -14926,7 +15173,7 @@
       },
       "effects": [
         { "type": "adjustFlag", "key": "cave-dig-count", "by": 1 },
-        { "type": "removeMatchedIntent", "signalId": "dig-sand-with-tool" }
+        { "type": "removeMatchedIntent", "signalId": "dig" }
       ],
       "narration": "(with the shovel)\nThe hole is getting deeper, but that's about it."
     },
@@ -14938,8 +15185,9 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "dig-sand-with-tool" },
-          { "type": "intentArg", "signalId": "dig-sand-with-tool", "key": "withItemId", "equals": "shovel" },
+          { "type": "intentMatched", "signalId": "dig" },
+          { "type": "intentArg", "signalId": "dig", "key": "targetId", "equals": "sand" },
+          { "type": "intentArg", "signalId": "dig", "key": "withItemId", "equals": "shovel" },
           { "type": "playerAt", "roomId": "sandy-cave" },
           { "type": "hasItem", "itemId": "shovel" },
           { "type": "compare", "left": { "kind": "flag", "key": "cave-dig-count" }, "op": "==", "right": { "kind": "literal", "value": 2 } }
@@ -14947,7 +15195,7 @@
       },
       "effects": [
         { "type": "adjustFlag", "key": "cave-dig-count", "by": 1 },
-        { "type": "removeMatchedIntent", "signalId": "dig-sand-with-tool" }
+        { "type": "removeMatchedIntent", "signalId": "dig" }
       ],
       "narration": "(with the shovel)\nYou are surrounded by a wall of sand on all sides."
     },
@@ -14959,8 +15207,9 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "dig-sand-with-tool" },
-          { "type": "intentArg", "signalId": "dig-sand-with-tool", "key": "withItemId", "equals": "shovel" },
+          { "type": "intentMatched", "signalId": "dig" },
+          { "type": "intentArg", "signalId": "dig", "key": "targetId", "equals": "sand" },
+          { "type": "intentArg", "signalId": "dig", "key": "withItemId", "equals": "shovel" },
           { "type": "playerAt", "roomId": "sandy-cave" },
           { "type": "hasItem", "itemId": "shovel" },
           { "type": "compare", "left": { "kind": "flag", "key": "cave-dig-count" }, "op": "==", "right": { "kind": "literal", "value": 3 } }
@@ -14969,7 +15218,7 @@
       "effects": [
         { "type": "adjustFlag", "key": "cave-dig-count", "by": 1 },
         { "type": "setFlag", "key": "scarab-uncovered", "value": true },
-        { "type": "removeMatchedIntent", "signalId": "dig-sand-with-tool" }
+        { "type": "removeMatchedIntent", "signalId": "dig" }
       ],
       "narration": "(with the shovel)\nYou can see a scarab here in the sand."
     },
@@ -14981,15 +15230,16 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "dig-sand-with-tool" },
-          { "type": "intentArg", "signalId": "dig-sand-with-tool", "key": "withItemId", "equals": "shovel" },
+          { "type": "intentMatched", "signalId": "dig" },
+          { "type": "intentArg", "signalId": "dig", "key": "targetId", "equals": "sand" },
+          { "type": "intentArg", "signalId": "dig", "key": "withItemId", "equals": "shovel" },
           { "type": "playerAt", "roomId": "sandy-cave" },
           { "type": "hasItem", "itemId": "shovel" },
           { "type": "compare", "left": { "kind": "flag", "key": "cave-dig-count" }, "op": ">=", "right": { "kind": "literal", "value": 4 } }
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "dig-sand-with-tool" }
+        { "type": "removeMatchedIntent", "signalId": "dig" }
       ],
       "narration": "(with the shovel)\nThe hole is as deep as it'll go without bringing the cave down on your head."
     },
@@ -15001,7 +15251,9 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "dig-sand-with-tool" },
+          { "type": "intentMatched", "signalId": "dig" },
+          { "type": "intentArg", "signalId": "dig", "key": "targetId", "equals": "sand" },
+          { "type": "not", "condition": { "type": "intentArg", "signalId": "dig", "key": "withItemId", "equals": "shovel" } },
           { "type": "or", "any": [
             { "type": "playerAt", "roomId": "sandy-beach" },
             { "type": "playerAt", "roomId": "sandy-cave" }
@@ -15009,7 +15261,7 @@
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "dig-sand-with-tool" }
+        { "type": "removeMatchedIntent", "signalId": "dig" }
       ],
       "narration": "That isn't going to dig much sand."
     },
@@ -15021,7 +15273,9 @@
       "when": {
         "type": "and",
         "all": [
-          { "type": "intentMatched", "signalId": "dig-sand" },
+          { "type": "intentMatched", "signalId": "dig" },
+          { "type": "intentArg", "signalId": "dig", "key": "targetId", "equals": "sand" },
+          { "type": "not", "condition": { "type": "intentArg", "signalId": "dig", "key": "withItemId", "equals": "shovel" } },
           { "type": "or", "any": [
             { "type": "playerAt", "roomId": "sandy-beach" },
             { "type": "playerAt", "roomId": "sandy-cave" }
@@ -15029,7 +15283,7 @@
         ]
       },
       "effects": [
-        { "type": "removeMatchedIntent", "signalId": "dig-sand" }
+        { "type": "removeMatchedIntent", "signalId": "dig" }
       ],
       "narration": "Digging with your bare hands won't get you very far."
     },
@@ -15040,10 +15294,8 @@
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "mung-painting"
-          },
+          { "type": "intentMatched", "signalId": "mung" },
+          { "type": "intentArg", "signalId": "mung", "key": "itemId", "equals": "painting" },
           {
             "type": "or",
             "any": [
@@ -15076,10 +15328,7 @@
           "key": "broken",
           "value": true
         },
-        {
-          "type": "removeMatchedIntent",
-          "signalId": "mung-painting"
-        }
+        { "type": "removeMatchedIntent", "signalId": "mung" }
       ],
       "narration": "You shred the canvas into ribbons. Whatever it depicted, it depicts no longer — the painting is now worthless."
     },
@@ -15090,14 +15339,9 @@
       "when": {
         "type": "and",
         "all": [
-          {
-            "type": "intentMatched",
-            "signalId": "mung-sceptre"
-          },
-          {
-            "type": "hasItem",
-            "itemId": "sceptre"
-          },
+          { "type": "intentMatched", "signalId": "mung" },
+          { "type": "intentArg", "signalId": "mung", "key": "itemId", "equals": "sceptre" },
+          { "type": "hasItem", "itemId": "sceptre" },
           {
             "type": "or",
             "any": [

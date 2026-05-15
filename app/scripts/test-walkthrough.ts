@@ -12,7 +12,7 @@
 // — those gaps are logged for follow-up plans, not patched here.
 
 import { Engine } from "../src/engine/engine";
-import { currentRoomId, isItemAccessible } from "../src/engine/state";
+import { currentRoomId, isItemAccessible, resolveItemDescription } from "../src/engine/state";
 import zork from "../src/stories/zork-1.json" with { type: "json" };
 import type { Story, GameState, Atom } from "../src/story/schema";
 
@@ -563,7 +563,7 @@ if (!e.state.finished && !aborted()) {
   takeItem(e, "match", "P8 matches");
   takeItem(e, "guide", "P8 tour guidebook (optional)");
   go(e, "north", "maintenance-room", "P8");
-  intent(e, "push-yellow-button", undefined, "P8 yellow button");
+  intent(e, "push", { itemId: "yellow-button" }, "P8 yellow button");
   assertFlag(e, "gate-flag", true, "P8 gate-flag");
   // GET ALL EXCEPT TUBE: get screwdriver, wrench. Tube is taken later for putty.
   takeItem(e, "screwdriver", "P8");
@@ -574,7 +574,7 @@ if (!e.state.finished && !aborted()) {
   go(e, "south", "dam-lobby", "P8");
   go(e, "south", "dam-room", "P8");
   // TURN BOLT WITH WRENCH
-  intent(e, "turn-dam-bolt", { withItemId: "wrench" }, "P8 bolt");
+  intent(e, "turn", { itemId: "bolt", withItemId: "wrench" }, "P8 bolt");
   assertFlag(e, "gates-open", true, "P8 gates-open");
 
   // Wait for low-tide: countdown decrements each turn. Cap at ~12 ticks.
@@ -605,7 +605,7 @@ if (!e.state.finished && !aborted()) {
   go(e, "southeast", "engravings-cave", "P9");
   go(e, "east", "dome-room", "P9 dome");
 
-  intent(e, "rope-tied-to-railing", undefined, "P9 tie rope to railing");
+  intent(e, "tie", { itemId: "rope", targetId: "railing" }, "P9 tie rope to railing");
   assertFlag(e, "dome-flag", true, "P9 dome-flag after tying rope");
   go(e, "down", "torch-room", "P9 descend to torch-room");
 
@@ -791,7 +791,7 @@ if (!e.state.finished && !aborted()) {
   }
   // LOWER BASKET — fires the basket-lowers trigger. Basket + contents move
   // from shaft-room to lower-shaft. Then assert post-state.
-  intent(e, "lower-basket", undefined, "P12 lower basket");
+  intent(e, "lower", { itemId: "basket" }, "P12 lower basket");
   if (e.state.itemLocations["basket"] === "lower-shaft" &&
       e.state.itemStates["basket"]?.position === "lowered") {
     pass("P12 basket descended to lower-shaft");
@@ -843,7 +843,7 @@ if (!e.state.finished && !aborted()) {
   intent(e, "open", { itemId: "machine" }, "P12 open machine lid");
   putItem(e, "coal", "machine");
   intent(e, "close", { itemId: "machine" }, "P12 close lid");
-  intent(e, "turn-machine-switch", { withItemId: "screwdriver" }, "P12 turn switch");
+  intent(e, "turn", { itemId: "machine-switch", withItemId: "screwdriver" }, "P12 turn switch");
   // diamond should appear at machine-room
   assertItemAt(e, "diamond", "machine-room", "P12 diamond produced");
   intent(e, "open", { itemId: "machine" }, "P12 reopen lid");
@@ -885,7 +885,7 @@ if (!e.state.finished && !aborted()) {
   go(e, "south", "shaft-room", "P12");
   // Now raise the basket from above. Basket is at lower-shaft with diamond +
   // torch; ascends to shaft-room with both still inside.
-  intent(e, "raise-basket", undefined, "P12 raise basket from above");
+  intent(e, "raise", { itemId: "basket" }, "P12 raise basket from above");
   if (e.state.itemLocations["basket"] === "shaft-room" &&
       e.state.itemStates["basket"]?.position === "raised") {
     pass("P12 basket ascended to shaft-room with contents");
@@ -1085,7 +1085,7 @@ if (!e.state.finished && !aborted()) {
   go(e, "down", "dam-base", "P14 dam-base");
 
   // INFLATE PLASTIC WITH PUMP
-  intent(e, "inflate-boat", { withItemId: "pump" }, "P14 inflate boat");
+  intent(e, "inflate", { itemId: "inflatable-boat", withItemId: "pump" }, "P14 inflate boat");
   if (e.state.itemStates["inflatable-boat"]?.inflation === "inflated") {
     pass("P14 boat inflated");
   } else {
@@ -1174,7 +1174,7 @@ const s_pre_boat_drift = snapshot(e);
   // scarab (cave-dig-stage-1..4 + scarab.visibleWhen gated on
   // scarab-uncovered flag). Tool-name pattern requires withItemId="shovel".
   for (let i = 0; i < 4; i++) {
-    e.execute({ type: "recordIntent", signalId: "dig-sand-with-tool", args: { withItemId: "shovel" } });
+    e.execute({ type: "recordIntent", signalId: "dig", args: { targetId: "sand", withItemId: "shovel" } });
   }
   takeItem(e, "scarab", "P14 scarab (uncovered by 4 digs)");
   go(e, "southwest", "sandy-beach", "P14");
@@ -1323,7 +1323,7 @@ console.log("\n--- F3: Boat punctured (board with sword) ---");
     itemLocations: { ...f.state.itemLocations, player: "dam-base", pump: "player",
       sword: "player", },
   };
-  f.execute({ type: "recordIntent", signalId: "inflate-boat", args: { withItemId: "pump" } });
+  f.execute({ type: "recordIntent", signalId: "inflate", args: { itemId: "inflatable-boat", withItemId: "pump" } });
   f.execute({ type: "board", itemId: "inflatable-boat" });
   if (f.state.itemStates["inflatable-boat"]?.inflation === "punctured" &&
       f.state.itemLocations.player === "dam-base") {
@@ -1528,7 +1528,7 @@ console.log("\n--- F10: Songbird opens egg ---");
 {
   const f = new Engine(story);
   // Walk: N (north-of-house), N (path), U (up-a-tree). Take egg. Down to path.
-  // At path, fire give-egg-to-songbird. The trigger sets egg.isOpen = true.
+  // At path, fire give(egg, songbird). The trigger sets egg.isOpen = true.
   // Canary's default location is inside the egg, so once isOpen=true the
   // engine treats canary as accessible via the open container.
   f.execute({ type: "go", direction: "north" });
@@ -1542,9 +1542,9 @@ console.log("\n--- F10: Songbird opens egg ---");
   if (f.state.itemLocations.player !== "path") {
     fail("F10 player should be at path after climbing down", `loc=${f.state.itemLocations.player}`);
   }
-  const r = f.execute({ type: "recordIntent", signalId: "give-egg-to-songbird" });
+  const r = f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "egg", targetId: "songbird" } });
   if (!r.ok) {
-    fail("F10 give-egg-to-songbird intent rejected",
+    fail("F10 give(egg, songbird) intent rejected",
          `reason=${(r.event as { reason?: string }).reason}`);
   }
   const eggOpenF10 = f.state.itemStates["egg"]?.isOpen === true;
@@ -1576,7 +1576,7 @@ console.log("\n--- F11: Inflate without pump rejected ---");
     itemLocations: { ...f.state.itemLocations, player: "dam-base" },
   };
   const inflationBefore = f.state.itemStates["inflatable-boat"]?.inflation;
-  f.execute({ type: "recordIntent", signalId: "inflate-boat", args: { withItemId: "pump" } });
+  f.execute({ type: "recordIntent", signalId: "inflate", args: { itemId: "inflatable-boat", withItemId: "pump" } });
   const inflationAfter = f.state.itemStates["inflatable-boat"]?.inflation;
   if (inflationBefore === "deflated" && inflationAfter === "deflated") {
     pass("F11 inflate-boat without pump → boat stays deflated");
@@ -2209,9 +2209,8 @@ console.log("\n--- F-cyclops-asleep-appearance: appearance reflects unconscious 
     : fail(`F-cyclops-asleep-appearance: appearance="${app}"`);
 }
 
-// F-tier-player-wounded: player crossing the wounded threshold (player-health <= 20)
-// fires the one-shot tier cue, sets the shown flag, and does not re-fire next turn.
-console.log("\n--- F-tier-player-wounded: one-shot wounded cue + memoization ---");
+// F-tier-player-in-combat-fires: player tier cue fires while combat engaged.
+console.log("\n--- F-tier-player-in-combat-fires: wounded cue fires when combat engaged ---");
 {
   const f = new Engine(story);
   f.state = {
@@ -2223,28 +2222,45 @@ console.log("\n--- F-tier-player-wounded: one-shot wounded cue + memoization ---
       troll: { ...(f.state.itemStates["troll"] ?? {}), unconscious: true },
     },
   };
-  const r1 = f.execute({ type: "wait" });
-  const cues1 = r1.narrationCues.join(" ");
-  /wounds are starting to tell/i.test(cues1)
-    ? pass("F-tier-player-wounded: cue fires on first cross")
-    : fail(`F-tier-player-wounded cues: ${JSON.stringify(r1.narrationCues)}`);
-  f.state.flags["player-tier-wounded-shown"] === true
-    ? pass("F-tier-player-wounded: shown flag set")
-    : fail(`F-tier-player-wounded shown flag: ${f.state.flags["player-tier-wounded-shown"]}`);
-  const r2 = f.execute({ type: "wait" });
-  !r2.narrationCues.some((c) => /wounds are starting to tell/i.test(c))
-    ? pass("F-tier-player-wounded: cue does NOT re-fire next turn")
-    : fail(`F-tier-player-wounded re-fired: ${JSON.stringify(r2.narrationCues)}`);
+  const r = f.execute({ type: "wait" });
+  /wounds are starting to tell/i.test(r.narrationCues.join(" "))
+    ? pass("F-tier-player-in-combat-fires: wounded cue fires")
+    : fail(`F-tier-player-in-combat-fires cues: ${JSON.stringify(r.narrationCues)}`);
 }
 
-// F-tier-player-critical: at <= 5 HP the critical cue fires.
-console.log("\n--- F-tier-player-critical: critical cue on deep damage ---");
+// F-tier-player-no-cue-out-of-combat: no tier cue fires when player is hurt
+// but no enemy is engaged. Three turns, no cue any turn.
+console.log("\n--- F-tier-player-no-cue-out-of-combat: no spam outside combat ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    flags: {
+      ...f.state.flags,
+      "player-health": 8,
+      "combat-engaged-with-troll": false,
+      "combat-engaged-with-cyclops": false,
+      "combat-engaged-with-thief": false,
+    },
+  };
+  const cuesAcrossTurns: string[] = [];
+  for (let i = 0; i < 3; i++) {
+    const r = f.execute({ type: "wait" });
+    cuesAcrossTurns.push(...r.narrationCues);
+  }
+  !cuesAcrossTurns.some((c) => /wounds are starting to tell|blood slicks|world narrows/i.test(c))
+    ? pass("F-tier-player-no-cue-out-of-combat: no tier cue across 3 turns")
+    : fail(`F-tier-player-no-cue-out-of-combat cues: ${JSON.stringify(cuesAcrossTurns)}`);
+}
+
+// F-tier-player-band-exclusivity: at hp 8 (bloodied band), only bloodied cue fires.
+console.log("\n--- F-tier-player-band-exclusivity: only one tier per turn ---");
 {
   const f = new Engine(story);
   f.state = {
     ...f.state,
     itemLocations: { ...f.state.itemLocations, player: "troll-room" },
-    flags: { ...f.state.flags, "player-health": 4, "combat-engaged-with-troll": true },
+    flags: { ...f.state.flags, "player-health": 8, "combat-engaged-with-troll": true },
     itemStates: {
       ...f.state.itemStates,
       troll: { ...(f.state.itemStates["troll"] ?? {}), unconscious: true },
@@ -2252,55 +2268,57 @@ console.log("\n--- F-tier-player-critical: critical cue on deep damage ---");
   };
   const r = f.execute({ type: "wait" });
   const cues = r.narrationCues.join(" ");
-  /world narrows/i.test(cues)
-    ? pass("F-tier-player-critical: critical cue fires")
-    : fail(`F-tier-player-critical cues: ${JSON.stringify(r.narrationCues)}`);
+  /blood slicks/i.test(cues) && !/wounds are starting to tell/i.test(cues) && !/world narrows/i.test(cues)
+    ? pass("F-tier-player-band-exclusivity: only bloodied cue fires (not wounded, not critical)")
+    : fail(`F-tier-player-band-exclusivity cues: ${JSON.stringify(r.narrationCues)}`);
 }
 
-// F-tier-troll-bloodied: troll at low HP shows the bloodied cue, not critical.
-console.log("\n--- F-tier-troll-bloodied: middle tier fires for troll ---");
+// F-tier-player-fires-every-turn-in-combat: per-turn-in-combat (not memoized).
+console.log("\n--- F-tier-player-fires-every-turn-in-combat: cue re-fires each turn ---");
 {
   const f = new Engine(story);
   f.state = {
     ...f.state,
-    itemLocations: { ...f.state.itemLocations, player: "troll-room" },
+    itemLocations: { ...f.state.itemLocations, player: "troll-room", lamp: "player" },
+    flags: { ...f.state.flags, "player-health": 15, "combat-engaged-with-troll": true },
     itemStates: {
       ...f.state.itemStates,
-      troll: { ...(f.state.itemStates["troll"] ?? {}), health: 4 },
+      troll: { ...(f.state.itemStates["troll"] ?? {}), unconscious: true },
+      lamp: { ...(f.state.itemStates["lamp"] ?? {}), isLit: true },
+    },
+  };
+  let firedCount = 0;
+  for (let i = 0; i < 3; i++) {
+    const r = f.execute({ type: "wait" });
+    if (r.narrationCues.some((c) => /wounds are starting to tell/i.test(c))) firedCount++;
+  }
+  firedCount === 3
+    ? pass("F-tier-player-fires-every-turn-in-combat: cue fires all 3 turns")
+    : fail(`F-tier-player-fires-every-turn-in-combat fired ${firedCount}/3 turns`);
+}
+
+// F-tier-troll-in-combat: troll tier cue fires while combat-engaged-with-troll
+// AND in band, and re-fires next turn (per-turn semantic).
+console.log("\n--- F-tier-troll-in-combat: troll bloodied cue per turn ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "troll-room", lamp: "player" },
+    itemStates: {
+      ...f.state.itemStates,
+      troll: { ...(f.state.itemStates["troll"] ?? {}), health: 3, unconscious: true },
+      lamp: { ...(f.state.itemStates["lamp"] ?? {}), isLit: true },
     },
     flags: { ...f.state.flags, "combat-engaged-with-troll": true },
   };
-  const r = f.execute({ type: "wait" });
-  const cues = r.narrationCues.join(" ");
-  /blood matting his fur/i.test(cues)
-    ? pass("F-tier-troll-bloodied: bloodied cue fires at <= 4 HP")
-    : fail(`F-tier-troll-bloodied cues: ${JSON.stringify(r.narrationCues)}`);
-}
-
-// F-tier-cleanup: when combat disengages, the shown flags reset.
-console.log("\n--- F-tier-cleanup: shown flags reset when combat ends ---");
-{
-  const f = new Engine(story);
-  f.state = {
-    ...f.state,
-    flags: {
-      ...f.state.flags,
-      "combat-engaged-with-troll": false,
-      "combat-engaged-with-cyclops": false,
-      "combat-engaged-with-thief": false,
-      "player-tier-wounded-shown": true,
-      "player-tier-bloodied-shown": true,
-      "thief-tier-wounded-shown": true,
-    },
-  };
-  f.execute({ type: "wait" });
-  f.state.flags["player-tier-wounded-shown"] === false &&
-  f.state.flags["player-tier-bloodied-shown"] === false &&
-  f.state.flags["thief-tier-wounded-shown"] === false
-    ? pass("F-tier-cleanup: tier-shown flags reset on disengage")
-    : fail(
-        `F-tier-cleanup flags: player-wounded=${f.state.flags["player-tier-wounded-shown"]} player-bloodied=${f.state.flags["player-tier-bloodied-shown"]} thief-wounded=${f.state.flags["thief-tier-wounded-shown"]}`,
-      );
+  const r1 = f.execute({ type: "wait" });
+  const r2 = f.execute({ type: "wait" });
+  const fired1 = r1.narrationCues.some((c) => /blood matting his fur/i.test(c));
+  const fired2 = r2.narrationCues.some((c) => /blood matting his fur/i.test(c));
+  fired1 && fired2
+    ? pass("F-tier-troll-in-combat: troll bloodied cue fires both turns")
+    : fail(`F-tier-troll-in-combat fired1=${fired1} fired2=${fired2} cues1=${JSON.stringify(r1.narrationCues)} cues2=${JSON.stringify(r2.narrationCues)}`);
 }
 
 // F-thief-kill-narration: thief-dies narration matches canonical Zork
@@ -2330,6 +2348,460 @@ console.log("\n--- F-thief-kill-narration: canonical death prose fires on kill -
   f.state.itemLocations["large-bag"] === "nowhere"
     ? pass("F-thief-kill-narration: large-bag also vanishes (no orphan scenery)")
     : fail(`F-thief-kill large-bag location: ${f.state.itemLocations["large-bag"]}`);
+}
+
+// F-egg-open-canary-visible: when egg is open AND canary still nested,
+// the egg's resolved description explicitly mentions the visible canary
+// so the LLM can't fall back to "locked" lore during take-all.
+console.log("\n--- F-egg-open-canary-visible: open egg + nested canary surfaces canary in text ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemStates: {
+      ...f.state.itemStates,
+      egg: { ...(f.state.itemStates["egg"] ?? {}), isOpen: true, broken: false },
+    },
+    itemLocations: { ...f.state.itemLocations, canary: "egg" },
+  };
+  const eggItem = (story as Story).items.find((i) => i.id === "egg")!;
+  const desc = resolveItemDescription(eggItem, f.state, story as Story);
+  /canary nestled inside is plainly visible/i.test(desc) && /ready to be taken/i.test(desc)
+    ? pass("F-egg-open-canary-visible: variant text mentions visible canary")
+    : fail(`F-egg-open-canary-visible desc: "${desc}"`);
+}
+
+// F-egg-open-canary-removed: when egg is open AND canary has been taken,
+// the description falls through to the "hollow within" variant and does
+// NOT mention the canary.
+console.log("\n--- F-egg-open-canary-removed: open egg, canary taken → hollow ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemStates: {
+      ...f.state.itemStates,
+      egg: { ...(f.state.itemStates["egg"] ?? {}), isOpen: true, broken: false },
+    },
+    itemLocations: { ...f.state.itemLocations, canary: "player" },
+  };
+  const eggItem = (story as Story).items.find((i) => i.id === "egg")!;
+  const desc = resolveItemDescription(eggItem, f.state, story as Story);
+  /hollow within/i.test(desc) && !/canary/i.test(desc)
+    ? pass("F-egg-open-canary-removed: variant text describes hollow, no canary mention")
+    : fail(`F-egg-open-canary-removed desc: "${desc}"`);
+}
+
+// F-maze-cyclops-to-grating: canonical walkthrough path from cyclops-room
+// reaches grating-room via NW → S → W → U → D → NE.
+console.log("\n--- F-maze-cyclops-to-grating: full canonical maze walk ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "cyclops-room", lamp: "player" },
+    flags: { ...f.state.flags, "magic-flag": true, "cyclops-flag": true },
+    itemStates: {
+      ...f.state.itemStates,
+      lamp: { ...(f.state.itemStates["lamp"] ?? {}), isLit: true },
+    },
+  };
+  const path: Array<{ direction: string; expect: string }> = [
+    { direction: "northwest", expect: "maze-15" },
+    { direction: "south", expect: "maze-7" },
+    { direction: "west", expect: "maze-6" },
+    { direction: "up", expect: "maze-9" },
+    { direction: "down", expect: "maze-11" },
+    { direction: "northeast", expect: "grating-room" },
+  ];
+  let allOk = true;
+  for (const step of path) {
+    f.execute({ type: "go", direction: step.direction });
+    if (f.state.itemLocations.player !== step.expect) {
+      fail(`F-maze-cyclops-to-grating after go ${step.direction}: expected ${step.expect}, got ${f.state.itemLocations.player}`);
+      allOk = false;
+      break;
+    }
+  }
+  if (allOk) pass("F-maze-cyclops-to-grating: full path NW S W U D NE reaches grating-room");
+}
+
+// F-maze-9-down-warning: descending from maze-9 emits the canonical one-way warning.
+console.log("\n--- F-maze-9-down-warning: warning fires on descent from maze-9 ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "maze-9", lamp: "player" },
+    itemStates: {
+      ...f.state.itemStates,
+      lamp: { ...(f.state.itemStates["lamp"] ?? {}), isLit: true },
+    },
+  };
+  const r = f.execute({ type: "go", direction: "down" });
+  const matchCount = r.narrationCues.filter((c) => /won't be able to get back up/i.test(c)).length;
+  matchCount === 1
+    ? pass("F-maze-9-down-warning: warning fires exactly once (no fixed-point loop)")
+    : fail(`F-maze-9-down-warning fired ${matchCount} times — cues: ${JSON.stringify(r.narrationCues)}`);
+  f.state.itemLocations.player === "maze-11"
+    ? pass("F-maze-9-down-warning: move proceeds to maze-11")
+    : fail(`F-maze-9-down-warning player at: ${f.state.itemLocations.player}`);
+}
+
+// F-unlock-grate-with-keys: unlock(keys, grate) flips passage isLocked to false
+// and emits the canonical click narration.
+console.log("\n--- F-unlock-grate-with-keys: unlock fires per-target trigger ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "grating-room", keys: "player", lamp: "player" },
+    itemStates: {
+      ...f.state.itemStates,
+      lamp: { ...(f.state.itemStates["lamp"] ?? {}), isLit: true },
+    },
+  };
+  const r = f.execute({ type: "recordIntent", signalId: "unlock", args: { itemId: "keys", targetId: "grate" } });
+  const cues = r.narrationCues.join(" ");
+  f.state.passageStates?.grate?.isLocked === false
+    ? pass("F-unlock-grate-with-keys: grate.isLocked = false")
+    : fail(`F-unlock-grate-with-keys grate state: ${JSON.stringify(f.state.passageStates?.grate)}`);
+  /skull-and-crossbones lock/i.test(cues) && /click/i.test(cues)
+    ? pass("F-unlock-grate-with-keys: canonical narration emitted")
+    : fail(`F-unlock-grate-with-keys cues: ${JSON.stringify(r.narrationCues)}`);
+}
+
+// F-unlock-wrong-target: unlock(keys, trophy-case) → catchall refusal fires,
+// no state changes.
+console.log("\n--- F-unlock-wrong-target: unhandled pair → 'key doesn't fit' ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, keys: "player" },
+  };
+  const r = f.execute({ type: "recordIntent", signalId: "unlock", args: { itemId: "keys", targetId: "trophy-case" } });
+  const cues = r.narrationCues.join(" ");
+  /key doesn't fit/i.test(cues)
+    ? pass("F-unlock-wrong-target: catchall refusal narration emitted")
+    : fail(`F-unlock-wrong-target cues: ${JSON.stringify(r.narrationCues)}`);
+}
+
+// F-grate-cant-open-while-locked: trying to open grate while isLocked=true
+// triggers the refusal narration; passage stays closed.
+console.log("\n--- F-grate-cant-open-while-locked: refusal narration on locked open ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "grating-room", lamp: "player" },
+    itemStates: {
+      ...f.state.itemStates,
+      lamp: { ...(f.state.itemStates["lamp"] ?? {}), isLit: true },
+    },
+  };
+  const r = f.execute({ type: "recordIntent", signalId: "open", args: { itemId: "grate" } });
+  const cues = r.narrationCues.join(" ");
+  /locked closed/i.test(cues) && /skull-and-crossbones/i.test(cues)
+    ? pass("F-grate-cant-open-while-locked: refusal narration emitted")
+    : fail(`F-grate-cant-open-while-locked cues: ${JSON.stringify(r.narrationCues)}`);
+  f.state.passageStates?.grate?.isOpen !== true
+    ? pass("F-grate-cant-open-while-locked: grate stays closed")
+    : fail(`F-grate-cant-open-while-locked grate.isOpen: ${f.state.passageStates?.grate?.isOpen}`);
+}
+
+// F-lock-grate-with-keys: lock(keys, grate) when unlocked + closed flips back.
+console.log("\n--- F-lock-grate-with-keys: lock fires per-target trigger ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "grating-room", keys: "player", lamp: "player" },
+    itemStates: {
+      ...f.state.itemStates,
+      lamp: { ...(f.state.itemStates["lamp"] ?? {}), isLit: true },
+    },
+    passageStates: {
+      ...(f.state.passageStates ?? {}),
+      grate: { ...((f.state.passageStates ?? {}).grate ?? {}), isLocked: false, isOpen: false },
+    },
+  };
+  const r = f.execute({ type: "recordIntent", signalId: "lock", args: { itemId: "keys", targetId: "grate" } });
+  const cues = r.narrationCues.join(" ");
+  f.state.passageStates?.grate?.isLocked === true
+    ? pass("F-lock-grate-with-keys: grate.isLocked = true")
+    : fail(`F-lock-grate-with-keys grate state: ${JSON.stringify(f.state.passageStates?.grate)}`);
+  /bolt slides home/i.test(cues)
+    ? pass("F-lock-grate-with-keys: canonical narration emitted")
+    : fail(`F-lock-grate-with-keys cues: ${JSON.stringify(r.narrationCues)}`);
+}
+
+// F-cant-lock-while-open: lock attempt fails when grate is open; isLocked stays false.
+console.log("\n--- F-cant-lock-while-open: lock refused while passage open ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "grating-room", keys: "player", lamp: "player" },
+    itemStates: {
+      ...f.state.itemStates,
+      lamp: { ...(f.state.itemStates["lamp"] ?? {}), isLit: true },
+    },
+    passageStates: {
+      ...(f.state.passageStates ?? {}),
+      grate: { ...((f.state.passageStates ?? {}).grate ?? {}), isLocked: false, isOpen: true },
+    },
+  };
+  const r = f.execute({ type: "recordIntent", signalId: "lock", args: { itemId: "keys", targetId: "grate" } });
+  const cues = r.narrationCues.join(" ");
+  f.state.passageStates?.grate?.isLocked === false
+    ? pass("F-cant-lock-while-open: grate stays unlocked")
+    : fail(`F-cant-lock-while-open grate state: ${JSON.stringify(f.state.passageStates?.grate)}`);
+  /key doesn't fit/i.test(cues)
+    ? pass("F-cant-lock-while-open: catchall refusal narration emitted")
+    : fail(`F-cant-lock-while-open cues: ${JSON.stringify(r.narrationCues)}`);
+}
+
+// F-tie-rope-to-railing: generic tie(rope, railing) at dome-room flips dome-flag
+// and parks the rope at dome-room (modeling rope-on-railing).
+console.log("\n--- F-tie-rope-to-railing: generic tie verb migrated from rope-tied-to-railing ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "dome-room", rope: "player", lamp: "player" },
+    itemStates: {
+      ...f.state.itemStates,
+      lamp: { ...(f.state.itemStates["lamp"] ?? {}), isLit: true },
+    },
+  };
+  const r = f.execute({ type: "recordIntent", signalId: "tie", args: { itemId: "rope", targetId: "railing" } });
+  f.state.flags["dome-flag"] === true && f.state.itemLocations.rope === "dome-room"
+    ? pass("F-tie-rope-to-railing: dome-flag set + rope at dome-room")
+    : fail(`F-tie-rope flag=${f.state.flags["dome-flag"]} ropeLoc=${f.state.itemLocations.rope}`);
+  /tie the rope securely to the railing/i.test(r.narrationCues.join(" "))
+    ? pass("F-tie-rope-to-railing: canonical narration emitted")
+    : fail(`F-tie-rope cues: ${JSON.stringify(r.narrationCues)}`);
+}
+
+// F-untie-rope: explicit untie reverses tie-rope (clears flag, returns rope to inventory).
+console.log("\n--- F-untie-rope: explicit untie reverses tie-rope ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "dome-room", rope: "dome-room", lamp: "player" },
+    itemStates: {
+      ...f.state.itemStates,
+      lamp: { ...(f.state.itemStates["lamp"] ?? {}), isLit: true },
+    },
+    flags: { ...f.state.flags, "dome-flag": true },
+  };
+  const r = f.execute({ type: "recordIntent", signalId: "untie", args: { itemId: "rope" } });
+  f.state.flags["dome-flag"] === false && f.state.itemLocations.rope === "player"
+    ? pass("F-untie-rope: dome-flag cleared + rope back in inventory")
+    : fail(`F-untie-rope flag=${f.state.flags["dome-flag"]} ropeLoc=${f.state.itemLocations.rope}`);
+  /coil it back into your hand/i.test(r.narrationCues.join(" "))
+    ? pass("F-untie-rope: canonical narration emitted")
+    : fail(`F-untie-rope cues: ${JSON.stringify(r.narrationCues)}`);
+}
+
+// F-give-egg-songbird-via-generic: songbird-opens-egg now gates on generic give intent.
+console.log("\n--- F-give-egg-songbird-via-generic: migrated to generic give ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "forest-1", egg: "player" },
+  };
+  f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "egg", targetId: "songbird" } });
+  f.state.itemStates["egg"]?.isOpen === true
+    ? pass("F-give-egg-songbird-via-generic: songbird-opens-egg fired, egg.isOpen=true")
+    : fail(`F-give-egg-songbird egg state: ${JSON.stringify(f.state.itemStates["egg"])}`);
+}
+
+// F-tie-rejects-catchall: tie at the wrong place falls through to catchall.
+console.log("\n--- F-tie-rejects-catchall: unhandled tie pair → catchall refusal ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "kitchen", rope: "player" },
+  };
+  const r = f.execute({ type: "recordIntent", signalId: "tie", args: { itemId: "rope", targetId: "kitchen-table" } });
+  /nothing to tie that to here/i.test(r.narrationCues.join(" "))
+    ? pass("F-tie-rejects-catchall: catchall refusal emitted")
+    : fail(`F-tie-rejects cues: ${JSON.stringify(r.narrationCues)}`);
+}
+
+// F-wind-canary-nested-in-egg: canary still nested in the open egg in player
+// inventory must still fire the canary-sings-for-bauble trigger. Prior gate
+// used hasItem which requires the canary to be DIRECTLY in inventory; the
+// gate is now itemAccessible which traverses the open container.
+console.log("\n--- F-wind-canary-nested-in-egg: nested canary still winds ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "path", egg: "player" },
+    itemStates: {
+      ...f.state.itemStates,
+      egg: { ...(f.state.itemStates["egg"] ?? {}), isOpen: true, broken: false },
+    },
+  };
+  // Canary stays at "egg" (nested), egg in inventory and open.
+  const r = f.execute({ type: "recordIntent", signalId: "wind-canary" });
+  r.triggersFired.includes("canary-sings-for-bauble")
+    ? pass("F-wind-canary-nested-in-egg: canary-sings-for-bauble fired")
+    : fail(`F-wind-canary-nested-in-egg triggers: ${JSON.stringify(r.triggersFired)}`);
+  f.state.itemLocations["bauble"] === "path"
+    ? pass("F-wind-canary-nested-in-egg: bauble appeared at path")
+    : fail(`F-wind-canary-nested-in-egg bauble loc: ${f.state.itemLocations["bauble"]}`);
+}
+
+// F-turn-bolt-no-wrench-named: player names wrench but doesn't have it.
+// Handler precondition refuses with "You don't have the wrench" — no
+// misleading bare-hand narration, gates-open stays false.
+console.log("\n--- F-turn-bolt-no-wrench-named: refuses cleanly ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "dam-room" },
+    flags: { ...f.state.flags, "gate-flag": true },
+  };
+  const r = f.execute({ type: "recordIntent", signalId: "turn", args: { itemId: "bolt", withItemId: "wrench" } });
+  /don't have the wrench/i.test(r.narrationCues.join(" "))
+    ? pass("F-turn-bolt-no-wrench-named: 'don't have the wrench' refusal")
+    : fail(`F-turn-bolt-no-wrench-named cues=${JSON.stringify(r.narrationCues)}`);
+  !r.narrationCues.some((c) => /bare hands/i.test(c))
+    ? pass("F-turn-bolt-no-wrench-named: no misleading bare-hands cue")
+    : fail(`F-turn-bolt-no-wrench-named bare-hands cue leaked: ${JSON.stringify(r.narrationCues)}`);
+  f.state.flags["gates-open"] !== true
+    ? pass("F-turn-bolt-no-wrench-named: gates-open stays false")
+    : fail(`F-turn-bolt-no-wrench-named gates-open: ${f.state.flags["gates-open"]}`);
+}
+
+// F-turn-bolt-bare-hand-still-works: no withItemId, bare-hand refusal still fires.
+console.log("\n--- F-turn-bolt-bare-hand-still-works: bare-hand path preserved ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "dam-room" },
+    flags: { ...f.state.flags, "gate-flag": true },
+  };
+  const r = f.execute({ type: "recordIntent", signalId: "turn", args: { itemId: "bolt" } });
+  /bare hands can't budge/i.test(r.narrationCues.join(" "))
+    ? pass("F-turn-bolt-bare-hand-still-works: bare-hand refusal fires")
+    : fail(`F-turn-bolt-bare-hand-still-works cues: ${JSON.stringify(r.narrationCues)}`);
+}
+
+// F-inflate-pump-not-held: same general pattern for inflate.
+console.log("\n--- F-inflate-pump-not-held: refuses cleanly ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "dam-base", "inflatable-boat": "player" },
+  };
+  const r = f.execute({ type: "recordIntent", signalId: "inflate", args: { itemId: "inflatable-boat", withItemId: "pump" } });
+  /don't have the.*pump/i.test(r.narrationCues.join(" "))
+    ? pass("F-inflate-pump-not-held: 'don't have the pump' refusal")
+    : fail(`F-inflate-pump-not-held cues=${JSON.stringify(r.narrationCues)}`);
+}
+
+// F-bolt-state-aware: bolt description flips when gates open.
+console.log("\n--- F-bolt-state-aware: bolt variant fires on gates-open ---");
+{
+  const f = new Engine(story);
+  const boltItem = (story as Story).items.find((i) => i.id === "bolt")!;
+  // Default state: gates-open false → base description
+  const descClosed = resolveItemDescription(boltItem, f.state, story as Story);
+  !/quarter rotation/i.test(descClosed)
+    ? pass("F-bolt-state-aware: closed-state description (no rotation mention)")
+    : fail(`F-bolt-state-aware closed desc: "${descClosed}"`);
+  // Open the gates
+  f.state = { ...f.state, flags: { ...f.state.flags, "gates-open": true } };
+  const descOpen = resolveItemDescription(boltItem, f.state, story as Story);
+  /quarter rotation/i.test(descOpen)
+    ? pass("F-bolt-state-aware: open-state description shows quarter rotation")
+    : fail(`F-bolt-state-aware open desc: "${descOpen}"`);
+}
+
+// F-leak-state-aware: leak description flips when leak-active.
+console.log("\n--- F-leak-state-aware: leak variant fires on leak-active ---");
+{
+  const f = new Engine(story);
+  const leakItem = (story as Story).items.find((i) => i.id === "leak")!;
+  const descIdle = resolveItemDescription(leakItem, f.state, story as Story);
+  /pinhole leak.*drips/i.test(descIdle)
+    ? pass("F-leak-state-aware: idle-state description (pinhole drip)")
+    : fail(`F-leak-state-aware idle desc: "${descIdle}"`);
+  f.state = { ...f.state, flags: { ...f.state.flags, "leak-active": true } };
+  const descActive = resolveItemDescription(leakItem, f.state, story as Story);
+  /sprays.*ruptured/i.test(descActive)
+    ? pass("F-leak-state-aware: active-state description (sprays from ruptured pipe)")
+    : fail(`F-leak-state-aware active desc: "${descActive}"`);
+}
+
+// F-yellow-button-state-aware: button description flips when gate-flag.
+console.log("\n--- F-yellow-button-state-aware: indicator-lit variant ---");
+{
+  const f = new Engine(story);
+  const yellowItem = (story as Story).items.find((i) => i.id === "yellow-button")!;
+  const descBefore = resolveItemDescription(yellowItem, f.state, story as Story);
+  !/indicator beside it glows/i.test(descBefore)
+    ? pass("F-yellow-button-state-aware: indicator dark by default")
+    : fail(`F-yellow-button before desc: "${descBefore}"`);
+  f.state = { ...f.state, flags: { ...f.state.flags, "gate-flag": true } };
+  const descAfter = resolveItemDescription(yellowItem, f.state, story as Story);
+  /indicator beside it glows/i.test(descAfter)
+    ? pass("F-yellow-button-state-aware: indicator glows when gate-flag=true")
+    : fail(`F-yellow-button after desc: "${descAfter}"`);
+}
+
+// F-control-panel-not-here: examining control-panel from anywhere returns rejected.
+console.log("\n--- F-control-panel-not-here: examine returns rejected ---");
+{
+  const f = new Engine(story);
+  f.state = { ...f.state, itemLocations: { ...f.state.itemLocations, player: "dam-room" } };
+  const r = f.execute({ type: "examine", itemId: "control-panel" });
+  r.event.type === "rejected"
+    ? pass("F-control-panel-not-here: dam-room examine rejected")
+    : fail(`F-control-panel-not-here event: ${JSON.stringify(r.event)}`);
+  f.state = { ...f.state, itemLocations: { ...f.state.itemLocations, player: "maintenance-room" } };
+  const r2 = f.execute({ type: "examine", itemId: "control-panel" });
+  r2.event.type === "rejected"
+    ? pass("F-control-panel-not-here: maintenance-room examine also rejected")
+    : fail(`F-control-panel-not-here mr event: ${JSON.stringify(r2.event)}`);
+}
+
+// F-no-stale-drop-intent: an unconsumed drop intent from a prior turn must
+// NOT leak into a later turn's trigger gates. Drop a lamp at forest-1 (no
+// per-target trigger consumes it), then walk to up-a-tree. The
+// items-fall-from-tree trigger gates on intentMatched(drop) + playerAt
+// (up-a-tree); without the per-turn matchedIntents reset, the stale drop
+// from forest-1 would fire the trigger on arrival at up-a-tree.
+console.log("\n--- F-no-stale-drop-intent: stale drop doesn't leak into later turn ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "forest-1", lamp: "player" },
+  };
+  // Drop lamp at forest-1 (no trigger consumes; intent would leak).
+  f.execute({ type: "drop", itemId: "lamp" });
+  // Teleport to path (skip topology; we're testing intent-leak semantics).
+  f.state = { ...f.state, itemLocations: { ...f.state.itemLocations, player: "path" } };
+  const r = f.execute({ type: "go", direction: "up" });
+  const cues = r.narrationCues.join(" ");
+  !/falls through the branches/i.test(cues)
+    ? pass("F-no-stale-drop-intent: no stale 'falls through' cue on go-up")
+    : fail(`F-no-stale-drop-intent cues: ${JSON.stringify(r.narrationCues)}`);
+  f.state.itemLocations.player === "up-a-tree"
+    ? pass("F-no-stale-drop-intent: player at up-a-tree")
+    : fail(`F-no-stale-drop-intent player: ${f.state.itemLocations.player}`);
 }
 
 // F-thief-opens-stolen-egg: when the thief has the closed egg (e.g. he stole it),
@@ -3159,7 +3631,7 @@ console.log("\n--- F25: Burn leaves while carrying ---");
       torch: { ...(f.state.itemStates["torch"] ?? {}), isLit: true },
     },
   };
-  f.execute({ type: "recordIntent", signalId: "burn-leaves" });
+  f.execute({ type: "recordIntent", signalId: "burn", args: { itemId: "leaves" } });
   if (playerDied(f.state) &&
       deathMessage(f.state).includes("leaves burn")) {
     pass("F25 burn-leaves while carrying → death");
@@ -3249,7 +3721,7 @@ console.log("\n--- F29: Burn black book ---");
       candles: { ...(f.state.itemStates["candles"] ?? {}), isLit: true },
     },
   };
-  f.execute({ type: "recordIntent", signalId: "burn-book" });
+  f.execute({ type: "recordIntent", signalId: "burn", args: { itemId: "book" } });
   if (playerDied(f.state) &&
       deathMessage(f.state).includes("guardian")) {
     pass("F29 burn-book → guardian kills player");
@@ -3267,7 +3739,7 @@ console.log("\n--- F30: Mung bodies in entrance-to-hades ---");
     ...f.state,
     itemLocations: { ...f.state.itemLocations, player: "entrance-to-hades" },
   };
-  f.execute({ type: "recordIntent", signalId: "mung-bodies" });
+  f.execute({ type: "recordIntent", signalId: "mung", args: { itemId: "bodies" } });
   if (playerDied(f.state) &&
       deathMessage(f.state).includes("guardian")) {
     pass("F30 mung-bodies → guardian decapitates player");
@@ -3310,7 +3782,7 @@ console.log("\n--- F33: Beach hole collapses (4th dig) ---");
   // rather than ending the game — assert the soft-death outcome.
   for (let i = 0; i < 4; i++) {
     if (f.state.flags["just-died"] || f.state.flags.deaths === 1) break;
-    f.execute({ type: "recordIntent", signalId: "dig-sand-with-tool", args: { withItemId: "shovel" } });
+    f.execute({ type: "recordIntent", signalId: "dig", args: { targetId: "sand", withItemId: "shovel" } });
   }
   if (f.state.flags.deaths === 1 && f.state.itemLocations.player === "forest-1") {
     pass("F33 4th dig collapses hole → soft-death (deaths=1, respawn at forest-1)");
@@ -3328,7 +3800,7 @@ console.log("\n--- F34: Mung painting destroys treasure value ---");
     ...f.state,
     itemLocations: { ...f.state.itemLocations, painting: "player" },
   };
-  f.execute({ type: "recordIntent", signalId: "mung-painting" });
+  f.execute({ type: "recordIntent", signalId: "mung", args: { itemId: "painting" } });
   if (f.state.itemStates["painting"]?.broken === true) {
     pass("F34 mung-painting → painting.broken = true");
   } else {
@@ -3359,7 +3831,7 @@ console.log("\n--- F35: Mung sceptre at rainbow ---");
     ...f.state,
     itemLocations: { ...f.state.itemLocations, player: "end-of-rainbow", sceptre: "player" },
   };
-  f.execute({ type: "recordIntent", signalId: "mung-sceptre" });
+  f.execute({ type: "recordIntent", signalId: "mung", args: { itemId: "sceptre" } });
   if (playerDied(f.state) &&
       deathMessage(f.state).includes("rainbow")) {
     pass("F35 mung-sceptre at rainbow → death");
@@ -3401,6 +3873,54 @@ console.log("\n--- F32: Throw object at self ---");
   }
 }
 
+// F-platinum-bar-dam-solve: full canonical solve — open dam, wait for drain,
+// close gates, enter loud-room during the silent window, take the platinum bar.
+// Asserts the bar is invisible BEFORE the silent window AND takeable DURING it.
+console.log("\n--- F-platinum-bar-dam-solve: canonical dam-path platinum bar take ---");
+{
+  const f = new Engine(story);
+  f.state = {
+    ...f.state,
+    itemLocations: { ...f.state.itemLocations, player: "loud-room", lamp: "player" },
+    itemStates: {
+      ...f.state.itemStates,
+      lamp: { ...(f.state.itemStates["lamp"] ?? {}), isLit: true },
+    },
+  };
+  // Pre-silent state: bar should NOT be in itemsHere (default loud, no echo, no drain).
+  const v0 = f.getView();
+  !v0.itemsHere.some((i) => i.id === "bar")
+    ? pass("F-platinum-bar: bar invisible before silent window")
+    : fail(`F-platinum-bar pre-silent itemsHere: ${JSON.stringify(v0.itemsHere.map((i) => i.id))}`);
+
+  // Walk the dam puzzle: push yellow, open gates, wait 8, close gates.
+  f.state = { ...f.state, itemLocations: { ...f.state.itemLocations, player: "maintenance-room", wrench: "player" } };
+  f.execute({ type: "recordIntent", signalId: "push", args: { itemId: "yellow-button" } });
+  f.state = { ...f.state, itemLocations: { ...f.state.itemLocations, player: "dam-room" } };
+  f.execute({ type: "recordIntent", signalId: "turn", args: { itemId: "bolt", withItemId: "wrench" } });
+  for (let i = 0; i < 8; i++) f.execute({ type: "wait" });
+  f.state.flags["low-tide"] === true
+    ? pass("F-platinum-bar: low-tide reached after 8-turn drain")
+    : fail(`F-platinum-bar low-tide=${f.state.flags["low-tide"]}`);
+  f.execute({ type: "recordIntent", signalId: "turn", args: { itemId: "bolt", withItemId: "wrench" } });
+  f.state.flags["gates-open"] === false && f.state.flags["low-tide"] === true
+    ? pass("F-platinum-bar: gates closed + low-tide persists (silent window open)")
+    : fail(`F-platinum-bar after close: gates-open=${f.state.flags["gates-open"]} low-tide=${f.state.flags["low-tide"]}`);
+
+  // Now enter loud-room. Bar should be visible.
+  f.state = { ...f.state, itemLocations: { ...f.state.itemLocations, player: "loud-room" } };
+  const v1 = f.getView();
+  v1.itemsHere.some((i) => i.id === "bar")
+    ? pass("F-platinum-bar: bar visible during silent window")
+    : fail(`F-platinum-bar silent-window itemsHere: ${JSON.stringify(v1.itemsHere.map((i) => i.id))}`);
+
+  // Take it.
+  const takeResult = f.execute({ type: "take", itemId: "bar" });
+  takeResult.ok && f.state.itemLocations["bar"] === "player"
+    ? pass("F-platinum-bar: bar taken successfully, now in inventory")
+    : fail(`F-platinum-bar take ok=${takeResult.ok} barLoc=${f.state.itemLocations["bar"]} event=${JSON.stringify(takeResult.event)}`);
+}
+
 // F37: Dam-controls path silences loud-room (canonical solve)
 console.log("\n--- F37: Dam-controls path silences loud-room ---");
 {
@@ -3410,12 +3930,12 @@ console.log("\n--- F37: Dam-controls path silences loud-room ---");
     itemLocations: { ...f.state.itemLocations, player: "maintenance-room", wrench: "player" },
   };
   // Yellow → enable bolt
-  f.execute({ type: "recordIntent", signalId: "push-yellow-button" });
+  f.execute({ type: "recordIntent", signalId: "push", args: { itemId: "yellow-button" } });
   if (f.state.flags["gate-flag"] !== true) fail("F37 yellow button didn't enable bolt", `flags=${JSON.stringify(f.state.flags["gate-flag"])}`);
   // Walk to dam-room (or just /tp)
   f.state = { ...f.state, itemLocations: { ...f.state.itemLocations, player: "dam-room" } };
   // Open gates
-  f.execute({ type: "recordIntent", signalId: "turn-dam-bolt", args: { withItemId: "wrench" } });
+  f.execute({ type: "recordIntent", signalId: "turn", args: { itemId: "bolt", withItemId: "wrench" } });
   if (f.state.flags["gates-open"] !== true) fail("F37 gates didn't open", `gates-open=${f.state.flags["gates-open"]}`);
   // Wait 8 turns for the drain
   for (let i = 0; i < 8; i++) f.execute({ type: "wait" });
@@ -3423,7 +3943,7 @@ console.log("\n--- F37: Dam-controls path silences loud-room ---");
     fail("F37 low-tide didn't fire after 8 turns", `low-tide=${f.state.flags["low-tide"]} countdown=${f.state.flags["low-tide-countdown"]}`);
   }
   // Close gates — low-tide should STAY true (the bug-fix)
-  f.execute({ type: "recordIntent", signalId: "turn-dam-bolt", args: { withItemId: "wrench" } });
+  f.execute({ type: "recordIntent", signalId: "turn", args: { itemId: "bolt", withItemId: "wrench" } });
   if (f.state.flags["gates-open"] !== false) fail("F37 gates didn't close", `gates-open=${f.state.flags["gates-open"]}`);
   if (f.state.flags["low-tide"] !== true) {
     fail("F37 low-tide reset on close (regression)", `low-tide=${f.state.flags["low-tide"]}`);
@@ -3515,7 +4035,7 @@ console.log("\n--- F40: Red button is cosmetic ---");
     gates: f.state.flags["gates-open"],
     leak: f.state.flags["leak-active"],
   });
-  const r = f.execute({ type: "recordIntent", signalId: "push-red-button" });
+  const r = f.execute({ type: "recordIntent", signalId: "push", args: { itemId: "red-button" } });
   const after = JSON.stringify({
     gate: f.state.flags["gate-flag"],
     gates: f.state.flags["gates-open"],
@@ -3537,11 +4057,11 @@ console.log("\n--- F41: Blue button + putty plug ---");
     ...f.state,
     itemLocations: { ...f.state.itemLocations, player: "maintenance-room", putty: "player" },
   };
-  f.execute({ type: "recordIntent", signalId: "push-blue-button" });
+  f.execute({ type: "recordIntent", signalId: "push", args: { itemId: "blue-button" } });
   if (f.state.flags["leak-active"] !== true) {
     fail("F41 leak didn't activate", `leak-active=${f.state.flags["leak-active"]}`);
   }
-  f.execute({ type: "recordIntent", signalId: "plug-leak-with-putty" });
+  f.execute({ type: "recordIntent", signalId: "plug", args: { itemId: "leak", withItemId: "putty" } });
   if (f.state.flags["leak-active"] === false && f.state.itemLocations["putty"] === "nowhere") {
     pass("F41 putty plugged the leak; viscous material consumed");
   } else {
@@ -3558,7 +4078,7 @@ console.log("\n--- F42: Blue button drowning ---");
     ...f.state,
     itemLocations: { ...f.state.itemLocations, player: "maintenance-room" },
   };
-  f.execute({ type: "recordIntent", signalId: "push-blue-button" });
+  f.execute({ type: "recordIntent", signalId: "push", args: { itemId: "blue-button" } });
   for (let i = 0; i < 6; i++) {
     if (f.state.finished) break;
     f.execute({ type: "wait" });
