@@ -4675,6 +4675,11 @@
       "takeBlockedMessage": "Your load is too heavy.",
       "state": {
         "weight": 5
+      },
+      "visibleWhen": {
+        "type": "flag",
+        "key": "won-flag",
+        "equals": true
       }
     },
     {
@@ -16340,11 +16345,29 @@
           "value": true
         },
         {
+          "type": "if",
+          "if": {
+            "type": "playerAt",
+            "roomId": "end-of-rainbow"
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "You raise the sceptre and trace a slow figure in the air. The rainbow shudders and solidifies — its colors hardening into a luminous bridge of gold and prismatic light. At your feet, a heavy pot of gold appears, gleaming where the rainbow now touches earth."
+            }
+          ],
+          "else": [
+            {
+              "type": "narrate",
+              "text": "You raise the sceptre and trace a slow figure in the air. The rainbow shudders and solidifies — its colors hardening into a luminous bridge of gold and prismatic light, arcing solid across the falls."
+            }
+          ]
+        },
+        {
           "type": "removeMatchedIntent",
           "signalId": "wave-scepter-at-rainbow"
         }
       ],
-      "narration": "You raise the sceptre and trace a slow figure in the air. The rainbow shudders and solidifies — its colors hardening into a luminous bridge of gold and prismatic light. At your feet, a heavy pot of gold appears, gleaming where the rainbow now touches earth.",
       "once": true
     },
     {

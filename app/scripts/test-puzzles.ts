@@ -81,10 +81,13 @@ console.log("\n=== #3 Wave scepter at rainbow ===");
   const pog0 = v0.itemsHere.some((i) => i.id === "pot-of-gold");
   !pog0 ? pass("pot-of-gold hidden before wave") : fail("pot-of-gold already visible");
 
-  e.execute({ type: "recordIntent", signalId: "wave-scepter-at-rainbow" });
+  const r = e.execute({ type: "recordIntent", signalId: "wave-scepter-at-rainbow" });
   e.state.flags["rainbow-flag"] === true
     ? pass("rainbow-flag set")
     : fail("rainbow-flag not set");
+  r.narrationCues.join(" ").includes("pot of gold")
+    ? pass("wave from end-of-rainbow → cue describes the pot of gold at your feet")
+    : fail("end-of-rainbow wave cue missing the pot", JSON.stringify(r.narrationCues));
 
   // on-rainbow exits should now be visible/passable
   const v1 = e.getView();
@@ -94,6 +97,27 @@ console.log("\n=== #3 Wave scepter at rainbow ===");
   upExit && !upExit.blocked
     ? pass("end-of-rainbow.up unblocked")
     : fail("up still blocked", JSON.stringify(upExit));
+}
+{
+  // Wave from the OTHER side (aragain-falls): the rainbow solidifies, but the
+  // pot of gold is across the bridge — the cue must NOT place it "at your feet".
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "aragain-falls", sceptre: "player" },
+  };
+  const r = e.execute({ type: "recordIntent", signalId: "wave-scepter-at-rainbow" });
+  e.state.flags["rainbow-flag"] === true
+    ? pass("rainbow-flag set (wave from aragain-falls)")
+    : fail("rainbow-flag not set from aragain-falls");
+  !r.narrationCues.join(" ").includes("pot of gold")
+    ? pass("wave from aragain-falls → cue does NOT place the pot of gold at your feet")
+    : fail("aragain-falls wave cue wrongly mentions the pot", JSON.stringify(r.narrationCues));
+  // The pot still materializes at end-of-rainbow (the far side).
+  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "end-of-rainbow" } };
+  e.getView().itemsHere.some((i) => i.id === "pot-of-gold")
+    ? pass("pot-of-gold visible at end-of-rainbow after the aragain-falls wave")
+    : fail("pot-of-gold not visible at end-of-rainbow");
 }
 
 // ----- Puzzle #4: Endgame won-flag -----
@@ -634,6 +658,26 @@ console.log("\n=== boat examine variant + container.contents ===");
   boat?.container?.contents?.some((c) => c.id === "sceptre")
     ? pass("inflated boat view → container.contents lists the sceptre inside")
     : fail("boat container.contents missing the sceptre", JSON.stringify(boat?.container?.contents));
+}
+
+// ----- Endgame map: hidden in the trophy case until the endgame unlocks -----
+console.log("\n=== endgame map hidden until won-flag ===");
+{
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "living-room" },
+    itemStates: { ...e.state.itemStates, "trophy-case": { isOpen: true } },
+  };
+  // Before the endgame — won-flag unset → the ancient map is hidden in the case.
+  !e.getView().itemsHere.some((i) => i.id === "map")
+    ? pass("ancient map hidden before the endgame (won-flag unset)")
+    : fail("map visible in the trophy case too early");
+  // Endgame unlocked (all treasures cased → unlock-endgame sets won-flag).
+  e.state = { ...e.state, flags: { ...e.state.flags, "won-flag": true } };
+  e.getView().itemsHere.some((i) => i.id === "map")
+    ? pass("ancient map appears in the trophy case once won-flag is set")
+    : fail("map still hidden after won-flag set");
 }
 
 // ----- Puzzle #7: Coal → diamond -----

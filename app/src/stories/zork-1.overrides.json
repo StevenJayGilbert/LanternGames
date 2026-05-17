@@ -2680,11 +2680,13 @@
       "fromTemplate": "takeable-weighable"
     },
     {
+      "$comment": "The ancient parchment map sits in the trophy case from the start (canonical Zork I: MAP is IN TROPHY-CASE) but stays hidden until the endgame. Canonical SCORE-UPD clears the map's INVISIBLE flag at SCORE==350; visibleWhen on won-flag is the engine equivalent — won-flag is set by unlock-endgame (all 19 treasures cased) and also unblocks the stone-barrow exit, so the map and the barrow reveal together.",
       "id": "map",
       "fromTemplate": "takeable-weighable",
       "state": {
         "weight": 5
-      }
+      },
+      "visibleWhen": { "type": "flag", "key": "won-flag", "equals": true }
     },
     {
       "id": "guide",
@@ -11745,11 +11747,26 @@
           "value": true
         },
         {
+          "type": "if",
+          "if": { "type": "playerAt", "roomId": "end-of-rainbow" },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "You raise the sceptre and trace a slow figure in the air. The rainbow shudders and solidifies — its colors hardening into a luminous bridge of gold and prismatic light. At your feet, a heavy pot of gold appears, gleaming where the rainbow now touches earth."
+            }
+          ],
+          "else": [
+            {
+              "type": "narrate",
+              "text": "You raise the sceptre and trace a slow figure in the air. The rainbow shudders and solidifies — its colors hardening into a luminous bridge of gold and prismatic light, arcing solid across the falls."
+            }
+          ]
+        },
+        {
           "type": "removeMatchedIntent",
           "signalId": "wave-scepter-at-rainbow"
         }
       ],
-      "narration": "You raise the sceptre and trace a slow figure in the air. The rainbow shudders and solidifies — its colors hardening into a luminous bridge of gold and prismatic light. At your feet, a heavy pot of gold appears, gleaming where the rainbow now touches earth.",
       "once": true
     },
     {
