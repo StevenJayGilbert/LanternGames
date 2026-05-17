@@ -472,6 +472,170 @@ console.log("\n=== #1f Light-source burn-out narration is co-location-gated ==="
     : fail("cross-room lamp cue leaked", JSON.stringify(r.narrationCues));
 }
 
+// ----- launch-boat refuses when the player isn't aboard -----
+console.log("\n=== launch-boat refuses when not aboard ===");
+{
+  // Player on the beach beside the inflated boat but NOT aboard → launch refused,
+  // boat stays put (no silent no-op for the LLM to hallucinate over).
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "sandy-beach", "inflatable-boat": "sandy-beach" },
+    itemStates: { ...e.state.itemStates, "inflatable-boat": { inflation: "inflated", weight: 20 } },
+  };
+  const r = e.execute({ type: "recordIntent", signalId: "launch-boat" });
+  e.state.itemLocations["inflatable-boat"] === "sandy-beach"
+    ? pass("launch-boat while not aboard → boat stays on the beach")
+    : fail("boat moved despite player not aboard", `boat at ${e.state.itemLocations["inflatable-boat"]}`);
+  r.triggersFired.includes("launch-boat-rejects")
+    ? pass("launch-boat-rejects fired → refusal cue instead of a silent no-op")
+    : fail("launch-boat-rejects did not fire", JSON.stringify(r.triggersFired));
+}
+{
+  // Player aboard the inflated boat at sandy-beach → real launch still works,
+  // and the catchall stays out of the way.
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "sandy-beach", "inflatable-boat": "sandy-beach" },
+    itemStates: { ...e.state.itemStates, "inflatable-boat": { inflation: "inflated", weight: 20 } },
+  };
+  e.execute({ type: "board", itemId: "inflatable-boat" });
+  const r = e.execute({ type: "recordIntent", signalId: "launch-boat" });
+  e.state.itemLocations["inflatable-boat"] !== "sandy-beach"
+    ? pass("launch-boat while aboard → boat launches off the beach")
+    : fail("boat did not launch despite player aboard", `boat at ${e.state.itemLocations["inflatable-boat"]}`);
+  !r.triggersFired.includes("launch-boat-rejects")
+    ? pass("launch-boat-rejects did NOT fire on a valid launch")
+    : fail("catchall fired on a real launch", JSON.stringify(r.triggersFired));
+}
+
+// ----- customTool no-op catchalls -----
+console.log("\n=== customTool no-op catchalls ===");
+// Each of these customTools, invoked in a context where no per-context trigger
+// consumes the intent, must hit its `-rejects` catchall — a refusal cue, not a
+// silent no-op the narrating LLM would hallucinate over.
+for (const tool of [
+  "move-the-rug", "cyclops-magic-word", "say-granite-word", "pray-at-altar",
+  "free-stuck-weapon", "say-echo-in-loud-room", "wave-scepter-at-rainbow", "wind-canary",
+  "brush-teeth-with-putty", "leap-down", "attack-self", "swim-river", "rub-mirror",
+  "repair-boat-with-putty",
+]) {
+  const e = newEngine();
+  e.state = { ...e.state, itemLocations: { ...e.state.itemLocations, player: "west-of-house" } };
+  const r = e.execute({ type: "recordIntent", signalId: tool });
+  r.triggersFired.includes(`${tool}-rejects`) && r.narrationCues.length > 0
+    ? pass(`${tool} out of context → ${tool}-rejects fires with a refusal cue`)
+    : fail(`${tool}-rejects missing`, `fired=${JSON.stringify(r.triggersFired)} cues=${JSON.stringify(r.narrationCues)}`);
+}
+{
+  // light-rejects: light the torch — it has no per-item light trigger (it is the
+  // eternal flame), so the handler succeeds silently and the catchall must catch it.
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "west-of-house", torch: "player" },
+  };
+  const r = e.execute({ type: "recordIntent", signalId: "light", args: { itemId: "torch" } });
+  r.triggersFired.includes("light-rejects") && r.narrationCues.length > 0
+    ? pass("light torch (no per-item trigger) → light-rejects fires with a refusal cue")
+    : fail("light-rejects missing", `fired=${JSON.stringify(r.triggersFired)} cues=${JSON.stringify(r.narrationCues)}`);
+}
+
+// ----- customTool catchalls: the OTHER branch (reason-specific refusal) -----
+console.log("\n=== customTool catchall second branch ===");
+{
+  // move-the-rug in living-room after the rug is already moved.
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "living-room" },
+    firedTriggers: [...e.state.firedTriggers, "rug-moved"],
+  };
+  const r = e.execute({ type: "recordIntent", signalId: "move-the-rug" });
+  const cue = r.narrationCues.join(" ");
+  r.triggersFired.includes("move-the-rug-rejects") && cue.includes("heap")
+    ? pass("move-the-rug in living-room (rug already moved) → 'already...heap' branch")
+    : fail("move-the-rug second branch wrong", `cues=${JSON.stringify(r.narrationCues)}`);
+}
+{
+  // cyclops-magic-word at cyclops-room after the cyclops has fled.
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "cyclops-room" },
+    flags: { ...e.state.flags, "cyclops-flag": true },
+  };
+  const r = e.execute({ type: "recordIntent", signalId: "cyclops-magic-word" });
+  const cue = r.narrationCues.join(" ");
+  r.triggersFired.includes("cyclops-magic-word-rejects") && cue.includes("long gone")
+    ? pass("cyclops-magic-word at cyclops-room (already fled) → 'long gone' branch")
+    : fail("cyclops second branch wrong", `cues=${JSON.stringify(r.narrationCues)}`);
+}
+{
+  // say-echo-in-loud-room at loud-room after the echo has already been spoken.
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "loud-room" },
+    flags: { ...e.state.flags, "echo-spoken": true },
+  };
+  const r = e.execute({ type: "recordIntent", signalId: "say-echo-in-loud-room" });
+  const cue = r.narrationCues.join(" ");
+  r.triggersFired.includes("say-echo-in-loud-room-rejects") && cue.includes("quiet room")
+    ? pass("say-echo at loud-room (already solved) → 'quiet room' branch")
+    : fail("say-echo second branch wrong", `cues=${JSON.stringify(r.narrationCues)}`);
+}
+{
+  // wave-scepter-at-rainbow holding the sceptre but in the wrong place.
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "west-of-house", sceptre: "player" },
+  };
+  const r = e.execute({ type: "recordIntent", signalId: "wave-scepter-at-rainbow" });
+  const cue = r.narrationCues.join(" ");
+  r.triggersFired.includes("wave-scepter-at-rainbow-rejects") && cue.includes("answers the gesture")
+    ? pass("wave-scepter holding sceptre, wrong place → 'nothing answers' branch (not 'no sceptre')")
+    : fail("wave-scepter second branch wrong", `cues=${JSON.stringify(r.narrationCues)}`);
+}
+{
+  // repair-boat-with-putty holding the putty but with no punctured boat.
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "west-of-house", putty: "player" },
+  };
+  const r = e.execute({ type: "recordIntent", signalId: "repair-boat-with-putty" });
+  const cue = r.narrationCues.join(" ");
+  r.triggersFired.includes("repair-boat-with-putty-rejects") && cue.includes("torn")
+    ? pass("repair-boat holding putty, nothing punctured → 'nothing torn' branch (not 'no putty')")
+    : fail("repair-boat second branch wrong", `cues=${JSON.stringify(r.narrationCues)}`);
+}
+
+// ----- Boat: examine reflects inflation; container.contents lists what's inside -----
+console.log("\n=== boat examine variant + container.contents ===");
+{
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: {
+      ...e.state.itemLocations,
+      player: "sandy-beach", "inflatable-boat": "sandy-beach", sceptre: "inflatable-boat",
+    },
+    itemStates: { ...e.state.itemStates, "inflatable-boat": { inflation: "inflated", weight: 20 } },
+  };
+  e.execute({ type: "examine", itemId: "inflatable-boat" });
+  const boat = e.getView().itemsHere.find((i) => i.id === "inflatable-boat");
+  boat?.description && !boat.description.includes("folded pile of plastic") &&
+    boat.description.toLowerCase().includes("air")
+    ? pass("examine inflated boat → description reflects the inflated state, not 'folded plastic'")
+    : fail("boat examine description not inflation-aware", boat?.description ?? "(none)");
+  boat?.container?.contents?.some((c) => c.id === "sceptre")
+    ? pass("inflated boat view → container.contents lists the sceptre inside")
+    : fail("boat container.contents missing the sceptre", JSON.stringify(boat?.container?.contents));
+}
+
 // ----- Puzzle #7: Coal → diamond -----
 console.log("\n=== #7 Coal → diamond ===");
 {

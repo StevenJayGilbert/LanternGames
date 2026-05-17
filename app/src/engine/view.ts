@@ -63,10 +63,15 @@ export interface ItemView {
   containedIn?: { id: string; name: string; relation: "in" };
   // For container items: whether the inside is reachable right now (via
   // accessibleWhen). The LLM checks this before calling `put`.
+  // `contents` is the forward index of what's inside — present (possibly
+  // empty) only when the container is `accessible`. It mirrors the
+  // `containedIn` back-references of the items in this same view, so a
+  // container states what it holds directly instead of forcing a scan.
   container?: {
     capacity?: number;
     accessible: boolean;
     accessBlockedMessage?: string;
+    contents?: { id: string; name: string }[];
   };
 }
 
@@ -230,6 +235,21 @@ export function buildView(state: GameState, story: Story): WorldView {
     scoreView = { current, max: maxScore, moves, rank: computeRank(current) };
   }
 
+  // Containment forward-index: mirror each child's `containedIn` onto its
+  // parent's `container.contents`, so a container states what it holds
+  // directly. Covers itemsHere AND inventory (carried containers list their
+  // contents too). Consistent by construction — `contents` lists exactly the
+  // children present in this view.
+  const allItemViews = [...itemsHere, ...inventory];
+  const itemViewById = new Map(allItemViews.map((v) => [v.id, v]));
+  for (const v of allItemViews) {
+    if (!v.containedIn) continue;
+    const parent = itemViewById.get(v.containedIn.id);
+    if (parent?.container?.contents) {
+      parent.container.contents.push({ id: v.id, name: v.name });
+    }
+  }
+
   return {
     room: {
       id: room.id,
@@ -333,6 +353,11 @@ function toItemView(item: Item, state: GameState, story: Story): ItemView {
       ...(!accessible && item.container.accessBlockedMessage && {
         accessBlockedMessage: item.container.accessBlockedMessage,
       }),
+      // Forward index of the contents — only when the inside is reachable.
+      // Initialized empty; buildView's post-pass fills it from the children
+      // that are `containedIn` this item in the same view. A closed container
+      // has no `contents` field (its children aren't in the view at all).
+      ...(accessible && { contents: [] as { id: string; name: string }[] }),
     };
   }
 

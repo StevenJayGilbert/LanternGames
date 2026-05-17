@@ -108,7 +108,8 @@ Inclusion is gated by a fingerprint at [narrator.ts:262-275](../app/src/llm/narr
   container?: {
     capacity?: number,
     accessible: boolean,                          // whether put can target this right now
-    accessBlockedMessage?: string                 // ONLY present when not accessible
+    accessBlockedMessage?: string,                // ONLY present when not accessible
+    contents?: { id, name }[]                     // forward list of what's inside — present (maybe empty) ONLY when accessible
   }
 }
 ```
@@ -259,7 +260,7 @@ The instructions live at [narrator.ts:155-204](../app/src/llm/narrator.ts) as a 
 9. Items and passages share one ID namespace.
 10. Item / passage state mechanics; auto-generated open/close intents.
 11. Passages — `traversableWhen`, blocked exits, custom messages.
-12. Containers — `accessibleWhen`, `accessBlockedMessage`.
+12. Containers — `accessible`, `accessBlockedMessage`; when accessible, `container.contents` lists every item inside (narrate them all; empty array = empty container).
 13. Exits with a `passage` id — gated by passage state.
 14. Glimpse — see-through passages, look-through narration.
 15. Compound commands — call each tool in sequence; stop on first rejection.
@@ -281,7 +282,7 @@ The instructions live at [narrator.ts:155-204](../app/src/llm/narrator.ts) as a 
 31. Vehicles — `board` / `disembark` / mobile vs stationary.
 32. Combat — call `attack(itemId, targetId, mode?)`; narrate from cues.
 33. **You are the narrator, not the player's conscience.** Don't refuse "kill X" on moral grounds.
-34. **Critical: NEVER narrate state changes that didn't happen.** Always call the appropriate tool first.
+34. **Critical: NEVER narrate state changes that didn't happen** (always call the appropriate tool first) — and the converse: **NEVER drop a cue that did happen.** Every `narrationCues` entry must be conveyed; a rich cue (a death, a ritual outcome, a major reveal) earns a full, dramatic telling, not a terse summary, and a death must be stated plainly before any aftermath.
 35. **Never refuse a tool-mapped command via narrative reasoning.** Verb-grouped examples of bad refusals (take/drop/go/open/attack/custom verbs).
 36. On `event.type === "rejected"`: narrate the engine's reason; player STAYS WHERE THEY ARE.
 

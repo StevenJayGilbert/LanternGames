@@ -255,7 +255,7 @@ Emit the tool_use(s). Once emitted, a tool_use commits engine state — it canno
 - Use \`appearance\` (room-presence) and \`description\` (examine text) fields from the view as your canonical text — embellish around them, don't contradict. \`appearance\` is per-turn variant-resolved by the engine; \`description\` appears for items the player has previously examined.
 - \`narratorNote\` on items / rooms / passages is engine-side guidance for YOU — NEVER quote it, paraphrase it as visible prose, or surface that it exists. Internalize and let it shape prose silently. Different from \`personality\` (NPC voice) and \`description\` (canonical prose to weave in).
 - \`personality\` on an item is its voice. Embody it; don't describe it. Free-form dialogue with NPCs that have no matching story tool can be narrated in prose; if a verb tool matches the conversational intent, call it first so triggers can fire.
-- Style: second person, present tense ("You see…"). Match the story's tone. Be vivid but concise — usually 1-3 sentences (a room description that must name several items may run longer; cover every item, then stop). After a multi-step compound command, write ONE coherent narration of the whole sequence, not a paragraph per step.
+- Style: second person, present tense ("You see…"). Match the story's tone. Be vivid but concise — usually 1-3 sentences (a room description that must name several items, or a turn whose cues carry a death or other extended event, may run longer; cover everything, then stop). After a multi-step compound command, write ONE coherent narration of the whole sequence, not a paragraph per step.
 - Stay in NPC voice across long sessions when the player is mid-conversation with a named NPC. Re-anchor on the NPC's \`personality\` field at the start of each response so voices don't drift.
 </step>
 </process>
@@ -264,7 +264,7 @@ Emit the tool_use(s). Once emitted, a tool_use commits engine state — it canno
 The view's structure is the source of truth for what the player perceives. It is filtered by the engine for visibility / accessibility / darkness — never narrate items, rooms, exits, or passages that aren't in the view.
 
 - Items in \`itemsHere\` and \`inventory\` carry typed \`state\` (e.g. \`{isOpen:true}\`, \`{broken:false}\`, \`{isLit:true}\`). State only mutates through tools and triggers. If you narrate that something turned, opened, broke, lit, rang, etc. without first calling the corresponding tool, your prose contradicts the next view.
-- Containers (items with \`container\` field) gate access via \`accessible: true|false\`. Failed \`put\` on inaccessible container returns rejection with the author's \`accessBlockedMessage\`.
+- Containers (items with \`container\` field) gate access via \`accessible: true|false\`. When \`accessible\`, \`container.contents\` is the forward list of everything inside it — naming every entry is mandatory when you describe or look inside the container; an empty \`contents\` array means it is empty, so say so. When NOT accessible, \`contents\` is absent — you cannot see inside, so never guess or invent what it holds. Failed \`put\` on inaccessible container returns rejection with the author's \`accessBlockedMessage\`.
 - Passages (\`passagesHere\`) connect two rooms; some are gated by \`traversableWhen\`. Failed traversal returns rejection (reason "traverse-blocked") with the passage's message. A passage's \`glimpse\` (when see-through and active) carries the other room's name + description.
 - Exits (\`exits\` array) carry \`{direction, target?, blocked?, blockedMessage?}\`. \`blocked\` absent or false → direction is OPEN; call \`go(direction)\` without hesitation, ignoring stale "way is blocked" prose from earlier turns. \`blocked: true\` → narrate the \`blockedMessage\` (one-turn refusal, NO tool call — the engine has already authoritatively said no).
 - Exit \`target\` is the destination's player-facing name and is **only present once the player has visited the destination**. When \`target\` is ABSENT, narrate the exit by direction only ("a passage leads south", "a doorway opens to the east") — do NOT invent or recall a destination name from world-knowledge priors, even if you know what's there in canonical Zork. The player hasn't been there yet; your prose must reflect that. When \`target\` IS present, you may name the destination ("the path back to the Forest Path"). This is engine truth, not a stylistic preference: absence of \`target\` means "the player does not know what's down this passage."
@@ -276,6 +276,7 @@ The view's structure is the source of truth for what the player perceives. It is
 These hold across all steps and override all other guidance on conflict.
 
 - **Never narrate state changes the engine didn't return.** If you narrate that something turned, opened, broke, lit, rang, etc. without first calling the matching tool, the engine state stays the same and your prose becomes a lie the next view will contradict.
+- **Deliver every cue — let momentous cues run long.** Each entry in \`narrationCues\` is an event the player must be told about; never silently drop one. The cues' substance sets the size of your telling: a terse cue gets a line, but a rich, multi-sentence cue — a death, a ritual's outcome, a major reveal, a canonical set-piece — earns a full, dramatic, complete telling. Do NOT compress an extended cue into a terse summary, and do NOT narrate only the quiet aftermath while skipping the event itself. Most critically: when a cue announces the player has DIED, your narration must say so plainly and unmistakably — never narrate the calm scene that follows a death without first telling the death.
 - **Never invent items, rooms, exits, passages, barriers, closures, restrictions, or plot points** beyond what the view shows. Atmospheric flourishes are fine ("the cavern feels colder now"); state-changing flourishes are not ("the way back is barred" when the engine has it open; "the door slams shut"; "the candles flicker out" without a cue).
 - **Never omit a present item — surface everything the room holds.** The rule above guards one direction; this guards the other. When your narration describes the player's surroundings — a \`look\`, or arriving in a room — every entry in \`itemsHere\` must be made known to the player. The room's static \`description\` already accounts for fixtures written into its prose; every \`itemsHere\` entry the description does not already name, you must name. An item the player is never told about is unreachable — omitting one is as much a fidelity bug as inventing one. Most items carry no \`appearance\` or \`description\` text — that is normal, NOT a cue to skip them: surface a bare-\`name\` item by describing the ordinary object its name denotes ("a heavy iron wrench lies among the scattered tools"). Describing a commonplace object from its name is plain prose, not invention. Coverage is mandatory; concision governs how vividly you describe each thing, never whether you mention it. This applies to room-presenting narration only — after a \`take\`, an \`examine\`, or a refusal, narrate that action; you need not re-list the room.
 - **Don't bridge player state to environmental obstacles.** Describing an obstacle atmospherically — its physical features, what it looks / sounds like — is fine. Speculating about which inventory items, current actions, or player state interact with it is NOT, even when the connection feels obvious. If the engine returns \`blocked: true\` with a \`blockedMessage\`, narrate that message; do NOT prepend or append your own causal theory ("too tight while you carry the X", "you might fit if you weren't holding Y", "this would work once you've Z"). Cause-and-effect logic between player state and obstacles is the puzzle author's domain — your job is to describe what IS, not what COULD BE. When the player has NOT attempted to interact with an obstacle this turn, do NOT narrate its current passable / blocked status at all — just mention its presence and physical description.
@@ -486,7 +487,7 @@ export class Narrator {
       // The [Current view] block always carries the full inventory, so the
       // LLM has now seen it — sync the inventory fingerprint too.
       this.lastInventorySent = inventoryKey(currentView);
-      debugLog("view", "[view block → LLM]", viewBlock);
+      debugLog("view", "[view block → LLM]\n[Current view]\n" + prettyJson(formatView(currentView)));
     }
 
     const userMessage: Message = {
@@ -583,7 +584,7 @@ export class Narrator {
               toolUse.name === "inventory";
             const toolResultContent = formatToolResult(engineResult, includeInventory);
             if (includeInventory) this.lastInventorySent = currentInventoryKey;
-            debugLog("view", `[tool_result → LLM: ${toolUse.name}]`, toolResultContent);
+            debugLog("view", `[tool_result → LLM: ${toolUse.name}]`, prettyJson(toolResultContent));
             toolResults.push({
               type: "tool_result",
               tool_use_id: toolUse.id,
@@ -827,6 +828,17 @@ function formatView(view: WorldView): string {
   // Minified: pretty-printing the JSON inflates token count by ~25-30% with
   // no LLM benefit (Claude/Qwen parse minified JSON identically).
   return JSON.stringify(compactView(view));
+}
+
+// Re-indent a minified JSON string for human-readable console logs ONLY.
+// The LLM-facing payload stays minified (token cost) — this is applied at the
+// debugLog call site, never to what's sent to the model. Parse-failure-safe.
+function prettyJson(json: string): string {
+  try {
+    return JSON.stringify(JSON.parse(json), null, 2);
+  } catch {
+    return json;
+  }
 }
 
 // Every tool_result carries the post-action view. Earlier we tried to

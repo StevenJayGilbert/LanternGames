@@ -130,6 +130,25 @@ console.log("\n=== handler happy path ===");
     : fail(`cues=${JSON.stringify(r.narrationCues)}`);
 }
 
+// ----- view: container.contents forward index -----
+console.log("\n=== view: container.contents lists what's inside ===");
+{
+  const e = new Engine(storyWithTestTools());
+  // Mailbox starts closed — its contents are not perceivable, so no `contents`.
+  const closedBox = e.getView().itemsHere.find((i) => i.id === "mailbox");
+  closedBox?.container && closedBox.container.contents === undefined
+    ? pass("closed container → no container.contents (can't see inside)")
+    : fail(`closed mailbox container=${JSON.stringify(closedBox?.container)}`);
+  // Open it — `contents` now lists the item inside, mirroring its containedIn.
+  e.execute({ type: "recordIntent", signalId: "test-open", args: { itemId: "mailbox" } });
+  const openView = e.getView();
+  const openBox = openView.itemsHere.find((i) => i.id === "mailbox");
+  const child = openBox?.container?.contents?.[0];
+  child && openView.itemsHere.some((i) => i.id === child.id && i.containedIn?.id === "mailbox")
+    ? pass(`open container → container.contents lists '${child.id}', mirrored by its containedIn`)
+    : fail(`open mailbox contents=${JSON.stringify(openBox?.container?.contents)}`);
+}
+
 // ----- Handler precondition: not accessible -----
 console.log("\n=== handler precondition: not accessible ===");
 {

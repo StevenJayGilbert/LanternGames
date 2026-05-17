@@ -2646,6 +2646,16 @@
         "accessBlockedMessage": "The boat is folded shut — there's no inside to reach."
       },
       "description": "There is a folded pile of plastic here which has a small valve attached.",
+      "variants": [
+        {
+          "when": { "type": "itemState", "itemId": "inflatable-boat", "key": "inflation", "equals": "inflated" },
+          "text": "A sturdy inflatable boat, taut with air and ready for the water. A small valve is set into one side."
+        },
+        {
+          "when": { "type": "itemState", "itemId": "inflatable-boat", "key": "inflation", "equals": "punctured" },
+          "text": "The inflatable boat lies collapsed and useless, a ragged tear gaping in its plastic flank."
+        }
+      ],
       "appearance": "There is a folded pile of plastic here which has a small valve attached.",
       "appearanceVariants": [
         {
@@ -11317,6 +11327,243 @@
       "narration": "Nothing to dig here."
     },
     {
+      "$comment": "light catchall — fires when no per-item light trigger consumed the intent (lamp/match/candles handle their own; the always-lit torch and anything else fall through here). Generic refusal so the LLM doesn't narrate a phantom success.",
+      "id": "light-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "light" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "light" }
+      ],
+      "narration": "It is already alight."
+    },
+    {
+      "$comment": "extinguish catchall — fires when no per-item extinguish trigger consumed the intent.",
+      "id": "extinguish-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "extinguish" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "extinguish" }
+      ],
+      "narration": "There is nothing here to put out."
+    },
+    {
+      "$comment": "move-the-rug catchall — fires when not in living-room, or the rug has already been moved.",
+      "id": "move-the-rug-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "move-the-rug" },
+      "effects": [
+        {
+          "type": "if",
+          "if": { "type": "playerAt", "roomId": "living-room" },
+          "then": [
+            { "type": "narrate", "text": "The rug already lies in a heap to one side." }
+          ],
+          "else": [
+            { "type": "narrate", "text": "There is no rug here to move." }
+          ]
+        },
+        { "type": "removeMatchedIntent", "signalId": "move-the-rug" }
+      ]
+    },
+    {
+      "$comment": "cyclops-magic-word catchall — fires when the word is uttered anywhere the cyclops-flees trigger doesn't pick it up.",
+      "id": "cyclops-magic-word-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "cyclops-magic-word" },
+      "effects": [
+        {
+          "type": "if",
+          "if": { "type": "playerAt", "roomId": "cyclops-room" },
+          "then": [
+            { "type": "narrate", "text": "Your word rings out, but the cyclops is already long gone." }
+          ],
+          "else": [
+            { "type": "narrate", "text": "You utter the word, but nothing here stirs to it." }
+          ]
+        },
+        { "type": "removeMatchedIntent", "signalId": "cyclops-magic-word" }
+      ]
+    },
+    {
+      "$comment": "say-granite-word catchall — fires when 'temple'/'treasure' is spoken away from a granite wall.",
+      "id": "say-granite-word-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "say-granite-word" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "say-granite-word" }
+      ],
+      "narration": "You speak the word aloud. Nothing answers."
+    },
+    {
+      "$comment": "pray-at-altar catchall — fires when the player prays away from the altar.",
+      "id": "pray-at-altar-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "pray-at-altar" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "pray-at-altar" }
+      ],
+      "narration": "You bow your head, but this is no place of worship."
+    },
+    {
+      "$comment": "free-stuck-weapon catchall — fires when no weapon is currently stuck.",
+      "id": "free-stuck-weapon-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "free-stuck-weapon" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "free-stuck-weapon" }
+      ],
+      "narration": "Nothing of yours is stuck fast."
+    },
+    {
+      "$comment": "say-echo-in-loud-room catchall — fires when 'echo' is said outside the loud-room, or after it has already been solved.",
+      "id": "say-echo-in-loud-room-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "say-echo-in-loud-room" },
+      "effects": [
+        {
+          "type": "if",
+          "if": { "type": "playerAt", "roomId": "loud-room" },
+          "then": [
+            { "type": "narrate", "text": "Your voice carries clear through the quiet room." }
+          ],
+          "else": [
+            { "type": "narrate", "text": "Your voice goes out and simply fades." }
+          ]
+        },
+        { "type": "removeMatchedIntent", "signalId": "say-echo-in-loud-room" }
+      ]
+    },
+    {
+      "$comment": "wave-scepter-at-rainbow catchall — fires without the sceptre, away from the rainbow, or after it is already solidified.",
+      "id": "wave-scepter-at-rainbow-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "wave-scepter-at-rainbow" },
+      "effects": [
+        {
+          "type": "if",
+          "if": { "type": "hasItem", "itemId": "sceptre" },
+          "then": [
+            { "type": "narrate", "text": "You raise the sceptre and wave it, but nothing here answers the gesture." }
+          ],
+          "else": [
+            { "type": "narrate", "text": "You have no sceptre to wave." }
+          ]
+        },
+        { "type": "removeMatchedIntent", "signalId": "wave-scepter-at-rainbow" }
+      ]
+    },
+    {
+      "$comment": "wind-canary catchall — fires when the canary isn't to hand.",
+      "id": "wind-canary-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "wind-canary" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "wind-canary" }
+      ],
+      "narration": "You have nothing like that to wind."
+    },
+    {
+      "$comment": "brush-teeth-with-putty catchall — fires when the player has no putty.",
+      "id": "brush-teeth-with-putty-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "brush-teeth-with-putty" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "brush-teeth-with-putty" }
+      ],
+      "narration": "You have nothing to brush them with."
+    },
+    {
+      "$comment": "leap-down catchall — fires when there is nothing here to leap down from.",
+      "id": "leap-down-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "leap-down" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "leap-down" }
+      ],
+      "narration": "There is nowhere here to leap down to."
+    },
+    {
+      "$comment": "attack-self catchall — fires when the player carries no weapon.",
+      "id": "attack-self-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "attack-self" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "attack-self" }
+      ],
+      "narration": "You have nothing on you to do that with."
+    },
+    {
+      "$comment": "swim-river catchall — fires when there is no river here to swim in.",
+      "id": "swim-river-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "swim-river" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "swim-river" }
+      ],
+      "narration": "There is no water here to swim in."
+    },
+    {
+      "$comment": "rub-mirror catchall — fires when there is no mirror here.",
+      "id": "rub-mirror-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "rub-mirror" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "rub-mirror" }
+      ],
+      "narration": "There is no mirror here to rub."
+    },
+    {
+      "$comment": "repair-boat-with-putty catchall — fires when the boat isn't punctured or the player has no putty.",
+      "id": "repair-boat-with-putty-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "repair-boat-with-putty" },
+      "effects": [
+        {
+          "type": "if",
+          "if": { "type": "itemAccessible", "itemId": "putty" },
+          "then": [
+            { "type": "narrate", "text": "You have the putty ready, but nothing here is torn or leaking." }
+          ],
+          "else": [
+            { "type": "narrate", "text": "You have nothing to patch anything with." }
+          ]
+        },
+        { "type": "removeMatchedIntent", "signalId": "repair-boat-with-putty" }
+      ]
+    },
+    {
       "$comment": "Force-break the egg (smash / crush / break) — destroys the canary inside. Mirror of egg-falls-from-tree but for explicit break-verb attempts in any room; the canonical Zork I 'sickening crunching noise' outcome. Both items get state.broken=true; egg.isOpen flips to true (broken == open for take semantics). The thief-opens-egg gate prevents retroactively destroying a thief-extracted canary. Variants on the egg/canary items render the post-break description. once:false is explicit — engine's default for once is true, so we must override. Idempotency comes from the not(broken=true) gate plus removeMatchedIntent(break) in the effects, both of which prevent re-fire after the first successful run; relying on those instead of once:true means a stale firedTriggers entry from any prior buggy run can't lock the trigger out forever.",
       "id": "break-egg-destroys-canary",
       "once": false,
@@ -14005,6 +14252,26 @@
         { "type": "removeMatchedIntent", "signalId": "launch-boat" }
       ],
       "narration": "You shove off the narrow strip of beach. The river takes the boat downstream."
+    },
+    {
+      "$comment": "Launch-boat catchall. The boat-launches-* triggers consume the launch-boat intent only when the player is aboard the inflated boat at a launch point (dam-base / sandy-beach / white-cliffs-north). If none fired, the intent is still here — refuse instead of leaving a silent no-op the LLM narrates as a phantom launch. priority -100 (like unlock-rejects / lock-rejects) so the real per-location launches go first.",
+      "id": "launch-boat-rejects",
+      "once": false,
+      "priority": -100,
+      "when": { "type": "intentMatched", "signalId": "launch-boat" },
+      "effects": [
+        {
+          "type": "if",
+          "if": { "type": "inVehicle", "itemId": "inflatable-boat" },
+          "then": [
+            { "type": "narrate", "text": "The boat won't set off from here — there's no current to carry it away." }
+          ],
+          "else": [
+            { "type": "narrate", "text": "You push at the magic boat, but it only rocks where it sits. Shoving it from outside accomplishes nothing — a boat carries you downstream only when you are aboard it." }
+          ]
+        },
+        { "type": "removeMatchedIntent", "signalId": "launch-boat" }
+      ]
     },
     {
       "$comment": "WEAPON-IN-VEHICLE PUNCTURES BOAT — sharp object vs thin plastic. Branches by location: on the river (river-1..river-5) the puncture is fatal as the icy current takes the player. Anywhere else (dam-base before launch, white-cliffs beach), the boat collapses and the player is ejected to dam-base. Tag-driven so any new weapon participates.",

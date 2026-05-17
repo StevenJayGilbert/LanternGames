@@ -3923,6 +3923,26 @@
         },
         "accessBlockedMessage": "The boat is folded shut — there's no inside to reach."
       },
+      "variants": [
+        {
+          "when": {
+            "type": "itemState",
+            "itemId": "inflatable-boat",
+            "key": "inflation",
+            "equals": "inflated"
+          },
+          "text": "A sturdy inflatable boat, taut with air and ready for the water. A small valve is set into one side."
+        },
+        {
+          "when": {
+            "type": "itemState",
+            "itemId": "inflatable-boat",
+            "key": "inflation",
+            "equals": "punctured"
+          },
+          "text": "The inflatable boat lies collapsed and useless, a ragged tear gaping in its plastic flank."
+        }
+      ],
       "appearance": "There is a folded pile of plastic here which has a small valve attached.",
       "appearanceVariants": [
         {
@@ -15704,6 +15724,368 @@
       "narration": "Nothing to dig here."
     },
     {
+      "id": "light-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "light"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "light"
+        }
+      ],
+      "narration": "It is already alight."
+    },
+    {
+      "id": "extinguish-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "extinguish"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "extinguish"
+        }
+      ],
+      "narration": "There is nothing here to put out."
+    },
+    {
+      "id": "move-the-rug-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "move-the-rug"
+      },
+      "effects": [
+        {
+          "type": "if",
+          "if": {
+            "type": "playerAt",
+            "roomId": "living-room"
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "The rug already lies in a heap to one side."
+            }
+          ],
+          "else": [
+            {
+              "type": "narrate",
+              "text": "There is no rug here to move."
+            }
+          ]
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "move-the-rug"
+        }
+      ]
+    },
+    {
+      "id": "cyclops-magic-word-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "cyclops-magic-word"
+      },
+      "effects": [
+        {
+          "type": "if",
+          "if": {
+            "type": "playerAt",
+            "roomId": "cyclops-room"
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "Your word rings out, but the cyclops is already long gone."
+            }
+          ],
+          "else": [
+            {
+              "type": "narrate",
+              "text": "You utter the word, but nothing here stirs to it."
+            }
+          ]
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "cyclops-magic-word"
+        }
+      ]
+    },
+    {
+      "id": "say-granite-word-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "say-granite-word"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "say-granite-word"
+        }
+      ],
+      "narration": "You speak the word aloud. Nothing answers."
+    },
+    {
+      "id": "pray-at-altar-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "pray-at-altar"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "pray-at-altar"
+        }
+      ],
+      "narration": "You bow your head, but this is no place of worship."
+    },
+    {
+      "id": "free-stuck-weapon-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "free-stuck-weapon"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "free-stuck-weapon"
+        }
+      ],
+      "narration": "Nothing of yours is stuck fast."
+    },
+    {
+      "id": "say-echo-in-loud-room-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "say-echo-in-loud-room"
+      },
+      "effects": [
+        {
+          "type": "if",
+          "if": {
+            "type": "playerAt",
+            "roomId": "loud-room"
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "Your voice carries clear through the quiet room."
+            }
+          ],
+          "else": [
+            {
+              "type": "narrate",
+              "text": "Your voice goes out and simply fades."
+            }
+          ]
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "say-echo-in-loud-room"
+        }
+      ]
+    },
+    {
+      "id": "wave-scepter-at-rainbow-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "wave-scepter-at-rainbow"
+      },
+      "effects": [
+        {
+          "type": "if",
+          "if": {
+            "type": "hasItem",
+            "itemId": "sceptre"
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "You raise the sceptre and wave it, but nothing here answers the gesture."
+            }
+          ],
+          "else": [
+            {
+              "type": "narrate",
+              "text": "You have no sceptre to wave."
+            }
+          ]
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "wave-scepter-at-rainbow"
+        }
+      ]
+    },
+    {
+      "id": "wind-canary-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "wind-canary"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "wind-canary"
+        }
+      ],
+      "narration": "You have nothing like that to wind."
+    },
+    {
+      "id": "brush-teeth-with-putty-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "brush-teeth-with-putty"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "brush-teeth-with-putty"
+        }
+      ],
+      "narration": "You have nothing to brush them with."
+    },
+    {
+      "id": "leap-down-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "leap-down"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "leap-down"
+        }
+      ],
+      "narration": "There is nowhere here to leap down to."
+    },
+    {
+      "id": "attack-self-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "attack-self"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "attack-self"
+        }
+      ],
+      "narration": "You have nothing on you to do that with."
+    },
+    {
+      "id": "swim-river-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "swim-river"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "swim-river"
+        }
+      ],
+      "narration": "There is no water here to swim in."
+    },
+    {
+      "id": "rub-mirror-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "rub-mirror"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "rub-mirror"
+        }
+      ],
+      "narration": "There is no mirror here to rub."
+    },
+    {
+      "id": "repair-boat-with-putty-rejects",
+      "afterAction": true,
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "repair-boat-with-putty"
+      },
+      "effects": [
+        {
+          "type": "if",
+          "if": {
+            "type": "itemAccessible",
+            "itemId": "putty"
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "You have the putty ready, but nothing here is torn or leaking."
+            }
+          ],
+          "else": [
+            {
+              "type": "narrate",
+              "text": "You have nothing to patch anything with."
+            }
+          ]
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "repair-boat-with-putty"
+        }
+      ]
+    },
+    {
       "id": "break-egg-destroys-canary",
       "once": false,
       "when": {
@@ -18769,6 +19151,40 @@
         }
       ],
       "narration": "You shove off the narrow strip of beach. The river takes the boat downstream."
+    },
+    {
+      "id": "launch-boat-rejects",
+      "once": false,
+      "priority": -100,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "launch-boat"
+      },
+      "effects": [
+        {
+          "type": "if",
+          "if": {
+            "type": "inVehicle",
+            "itemId": "inflatable-boat"
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "The boat won't set off from here — there's no current to carry it away."
+            }
+          ],
+          "else": [
+            {
+              "type": "narrate",
+              "text": "You push at the magic boat, but it only rocks where it sits. Shoving it from outside accomplishes nothing — a boat carries you downstream only when you are aboard it."
+            }
+          ]
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "launch-boat"
+        }
+      ]
     },
     {
       "id": "weapon-in-vehicle-punctures-boat",
