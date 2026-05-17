@@ -611,6 +611,34 @@ export function evaluateCondition(
 //
 // Adding a new "source of integers" — e.g. `inventoryWeight` once items have
 // `weight` — is a one-case extension here; the comparison logic doesn't change.
+// True when the item is transitively in the player's possession — directly in
+// inventory, or nested inside any container the player carries. Walks the
+// itemLocations chain; cycle-guarded.
+export function isCarried(itemId: string, state: GameState): boolean {
+  const seen = new Set<string>();
+  let loc: string | undefined = state.itemLocations[itemId];
+  while (loc !== undefined && !seen.has(loc)) {
+    if (loc === PLAYER_ITEM_ID) return true;
+    seen.add(loc);
+    loc = state.itemLocations[loc];
+  }
+  return false;
+}
+
+// Recursive weight of one item: its own state.weight plus the weight of
+// everything located inside it (and their contents). Cycle-guarded.
+function itemWeightOf(itemId: string, state: GameState, seen: Set<string>): number {
+  if (seen.has(itemId)) return 0;
+  seen.add(itemId);
+  let total = 0;
+  const w = state.itemStates[itemId]?.weight;
+  if (typeof w === "number") total += w;
+  for (const [id, loc] of Object.entries(state.itemLocations)) {
+    if (loc === itemId) total += itemWeightOf(id, state, seen);
+  }
+  return total;
+}
+
 export function evaluateNumericExpr(expr: NumericExpr, state: GameState): number {
   switch (expr.kind) {
     case "literal":
@@ -645,14 +673,23 @@ export function evaluateNumericExpr(expr: NumericExpr, state: GameState): number
     case "inventoryCount":
       return countItemsAt(state, PLAYER_ITEM_ID);
     case "inventoryWeight": {
+      // Total weight the player bears: every item transitively in the player's
+      // possession, including items nested inside carried containers.
       let total = 0;
-      for (const [id, loc] of Object.entries(state.itemLocations)) {
+      for (const id of Object.keys(state.itemLocations)) {
         if (id === PLAYER_ITEM_ID) continue;
-        if (loc !== PLAYER_ITEM_ID) continue;
+        if (!isCarried(id, state)) continue;
         const w = state.itemStates[id]?.weight;
         if (typeof w === "number") total += w;
       }
       return total;
+    }
+    case "itemWeight": {
+      if (typeof expr.itemId !== "string") {
+        console.warn(`[evaluateNumericExpr] itemWeight.itemId is unsubstituted IdRef:`, expr.itemId);
+        return 0;
+      }
+      return itemWeightOf(expr.itemId, state, new Set());
     }
     case "itemCountAt":
       // Resolve the legacy "inventory" alias.

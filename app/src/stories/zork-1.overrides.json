@@ -132,7 +132,7 @@
         "attack-bonus-pct": 0
       }
     },
-    "$takeable-weighable-comment": "Adds inventory-weight gating to a takeable item. The item's own state.weight (set per-instance) is summed via NumericExpr.inventoryWeight; takeableWhen rejects if (current inventory weight + this item's weight) would exceed flag(max-carry-weight). Self-reference uses {fromArg:'self'} which the engine injects on take. Note: items can only have one fromTemplate, so for items already templated (e.g. bladed-weapon), copy the takeableWhen + takeBlockedMessage inline instead of using fromTemplate.",
+    "$takeable-weighable-comment": "Adds inventory-weight gating to a takeable item. takeableWhen rejects if (current inventory weight + this item's recursive weight) would exceed flag(max-carry-weight). inventoryWeight is the player's full borne load (nested-in-container items included); itemWeight({fromArg:'self'}) is this item's weight INCLUDING its contents, so picking up a loaded container counts what's inside. Self-reference uses {fromArg:'self'} which the engine injects on take. The engine skips this gate entirely when the item is already in the player's possession. Note: items can only have one fromTemplate, so for items already templated (e.g. bladed-weapon), copy the takeableWhen + takeBlockedMessage inline instead of using fromTemplate.",
     "takeable-weighable": {
       "takeableWhen": {
         "type": "compare",
@@ -142,11 +142,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -1513,7 +1512,7 @@
     },
     {
       "id": "machine-switch",
-      "description": "A small switch with a slot evidently sized for a screwdriver.",
+      "description": "A small switch labelled 'START', set into the machine's flank. Its contact is barely 1/16 by 1/4 of an inch — far too small for any human finger.",
       "narratorNote": "DEFAULT to push-machine-switch (no args) for ANY input about the START switch unless the player's input literally names a tool. Inputs like 'push start', 'start the machine', 'press switch', 'turn it on', 'activate', 'operate switch' → push-machine-switch. ONLY call turn-machine-switch when the player's input contains a literal tool noun like 'screwdriver' (e.g. 'turn switch with screwdriver', 'use the screwdriver on the switch'). NEVER auto-fill withItemId from inventory."
     },
     {
@@ -2102,11 +2101,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -2137,11 +2135,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -2173,11 +2170,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -2223,11 +2219,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -2698,6 +2693,7 @@
     {
       "id": "painting",
       "fromTemplate": "takeable-weighable",
+      "description": "A painting of unparalleled beauty, the work of a master — rich oils, luminous colour, every brushstroke sure. It would be the prize of any collection.",
       "state": {
         "weight": 15
       }
@@ -2713,6 +2709,11 @@
       "handler": {
         "successNarration": "Your score is {flag.score} (total of {flag.max-score}), in {flag.global-turn-count} moves. This gives you the rank of {rank}."
       }
+    },
+    {
+      "$comment": "DIAGNOSE verb (canonical Zork I V-DIAGNOSE, 1actions.zil:3993-4024). Bare intent-recording tool; the diagnose-report trigger narrates the player's wound state from player-health.",
+      "id": "diagnose",
+      "description": "Player asks about their physical condition, injuries, wounds, or health (e.g. 'diagnose', 'how badly am I hurt?', 'check my health'). Always available."
     },
     {
       "$comment": "Open handler — works for both items (mailbox, trophy case) AND passages (kitchen window, trap door). The arg is named itemId for backward compat, but the value can be either an item id or a passage id from the view. Each precondition is an OR over item+passage variants; effects emit BOTH setItemState and setPassageState — the one matching the id mutates, the other defensively no-ops.",
@@ -3354,6 +3355,11 @@
       "$comment": "Cyclops magic word. Saying 'ulysses' or 'odysseus' (referencing the Greek hero who blinded the cyclops Polyphemus) terrifies him. He flees east, smashing through the wall to make a new passage to the living room. Sets both cyclops-flag (he's gone, can climb up to treasure room) and magic-flag (the wall is broken, opens cyclops-room↔living-room shortcut).",
       "id": "cyclops-magic-word",
       "description": "Player says, shouts, whispers, or invokes 'Ulysses', 'Odysseus', or otherwise utters the magic word that terrifies the cyclops."
+    },
+    {
+      "$comment": "Canonical granite-wall teleport (Zork I V-TREASURE, gverbs.zil). The words 'temple' and 'treasure' are synonyms for one verb that teleports between North Temple and the thief's Treasure Room. Bare intent-recording tool; the two granite-teleport-* triggers do the work, gated by which room the player is in.",
+      "id": "say-granite-word",
+      "description": "Player says, shouts, whispers, or invokes the word 'temple' or 'treasure' on its own — the magic words tied to the granite walls. Use when the player utters either word as an incantation, not when they ask to walk to a place."
     },
     {
       "$comment": "Canonical Zork I 'EAT <food>'. General consumption verb — handler refuses items not marked state.edible=true. Per-item triggers can override the consume cue (e.g. lunch's hot-pepper bite).",
@@ -5453,6 +5459,40 @@
       "once": true
     },
     {
+      "$comment": "Granite-wall teleport — North Temple → Treasure Room. Canonical Zork I V-TREASURE (gverbs.zil): saying 'temple' or 'treasure' at the temple moves the player to the thief's treasure room. removeMatchedIntent consumes the word so the paired treasure→temple trigger can't bounce the player straight back in the same cascade.",
+      "id": "granite-teleport-to-treasure",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "say-granite-word" },
+          { "type": "playerAt", "roomId": "north-temple" }
+        ]
+      },
+      "effects": [
+        { "type": "moveItem", "itemId": "player", "to": "treasure-room" },
+        { "type": "removeMatchedIntent", "signalId": "say-granite-word" }
+      ],
+      "narration": "The word leaves your lips and the granite wall seems to drink it in. A grey lurch swallows the room — and when it lets go, the wall stands behind you, on its far side."
+    },
+    {
+      "$comment": "Granite-wall teleport — Treasure Room → North Temple. The return half of the canonical V-TREASURE teleport.",
+      "id": "granite-teleport-to-temple",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "say-granite-word" },
+          { "type": "playerAt", "roomId": "treasure-room" }
+        ]
+      },
+      "effects": [
+        { "type": "moveItem", "itemId": "player", "to": "north-temple" },
+        { "type": "removeMatchedIntent", "signalId": "say-granite-word" }
+      ],
+      "narration": "You speak the word; the granite wall yawns into grey nothing, the world heaves once, and sets you down beyond it."
+    },
+    {
       "$comment": "Feed lunch to cyclops — one half of the peaceful resolution. Gates on the generic give intent with targetId=cyclops AND itemId=lunch OR sandwich-bag (canonical Zork is lenient about which the player names). Per-arg accessibility check ensures the trigger only fires when the SPECIFIC item is reachable. Priority 10 fires before give-rejects catchall; cyclops-falls-asleep at priority 5 fires after, in same iteration, when both halves are in.",
       "id": "cyclops-eats-lunch",
       "once": false,
@@ -7145,13 +7185,25 @@
       },
       "effects": [
         {
+          "type": "if",
+          "if": {
+            "type": "itemAccessible",
+            "itemId": "lamp"
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "Your lamp dims, flickers, and goes dark."
+            }
+          ]
+        },
+        {
           "type": "setItemState",
           "itemId": "lamp",
           "key": "isLit",
           "value": false
         }
-      ],
-      "narration": "Your lamp dims, flickers, and goes dark."
+      ]
     },
     {
       "$comment": "Tick: while the candles are lit, drain one burn-turn per action. Mirrors lamp-burns-fuel.",
@@ -7222,13 +7274,85 @@
       },
       "effects": [
         {
+          "type": "if",
+          "if": {
+            "type": "itemAccessible",
+            "itemId": "candles"
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "Your candles have burned down to nothing — the flames sputter and die."
+            }
+          ]
+        },
+        {
           "type": "setItemState",
           "itemId": "candles",
           "key": "isLit",
           "value": false
         }
-      ],
-      "narration": "Your candles have burned down to nothing — the flames sputter and die."
+      ]
+    },
+    {
+      "$comment": "Canonical CAVE2-ROOM gust: at the end of any turn the player is in tiny-cave carrying lit candles, a ~50% gust blows them out (Zork I <PROB 50 80>; 50 = normal play). Only isLit is cleared — burnTurnsRemaining is untouched, so the LIGHT MATCH / LIGHT CANDLES WITH MATCH relight path still works. No analog to the ZIL <DISABLE <INT I-CANDLES>> is needed: candles-burn-fuel already gates on isLit, so it stops draining on its own.",
+      "id": "candles-wind-gust",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "playerAt",
+            "roomId": "tiny-cave"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "candles"
+          },
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlagRandom",
+          "key": "_candle-wind-roll",
+          "min": 0,
+          "max": 99
+        },
+        {
+          "type": "if",
+          "if": {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "_candle-wind-roll"
+            },
+            "op": "<",
+            "right": {
+              "kind": "literal",
+              "value": 50
+            }
+          },
+          "then": [
+            {
+              "type": "setItemState",
+              "itemId": "candles",
+              "key": "isLit",
+              "value": false
+            },
+            {
+              "type": "narrate",
+              "text": "A sudden gust of wind sweeps through the cave and snuffs your candles out."
+            }
+          ]
+        }
+      ]
     },
     {
       "$comment": "GRUE: ticks the darkness-turns counter while the player is in pitch black. Player dies on the SECOND consecutive dark turn — first turn shows pitch-black warning, second turn the grue gets them. Counter resets when light is restored.",
@@ -10319,6 +10443,78 @@
       ]
     },
     {
+      "$comment": "PASSIVE HEALING — adapts canonical I-CURE (1actions.zil:3593-3602): while wounded, the player recovers over time. afterAction tick: +1 player-health each turn the player is below max (30) and NOT engaged in combat. Silent — canon healing prints nothing; DIAGNOSE reports it. The <30 gate self-limits at max, so +1 never overshoots.",
+      "id": "player-heals",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "compare", "left": { "kind": "flag", "key": "player-health" }, "op": "<", "right": { "kind": "literal", "value": 30 } },
+          { "type": "compare", "left": { "kind": "flag", "key": "player-health" }, "op": ">", "right": { "kind": "literal", "value": 0 } },
+          { "type": "not", "condition": { "type": "flag", "key": "combat-engaged-with-troll", "equals": true } },
+          { "type": "not", "condition": { "type": "flag", "key": "combat-engaged-with-cyclops", "equals": true } },
+          { "type": "not", "condition": { "type": "flag", "key": "combat-engaged-with-thief", "equals": true } }
+        ]
+      },
+      "effects": [
+        { "type": "adjustFlag", "key": "player-health", "by": 1 }
+      ]
+    },
+    {
+      "$comment": "DIAGNOSE report (canonical V-DIAGNOSE, 1actions.zil:3993-4024). Fires on the diagnose intent; narrates the player's wound state from player-health bands, plus a death count. removeMatchedIntent (the give-rejects pattern) so this once:false trigger doesn't re-fire in the fixed-point cascade — its narrate-only effects make no state change otherwise.",
+      "id": "diagnose-report",
+      "once": false,
+      "when": { "type": "intentMatched", "signalId": "diagnose" },
+      "effects": [
+        { "type": "removeMatchedIntent", "signalId": "diagnose" },
+        {
+          "type": "if",
+          "if": { "type": "compare", "left": { "kind": "flag", "key": "player-health" }, "op": ">", "right": { "kind": "literal", "value": 29 } },
+          "then": [
+            { "type": "narrate", "text": "You are in perfect health." }
+          ],
+          "else": [
+            {
+              "type": "if",
+              "if": { "type": "compare", "left": { "kind": "flag", "key": "player-health" }, "op": ">", "right": { "kind": "literal", "value": 20 } },
+              "then": [
+                { "type": "narrate", "text": "You have a light wound — scrapes and bruises, nothing more. It will mend on its own as you rest. (Health: {flag.player-health} of 30.)" }
+              ],
+              "else": [
+                {
+                  "type": "if",
+                  "if": { "type": "compare", "left": { "kind": "flag", "key": "player-health" }, "op": ">", "right": { "kind": "literal", "value": 12 } },
+                  "then": [
+                    { "type": "narrate", "text": "You have a serious wound. Your strength will return if you rest and keep out of danger. (Health: {flag.player-health} of 30.)" }
+                  ],
+                  "else": [
+                    {
+                      "type": "if",
+                      "if": { "type": "compare", "left": { "kind": "flag", "key": "player-health" }, "op": ">", "right": { "kind": "literal", "value": 5 } },
+                      "then": [
+                        { "type": "narrate", "text": "You have serious wounds and should not press your luck. Rest, away from danger, and they will slowly mend. (Health: {flag.player-health} of 30.)" }
+                      ],
+                      "else": [
+                        { "type": "narrate", "text": "You are barely alive. One more solid blow would surely finish you. (Health: {flag.player-health} of 30.)" }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "if",
+          "if": { "type": "compare", "left": { "kind": "flag", "key": "deaths" }, "op": ">", "right": { "kind": "literal", "value": 0 } },
+          "then": [
+            { "type": "narrate", "text": "You have been killed before; the Great Underground Empire does not grant many second chances." }
+          ]
+        }
+      ]
+    },
+    {
       "$comment": "TIER CUE — troll wounded (band: 4 < hp ≤ 6 of max 10). Per-turn while combat-engaged-with-troll.",
       "id": "troll-tier-wounded",
       "afterAction": true,
@@ -10840,6 +11036,25 @@
       "effects": [
         { "type": "setItemState", "itemId": "egg", "key": "isOpen", "value": true }
       ]
+    },
+    {
+      "$comment": "Give the thief ANY item — canonical ROBBER-FUNCTION (1actions.zil:1986-2012): GIVE <anything> to the thief and he pockets it in his great bag. priority -50 so the closed-egg special case (thief-opens-egg, default priority 0) wins first, and the give-rejects catchall (-100) loses. removeMatchedIntent so the catchall doesn't also fire. Items the thief holds drop to treasure-room when he is killed (thief-dies), so stashing treasures with him is non-destructive. The given item's accessibility is already guaranteed by the give customTool's handler precondition — trigger when-conditions don't run {fromIntent} substitution, so it isn't (and need not be) re-checked here.",
+      "id": "thief-accepts-gift",
+      "once": false,
+      "priority": -50,
+      "when": {
+        "type": "and",
+        "all": [
+          { "type": "intentMatched", "signalId": "give" },
+          { "type": "intentArg", "signalId": "give", "key": "targetId", "equals": "thief" },
+          { "type": "itemAccessible", "itemId": "thief" }
+        ]
+      },
+      "effects": [
+        { "type": "moveItem", "itemId": { "fromIntent": "give", "key": "itemId" }, "to": "thief" },
+        { "type": "removeMatchedIntent", "signalId": "give" }
+      ],
+      "narration": "The thief accepts your offering, turns it over in his long fingers with a connoisseur's eye, and tucks it away in his great bag with a small, satisfied nod."
     },
     {
       "$comment": "give catchall — consumes the matched intent for any (item, target) pair without a specific trigger. Priority -100 so it fires after every per-pair give-X-to-Y trigger. Generic narration; the LLM can re-flavor based on the visible target.",
@@ -11733,7 +11948,7 @@
       ]
     },
     {
-      "$comment": "PUZZLE #1 BELL + BOOK + CANDLES — canonical Zork I LLD ritual. Single bell-rings trigger handles every ring of the bell, anywhere. Outer if/then on hasItem(bell). Inner if/then on playerAt(entrance-to-hades): hades branch advances the puzzle (sets bell.state.rangAtHades, drops bell, drops+extinguishes lit candles if held); elsewhere branch is flavor narration only. Effects are idempotent so re-rings produce the same end state with the same canonical narration. Heat is purely narrative.",
+      "$comment": "PUZZLE #1 BELL + BOOK + CANDLES — canonical Zork I LLD ritual. Single bell-rings trigger handles every ring of the bell, anywhere. Outer if/then on hasItem(bell). Inner if/then on playerAt(entrance-to-hades): hades branch advances the puzzle (sets bell.state.rangAtHades, drops bell, drops the candles if held — extinguishing them if still lit; gated on holding, not lit, since a wind gust may already have snuffed them en route); elsewhere branch is flavor narration only. Effects are idempotent so re-rings produce the same end state with the same canonical narration. Heat is purely narrative.",
       "id": "bell-rings",
       "once": false,
       "when": {
@@ -11769,19 +11984,8 @@
                 {
                   "type": "if",
                   "if": {
-                    "type": "and",
-                    "all": [
-                      {
-                        "type": "hasItem",
-                        "itemId": "candles"
-                      },
-                      {
-                        "type": "itemState",
-                        "itemId": "candles",
-                        "key": "isLit",
-                        "equals": true
-                      }
-                    ]
+                    "type": "hasItem",
+                    "itemId": "candles"
                   },
                   "then": [
                     {
@@ -12019,7 +12223,7 @@
             "equals": "candles"
           },
           {
-            "type": "hasItem",
+            "type": "itemAccessible",
             "itemId": "candles"
           },
           {
@@ -12082,7 +12286,7 @@
             "equals": "candles"
           },
           {
-            "type": "hasItem",
+            "type": "itemAccessible",
             "itemId": "candles"
           },
           {
@@ -12132,7 +12336,7 @@
             "equals": "candles"
           },
           {
-            "type": "hasItem",
+            "type": "itemAccessible",
             "itemId": "candles"
           },
           {
@@ -12244,7 +12448,7 @@
       "once": false
     },
     {
-      "$comment": "Cower cue: when the player lights the candles at entrance-to-hades AFTER bell rang at hades. Once-per-game dramatic narration matching canonical text. priority 50 ensures it fires BEFORE candles-light (priority 0) removes the matched intent in the same cascade iteration.",
+      "$comment": "Cower cue: when the player lights the candles at entrance-to-hades AFTER bell rang at hades. Once-per-game dramatic narration matching canonical text. priority 50 ensures it fires BEFORE candles-light (priority 0) removes the matched intent in the same cascade iteration. Gated on match.isLit=true (same as candles-light) so a no-match attempt — which the light tool flips isLit=true on transiently before candles-light-no-match reverses it — does NOT consume this once:true narration.",
       "id": "candles-relit-at-hades-cower",
       "priority": 50,
       "once": true,
@@ -12274,6 +12478,12 @@
           {
             "type": "itemState",
             "itemId": "candles",
+            "key": "isLit",
+            "equals": true
+          },
+          {
+            "type": "itemState",
+            "itemId": "match",
             "key": "isLit",
             "equals": true
           }
@@ -12348,13 +12558,25 @@
       },
       "effects": [
         {
+          "type": "if",
+          "if": {
+            "type": "itemAccessible",
+            "itemId": "match"
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "The match has gone out."
+            }
+          ]
+        },
+        {
           "type": "setItemState",
           "itemId": "match",
           "key": "isLit",
           "value": false
         }
-      ],
-      "narration": "The match has gone out."
+      ]
     },
     {
       "$comment": "Soft-fail: read the prayer at hades without bell.rangAtHades. State description, no engine state change.",

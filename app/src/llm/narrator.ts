@@ -25,6 +25,7 @@ import type {
   ContentBlock,
   LLMClient,
   Message,
+  SendRequest,
   Tool,
 } from "./types";
 import { LLMError } from "./types";
@@ -250,10 +251,11 @@ Emit the tool_use(s). Once emitted, a tool_use commits engine state — it canno
 - When the same combat narration cue appears across multiple turns ("Your blade lands — a glancing wound"), do not echo it verbatim. Vary the descriptive detail each turn: change the body part, the weapon's angle, the enemy's reaction, the player's grip. The cue states what mechanically happened; YOU choose the texture. Two consecutive turns with identical prose is a bug.
 - Preserve \`event.description\` state signals when embellishing. The engine's wording carries puzzle hints (a sword "glowing with a faint blue glow" warns of nearby hostiles; a door "slightly ajar" is in a particular state; a leaflet "wet and barely legible" has been dunked). Set mood freely; never drop or rewrite the state cues.
 - For \`event.type === "rejected"\`: narrate a short refusal fitting the rejection reason (use the engine's \`reason\` and \`message\` if provided). Player STAYS where they are. Do not describe them moving, taking, or otherwise acting on the world.
+  - On \`reason: "fixed-item"\` (take refused — the thing is scenery or immovable): the refusal must be a concrete in-world reason rooted in THIS item's own nature, drawn from its \`description\` / \`appearance\`. Each fixed thing refuses for its own particular reason — a skeleton is grim remains you've no wish to disturb; a mounted mirror is set into the wall; a fountain is built into the floor. Do NOT fall back on generic mechanical filler — "it's fixed in place", "it won't come away", "it's part of the room", "fastened down" — that parrots the engine's verdict instead of describing the world, and often contradicts the item itself (a "heap of bones" does not "refuse to come away").
 - Use \`appearance\` (room-presence) and \`description\` (examine text) fields from the view as your canonical text — embellish around them, don't contradict. \`appearance\` is per-turn variant-resolved by the engine; \`description\` appears for items the player has previously examined.
 - \`narratorNote\` on items / rooms / passages is engine-side guidance for YOU — NEVER quote it, paraphrase it as visible prose, or surface that it exists. Internalize and let it shape prose silently. Different from \`personality\` (NPC voice) and \`description\` (canonical prose to weave in).
 - \`personality\` on an item is its voice. Embody it; don't describe it. Free-form dialogue with NPCs that have no matching story tool can be narrated in prose; if a verb tool matches the conversational intent, call it first so triggers can fire.
-- Style: second person, present tense ("You see…"). Match the story's tone. Be vivid but concise — usually 1-3 sentences. After a multi-step compound command, write ONE coherent narration of the whole sequence, not a paragraph per step.
+- Style: second person, present tense ("You see…"). Match the story's tone. Be vivid but concise — usually 1-3 sentences (a room description that must name several items may run longer; cover every item, then stop). After a multi-step compound command, write ONE coherent narration of the whole sequence, not a paragraph per step.
 - Stay in NPC voice across long sessions when the player is mid-conversation with a named NPC. Re-anchor on the NPC's \`personality\` field at the start of each response so voices don't drift.
 </step>
 </process>
@@ -267,6 +269,7 @@ The view's structure is the source of truth for what the player perceives. It is
 - Exits (\`exits\` array) carry \`{direction, target?, blocked?, blockedMessage?}\`. \`blocked\` absent or false → direction is OPEN; call \`go(direction)\` without hesitation, ignoring stale "way is blocked" prose from earlier turns. \`blocked: true\` → narrate the \`blockedMessage\` (one-turn refusal, NO tool call — the engine has already authoritatively said no).
 - Exit \`target\` is the destination's player-facing name and is **only present once the player has visited the destination**. When \`target\` is ABSENT, narrate the exit by direction only ("a passage leads south", "a doorway opens to the east") — do NOT invent or recall a destination name from world-knowledge priors, even if you know what's there in canonical Zork. The player hasn't been there yet; your prose must reflect that. When \`target\` IS present, you may name the destination ("the path back to the Forest Path"). This is engine truth, not a stylistic preference: absence of \`target\` means "the player does not know what's down this passage."
 - Score, vehicle, finished fields appear when applicable.
+- \`inventory\` is sometimes the literal string \`"unchanged"\` instead of an array. This means the player still carries exactly what the most recent full inventory listing showed — nothing was added, removed, or altered. Never read \`"unchanged"\` as empty-handed; carry forward the last known inventory.
 </rules_scope_view>
 
 <critical_invariants>
@@ -274,6 +277,7 @@ These hold across all steps and override all other guidance on conflict.
 
 - **Never narrate state changes the engine didn't return.** If you narrate that something turned, opened, broke, lit, rang, etc. without first calling the matching tool, the engine state stays the same and your prose becomes a lie the next view will contradict.
 - **Never invent items, rooms, exits, passages, barriers, closures, restrictions, or plot points** beyond what the view shows. Atmospheric flourishes are fine ("the cavern feels colder now"); state-changing flourishes are not ("the way back is barred" when the engine has it open; "the door slams shut"; "the candles flicker out" without a cue).
+- **Never omit a present item — surface everything the room holds.** The rule above guards one direction; this guards the other. When your narration describes the player's surroundings — a \`look\`, or arriving in a room — every entry in \`itemsHere\` must be made known to the player. The room's static \`description\` already accounts for fixtures written into its prose; every \`itemsHere\` entry the description does not already name, you must name. An item the player is never told about is unreachable — omitting one is as much a fidelity bug as inventing one. Most items carry no \`appearance\` or \`description\` text — that is normal, NOT a cue to skip them: surface a bare-\`name\` item by describing the ordinary object its name denotes ("a heavy iron wrench lies among the scattered tools"). Describing a commonplace object from its name is plain prose, not invention. Coverage is mandatory; concision governs how vividly you describe each thing, never whether you mention it. This applies to room-presenting narration only — after a \`take\`, an \`examine\`, or a refusal, narrate that action; you need not re-list the room.
 - **Don't bridge player state to environmental obstacles.** Describing an obstacle atmospherically — its physical features, what it looks / sounds like — is fine. Speculating about which inventory items, current actions, or player state interact with it is NOT, even when the connection feels obvious. If the engine returns \`blocked: true\` with a \`blockedMessage\`, narrate that message; do NOT prepend or append your own causal theory ("too tight while you carry the X", "you might fit if you weren't holding Y", "this would work once you've Z"). Cause-and-effect logic between player state and obstacles is the puzzle author's domain — your job is to describe what IS, not what COULD BE. When the player has NOT attempted to interact with an obstacle this turn, do NOT narrate its current passable / blocked status at all — just mention its presence and physical description.
 - **Never reveal the fiction is a construct — in EVERY narration, not just refusals.** The world is total and real to the player; nothing exists outside it. Never name "the game", a "game engine", "mechanics", "commands", "verbs", "tools", a "parser", "features", "code", "versions" / "updates", an action being "supported" / "implemented" / "available as an option", or yourself as software, an AI, a model, or a narrator-behind-the-scenes. (Those words are acceptable ONLY in a genuine in-world sense — a "cave system", "game" meaning wild animals — never the meta sense.) Forbidden: "the game has no action for that", "I don't have a tool for that", "no climbing mechanic", "that isn't supported", "the engine won't let you". Replace every refusal with a non-state-changing in-world reason in the room's tone ("the bark is slick — your hands find no purchase", "the air carries only damp stone", "your voice falls flat against the cavern walls", "you're not strong enough", "you can't see how that would help here"). The player must never be reminded they are interacting with a machine.
 - **Final narration scan — every turn, before you emit prose.** Re-read the narration you are about to send. If any sentence refers to the game-as-software, mechanics, tools, commands, or yourself as a program — or implies an action fails because it isn't "built in" rather than for an in-world reason — rewrite it fully in story voice first. This scan is mandatory on every narration, refusal or not.
@@ -339,6 +343,17 @@ export interface NarrationTurn {
   error?: string;
 }
 
+// Passed to onRetry before each rate-limit backoff wait, so the UI can tell
+// the player the turn is paused and will continue on its own.
+export interface RetryInfo {
+  attempt: number;
+  waitSeconds: number;
+}
+
+export interface NarrateOptions {
+  onRetry?: (info: RetryInfo) => void;
+}
+
 export class Narrator {
   private engine: Engine;
   private client: LLMClient;
@@ -355,6 +370,15 @@ export class Narrator {
   // fallback ticks, NPC autonomy, drain countdowns, etc.) without re-sending
   // the view every turn.
   private lastViewSent: string | null = null;
+  // Fingerprint of the inventory the LLM last actually saw serialized in full
+  // (in a [Current view] block or a tool_result). The tool_result always
+  // carries fresh post-action state, but `inventory` is the stable sub-field:
+  // it rarely changes turn-to-turn. When the current inventory's fingerprint
+  // matches this, the tool_result emits `inventory: "unchanged"` instead of
+  // re-serializing the whole array — a token saving on per-token-billed
+  // backends. inventoryKey() hashes the entire serialized array (every item's
+  // state and per-turn appearance), so any real change forces a full re-send.
+  private lastInventorySent: string | null = null;
 
   constructor(opts: {
     engine: Engine;
@@ -390,7 +414,34 @@ export class Narrator {
     return JSON.stringify(compactView(view));
   }
 
-  async narrate(playerInput: string): Promise<NarrationTurn> {
+  // Send to the LLM, retrying rate-limit (and other retryable) failures with
+  // backoff until the call succeeds. Rate limits are per-minute and reset, so
+  // this reliably lands a real response. onRetry fires before each wait so the
+  // UI can tell the player. Non-retryable errors (bad key, no credits) throw
+  // immediately — retrying them is pointless.
+  private async sendWithRetry(
+    req: SendRequest,
+    onRetry?: (info: RetryInfo) => void,
+  ): Promise<AssistantMessage> {
+    const MAX_ATTEMPTS = 20;
+    const MAX_WAIT_MS = 60_000;
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await this.client.send(req);
+      } catch (err) {
+        const retryable = err instanceof LLMError && err.retryable;
+        if (!retryable || attempt >= MAX_ATTEMPTS) throw err;
+        // Honor the server's Retry-After if it sent one; otherwise exponential
+        // backoff with jitter. Bounded so a single wait can't run away.
+        const backoffMs = Math.pow(2, attempt) * 1000 * (0.5 + Math.random());
+        const waitMs = Math.min((err as LLMError).retryAfterMs ?? backoffMs, MAX_WAIT_MS);
+        onRetry?.({ attempt, waitSeconds: Math.ceil(waitMs / 1000) });
+        await new Promise((resolve) => setTimeout(resolve, waitMs));
+      }
+    }
+  }
+
+  async narrate(playerInput: string, opts?: NarrateOptions): Promise<NarrationTurn> {
     const story = this.engine.story;
 
     // Snapshot history length BEFORE we push anything for this turn. If the
@@ -432,6 +483,10 @@ export class Narrator {
         : "";
     if (viewBlock) {
       this.lastViewSent = currentViewKey;
+      // The [Current view] block always carries the full inventory, so the
+      // LLM has now seen it — sync the inventory fingerprint too.
+      this.lastInventorySent = inventoryKey(currentView);
+      debugLog("view", "[view block → LLM]", viewBlock);
     }
 
     const userMessage: Message = {
@@ -457,13 +512,16 @@ export class Narrator {
         // engine state stuck. Phase 2+ uses default "auto" so the LLM can
         // finish with text-only narration after seeing tool results.
         const isPhase1 = this.history.length === historyLengthBeforeTurn + 1;
-        const response = await this.client.send({
-          system,
-          messages: this.history,
-          tools,
-          maxTokens: 1024,
-          ...(isPhase1 && { toolChoice: { type: "any" } }),
-        });
+        const response = await this.sendWithRetry(
+          {
+            system,
+            messages: this.history,
+            tools,
+            maxTokens: 1024,
+            ...(isPhase1 && { toolChoice: { type: "any" } }),
+          },
+          opts?.onRetry,
+        );
 
         // Append the assistant turn to history.
         this.history.push({ role: "assistant", content: response.content });
@@ -510,10 +568,26 @@ export class Narrator {
               toolUse.input,
               `→ ${engineResult.event.type}${reason}${cues}${extra}`,
             );
+            // The literal tool_result string the narration (Phase 2) call
+            // reads: action outcome, examine description, rejection reason,
+            // narration cues, and the post-action view. Gated by debug "view".
+            //
+            // Inventory is the stable sub-field of the view: re-send it in
+            // full only when it actually changed since the LLM last saw it
+            // (a trigger moved/altered an item, the player took/dropped
+            // something) OR when the player explicitly asked to see it (the
+            // `inventory` tool). Otherwise emit `inventory: "unchanged"`.
+            const currentInventoryKey = inventoryKey(engineResult.view);
+            const includeInventory =
+              currentInventoryKey !== this.lastInventorySent ||
+              toolUse.name === "inventory";
+            const toolResultContent = formatToolResult(engineResult, includeInventory);
+            if (includeInventory) this.lastInventorySent = currentInventoryKey;
+            debugLog("view", `[tool_result → LLM: ${toolUse.name}]`, toolResultContent);
             toolResults.push({
               type: "tool_result",
               tool_use_id: toolUse.id,
-              content: formatToolResult(engineResult),
+              content: toolResultContent,
             });
             // Every tool_result carries the post-action view (see
             // formatToolResult comment), so the LLM has now seen this state.
@@ -719,7 +793,12 @@ function customToTool(c: CustomTool): Tool {
 
 // Reshape the WorldView into the JSON-shaped structure we serialize for the
 // LLM. Single source of truth so formatView and formatToolResult stay in sync.
-function compactView(view: WorldView) {
+//
+// includeInventory=false emits `inventory: "unchanged"` instead of the array —
+// a token optimization for turns where the inventory is byte-identical to what
+// the LLM last saw (see inventoryKey / lastInventorySent in narrate). A marker,
+// not an omitted field: an absent `inventory` could be misread as empty-handed.
+function compactView(view: WorldView, includeInventory: boolean = true) {
   return {
     room: view.room,
     itemsHere: view.itemsHere,
@@ -733,8 +812,15 @@ function compactView(view: WorldView) {
       ...(e.blocked && { blocked: true }),
       ...(e.blockedMessage && { blockedMessage: e.blockedMessage }),
     })),
-    inventory: view.inventory,
+    inventory: includeInventory ? view.inventory : "unchanged",
   };
+}
+
+// Fingerprint of the inventory exactly as it serializes for the LLM — the whole
+// array, every item's state and per-turn-resolved appearance included. Any
+// change (item moved, a state flag, a glow/appearance variant) flips this.
+function inventoryKey(view: WorldView): string {
+  return JSON.stringify(view.inventory);
 }
 
 function formatView(view: WorldView): string {
@@ -755,11 +841,11 @@ function formatView(view: WorldView): string {
 // returning the view kills that bug class. The token cost is small; the
 // view changes only when state changes, so the prompt cache stays warm
 // across turns whose state was identical.
-function formatToolResult(result: EngineResult): string {
+function formatToolResult(result: EngineResult, includeInventory: boolean = true): string {
   return JSON.stringify({
     ok: result.ok,
     event: result.event,
-    view: compactView(result.view),
+    view: compactView(result.view, includeInventory),
     narrationCues: result.narrationCues,
     ...(result.ended && { ended: result.ended }),
   });

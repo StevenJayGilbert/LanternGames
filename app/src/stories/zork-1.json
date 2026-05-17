@@ -2471,11 +2471,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -2509,11 +2508,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -2556,11 +2554,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -2603,11 +2600,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -2696,11 +2692,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -2748,11 +2743,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -2786,11 +2780,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -2863,11 +2856,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -3033,11 +3025,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -3062,11 +3053,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -3094,11 +3084,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -3272,11 +3261,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -3332,11 +3320,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -3361,11 +3348,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -3393,11 +3379,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -3438,11 +3423,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -3474,11 +3458,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -3506,11 +3489,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -3549,11 +3531,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -3584,11 +3565,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -3619,11 +3599,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -3721,11 +3700,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -3778,7 +3756,7 @@
     {
       "id": "painting",
       "name": "painting",
-      "description": "Fortunately, there is still one chance for you to be a vandal, for on the far wall is a painting of unparalleled beauty.",
+      "description": "A painting of unparalleled beauty, the work of a master — rich oils, luminous colour, every brushstroke sure. It would be the prize of any collection.",
       "location": "gallery",
       "takeable": true,
       "takeableWhen": {
@@ -3789,11 +3767,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -3827,11 +3804,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -3866,11 +3842,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -3898,11 +3873,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -4005,11 +3979,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -4067,11 +4040,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -4176,11 +4148,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -4206,11 +4177,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -4297,11 +4267,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -4333,11 +4302,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -4365,11 +4333,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -4397,11 +4364,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -4433,11 +4399,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -4465,11 +4430,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -4507,11 +4471,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -4551,11 +4514,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -4577,7 +4539,7 @@
     {
       "id": "machine-switch",
       "name": "switch",
-      "description": "A small switch with a slot evidently sized for a screwdriver.",
+      "description": "A small switch labelled 'START', set into the machine's flank. Its contact is barely 1/16 by 1/4 of an inch — far too small for any human finger.",
       "location": "machine-room",
       "fixed": true,
       "narratorNote": "DEFAULT to push-machine-switch (no args) for ANY input about the START switch unless the player's input literally names a tool. Inputs like 'push start', 'start the machine', 'press switch', 'turn it on', 'activate', 'operate switch' → push-machine-switch. ONLY call turn-machine-switch when the player's input contains a literal tool noun like 'screwdriver' (e.g. 'turn switch with screwdriver', 'use the screwdriver on the switch'). NEVER auto-fill withItemId from inventory."
@@ -4647,11 +4609,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -4679,11 +4640,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -4769,11 +4729,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -4807,11 +4766,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -4862,11 +4820,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -4916,11 +4873,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -4945,11 +4901,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -4989,11 +4944,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -5042,11 +4996,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -5095,11 +5048,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -5156,11 +5108,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -5253,11 +5204,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -5411,11 +5361,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -5448,11 +5397,10 @@
             "kind": "inventoryWeight"
           },
           "right": {
-            "kind": "itemState",
+            "kind": "itemWeight",
             "itemId": {
               "fromArg": "self"
-            },
-            "key": "weight"
+            }
           }
         },
         "op": "<=",
@@ -5724,6 +5672,10 @@
       "handler": {
         "successNarration": "Your score is {flag.score} (total of {flag.max-score}), in {flag.global-turn-count} moves. This gives you the rank of {rank}."
       }
+    },
+    {
+      "id": "diagnose",
+      "description": "Player asks about their physical condition, injuries, wounds, or health (e.g. 'diagnose', 'how badly am I hurt?', 'check my health'). Always available."
     },
     {
       "id": "open",
@@ -6555,6 +6507,10 @@
     {
       "id": "cyclops-magic-word",
       "description": "Player says, shouts, whispers, or invokes 'Ulysses', 'Odysseus', or otherwise utters the magic word that terrifies the cyclops."
+    },
+    {
+      "id": "say-granite-word",
+      "description": "Player says, shouts, whispers, or invokes the word 'temple' or 'treasure' on its own — the magic words tied to the granite walls. Use when the player utters either word as an incantation, not when they ask to walk to a place."
     },
     {
       "id": "eat",
@@ -8824,6 +8780,64 @@
       "once": true
     },
     {
+      "id": "granite-teleport-to-treasure",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "say-granite-word"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "north-temple"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "moveItem",
+          "itemId": "player",
+          "to": "treasure-room"
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "say-granite-word"
+        }
+      ],
+      "narration": "The word leaves your lips and the granite wall seems to drink it in. A grey lurch swallows the room — and when it lets go, the wall stands behind you, on its far side."
+    },
+    {
+      "id": "granite-teleport-to-temple",
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "say-granite-word"
+          },
+          {
+            "type": "playerAt",
+            "roomId": "treasure-room"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "moveItem",
+          "itemId": "player",
+          "to": "north-temple"
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "say-granite-word"
+        }
+      ],
+      "narration": "You speak the word; the granite wall yawns into grey nothing, the world heaves once, and sets you down beyond it."
+    },
+    {
       "id": "cyclops-eats-lunch",
       "once": false,
       "priority": 10,
@@ -10727,13 +10741,25 @@
       },
       "effects": [
         {
+          "type": "if",
+          "if": {
+            "type": "itemAccessible",
+            "itemId": "lamp"
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "Your lamp dims, flickers, and goes dark."
+            }
+          ]
+        },
+        {
           "type": "setItemState",
           "itemId": "lamp",
           "key": "isLit",
           "value": false
         }
-      ],
-      "narration": "Your lamp dims, flickers, and goes dark."
+      ]
     },
     {
       "id": "candles-burn-fuel",
@@ -10802,13 +10828,84 @@
       },
       "effects": [
         {
+          "type": "if",
+          "if": {
+            "type": "itemAccessible",
+            "itemId": "candles"
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "Your candles have burned down to nothing — the flames sputter and die."
+            }
+          ]
+        },
+        {
           "type": "setItemState",
           "itemId": "candles",
           "key": "isLit",
           "value": false
         }
-      ],
-      "narration": "Your candles have burned down to nothing — the flames sputter and die."
+      ]
+    },
+    {
+      "id": "candles-wind-gust",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "playerAt",
+            "roomId": "tiny-cave"
+          },
+          {
+            "type": "hasItem",
+            "itemId": "candles"
+          },
+          {
+            "type": "itemState",
+            "itemId": "candles",
+            "key": "isLit",
+            "equals": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "setFlagRandom",
+          "key": "_candle-wind-roll",
+          "min": 0,
+          "max": 99
+        },
+        {
+          "type": "if",
+          "if": {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "_candle-wind-roll"
+            },
+            "op": "<",
+            "right": {
+              "kind": "literal",
+              "value": 50
+            }
+          },
+          "then": [
+            {
+              "type": "setItemState",
+              "itemId": "candles",
+              "key": "isLit",
+              "value": false
+            },
+            {
+              "type": "narrate",
+              "text": "A sudden gust of wind sweeps through the cave and snuffs your candles out."
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "darkness-tick-incr",
@@ -14064,6 +14161,202 @@
       ]
     },
     {
+      "id": "player-heals",
+      "afterAction": true,
+      "once": false,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "player-health"
+            },
+            "op": "<",
+            "right": {
+              "kind": "literal",
+              "value": 30
+            }
+          },
+          {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "player-health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "key": "combat-engaged-with-troll",
+              "equals": true
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "key": "combat-engaged-with-cyclops",
+              "equals": true
+            }
+          },
+          {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "key": "combat-engaged-with-thief",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "adjustFlag",
+          "key": "player-health",
+          "by": 1
+        }
+      ]
+    },
+    {
+      "id": "diagnose-report",
+      "once": false,
+      "when": {
+        "type": "intentMatched",
+        "signalId": "diagnose"
+      },
+      "effects": [
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "diagnose"
+        },
+        {
+          "type": "if",
+          "if": {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "player-health"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 29
+            }
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "You are in perfect health."
+            }
+          ],
+          "else": [
+            {
+              "type": "if",
+              "if": {
+                "type": "compare",
+                "left": {
+                  "kind": "flag",
+                  "key": "player-health"
+                },
+                "op": ">",
+                "right": {
+                  "kind": "literal",
+                  "value": 20
+                }
+              },
+              "then": [
+                {
+                  "type": "narrate",
+                  "text": "You have a light wound — scrapes and bruises, nothing more. It will mend on its own as you rest. (Health: {flag.player-health} of 30.)"
+                }
+              ],
+              "else": [
+                {
+                  "type": "if",
+                  "if": {
+                    "type": "compare",
+                    "left": {
+                      "kind": "flag",
+                      "key": "player-health"
+                    },
+                    "op": ">",
+                    "right": {
+                      "kind": "literal",
+                      "value": 12
+                    }
+                  },
+                  "then": [
+                    {
+                      "type": "narrate",
+                      "text": "You have a serious wound. Your strength will return if you rest and keep out of danger. (Health: {flag.player-health} of 30.)"
+                    }
+                  ],
+                  "else": [
+                    {
+                      "type": "if",
+                      "if": {
+                        "type": "compare",
+                        "left": {
+                          "kind": "flag",
+                          "key": "player-health"
+                        },
+                        "op": ">",
+                        "right": {
+                          "kind": "literal",
+                          "value": 5
+                        }
+                      },
+                      "then": [
+                        {
+                          "type": "narrate",
+                          "text": "You have serious wounds and should not press your luck. Rest, away from danger, and they will slowly mend. (Health: {flag.player-health} of 30.)"
+                        }
+                      ],
+                      "else": [
+                        {
+                          "type": "narrate",
+                          "text": "You are barely alive. One more solid blow would surely finish you. (Health: {flag.player-health} of 30.)"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "if",
+          "if": {
+            "type": "compare",
+            "left": {
+              "kind": "flag",
+              "key": "deaths"
+            },
+            "op": ">",
+            "right": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "You have been killed before; the Great Underground Empire does not grant many second chances."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "troll-tier-wounded",
       "afterAction": true,
       "once": false,
@@ -14935,6 +15228,45 @@
           "value": true
         }
       ]
+    },
+    {
+      "id": "thief-accepts-gift",
+      "once": false,
+      "priority": -50,
+      "when": {
+        "type": "and",
+        "all": [
+          {
+            "type": "intentMatched",
+            "signalId": "give"
+          },
+          {
+            "type": "intentArg",
+            "signalId": "give",
+            "key": "targetId",
+            "equals": "thief"
+          },
+          {
+            "type": "itemAccessible",
+            "itemId": "thief"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "moveItem",
+          "itemId": {
+            "fromIntent": "give",
+            "key": "itemId"
+          },
+          "to": "thief"
+        },
+        {
+          "type": "removeMatchedIntent",
+          "signalId": "give"
+        }
+      ],
+      "narration": "The thief accepts your offering, turns it over in his long fingers with a connoisseur's eye, and tucks it away in his great bag with a small, satisfied nod."
     },
     {
       "id": "give-rejects",
@@ -16182,19 +16514,8 @@
                 {
                   "type": "if",
                   "if": {
-                    "type": "and",
-                    "all": [
-                      {
-                        "type": "hasItem",
-                        "itemId": "candles"
-                      },
-                      {
-                        "type": "itemState",
-                        "itemId": "candles",
-                        "key": "isLit",
-                        "equals": true
-                      }
-                    ]
+                    "type": "hasItem",
+                    "itemId": "candles"
                   },
                   "then": [
                     {
@@ -16428,7 +16749,7 @@
             "equals": "candles"
           },
           {
-            "type": "hasItem",
+            "type": "itemAccessible",
             "itemId": "candles"
           },
           {
@@ -16490,7 +16811,7 @@
             "equals": "candles"
           },
           {
-            "type": "hasItem",
+            "type": "itemAccessible",
             "itemId": "candles"
           },
           {
@@ -16539,7 +16860,7 @@
             "equals": "candles"
           },
           {
-            "type": "hasItem",
+            "type": "itemAccessible",
             "itemId": "candles"
           },
           {
@@ -16680,6 +17001,12 @@
             "itemId": "candles",
             "key": "isLit",
             "equals": true
+          },
+          {
+            "type": "itemState",
+            "itemId": "match",
+            "key": "isLit",
+            "equals": true
           }
         ]
       },
@@ -16750,13 +17077,25 @@
       },
       "effects": [
         {
+          "type": "if",
+          "if": {
+            "type": "itemAccessible",
+            "itemId": "match"
+          },
+          "then": [
+            {
+              "type": "narrate",
+              "text": "The match has gone out."
+            }
+          ]
+        },
+        {
           "type": "setItemState",
           "itemId": "match",
           "key": "isLit",
           "value": false
         }
-      ],
-      "narration": "The match has gone out."
+      ]
     },
     {
       "id": "read-book-no-bell-rung",

@@ -1063,6 +1063,11 @@ function validateNumericExpr(
       }
       if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");
       return;
+    case "itemWeight":
+      if (typeof raw.itemId !== "string" && !isIdRefShape(raw.itemId)) {
+        err(`${path}.itemId`, "must be a string or {fromArg: \"...\"}");
+      }
+      return;
     case "roomState":
       if (typeof raw.roomId !== "string") err(`${path}.roomId`, "must be a string");
       if (typeof raw.key !== "string") err(`${path}.key`, "must be a string");

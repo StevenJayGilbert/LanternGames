@@ -35,15 +35,10 @@ export type NumericExpr =
   | { kind: "itemCountAt"; location: string }      // items whose location matches (roomId | itemId | "nowhere")
   | { kind: "matchedIntentsCount" }                // how many intent signals have been matched
   | { kind: "visitedCount" }                       // how many distinct rooms have been visited
-  | { kind: "inventoryWeight" }                    // sum of state.weight across all items currently in player's inventory (items without a numeric state.weight contribute 0). Useful for inventory-weight gates: takeableWhen: compare(add(inventoryWeight, itemState({fromArg:"self"}, "weight")), <=, flag(max-carry-weight)).
+  | { kind: "inventoryWeight" }                    // total state.weight the player bears — every item transitively in the player's possession, including items nested inside carried containers (items without a numeric state.weight contribute 0).
+  | { kind: "itemWeight"; itemId: IdRef }          // recursive weight of one item: its own state.weight plus the itemWeight of everything inside it. Used by the take weight gate so a loaded container counts its contents.
   | { kind: "add"; left: NumericExpr; right: NumericExpr }    // sum of two NumericExprs
   | { kind: "negate"; of: NumericExpr };                       // arithmetic negation (multiply by -1)
-
-// Future additions when weight/size land:
-//   | { kind: "inventoryWeight" }
-//   | { kind: "inventorySize" }
-//   | { kind: "itemWeight"; itemId: string }
-//   | { kind: "containerFullness"; itemId: string }
 
 // ---------- Arg references (templated values inside tool handlers) ----------
 

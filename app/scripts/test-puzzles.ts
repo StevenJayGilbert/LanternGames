@@ -262,6 +262,216 @@ console.log("\n=== #1c Empty matchbook ===");
     : fail("expected empty-matchbook cue", JSON.stringify(r.narrationCues));
 }
 
+// ----- Puzzle #1d: Wind gust blows out the candles in tiny-cave -----
+console.log("\n=== #1d Candle wind gust (tiny-cave) ===");
+// tiny-cave is a dark room, and the gust extinguishes the candles. Every setup
+// below also carries a lit lamp (batteryTurns: 330 — ample for 30 turns) so the
+// room stays lit no matter what the candles do: the grue/darkness path is fully
+// decoupled, and these tests exercise only the wind-gust mechanic.
+{
+  // Positive: lit candles carried into tiny-cave → a ~50%-per-turn gust blows
+  // them out. P(no gust in 30 turns) ≈ 9e-10.
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "tiny-cave", candles: "player", lamp: "player" },
+    itemStates: {
+      ...e.state.itemStates,
+      candles: { isLit: true, burnTurnsRemaining: 230, weight: 5 },
+      lamp: { isLit: true, batteryTurns: 330, weight: 15 },
+    },
+  };
+  let blownOut = false;
+  for (let i = 0; i < 30 && !blownOut; i++) {
+    e.execute({ type: "wait" });
+    if (e.state.itemStates["candles"]?.isLit === false) blownOut = true;
+  }
+  blownOut
+    ? pass("gust blew out the carried candles within 30 turns in tiny-cave")
+    : fail("candles never blown out in tiny-cave", JSON.stringify(e.state.itemStates["candles"]));
+  (e.state.itemStates["candles"]?.burnTurnsRemaining ?? 0) > 0
+    ? pass("burnTurnsRemaining still > 0 after the gust — candles remain relightable")
+    : fail("gust consumed the wax", JSON.stringify(e.state.itemStates["candles"]));
+}
+{
+  // Negative — wrong room: lit candles carried elsewhere are never gusted out.
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "south-temple", candles: "player", lamp: "player" },
+    itemStates: {
+      ...e.state.itemStates,
+      candles: { isLit: true, burnTurnsRemaining: 230, weight: 5 },
+      lamp: { isLit: true, batteryTurns: 330, weight: 15 },
+    },
+  };
+  for (let i = 0; i < 30; i++) e.execute({ type: "wait" });
+  e.state.itemStates["candles"]?.isLit === true
+    ? pass("candles stay lit outside tiny-cave (no gust)")
+    : fail("candles blown out in the wrong room", JSON.stringify(e.state.itemStates["candles"]));
+}
+{
+  // Negative — not carried: lit candles on the ground in tiny-cave are not
+  // gusted out (canonical: the gust requires IN? CANDLES WINNER).
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "tiny-cave", candles: "tiny-cave", lamp: "player" },
+    itemStates: {
+      ...e.state.itemStates,
+      candles: { isLit: true, burnTurnsRemaining: 230, weight: 5 },
+      lamp: { isLit: true, batteryTurns: 330, weight: 15 },
+    },
+  };
+  for (let i = 0; i < 30; i++) e.execute({ type: "wait" });
+  e.state.itemStates["candles"]?.isLit === true
+    ? pass("candles on the ground in tiny-cave stay lit (gust needs them carried)")
+    : fail("ground candles blown out", JSON.stringify(e.state.itemStates["candles"]));
+}
+
+// ----- Puzzle #1e: Lighting the candles requires a burning match -----
+console.log("\n=== #1e Candle lighting needs a match ===");
+// The `light` tool gates on itemAccessible (carried OR on the ground); the candle
+// validation triggers must match that scope, or candles on the ground get lit with
+// no match. Every setup carries a lit lamp so room darkness is irrelevant here.
+{
+  // Candles on the ground, no burning match → light candles → they stay dark.
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "round-room", candles: "round-room", match: "player", lamp: "player" },
+    itemStates: {
+      ...e.state.itemStates,
+      candles: { isLit: false, burnTurnsRemaining: 230, weight: 5 },
+      match: { matchesRemaining: 5, isLit: false, weight: 1 },
+      lamp: { isLit: true, batteryTurns: 330, weight: 15 },
+    },
+  };
+  const r = e.execute({ type: "recordIntent", signalId: "light", args: { itemId: "candles" } });
+  e.state.itemStates["candles"]?.isLit === false
+    ? pass("light ground candles with no burning match → candles stay dark")
+    : fail("ground candles lit without a match", JSON.stringify(e.state.itemStates["candles"]));
+  r.narrationCues.some((c) => c.includes("nothing burning"))
+    ? pass("no-match light → 'nothing burning to light them with' cue")
+    : fail("expected no-match cue", JSON.stringify(r.narrationCues));
+}
+{
+  // Candles on the ground, burning match in hand → light candles → lit, match consumed.
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "round-room", candles: "round-room", match: "player", lamp: "player" },
+    itemStates: {
+      ...e.state.itemStates,
+      candles: { isLit: false, burnTurnsRemaining: 230, weight: 5 },
+      match: { matchesRemaining: 5, isLit: true, weight: 1 },
+      lamp: { isLit: true, batteryTurns: 330, weight: 15 },
+    },
+  };
+  e.execute({ type: "recordIntent", signalId: "light", args: { itemId: "candles" } });
+  e.state.itemStates["candles"]?.isLit === true
+    ? pass("light ground candles WITH a burning match → candles lit")
+    : fail("ground candles not lit despite burning match", JSON.stringify(e.state.itemStates["candles"]));
+  e.state.itemStates["match"]?.isLit === false
+    ? pass("burning match consumed lighting ground candles")
+    : fail("match not consumed", JSON.stringify(e.state.itemStates["match"]));
+}
+{
+  // At entrance-to-hades (bell rung), candles on the ground: a no-match attempt must
+  // NOT consume the once-only cower narration; the real match-backed lighting fires it.
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "entrance-to-hades", candles: "entrance-to-hades", match: "player", lamp: "player" },
+    itemStates: {
+      ...e.state.itemStates,
+      candles: { isLit: false, burnTurnsRemaining: 230, weight: 5 },
+      match: { matchesRemaining: 5, isLit: false, weight: 1 },
+      bell: { rangAtHades: true, weight: 10 },
+      lamp: { isLit: true, batteryTurns: 330, weight: 15 },
+    },
+  };
+  const r1 = e.execute({ type: "recordIntent", signalId: "light", args: { itemId: "candles" } });
+  !r1.triggersFired.includes("candles-relit-at-hades-cower")
+    ? pass("no-match light at hades does NOT consume the once-only cower narration")
+    : fail("cower narration wasted on a failed no-match attempt");
+  e.state = { ...e.state, itemStates: { ...e.state.itemStates, match: { ...e.state.itemStates["match"], isLit: true } } };
+  const r2 = e.execute({ type: "recordIntent", signalId: "light", args: { itemId: "candles" } });
+  e.state.itemStates["candles"]?.isLit === true
+    ? pass("match-backed light at hades → candles lit")
+    : fail("candles not lit with match at hades", JSON.stringify(e.state.itemStates["candles"]));
+  r2.triggersFired.includes("candles-relit-at-hades-cower")
+    ? pass("cower narration fires on the real match-backed lighting")
+    : fail("cower did not fire on the real lighting", JSON.stringify(r2.triggersFired));
+}
+
+// ----- Puzzle #1f: Burn-out narration is co-location-gated -----
+console.log("\n=== #1f Light-source burn-out narration is co-location-gated ===");
+// A burning candle/lamp runs out wherever it sits, but the "it went out" message
+// must only reach the player when they can perceive the item. Each setup puts the
+// light source at fuel 0 + isLit:true; one `wait` fires the burn-out trigger.
+{
+  // Candles burn out in the player's own room → cue shown.
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "round-room", candles: "round-room" },
+    itemStates: { ...e.state.itemStates, candles: { isLit: true, burnTurnsRemaining: 0, weight: 5 } },
+  };
+  const r = e.execute({ type: "wait" });
+  e.state.itemStates["candles"]?.isLit === false
+    ? pass("candles burn out (isLit→false) when out of fuel")
+    : fail("candles did not burn out", JSON.stringify(e.state.itemStates["candles"]));
+  r.narrationCues.some((c) => c.includes("burned down"))
+    ? pass("candles burn out in the player's room → 'burned down' cue shown")
+    : fail("expected burned-down cue when co-located", JSON.stringify(r.narrationCues));
+}
+{
+  // Candles burn out while carried → cue shown.
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "round-room", candles: "player" },
+    itemStates: { ...e.state.itemStates, candles: { isLit: true, burnTurnsRemaining: 0, weight: 5 } },
+  };
+  const r = e.execute({ type: "wait" });
+  r.narrationCues.some((c) => c.includes("burned down"))
+    ? pass("candles burn out while carried → 'burned down' cue shown")
+    : fail("expected burned-down cue when carried", JSON.stringify(r.narrationCues));
+}
+{
+  // Candles burn out in a DIFFERENT room → trigger still fires, but no cue leaks.
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "round-room", candles: "south-temple" },
+    itemStates: { ...e.state.itemStates, candles: { isLit: true, burnTurnsRemaining: 0, weight: 5 } },
+  };
+  const r = e.execute({ type: "wait" });
+  e.state.itemStates["candles"]?.isLit === false
+    ? pass("candles in another room still burn out (isLit→false)")
+    : fail("candles did not burn out off-screen", JSON.stringify(e.state.itemStates["candles"]));
+  !r.narrationCues.some((c) => c.includes("burned down"))
+    ? pass("candles burn out in another room → NO 'burned down' cue leaks to the player")
+    : fail("cross-room burn-out cue leaked", JSON.stringify(r.narrationCues));
+}
+{
+  // Lamp runs out in a DIFFERENT room → trigger fires, no cue leaks (sibling fix).
+  const e = newEngine();
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "round-room", lamp: "south-temple" },
+    itemStates: { ...e.state.itemStates, lamp: { isLit: true, batteryTurns: 0, weight: 15 } },
+  };
+  const r = e.execute({ type: "wait" });
+  e.state.itemStates["lamp"]?.isLit === false
+    ? pass("lamp in another room still runs out (isLit→false)")
+    : fail("lamp did not run out off-screen", JSON.stringify(e.state.itemStates["lamp"]));
+  !r.narrationCues.some((c) => c.includes("lamp dims"))
+    ? pass("lamp runs out in another room → NO 'lamp dims' cue leaks to the player")
+    : fail("cross-room lamp cue leaked", JSON.stringify(r.narrationCues));
+}
+
 // ----- Puzzle #7: Coal → diamond -----
 console.log("\n=== #7 Coal → diamond ===");
 {
@@ -1166,6 +1376,205 @@ console.log("\n=== drop egg from up-a-tree → both shatter onto path ===");
     result.triggersFired.includes("items-fall-from-tree")
     ? pass("both egg-breaks-on-tree-drop and items-fall-from-tree fired")
     : fail(`triggersFired = ${JSON.stringify(result.triggersFired)}`);
+}
+
+// ----- Granite-wall teleport (canonical TEMPLE / TREASURE) -----
+console.log("\n=== granite-wall teleport (say temple / treasure) ===");
+{
+  const e = new Engine(zork as unknown as Story);
+
+  // At the North Temple, saying the word teleports to the Treasure Room.
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "north-temple" },
+  };
+  e.execute({ type: "recordIntent", signalId: "say-granite-word" });
+  e.state.itemLocations.player === "treasure-room"
+    ? pass("say-granite-word at north-temple → teleports to treasure-room")
+    : fail(`player at ${e.state.itemLocations.player}, expected treasure-room`);
+
+  // From the Treasure Room, saying it again returns to the Temple — and does
+  // NOT bounce straight back (removeMatchedIntent stops the same-turn ping-pong).
+  e.execute({ type: "recordIntent", signalId: "say-granite-word" });
+  e.state.itemLocations.player === "north-temple"
+    ? pass("say-granite-word at treasure-room → teleports back to north-temple (no double-hop)")
+    : fail(`player at ${e.state.itemLocations.player}, expected north-temple`);
+
+  // Said anywhere else → no teleport (canonical "Nothing happens").
+  e.state = {
+    ...e.state,
+    itemLocations: { ...e.state.itemLocations, player: "kitchen" },
+  };
+  e.execute({ type: "recordIntent", signalId: "say-granite-word" });
+  e.state.itemLocations.player === "kitchen"
+    ? pass("say-granite-word away from a granite wall → player unmoved")
+    : fail(`player at ${e.state.itemLocations.player}, expected kitchen`);
+}
+
+// ----- Give any item to the thief -----
+console.log("\n=== thief accepts any gift ===");
+{
+  const e = new Engine(zork as unknown as Story);
+  e.state = {
+    ...e.state,
+    itemLocations: {
+      ...e.state.itemLocations,
+      player: "round-room",
+      thief: "round-room",
+      torch: "player",
+      lamp: "player",
+    },
+    itemStates: {
+      ...e.state.itemStates,
+      thief: { ...(e.state.itemStates.thief ?? {}), appeared: true },
+      lamp: { ...(e.state.itemStates.lamp ?? {}), isLit: true },
+    },
+  };
+  const r = e.execute({
+    type: "recordIntent",
+    signalId: "give",
+    args: { itemId: "torch", targetId: "thief" },
+  });
+  e.state.itemLocations.torch === "thief"
+    ? pass("give torch to thief → thief pockets it (location = thief)")
+    : fail(`torch at ${e.state.itemLocations.torch}, expected thief`);
+  r.triggersFired.includes("thief-accepts-gift")
+    ? pass("thief-accepts-gift fired (not the give-rejects catchall)")
+    : fail(`triggersFired = ${JSON.stringify(r.triggersFired)}`);
+}
+
+// ----- DIAGNOSE -----
+console.log("\n=== diagnose command ===");
+{
+  const wounded = new Engine(zork as unknown as Story);
+  wounded.state = {
+    ...wounded.state,
+    flags: { ...wounded.state.flags, "player-health": 15 },
+  };
+  const r = wounded.execute({ type: "recordIntent", signalId: "diagnose" });
+  r.triggersFired.includes("diagnose-report")
+    ? pass("diagnose → diagnose-report fired")
+    : fail(`triggersFired = ${JSON.stringify(r.triggersFired)}`);
+  r.narrationCues.some((c) => /serious wound/i.test(c))
+    ? pass("diagnose at health 15 → reports a serious wound")
+    : fail(`cues = ${JSON.stringify(r.narrationCues)}`);
+
+  const healthy = new Engine(zork as unknown as Story);
+  const r2 = healthy.execute({ type: "recordIntent", signalId: "diagnose" });
+  r2.narrationCues.some((c) => /perfect health/i.test(c))
+    ? pass("diagnose at full health → perfect health")
+    : fail(`cues = ${JSON.stringify(r2.narrationCues)}`);
+}
+
+// ----- Passive healing -----
+console.log("\n=== passive healing ===");
+{
+  const resting = new Engine(zork as unknown as Story);
+  resting.state = {
+    ...resting.state,
+    flags: { ...resting.state.flags, "player-health": 20 },
+  };
+  resting.execute({ type: "wait" });
+  resting.state.flags["player-health"] === 21
+    ? pass("wait while wounded + out of combat → player-health +1 (20 → 21)")
+    : fail(`player-health = ${resting.state.flags["player-health"]}, expected 21`);
+
+  // In combat: player and thief together (so the disengage trigger can't clear
+  // the engagement), combat-engaged true. Assert player-heals does NOT fire —
+  // checked on triggersFired rather than the health number, which combat noise
+  // would otherwise muddy.
+  const fighting = new Engine(zork as unknown as Story);
+  fighting.state = {
+    ...fighting.state,
+    itemLocations: {
+      ...fighting.state.itemLocations,
+      player: "round-room",
+      thief: "round-room",
+      lamp: "player",
+    },
+    itemStates: {
+      ...fighting.state.itemStates,
+      thief: { ...(fighting.state.itemStates.thief ?? {}), appeared: true },
+      lamp: { ...(fighting.state.itemStates.lamp ?? {}), isLit: true },
+    },
+    flags: {
+      ...fighting.state.flags,
+      "player-health": 20,
+      "combat-engaged-with-thief": true,
+    },
+  };
+  const fr = fighting.execute({ type: "wait" });
+  !fr.triggersFired.includes("player-heals")
+    ? pass("wait while combat-engaged → player-heals does not fire")
+    : fail(`player-heals fired in combat; triggersFired = ${JSON.stringify(fr.triggersFired)}`);
+
+  const full = new Engine(zork as unknown as Story);
+  full.execute({ type: "wait" });
+  full.state.flags["player-health"] === 30
+    ? pass("wait at full health → stays at 30 (no overshoot)")
+    : fail(`player-health = ${full.state.flags["player-health"]}, expected 30`);
+}
+
+// ----- Inventory weight: recursive + skip-when-carried -----
+console.log("\n=== inventory weight (recursive itemWeight + already-carried skip) ===");
+{
+  // (a) Take an item OUT of a container you already carry — never weight-blocked,
+  // even with the cap set absurdly low (the gate is skipped entirely).
+  const a = new Engine(zork as unknown as Story);
+  a.state = {
+    ...a.state,
+    flags: { ...a.state.flags, "max-carry-weight": 1 },
+    itemLocations: { ...a.state.itemLocations, egg: "player", canary: "egg" },
+    itemStates: {
+      ...a.state.itemStates,
+      egg: { ...(a.state.itemStates.egg ?? {}), weight: 10, isOpen: true },
+      canary: { ...(a.state.itemStates.canary ?? {}), weight: 10 },
+    },
+  };
+  const ra = a.execute({ type: "take", itemId: "canary" });
+  a.state.itemLocations.canary === "player"
+    ? pass("take canary out of a carried egg → succeeds (weight gate skipped)")
+    : fail(`canary at ${a.state.itemLocations.canary}; event=${JSON.stringify(ra.event)}`);
+
+  // (b) Take a loaded container off the floor — recursive itemWeight counts its
+  // contents, pushing it over the cap.
+  const b = new Engine(zork as unknown as Story);
+  const bRoom = b.state.itemLocations.player;
+  b.state = {
+    ...b.state,
+    flags: { ...b.state.flags, "max-carry-weight": 15 },
+    itemLocations: { ...b.state.itemLocations, egg: bRoom, canary: "egg" },
+    itemStates: {
+      ...b.state.itemStates,
+      egg: { ...(b.state.itemStates.egg ?? {}), weight: 10, isOpen: true },
+      canary: { ...(b.state.itemStates.canary ?? {}), weight: 10 },
+    },
+  };
+  const rb = b.execute({ type: "take", itemId: "egg" });
+  !rb.ok && (rb.event as { reason?: string }).reason === "take-blocked"
+    ? pass("take loaded egg (egg 10 + canary 10 > cap 15) → take-blocked (contents counted)")
+    : fail(`expected take-blocked; ok=${rb.ok} event=${JSON.stringify(rb.event)}`);
+  b.state.itemLocations.egg === bRoom
+    ? pass("rejected loaded egg stays in the room")
+    : fail(`egg at ${b.state.itemLocations.egg}`);
+
+  // (c) Same loaded container, generous cap → take succeeds (gate still works).
+  const c = new Engine(zork as unknown as Story);
+  const cRoom = c.state.itemLocations.player;
+  c.state = {
+    ...c.state,
+    flags: { ...c.state.flags, "max-carry-weight": 100 },
+    itemLocations: { ...c.state.itemLocations, egg: cRoom, canary: "egg" },
+    itemStates: {
+      ...c.state.itemStates,
+      egg: { ...(c.state.itemStates.egg ?? {}), weight: 10, isOpen: true },
+      canary: { ...(c.state.itemStates.canary ?? {}), weight: 10 },
+    },
+  };
+  c.execute({ type: "take", itemId: "egg" });
+  c.state.itemLocations.egg === "player"
+    ? pass("take loaded egg under a generous cap → succeeds")
+    : fail(`egg at ${c.state.itemLocations.egg}`);
 }
 
 // ----- Done -----

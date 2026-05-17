@@ -268,7 +268,7 @@ The instructions live at [narrator.ts:155-204](../app/src/llm/narrator.ts) as a 
 18. Resolve player phrasing to view ids.
 19. Stay in NPC voice for mid-conversation NPCs.
 20. Narration style — second-person present tense, brief.
-21. Never invent items / rooms / exits not in view.
+21. **View fidelity, both directions.** Never invent items / rooms / exits not in view; and never omit a present one — when narrating a room (a `look` or arriving in a room), every `itemsHere` entry must be surfaced to the player, bare-`name` items included. Omitting a present item is as much a fidelity bug as inventing one.
 22. Weave `narrationCues` from tool results into prose.
 23. **Always call `examine` for look-at-item commands.** State changes turn over turn; trust the engine.
 24. `event.description` / `event.text` carry state signals — preserve them when embellishing.

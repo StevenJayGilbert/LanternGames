@@ -389,6 +389,24 @@ if (!e.state.finished && !aborted()) {
     pass("P6: thief already at treasure-room (deterministic seeding no-op)");
   }
 
+  // Test scaffolding: the wandering thief may have stolen (and opened) the egg
+  // somewhere in Phases 1-5 — canonical thief behavior, not a bug. Normalize it
+  // back to a closed egg in the player's inventory (canary still nested inside)
+  // so the scripted give below runs deterministically. Engine behavior is NOT
+  // modified — this only pins fixture state, exactly like the thief seeding above.
+  if (e.state.itemLocations["egg"] !== "player" ||
+      e.state.itemStates["egg"]?.isOpen !== false) {
+    note(`P6: egg was loc=${e.state.itemLocations["egg"]} isOpen=${e.state.itemStates["egg"]?.isOpen}; normalizing to a closed egg in inventory`);
+    e.state = {
+      ...e.state,
+      itemLocations: { ...e.state.itemLocations, egg: "player", canary: "egg" },
+      itemStates: {
+        ...e.state.itemStates,
+        egg: { ...(e.state.itemStates["egg"] ?? {}), isOpen: false },
+      },
+    };
+  }
+
   // Canonical Wong: GIVE EGG to thief BEFORE attacking. He pockets it,
   // opens it, and the canary becomes available inside the open egg. When
   // he dies, both come back to treasure-room via thief-dies.
@@ -1757,8 +1775,10 @@ console.log("\n--- F16c: Feed cyclops mid-combat (Bug 1 fix) ---");
     f.execute({ type: "wait" });
   }
   const hpAfterTicks = (f.state.flags["player-health"] as number) ?? 30;
-  hpAfterTicks === hpAfterFeed
-    ? pass(`F16c no further damage after feeding (hp ${hpAfterTicks} stable)`)
+  // hp must not DROP (cyclops did no further damage). Passive healing may push
+  // it up over the idle ticks — that's fine; >= is the correct check.
+  hpAfterTicks >= hpAfterFeed
+    ? pass(`F16c no further cyclops damage after feeding (hp ${hpAfterFeed} → ${hpAfterTicks})`)
     : fail(`F16c cyclops kept attacking after feeding: hp ${hpAfterFeed} → ${hpAfterTicks}`);
 }
 
@@ -2891,10 +2911,13 @@ console.log("\n--- F-stolen-egg-recovery: kill thief, recover open egg ---");
     : fail(`F-recovery canary at ${f.state.itemLocations.canary}`);
 }
 
-// F-thief-stays-after-give: engine state pin — thief remains in room after giving egg.
-// Personality field was previously prescribing "pockets things and vanishes" which made
-// the LLM hallucinate the thief's exit. Engine truth: he stays put.
-console.log("\n--- F-thief-stays-after-give: thief still in room after egg given ---");
+// F-thief-stays-after-give: engine state pin — the thief is still in play after a give.
+// The personality field once prescribed "pockets things and vanishes", which made the LLM
+// hallucinate the thief's exit. Engine truth: a give never removes the thief from the world.
+// He MAY wander one room on the give turn (the wander tick fires every turn, and loud-room is
+// adjacent to round-room) — that is correct behavior — so the pin is "not 'nowhere'", not
+// "exactly where he was". Asserting the exact room made this test flake at the wander rate.
+console.log("\n--- F-thief-stays-after-give: thief still in play after egg given ---");
 {
   const f = new Engine(story);
   f.state = {
@@ -2914,9 +2937,9 @@ console.log("\n--- F-thief-stays-after-give: thief still in room after egg given
     },
   };
   f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "egg", targetId: "thief" } });
-  f.state.itemLocations.thief === "round-room"
-    ? pass("F-thief-stays thief still at round-room (not 'nowhere') after egg-give")
-    : fail(`F-thief-stays thief at ${f.state.itemLocations.thief}`);
+  f.state.itemLocations.thief !== "nowhere"
+    ? pass("F-thief-stays thief still in play (not 'nowhere') after egg-give")
+    : fail(`F-thief-stays thief vanished to ${f.state.itemLocations.thief}`);
 }
 
 // F-treasure-room-1: first entry to treasure-room invokes the canonical robber's-hideaway trigger
@@ -3100,8 +3123,8 @@ console.log("\n--- F-give-2: give item not in inventory → refused ---");
     : fail(`F-give-2 cues: ${JSON.stringify(result.narrationCues)}`);
 }
 
-// F-give-3: give unrelated item to thief (no specific trigger) → catchall fires
-console.log("\n--- F-give-3: give lamp to thief → catchall ---");
+// F-give-3: give any item to the thief → he pockets it (canonical ROBBER-FUNCTION).
+console.log("\n--- F-give-3: give lamp to thief → thief accepts it ---");
 {
   const f = new Engine(story);
   f.state = {
@@ -3118,11 +3141,11 @@ console.log("\n--- F-give-3: give lamp to thief → catchall ---");
     },
   };
   const result = f.execute({ type: "recordIntent", signalId: "give", args: { itemId: "lamp", targetId: "thief" } });
-  result.triggersFired.includes("give-rejects")
-    ? pass("F-give-3 give-rejects catchall fires for unrelated item")
+  result.triggersFired.includes("thief-accepts-gift")
+    ? pass("F-give-3 thief-accepts-gift fires for any item given to the thief")
     : fail(`F-give-3 triggers fired: ${JSON.stringify(result.triggersFired)}`);
-  f.state.itemLocations.lamp === "player"
-    ? pass("F-give-3 lamp stays in inventory")
+  f.state.itemLocations.lamp === "thief"
+    ? pass("F-give-3 lamp moves into the thief's possession")
     : fail(`F-give-3 lamp at ${f.state.itemLocations.lamp}`);
 }
 

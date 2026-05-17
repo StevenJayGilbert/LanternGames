@@ -55,6 +55,11 @@ export function substituteNumericExpr(
       if (id === null) return null;
       return { ...expr, itemId: id };
     }
+    case "itemWeight": {
+      const id = resolveIdRef(expr.itemId, args, state);
+      if (id === null) return null;
+      return { ...expr, itemId: id };
+    }
     case "passageState": {
       const id = resolveIdRef(expr.passageId, args, state);
       if (id === null) return null;

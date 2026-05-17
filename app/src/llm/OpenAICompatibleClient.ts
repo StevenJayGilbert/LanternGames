@@ -81,15 +81,26 @@ export class OpenAICompatibleClient implements LLMClient {
   private baseUrl: string;
   private model: string;
   private providerLabel: string;
+  // The output-token cap field name. Newer OpenAI models reject the legacy
+  // `max_tokens` and require `max_completion_tokens`; xAI and Gemini's
+  // OpenAI-compat endpoint still take `max_tokens`. Set per provider preset.
+  private maxTokensParam: string;
   // A stable per-session id. xAI uses x-grok-conv-id to raise prefix-cache
   // hit rate; other providers ignore the header harmlessly.
   private convId: string;
 
-  constructor(opts: { apiKey: string; baseUrl: string; model: string; providerLabel?: string }) {
+  constructor(opts: {
+    apiKey: string;
+    baseUrl: string;
+    model: string;
+    providerLabel?: string;
+    maxTokensParam?: string;
+  }) {
     this.apiKey = opts.apiKey;
     this.baseUrl = opts.baseUrl.replace(/\/$/, "");
     this.model = opts.model;
     this.providerLabel = opts.providerLabel ?? "OpenAI-compatible";
+    this.maxTokensParam = opts.maxTokensParam ?? "max_tokens";
     this.convId = crypto.randomUUID();
   }
 
@@ -100,7 +111,7 @@ export class OpenAICompatibleClient implements LLMClient {
 
     const body: Record<string, unknown> = {
       model: this.model,
-      max_tokens: req.maxTokens ?? DEFAULT_MAX_TOKENS,
+      [this.maxTokensParam]: req.maxTokens ?? DEFAULT_MAX_TOKENS,
       messages,
     };
     if (req.tools && req.tools.length > 0) body.tools = req.tools.map(toOAITool);
@@ -377,7 +388,17 @@ async function toHttpError(
         "insufficient_credits",
       );
     }
-    return new LLMError(`${providerLabel} rate limited. Wait a moment and retry.`, "rate_limit", true);
+    // Honor Retry-After when the provider sends it (seconds form; OpenAI uses
+    // seconds). An HTTP-date form parses to NaN — left undefined, backoff used.
+    const retryAfterRaw = response.headers.get("retry-after");
+    const retryAfterSec = retryAfterRaw ? Number(retryAfterRaw) : NaN;
+    const retryAfterMs = Number.isFinite(retryAfterSec) ? retryAfterSec * 1000 : undefined;
+    return new LLMError(
+      `${providerLabel} rate limited. Wait a moment and retry.`,
+      "rate_limit",
+      true,
+      retryAfterMs,
+    );
   }
   if (status === 400 && /context|too long|maximum.*token/i.test(bodyText)) {
     return new LLMError(

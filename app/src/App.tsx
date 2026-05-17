@@ -38,6 +38,11 @@ const OLLAMA_READY_STORAGE = "lanterngames_ollama_ready";
 const DEFAULT_OLLAMA_URL = "http://localhost:11434";
 const DEFAULT_OLLAMA_MODEL = "llama3.1:8b";
 
+// True under `vite dev` / `tauri dev`; false in production builds (`vite build`,
+// i.e. the shipped desktop app). Gates dev-only affordances — the Debug
+// slash-command button and the slash-command intercept.
+const DEV = import.meta.env.DEV;
+
 // Per-provider BYOK key storage — each provider keeps its own key.
 function keyStorageKey(p: Provider): string {
   return `lanterngames_key_${p}`;
@@ -52,31 +57,28 @@ const BYOK_META: Record<
 > = {
   anthropic: {
     label: "Anthropic (BYOK)",
-    pickerHint:
-      "Fast, polished narration via Claude. Bring your own API key — about $0.01–0.05 per turn. The key stays in your browser.",
+    pickerHint: "Claude Haiku 4.5. Bring your own API key.",
     placeholder: "sk-ant-...",
     consoleUrl: "https://console.anthropic.com",
     consoleLabel: "console.anthropic.com",
   },
   openai: {
     label: "OpenAI / ChatGPT (BYOK)",
-    pickerHint:
-      "Narration via GPT. Bring your own API key. Best in the desktop build — browsers block OpenAI's API directly.",
+    pickerHint: "GPT-5.4 mini. Bring your own API key.",
     placeholder: "sk-...",
     consoleUrl: "https://platform.openai.com/api-keys",
     consoleLabel: "platform.openai.com",
   },
   xai: {
     label: "xAI Grok (BYOK)",
-    pickerHint: "Narration via Grok. Bring your own API key from the xAI console.",
+    pickerHint: "Grok 4.1 Fast. Bring your own API key.",
     placeholder: "xai-...",
     consoleUrl: "https://console.x.ai",
     consoleLabel: "console.x.ai",
   },
   gemini: {
     label: "Google Gemini (BYOK)",
-    pickerHint:
-      "Narration via Gemini. Bring your own API key. Best in the desktop build — browsers block Gemini's API directly.",
+    pickerHint: "Gemini 3 Flash. Bring your own API key.",
     placeholder: "AIza...",
     consoleUrl: "https://aistudio.google.com/apikey",
     consoleLabel: "aistudio.google.com",
@@ -152,6 +154,9 @@ function App() {
   });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  // Set while a turn is paused on a rate-limit retry, so the loading indicator
+  // can tell the player the turn is waiting and will continue on its own.
+  const [retryStatus, setRetryStatus] = useState<string | null>(null);
   const [history, setHistory] = useState<string[]>(
     () => loadSession(story.id, "quick")?.inputHistory ?? [],
   );
@@ -161,6 +166,17 @@ function App() {
   const [debugMode, setDebugMode] = useState<boolean>(
     () => localStorage.getItem("lanterngames_debug") === "true",
   );
+  // The narrator picker, opened on demand via the "Model" header button as a
+  // cancelable config screen. configSnapshot holds the pre-open config so
+  // closeModelConfig can restore it if the player backs out.
+  const [modelConfigOpen, setModelConfigOpen] = useState(false);
+  const [configSnapshot, setConfigSnapshot] = useState<{
+    provider: Provider;
+    apiKey: string;
+    ollamaUrl: string;
+    ollamaModel: string;
+    ollamaReady: boolean;
+  } | null>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -213,6 +229,7 @@ function App() {
         baseUrl: preset.baseUrl,
         model: preset.defaultModel,
         providerLabel: preset.label,
+        maxTokensParam: preset.maxTokensParam,
       });
     }
     setNarrator(
@@ -236,11 +253,17 @@ function App() {
   const handleProviderChange = (next: Provider) => {
     setProvider(next);
     localStorage.setItem(PROVIDER_STORAGE, next);
-    // Load the newly selected provider's saved key (if any).
+    // Load the newly selected provider's saved key (if any) into both the live
+    // key and the draft — so switching to a provider you've used before
+    // pre-fills its key and Start is immediately enabled. First run has no
+    // saved keys, so the draft is just cleared.
     if (next !== "ollama") {
-      setApiKey(localStorage.getItem(keyStorageKey(next)) ?? "");
+      const savedKey = localStorage.getItem(keyStorageKey(next)) ?? "";
+      setApiKey(savedKey);
+      setKeyDraft(savedKey);
+    } else {
+      setKeyDraft("");
     }
-    setKeyDraft("");
   };
 
   const startGame = () => {
@@ -261,16 +284,33 @@ function App() {
       setOllamaModel(model);
       setOllamaReady(true);
     }
+    // Confirming a selection closes the config screen (no-op on first run).
+    setModelConfigOpen(false);
   };
 
-  const resetConfig = () => {
-    if (provider !== "ollama") {
-      localStorage.removeItem(keyStorageKey(provider));
-      setApiKey("");
-    } else {
-      localStorage.removeItem(OLLAMA_READY_STORAGE);
-      setOllamaReady(false);
+  // Open the narrator picker as a cancelable config screen. Snapshots the
+  // current config so closeModelConfig can restore it if the player backs out,
+  // and syncs the draft fields to the current values.
+  const openModelConfig = () => {
+    setConfigSnapshot({ provider, apiKey, ollamaUrl, ollamaModel, ollamaReady });
+    setKeyDraft(provider !== "ollama" ? apiKey : "");
+    setOllamaUrlDraft(ollamaUrl);
+    setOllamaModelDraft(ollamaModel);
+    setModelConfigOpen(true);
+  };
+
+  // Cancel path — restore the snapshot (React state plus the PROVIDER_STORAGE
+  // entry that radio changes mutate) and close the screen unchanged.
+  const closeModelConfig = () => {
+    if (configSnapshot) {
+      setProvider(configSnapshot.provider);
+      localStorage.setItem(PROVIDER_STORAGE, configSnapshot.provider);
+      setApiKey(configSnapshot.apiKey);
+      setOllamaUrl(configSnapshot.ollamaUrl);
+      setOllamaModel(configSnapshot.ollamaModel);
+      setOllamaReady(configSnapshot.ollamaReady);
     }
+    setModelConfigOpen(false);
   };
 
   const submit = async () => {
@@ -293,7 +333,7 @@ function App() {
     // narrator entirely. Mutates engine state directly (no triggers fire) and
     // appends a system message to the transcript. Off by default; safely no-op
     // if the toggle is off (commands fall through to normal narration).
-    if (debugMode && text.startsWith("/")) {
+    if (DEV && debugMode && text.startsWith("/")) {
       const result = handleDebugCommand(text, engine);
       // State-mutating commands invalidate the narrator's cached conversation
       // history (the LLM's prior tool_result views describe the OLD world).
@@ -326,7 +366,12 @@ function App() {
 
     setLoading(true);
     try {
-      const turn = await narrator.narrate(text);
+      const turn = await narrator.narrate(text, {
+        onRetry: ({ attempt, waitSeconds }) =>
+          setRetryStatus(
+            `Rate limit reached — pausing ${waitSeconds}s, then trying again (attempt ${attempt})…`,
+          ),
+      });
       // Total failure (no engineResult) → surface only the error entry. The
       // narrator's turn.text wraps the same message in "[error: ...]"; pushing
       // both produces a duplicate. Partial failure (engine succeeded but
@@ -357,6 +402,7 @@ function App() {
       setTranscript((t) => [...t, { kind: "error", text: message }]);
     } finally {
       setLoading(false);
+      setRetryStatus(null);
     }
   };
 
@@ -469,7 +515,9 @@ function App() {
   const finished = engine.state.finished;
 
   // ----- Provider / config gate -----
-  if (!ready) {
+  // Shown when there's no usable config (first run) OR the player opened the
+  // "Model" config screen on demand.
+  if (!ready || modelConfigOpen) {
     const startDisabled =
       provider === "ollama"
         ? !ollamaUrlDraft.trim() || !ollamaModelDraft.trim()
@@ -539,8 +587,7 @@ function App() {
                 >
                   {BYOK_META[provider].consoleLabel}
                 </a>
-                . The key is stored only in your browser (localStorage) and sent directly to the
-                provider.
+                . The key is stored only on this device and sent directly to the provider.
               </p>
               <form
                 className="key-form"
@@ -568,8 +615,8 @@ function App() {
               <p className="hint">
                 Make sure Ollama is running and you've pulled the model:
                 <br />
-                <code>OLLAMA_ORIGINS="*" ollama serve</code> (the origins flag is required for
-                browser access)
+                <code>OLLAMA_ORIGINS="*" ollama serve</code> (the origins flag lets the app
+                reach Ollama)
                 <br />
                 <code>ollama pull llama3.1:8b</code>
               </p>
@@ -608,6 +655,13 @@ function App() {
               </form>
             </>
           )}
+          {modelConfigOpen && (
+            <div>
+              <button type="button" className="restart" onClick={closeModelConfig}>
+                Close
+              </button>
+            </div>
+          )}
         </section>
       </main>
     );
@@ -640,20 +694,22 @@ function App() {
           >
             Save / Load
           </button>
-          <button
-            type="button"
-            className={`restart${debugMode ? " active" : ""}`}
-            onClick={() => {
-              const next = !debugMode;
-              setDebugMode(next);
-              localStorage.setItem("lanterngames_debug", String(next));
-            }}
-            title={debugMode ? "Debug ON — slash commands intercepted (/help)" : "Enable debug slash commands"}
-          >
-            {debugMode ? "Debug ●" : "Debug ○"}
-          </button>
-          <button type="button" className="restart" onClick={resetConfig} disabled={loading}>
-            {provider === "ollama" ? "Switch provider" : "Clear key"}
+          {DEV && (
+            <button
+              type="button"
+              className={`restart${debugMode ? " active" : ""}`}
+              onClick={() => {
+                const next = !debugMode;
+                setDebugMode(next);
+                localStorage.setItem("lanterngames_debug", String(next));
+              }}
+              title={debugMode ? "Debug ON — slash commands intercepted (/help)" : "Enable debug slash commands"}
+            >
+              {debugMode ? "Debug ●" : "Debug ○"}
+            </button>
+          )}
+          <button type="button" className="restart" onClick={openModelConfig} disabled={loading}>
+            Model
           </button>
         </div>
       </header>
@@ -667,7 +723,7 @@ function App() {
         ))}
         {loading && (
           <div className="entry entry-system">
-            <pre>thinking…</pre>
+            <pre>{retryStatus ?? "thinking…"}</pre>
           </div>
         )}
       </div>
@@ -732,18 +788,39 @@ function handleDebugCommand(text: string, engine: Engine): string {
         "  /put <itemId> <to>            — move an item to a room id, item id, or player/nowhere",
         "  /flag <key> <val>             — set a flag (val: true/false/<number>/<string>)",
         "  /state <itemId> <key> <val>   — set per-item state (e.g. /state cyclops unconscious true)",
+        "  /flag-state <key>             — show one flag's value",
+        "  /item-state <itemId>          — show one item's location + state",
         "  /room                         — show your current room id",
         "  /find <substr>                — search for room/item ids matching the substring",
         "  /help                         — this help",
         "",
         "Note: /tp /take /put /flag /state reset the narrator's conversation history",
         "so the LLM doesn't keep narrating from stale views. The transcript stays;",
-        "only the LLM's internal context is cleared. /room /find /help are",
-        "read-only and leave history alone.",
+        "only the LLM's internal context is cleared. /room /find /flag-state",
+        "/item-state /help are read-only and leave history alone.",
       ].join("\n");
 
     case "/room":
       return `[DEBUG] You are at: ${currentRoomId(engine.state, engine.story) ?? "(unknown)"}`;
+
+    case "/flag-state": {
+      const key = args[0];
+      if (!key) return "[DEBUG] Usage: /flag-state <key>";
+      return key in engine.state.flags
+        ? `[DEBUG] ${key} = ${JSON.stringify(engine.state.flags[key])}`
+        : `[DEBUG] ${key} = (unset)`;
+    }
+
+    case "/item-state": {
+      const itemId = args[0];
+      if (!itemId) return "[DEBUG] Usage: /item-state <itemId>";
+      const item = engine.story.items.find((i) => i.id === itemId);
+      if (!item) return `[DEBUG] No such item: "${itemId}". Try /find ${itemId}`;
+      const loc = engine.state.itemLocations[itemId] ?? "(unplaced)";
+      const st = engine.state.itemStates[itemId];
+      const stStr = st && Object.keys(st).length > 0 ? JSON.stringify(st) : "(no state)";
+      return `[DEBUG] ${itemId} @ ${loc}\n  state: ${stStr}`;
+    }
 
     case "/tp": {
       const roomId = args[0];

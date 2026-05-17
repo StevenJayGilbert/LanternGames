@@ -14,6 +14,9 @@ export interface OpenAICompatPreset {
   baseUrl: string;
   defaultModel: string;
   label: string;
+  // Output-token cap field. Newer OpenAI models reject `max_tokens` and
+  // require `max_completion_tokens`; xAI and Gemini still take `max_tokens`.
+  maxTokensParam: "max_tokens" | "max_completion_tokens";
 }
 
 export const OPENAI_COMPAT_PRESETS: Record<OpenAICompatProvider, OpenAICompatPreset> = {
@@ -21,15 +24,18 @@ export const OPENAI_COMPAT_PRESETS: Record<OpenAICompatProvider, OpenAICompatPre
     baseUrl: "https://api.openai.com/v1",
     defaultModel: "gpt-5.4-mini",
     label: "OpenAI (BYOK)",
+    maxTokensParam: "max_completion_tokens",
   },
   xai: {
     baseUrl: "https://api.x.ai/v1",
     defaultModel: "grok-4.1-fast-non-reasoning",
     label: "xAI Grok (BYOK)",
+    maxTokensParam: "max_tokens",
   },
   gemini: {
     baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
     defaultModel: "gemini-3-flash",
     label: "Google Gemini (BYOK)",
+    maxTokensParam: "max_tokens",
   },
 };

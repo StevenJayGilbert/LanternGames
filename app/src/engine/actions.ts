@@ -11,6 +11,7 @@ import {
   currentRoom,
   currentRoomId,
   evaluateCondition,
+  isCarried,
   isContainerAccessible,
   isItemAccessible,
   itemById,
@@ -213,7 +214,12 @@ function take(state: GameState, story: Story, itemId: string): ActionResult {
   // Exit.when: condition checked BEFORE the state mutation. Inject `self`
   // as the item id so the condition can reference the item's own state via
   // `{fromArg: "self"}` IdRefs (used by templated rules like inventory weight).
-  if (item.takeableWhen) {
+  //
+  // Skipped when the item is already in the player's possession (nested in a
+  // carried container): taking it out of your own pack can't change carried
+  // weight, so a weight gate must not block it. Canonical Zork I does the
+  // same — gverbs.zil:1931, the load-check guarded by <NOT <IN? <LOC PRSO> WINNER>>.
+  if (item.takeableWhen && !isCarried(item.id, state)) {
     const substituted = substituteCondition(item.takeableWhen, { self: item.id });
     if (substituted !== null && !evaluateCondition(substituted, state, story)) {
       return {

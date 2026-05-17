@@ -91,11 +91,20 @@ export type LLMErrorKind =
 export class LLMError extends Error {
   kind: LLMErrorKind;
   retryable: boolean;
+  // When the provider returned a `Retry-After` header (429), the wait it asked
+  // for, in milliseconds. Retry logic honors this over computed backoff.
+  retryAfterMs?: number;
 
-  constructor(message: string, kind: LLMErrorKind, retryable: boolean = false) {
+  constructor(
+    message: string,
+    kind: LLMErrorKind,
+    retryable: boolean = false,
+    retryAfterMs?: number,
+  ) {
     super(message);
     this.name = "LLMError";
     this.kind = kind;
     this.retryable = retryable;
+    this.retryAfterMs = retryAfterMs;
   }
 }

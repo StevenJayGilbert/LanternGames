@@ -382,6 +382,8 @@ Discriminator is `kind` (not `type`) to keep these visually distinct from Condit
 | `itemCountAt` | `{ kind, location }` | number of items whose location matches |
 | `matchedIntentsCount` | `{ kind }` | number of distinct intents matched |
 | `visitedCount` | `{ kind }` | number of distinct rooms visited |
+| `inventoryWeight` | `{ kind }` | total `state.weight` the player bears — every item transitively carried, including items nested inside carried containers |
+| `itemWeight` | `{ kind, itemId }` | recursive weight of one item: its own `state.weight` plus the `itemWeight` of everything inside it. `itemId` may be an IdRef (`{fromArg:"self"}`). Used by the take weight gate so a loaded container counts its contents |
 
 NumericExpr is **evaluated lazily** on every condition eval. There is no `random` kind because re-rolling on every eval would be a foot-gun; for randomness use the `setFlagRandom` Effect to materialize a roll into a flag, then `compare` against it.
 
